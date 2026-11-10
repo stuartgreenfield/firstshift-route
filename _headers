@@ -1,0 +1,6 @@
+/*/pack/*
+  Cache-Control: no-cache
+  Access-Control-Allow-Origin: *
+/status.json
+  Cache-Control: no-cache
+  Access-Control-Allow-Origin: *

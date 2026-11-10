@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FirstShift Race Router</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;color:#13202A;background:#EEF2F4}a{color:#B0127A}code{font-size:13px}</style>
+<h1>FirstShift Race Router</h1>
+<p>Free race routing for FirstShift subscribers, built to the RORC rules on routing aids: public forecasts, computer-generated, the same for every competitor.</p>
+<ul><li><a href="cervantes/">RORC Cervantes Trophy: Cowes to Le Havre</a></li></ul>
+<p id="st">Forecast status loading…</p>
+<script>fetch('status.json',{cache:'no-store'}).then(r=>r.json()).then(s=>{document.getElementById('st').textContent='Forecasts last built '+s.built+'.'}).catch(()=>{})</script>

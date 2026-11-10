@@ -1,0 +1,4 @@
+work/
+site/*/pack/
+site/status.json
+__pycache__/

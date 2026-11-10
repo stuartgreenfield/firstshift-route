@@ -1,0 +1,38 @@
+name: Forecasts
+
+# Every six hours, about seven hours after each 00, 06, 12 and 18 UTC model run, plus a button to run it by hand.
+on:
+  schedule:
+    - cron: '17 1,7,13,19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forecasts
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
+      - name: Fetch forecasts and build packs
+        run: python3 scripts/build.py cervantes
+      - name: Publish to the site branch
+        run: |
+          cp _headers site/_headers
+          cd site
+          git init -q -b site
+          git config user.name "FirstShift forecast job"
+          git config user.email "forecasts@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Forecasts $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
