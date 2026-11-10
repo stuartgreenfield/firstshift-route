@@ -38,8 +38,15 @@ for race in RACES:
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(len(SOURCES)) as ex: list(ex.map(one, SOURCES))
     t0c = cyc[0]
-    r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch_overview.py')], env=dict(env, FS_RUN=t0c, FS_BOX=''), capture_output=True, text=True, timeout=900)
-    print('overview', 'ok' if r.returncode == 0 else r.stderr[-300:], flush=True)
+    for c in cyc[:3]:   # the big-picture chart, from the newest ECMWF run that has it
+        try:
+            r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch_overview.py')], env=dict(env, FS_RUN=c, FS_BOX=''), capture_output=True, text=True, timeout=900)
+            ok = r.returncode == 0
+        except subprocess.TimeoutExpired:
+            ok = False; r = None
+        log[f'{race}:overview'] = f'{c} ok' if ok else f'{c} failed: {((r.stderr or r.stdout) if r else "timed out")[-300:]}'
+        print('overview', log[f'{race}:overview'], flush=True)
+        if ok: break
     T0e = time.mktime(time.strptime(t0c, '%Y%m%d%H')) - time.timezone
     r = subprocess.run([sys.executable, os.path.join(HERE, 'pack_live.py')], env=dict(env, FS_SITE=os.path.join(ROOT, 'site', race), FS_STATIC=os.path.join(ROOT, 'static', race), FS_T0=str(T0e)))
     if r.returncode: sys.exit(r.returncode)
