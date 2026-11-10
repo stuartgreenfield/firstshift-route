@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  var VERSION = 'FirstShift Route v0.4';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]] };
@@ -89,7 +90,7 @@
   function chip() {
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
-    $('dataChip').textContent = (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    $('dataChip').textContent = 'Route v0.4 · ' + (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
   }
 
   /* ---------- controls ---------- */

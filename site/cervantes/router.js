@@ -1,4 +1,4 @@
-/* FirstShift race router, stage 2. Runs in the browser (Web Worker) and in Node for testing.
+/* FirstShift Route v0.4: the routing engine. Runs in the browser (Web Worker) and in Node for testing.
    Isochrone routing over a forecast pack: any wind model (or the mean of several), hourly tides,
    sea-state speed factor, depth safety, gates for marks, tack and gybe penalties. */
 (function (root, factory) { if (typeof module === 'object' && module.exports) module.exports = factory(); else root.FSRouter = factory(); })(this, function () {
