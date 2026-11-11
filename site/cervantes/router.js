@@ -205,7 +205,7 @@
     var wm = null;
     if (depth) { depth._wet = depth._wet || {}; wm = depth._wet[safety]; if (!wm) { wm = new Uint8Array(depth.ny * depth.nx); for (var wy = 0; wy < depth.ny; wy++) for (var wx = 0; wx < depth.nx; wx++) { var zc = depth.cellAt('z', 0, wy, wx); if (zc === zc && zc <= -safety) wm[wy * depth.nx + wx] = 1; } depth._wet[safety] = wm; } }
     function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var I = depth.idx(la, lo); if (!I) return false; return wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1; }
-    var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [];
+    var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [], iso = o.iso ? [] : null, isoT = t;   /* iso: the front each hour, for the isochrones on the chart */
     for (var li = 0; li < o.legs.length; li++) {
       var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var far = leg.gate && dist(leg.gate.a[0], leg.gate.a[1], leg.gate.b[0], leg.gate.b[1]) > 2;   /* offshore rounding mark: aim at the mark itself */
       var tgt = leg.point || (far ? leg.gate.a : [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2]);
@@ -271,13 +271,14 @@
             var kb = pts.indexOf(bp), path0 = [], kk = kb;
             for (var hJ = hist.length - 1; hJ >= 0; hJ--) { var c4 = hist[hJ].pts[kk]; path0.push({ t: hist[hJ].t, la: c4.la, lo: c4.lo, hdg: c4.hdg, tws: c4.tws, twd: c4.twd, twa: c4.twa, bsp: c4.bsp, cu: c4.cu, cv: c4.cv, hs: c4.hs, wd: c4.wd, leg: hist[hJ].leg, tack: c4.tack }); kk = c4.par; }
             path0.reverse(); path0.unshift({ t: o.start.t, la: o.start.lat, lo: o.start.lon, leg: 0 });
-            return { arrivals: arrivals, path: path0, finish: path0[path0.length - 1].t, partial: { togo: Math.round(togo), leg: leg.name, end: t } };
+            return { arrivals: arrivals, path: path0, finish: path0[path0.length - 1].t, partial: { togo: Math.round(togo), leg: leg.name, end: t }, iso: iso };
           }
           var e0 = new Error('The forecasts end ' + Math.round(t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
         }
         if (!ncand) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
         var keep = best.filter(Boolean);
         hist.push({ pts: keep, t: t, leg: li });
+        if (iso && t - isoT >= 0.999) { isoT = t; iso.push({ t: t, leg: li, p: keep.map(function (c) { return [Math.round(c.la * 1e4) / 1e4, Math.round(c.lo * 1e4) / 1e4]; }) }); }
         pts = keep.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
       }
       if (!done) throw new Error('Did not reach ' + leg.name + ' within ' + (o.maxHours || 60) + ' hours.');
@@ -293,7 +294,7 @@
     }
     path.reverse();
     path.unshift({ t: o.start.t, la: o.start.lat, lo: o.start.lon, leg: 0 });
-    return { arrivals: arrivals, path: path, finish: arrivals.length ? arrivals[arrivals.length - 1].t : null };
+    return { arrivals: arrivals, path: path, finish: arrivals.length ? arrivals[arrivals.length - 1].t : null, iso: iso };
   }
 
   /* Sail a fixed track through a different forecast: time on each piece from the best speed made good along it. */

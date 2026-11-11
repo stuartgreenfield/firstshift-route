@@ -316,6 +316,7 @@
       (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
       (LIGHTS.length ? '<label><input type="checkbox" data-l="lights"' + (S.show.lights ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink);border-top-style:dotted"></span>Lighthouses and main buoys</label>' : '') +
       '<label><input type="checkbox" data-l="lay"' + (S.show.lay ? ' checked' : '') + '><span class="sw" style="border-color:var(--brand);border-top-style:dashed"></span>Laylines to the next mark</label>' +
+      '<label><input type="checkbox" data-l="iso"' + (S.show.iso ? ' checked' : '') + '><span class="sw" style="border-color:var(--muted)"></span>Isochrones of the chosen route (each hour)</label>' +
       '<label><input type="checkbox" data-l="band"' + (S.show.band ? ' checked' : '') + '><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span>Forecast band edge</label>' +
       (S.ov ? '<label><input type="checkbox" data-big="1"' + (S.big ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Big picture: north-west Europe</label>' : '') +
       (meta.live ? '' : '<label><input type="checkbox" data-l="real"' + (S.show.real ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Real 2026 boats (YB)</label>');
@@ -324,7 +325,7 @@
     var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band'];
     $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
     $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
-    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) S.show[c.dataset.l] = c.checked; else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
+    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) S.show[c.dataset.l] = c.checked; if (c.dataset.l === 'iso' && c.checked) isoFetch(); else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
     $('layersX').onclick = closeLayers;
     $('lWind').onchange = function () { $('windSym').value = $('lWind').value; $('windSym').onchange(); };
@@ -349,6 +350,24 @@
     var left = '';
     if (PG.est) { var el = (Date.now() - PG.t0) / 1000, rem = PG.est - el; left = rem > 2 ? ' · about ' + Math.ceil(rem) + ' s left' : ' · nearly done'; }
     $('pgD').textContent = (detail || '') + left;
+  }
+  /* isochrones: the router's front each hour for the chosen route, worked out when the layer is switched on */
+  function isoFetch() {
+    var s = S.sel; if (!s || s.iso || S.isoBusy || !meta) { draw(); return; }
+    S.isoBusy = true; busy('Working out the isochrones…');
+    var L = S.lastReq || { base: opts(s.models), start: startPt(), legs: legsFor(S.from) };
+    pool({ type: 'route', o: Object.assign({}, L.base, { models: s.models, start: L.start, legs: L.legs, iso: true }) }).then(function (r) { S.isoBusy = false; busy(''); s.iso = r.iso || []; draw(); }, function (e) { S.isoBusy = false; busy('Isochrones: ' + e.message); });
+  }
+  function drawIso() {
+    var s = S.sel; if (!S.show.iso || !s) return; if (!s.iso) { isoFetch(); return; }
+    ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = css['--muted'] || '#8899aa'; ctx.font = '500 10px var(--f-data), monospace'; ctx.fillStyle = ctx.strokeStyle;
+    var near = null, bd = 1e9; s.iso.forEach(function (f) { var d = Math.abs(f.t - S.t); if (d < bd) { bd = d; near = f; } });
+    s.iso.forEach(function (f) {
+      var now = f === near && bd < 0.6; ctx.globalAlpha = now ? 0.95 : 0.35; ctx.lineWidth = now ? 2 : 1;
+      ctx.beginPath(); for (var i = 0; i < f.p.length; i++) { var x = X(f.p[i][1]), y = Y(f.p[i][0]), gap = i && FSRouter.dist(f.p[i - 1][0], f.p[i - 1][1], f.p[i][0], f.p[i][1]) > 8; if (i && !gap) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.stroke();   /* a gap of more than 8 nm is where the front broke on land: no line across it */
+      if (Math.round(f.t - S.start.t) % 6 === 0 || now) { var q = f.p[Math.floor(f.p.length / 2)]; ctx.globalAlpha = now ? 1 : 0.6; ctx.fillText('+' + Math.round(f.t - S.start.t) + 'h', X(q[1]) + 3, Y(q[0]) - 3); }
+    });
+    ctx.restore();
   }
   function busy(t) { $('busy').hidden = !t; $('busy').textContent = t; $('busy').classList.toggle('spin', /…$/.test(t || '')); }
 
@@ -1086,7 +1105,7 @@
     .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
-      var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
+      var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
       if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180 });   /* quick first pass: about a sixth of the work */
       var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
@@ -1230,6 +1249,7 @@
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
     ['Routing while racing', 'Press From here: Route finds the boat by the phone or tablet GPS and routes from there, from now. If there is no GPS, tap the chart where the boat is. To keep the route fresh, Settings, Course, While racing: choose Every 10, 20 or 30 minutes and Route routes again from the new position on that timer while the screen is on.'],
+    ['Isochrones', 'Layers, Isochrones of the chosen route. Each line is how far the boat could have got by that hour, sailing its fastest in every direction from the start or the last mark. The line nearest the slider time is drawn brighter, and every sixth hour is labelled. Where the lines bunch up, the boat is slow; where they bulge, the wind or tide is helping.'],
     ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
     ['Your sails and reefs', 'Settings, Sails. Copy each sail from your sail log: the true wind angles and true wind speeds you use it in. Rows are checked from the top and the first that fits wins. Tick Show when to reef and enter the wind speed for each reef, upwind and downwind. The crossover chart colours each sail, marks the reefs and puts this route\'s winds on it as dots, so you can see any wind with no sail set. You can paste a chart grid from Expedition, PredictWind or SailGrib under Edit as text.'],
     ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCC, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],
@@ -1376,6 +1396,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
+    try { drawIso(); } catch (e) {}
     if (S.show.lay) { try { laylines(); } catch (e) {} }
     var ab = $('adjWhere') && $('adjWhere').value === 'box' ? adjBox() : null;   /* the area of a forecast override */
     if (ab) { ctx.save(); ctx.strokeStyle = css['--warn'] || '#E8A33D'; ctx.lineWidth = 2; ctx.setLineDash([10, 6]); var x0 = X(ab.w), y0 = Y(ab.n); ctx.strokeRect(x0, y0, X(ab.e) - x0, Y(ab.s) - y0); ctx.setLineDash([]); ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.fillText(adjVals() ? 'Forecast changed here' : 'Override area', x0 + 6, y0 + 15); ctx.restore(); }
