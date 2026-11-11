@@ -671,6 +671,7 @@
   }
   /* ---------- Ask Route: fixed questions answered from the chosen route at the replay time (or now, from your GPS) ---------- */
   function ask(q) {
+    if (q === 'brief') return briefing();
     var s = S.sel; if (!s) return 'Route first: there is no route to answer from yet.';
     var p = s.r.path, ts = tsOf(p), t = S.t, pos = posAt(ts, p, t); if (!pos) return 'The replay time is before the start. Move the slider to the race.';
     if (pos.done) return 'At this time the boat has finished, at ' + clockH(s.r.finish).slice(4) + ' UTC.';
@@ -682,6 +683,34 @@
     if (q === 'mark') { var arr = s.r.arrivals.filter(function (a) { return a.t > t; })[0]; if (!arr) return 'All marks rounded.'; var lg = S.legs.filter(function (l) { return l.name === arr.name; })[0], at = lg && lg.at, dd = at ? FSRouter.dist(pos.la, pos.lo, at[0], at[1]) : null; return 'Next mark ' + arr.name + (dd != null ? ', ' + dd.toFixed(1) + ' nm away, bearing ' + pad(FSRouter.brg(pos.la, pos.lo, at[0], at[1])) + '°' : '') + '. Routed arrival ' + when(arr.t) + '.'; }
     if (q === 'tide') { var c = cur.cu != null ? [cur.cu, cur.cv] : [0, 0], sp = Math.hypot(c[0], c[1]); if (sp < 0.1) return 'Tide is slack here.'; var dir = (Math.atan2(c[0], c[1]) / R + 360) % 360, rel = ((dir - cur.hdg + 540) % 360) - 180; return 'Tide ' + sp.toFixed(1) + ' knots setting ' + pad(dir) + '°: ' + (Math.abs(rel) < 45 ? 'with you' : Math.abs(rel) > 135 ? 'against you' : 'across you from ' + (rel > 0 ? 'port' : 'starboard')) + ' on a heading of ' + pad(cur.hdg) + '°.'; }
     return [ask('mark'), ask('tack'), ask('sail'), ask('shift')].join(' ');
+  }
+  /* a race briefing for the chosen route, leg by leg, in plain words to read to the crew */
+  function briefing() {
+    var s = S.sel; if (!s) return 'Route first: there is no route to brief from yet.';
+    var p = s.r.path, st = routeStats(s), cr = sailsList(), mr = mainsList(), name = s.combined ? 'The combined route' : 'The ' + short(s.id) + ' route', out = [];
+    var fins = S.routes.filter(function (r) { return r.r && r.r.finish && !r.r.partial; }).map(function (r) { return r.r.finish; }), spread = fins.length > 1 ? Math.max.apply(0, fins) - Math.min.apply(0, fins) : 0;
+    var pc = function (x) { return Math.round(x * 100) + ' percent'; }, comp = function (d) { return ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(((d % 360) + 360) % 360 / 45) % 8]; };
+    out.push(name + (s.r.partial ? ' runs out of forecast ' + s.r.partial.togo + ' nm short of the finish.' : ' finishes ' + clockH(s.r.finish).slice(4) + ' UTC, ' + fmtH(s.r.finish - S.start.t) + ' after the start') + ', sailing ' + Math.round(st.nm) + ' nm.' +
+      ' About ' + pc(st.upP) + ' upwind, ' + pc(st.reachP) + ' reaching and ' + pc(st.downP) + ' downwind.' +
+      (spread ? (spread < 2 ? ' The models agree well: their finish times sit within ' + fmtH(spread) + '.' : spread < 6 ? ' The models differ by ' + fmtH(spread) + ' on the finish, so keep an eye on which one is matching the sky.' : ' The models disagree by ' + fmtH(spread) + ' on the finish: treat the plan as a starting point and watch for the real wind.') : ''));
+    var legs = [], cur = null; p.forEach(function (q, i) { if (!i) return; var L = q.leg || 0; if (!cur || cur.leg !== L) { cur = { leg: L, pts: [] }; legs.push(cur); } cur.pts.push(q); });
+    legs.forEach(function (lg) {
+      var q = lg.pts, nmL = S.legs && S.legs[lg.leg] ? S.legs[lg.leg].name : 'the finish', a = q[0], z = q[q.length - 1];
+      var up = 0, down = 0, tot = 0, wmin = 99, wmax = 0, man = 0, side = 0, sails = [], last = null, cand = null, candT = 0, against = 0, tideT = null;
+      q.forEach(function (x, i) { var dt = i ? x.t - q[i - 1].t : 0, twa = Math.abs(x.twa || 0); tot += dt; if (twa < 60) up += dt; else if (twa > 120) down += dt; wmin = Math.min(wmin, x.tws || 0); wmax = Math.max(wmax, x.tws || 0);
+        var sd = (x.twa || 0) < 0 ? -1 : 1; if (side && sd !== side) man++; side = sd; var sl = rig(x, cr, mr); if (sl && sl !== last) { if (sl !== cand) { cand = sl; candT = x.t; } else if (x.t - candT >= 0.5 || !last) { sails.push(sl); last = sl; cand = null; } } else cand = null;   /* a sail counts once it has been up for half an hour */
+        var c = (x.cu || 0) * Math.sin((x.hdg || 0) * R) + (x.cv || 0) * Math.cos((x.hdg || 0) * R); if (c < -1) { against += dt; if (tideT == null) tideT = x.t; } });
+      var kind = up / (tot || 1) > 0.6 ? 'a beat' : down / (tot || 1) > 0.6 ? 'a run' : 'mostly a reach';
+      var shift = ((z.twd - a.twd + 540) % 360) - 180;
+      var t = 'To ' + nmL + ': ' + kind + ', ' + fmtH(z.t - (q[0].t)) + ', arriving ' + clockH(z.t).slice(4) + ' UTC. Wind ' + Math.round(wmin) + ' to ' + Math.round(wmax) + ' knots from the ' + comp(a.twd) + (Math.abs(shift) >= 20 ? ', ' + (shift > 0 ? 'veering' : 'backing') + ' ' + Math.abs(Math.round(shift)) + ' degrees by the mark' : '') + '.';
+      if (man) t += ' ' + man + ' ' + (up > down ? 'tack' : 'gybe') + (man > 1 ? 's' : '') + '.';
+      if (sails.length) t += ' Sails: ' + sails.slice(0, 4).join(', then ') + (sails.length > 4 ? ' and more' : '') + '.';
+      if (against >= 1) t += ' Foul tide for about ' + fmtH(against) + ' from ' + clockH(tideT).slice(4) + ': that is where the inshore or offshore choice matters.';
+      out.push(t);
+    });
+    var risks = []; if (st.maxW >= 25) risks.push('wind up to ' + Math.round(st.maxW) + ' knots around ' + clockH(st.maxWt).slice(4) + ' UTC'); if (st.maxS >= 2.5) risks.push('sea up to ' + st.maxS.toFixed(1) + ' m');
+    out.push((risks.length ? 'Watch for ' + risks.join(' and ') + '. ' : '') + (st.sails ? st.sails + ' sail changes' : 'No sail changes') + (st.reefs ? ' and ' + st.reefs + ' reef changes' : '') + ' in all. Planning aid, not for navigation.');
+    return out.join('\n\n');
   }
   function askInit() {
     [].forEach.call($('askRow').querySelectorAll('[data-q]'), function (b) { b.onclick = function () { $('askTxt').textContent = ask(b.dataset.q); $('askAns').hidden = false; }; });

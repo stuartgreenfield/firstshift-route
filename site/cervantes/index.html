@@ -302,6 +302,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .hpic{display:block;max-width:min(100%,320px);height:auto;margin:8px 0 4px;border-radius:10px;border:1px solid var(--line,#2a3a4f)}
 .newdata.moment{white-space:normal;max-width:min(92vw,520px);z-index:9;font-size:13px}.newdata.moment #momentTxt{white-space:pre-line}
 .prog.mini{left:auto;right:var(--gut,12px);transform:none;top:calc(env(safe-area-inset-top,0px) + 150px);width:min(230px,48vw);padding:6px 9px;opacity:.92}.prog.mini #pgD{display:none}.prog.mini .pg-t{font-size:12px}
+#askTxt{white-space:pre-line}
 </style>
 
 <div class="app" id="app">
@@ -352,7 +353,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     </div>
     <div class="pbody" id="t-plan" hidden>
       <h4 class="xh" style="margin-top:0">Ask Route</h4>
-      <div class="askrow" id="askRow"><button class="btn" data-q="next">What next?</button><button class="btn" data-q="tack">Next tack or gybe</button><button class="btn" data-q="sail">Next sail change</button><button class="btn" data-q="shift">Biggest wind shift ahead</button><button class="btn" data-q="mark">Next mark</button><button class="btn" data-q="tide">Tide now</button></div>
+      <div class="askrow" id="askRow"><button class="btn" data-q="next">What next?</button><button class="btn" data-q="tack">Next tack or gybe</button><button class="btn" data-q="sail">Next sail change</button><button class="btn" data-q="shift">Biggest wind shift ahead</button><button class="btn" data-q="mark">Next mark</button><button class="btn" data-q="tide">Tide now</button><button class="btn" data-q="brief">Race briefing</button></div>
       <div class="ans" id="askAns" hidden><p id="askTxt"></p><button class="btn say" id="askSay">Read it out</button></div>
       <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
       <h4 class="xh">Send to the crew</h4>
