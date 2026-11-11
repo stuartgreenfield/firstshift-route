@@ -10,15 +10,17 @@ export async function onRequestGet({ request, env, waitUntil }) {
   if (![box.s, box.n, box.w, box.e].every(Number.isFinite) || box.n - box.s > 6 || box.e - box.w > 10) return json({ error: 'Send a box no bigger than 6 by 10 degrees: s, n, w, e.' }, 400);
   if (!env.AISSTREAM_KEY) return json({ error: 'Live AIS is not switched on yet: the server has no aisstream.io key.' }, 503);
   const cacheKey = new Request(`https://ais.cache/${box.s}/${box.n}/${box.w}/${box.e}`), cache = caches.default;
-  const hit = await cache.match(cacheKey); if (hit) return hit;
+  const hit = !u.searchParams.has('debug') && await cache.match(cacheKey); if (hit) return hit;
 
   const r = await fetch('https://stream.aisstream.io/v0/stream', { headers: { Upgrade: 'websocket' } });
   const ws = r.webSocket; if (!ws) return json({ error: 'Could not reach aisstream.io' }, 502);
   ws.accept();
-  const out = {};
+  const out = {}, dbg = { msgs: 0, other: [] };
+  ws.addEventListener('close', ev => { dbg.close = [ev.code, ev.reason]; });
   ws.addEventListener('message', ev => {
     try {
       const m = JSON.parse(typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data)), md = m.MetaData || {}, b = m.Message || {};
+      dbg.msgs++; if (!m.MetaData && dbg.other.length < 3) dbg.other.push(m);
       const p = b.PositionReport || b.StandardClassBPositionReport || b.ExtendedClassBPositionReport;
       const x = out[md.MMSI] || (out[md.MMSI] = { mmsi: md.MMSI });
       if (md.ShipName && md.ShipName.trim()) x.name = md.ShipName.trim();
@@ -31,7 +33,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
   await new Promise(ok => setTimeout(ok, 9000));
   try { ws.close(1000, 'done'); } catch (e) {}
   const targets = Object.values(out).filter(x => x.lat != null);
-  const res = json({ at: Date.now(), box, targets });
+  const res = json(u.searchParams.has('debug') ? { at: Date.now(), box, targets, dbg } : { at: Date.now(), box, targets });
   waitUntil(cache.put(cacheKey, res.clone()));
   return res;
 }
