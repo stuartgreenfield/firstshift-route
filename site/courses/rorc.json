@@ -1,0 +1,93 @@
+{
+  "note": "RORC races in the FirstShift Route area. Until RORC publishes a 2027 course, each race carries its last published course and the app warns that it will change. Positions are approximate charted positions of the named features, for routing only: check the sailing instructions. Rounding sides marked assumed are FirstShift's assumption.",
+  "updated": "2026-11-11",
+  "races": [
+    {
+      "id": "cervantes", "name": "Cervantes Trophy Race", "date2027": "2027-05-02", "dateSource": "charter listing, not yet confirmed by RORC",
+      "courseYear": 2026, "courseStatus": "last-year",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [ { "name": "Needles Fairway", "lat": 50.63733, "lon": -1.64967, "side": "port", "sideAssumed": true } ],
+      "finish": { "name": "Finish, Le Havre", "lat": 49.49673, "lon": 0.07658, "radius_nm": 0.4 },
+      "nm": 110, "source": "https://racing.rorc.org/rorc-offshore-racing-returns-to-europe-04-2026"
+    },
+    {
+      "id": "myth", "name": "Myth of Malham Race", "date2027": "2027-05-23", "dateSource": "charter listing, not yet confirmed by RORC",
+      "courseYear": 2026, "courseStatus": "last-year",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [
+        { "name": "Needles Fairway", "lat": 50.63733, "lon": -1.64967, "side": "port", "sideAssumed": true },
+        { "name": "Eddystone Lighthouse", "lat": 50.1803, "lon": -4.2650, "side": "starboard", "sideAssumed": true }
+      ],
+      "finish": { "name": "Finish, Solent (assumed RYS line)", "lat": 50.7769, "lon": -1.3051, "radius_nm": 0.4 },
+      "nm": 235, "source": "https://www.yachtsandyachting.com/news/296303/RORC-Myth-of-Malham-Race-preview"
+    },
+    {
+      "id": "deguingand", "name": "De Guingand Bowl Race", "date2027": "2027-05-30", "dateSource": "charter listing, not yet confirmed by RORC",
+      "courseYear": 2026, "courseStatus": "set-on-day",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [],
+      "finish": { "name": "Finish, Solent", "lat": 50.7769, "lon": -1.3051, "radius_nm": 0.4 },
+      "nm": null, "source": "https://rorc.org/2026-rorc-racing-programme-unleashed",
+      "setNote": "Course chosen by the race officer from Channel marks and published shortly before the start. Enter it under Course, Edit marks."
+    },
+    {
+      "id": "northsea", "name": "North Sea Race", "date2027": null, "dateSource": "2027 date not yet published (15 May in 2026)",
+      "courseYear": 2026, "courseStatus": "last-year",
+      "start": { "name": "Start, off Royal Harwich YC", "lat": 51.947, "lon": 1.290 },
+      "marks": [],
+      "finish": { "name": "Finish, Scheveningen", "lat": 52.105, "lon": 4.255, "radius_nm": 0.4 },
+      "nm": 165, "source": "https://racing.rorc.org/-2026-rorc-north-sea-race-tides-tactics-and-tradition",
+      "setNote": "The 2026 course passed Smith's Knoll; any marks are in the sailing instructions."
+    },
+    {
+      "id": "morgan", "name": "Morgan Cup Race", "date2027": "2027-06-12", "dateSource": "charter listing, not yet confirmed by RORC",
+      "courseYear": 2026, "courseStatus": "last-year",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [ { "name": "Needles Fairway", "lat": 50.63733, "lon": -1.64967, "side": "port", "sideAssumed": true } ],
+      "finish": { "name": "Finish, off the Dart", "lat": 50.333, "lon": -3.552, "radius_nm": 0.4 },
+      "nm": 110, "source": "https://racing.rorc.org/-salcombe-gin-morgan-cup-race-channel-sprint-to-dartmouth",
+      "setNote": "RORC gave 110 to 160 nm in 2026, so marks may be added."
+    },
+    {
+      "id": "dinard", "name": "Cowes Dinard St Malo Race", "date2027": "2027-07-03", "dateSource": "charter listing, not yet confirmed by RORC",
+      "courseYear": 2026, "courseStatus": "last-year",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [ { "name": "Needles Fairway", "lat": 50.63733, "lon": -1.64967, "side": "port", "sideAssumed": true } ],
+      "finish": { "name": "Finish, off St Malo", "lat": 48.672, "lon": -2.081, "radius_nm": 0.4 },
+      "nm": 150, "source": "https://rorc.org/2026-rorc-racing-programme-unleashed"
+    },
+    {
+      "id": "fastnet", "name": "Rolex Fastnet Race", "date2027": "2027-07-24", "dateSource": "charter listing, not yet confirmed by RORC",
+      "courseYear": 2025, "courseStatus": "last-edition",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [
+        { "name": "Needles Fairway", "lat": 50.63733, "lon": -1.64967, "side": "port", "sideAssumed": true },
+        { "name": "Fastnet Rock", "lat": 51.3891, "lon": -9.6033, "side": "starboard", "sideAssumed": true }
+      ],
+      "finish": { "name": "Finish, Cherbourg", "lat": 49.677, "lon": -1.660, "radius_nm": 0.4 },
+      "nm": 695, "source": "https://en.wikipedia.org/wiki/Fastnet_Race",
+      "setNote": "Biennial: the last course is 2025's. Traffic separation schemes off Land's End and the Scillies are not yet modelled."
+    },
+    {
+      "id": "channel", "name": "Channel Race", "date2027": null, "dateSource": "2027 date not yet published (25 July in 2026)",
+      "courseYear": 2026, "courseStatus": "set-on-day",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [],
+      "finish": { "name": "Finish, Solent", "lat": 50.7769, "lon": -1.3051, "radius_nm": 0.4 },
+      "nm": null, "source": "https://rorc.org/proven-campaigns-set-for-rorc-channel-race-showdown",
+      "setNote": "RORC publishes the full course the evening before (17:00 Friday in 2026). Enter it under Course, Edit marks."
+    },
+    {
+      "id": "cherbourg", "name": "Cherbourg Race", "date2027": null, "dateSource": "2027 date not yet published (4 September in 2026)",
+      "courseYear": 2026, "courseStatus": "last-year",
+      "start": { "name": "Start, RYS line, Cowes", "lat": 50.7769, "lon": -1.3051 },
+      "marks": [ { "name": "Needles Fairway", "lat": 50.63733, "lon": -1.64967, "side": "port", "sideAssumed": true } ],
+      "finish": { "name": "Finish, Cherbourg", "lat": 49.677, "lon": -1.660, "radius_nm": 0.4 },
+      "nm": 75, "source": "https://afloat.ie/sail/sailing-clubs/royal-ocean-racing-club/item/72826-rorc-cherbourg-race-to-decide-three-offshore-championships"
+    }
+  ],
+  "later": [
+    { "name": "Round Ireland Race", "why": "Round-island course (Wicklow, 704 nm): needs the course editor's round-an-island leg." },
+    { "name": "Round Britain and Ireland Race", "why": "Next edition 2030; round-island course." }
+  ]
+}

@@ -121,6 +121,10 @@ input[type=number],select,textarea{background:var(--soft);border:1px solid var(-
 input[type=number]{width:96px}
 input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-body);min-height:40px;flex:1 1 160px;min-width:0}
 .tune input[type=range]{flex:1 1 140px;width:auto;min-width:0}.tune b{font:600 13px var(--f-data);min-width:46px;text-align:right}
+.warnbox{margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));font-size:13px;line-height:1.4}
+.cbanner{position:absolute;left:calc(var(--gut) + 0px);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:4;max-width:min(560px,calc(100% - 2*var(--gut)));padding:7px 30px 7px 11px;border-radius:9px;border:1px solid var(--warn);background:var(--glass);font:600 12.5px var(--f-body);color:var(--ink)}
+.cbanner b{color:var(--warn)}
+.cbanner button{position:absolute;right:4px;top:3px;border:0;background:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px}
 .linkbtn{border:0;background:none;color:var(--route);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline}
 .pgrid{overflow:auto;max-height:280px;border:1px solid var(--line);border-radius:8px}
 .pgrid table{font:11.5px var(--f-data);width:auto}
@@ -161,7 +165,7 @@ tr.click{cursor:pointer}
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
     <div class="top">
-      <div class="brand"><b>Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div>
+      <div class="brand"><b id="raceTitle">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div>
       <div class="tools">
         <button class="ib primary" id="run" title="Route on the ticked models"><svg viewBox="0 0 24 24"><path d="M4 19c4-1 5-6 8-8s6-2 8-6"/><circle cx="4" cy="19" r="1.6"/><path d="M17 4h3v3"/></svg><span class="lbl">Route</span></button>
         <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
@@ -215,6 +219,7 @@ tr.click{cursor:pointer}
   </div>
 </div>
 
+<div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
     <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.4.1</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
@@ -268,7 +273,12 @@ tr.click{cursor:pointer}
     <div class="sbody" id="s-course" hidden>
       <div class="row"><label for="depth">Safety depth</label><input type="range" id="depth" min="0" max="20" step="0.5" value="3" style="width:180px"><b id="depthV" style="font-family:var(--f-data)">3.0 m</b></div>
       <p class="note">The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
-      <div class="row"><label for="sideSel">Needles Fairway</label><select id="sideSel"><option value="port">to port</option><option value="starboard">to starboard</option></select></div>
+      <h3>Race</h3>
+      <div class="row"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
+      <p class="warnbox" id="courseWarn" hidden></p>
+      <h3>Marks and rounding</h3>
+      <div id="markSides"></div>
+      <p class="note" id="courseNote"></p>
     </div>
     <div class="sbody" id="s-sails" hidden>
       <p class="note">One sail per line: name, from TWA, to TWA, from TWS, to TWS. First match wins. Replace with your own crossover chart.</p>

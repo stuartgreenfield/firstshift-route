@@ -26,7 +26,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup();
+    meta = m; T0 = m.t0; setup(); loadRaces();
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return download();
@@ -202,17 +202,63 @@
     return { models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
       sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, tackS: +$('tackS').value, gybeS: +$('gybeS').value };
   }
+  /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
   function legsFor(fromPt) {
-    var c = meta.course, g = FSRouter.markGate(c.marks[0], c.start, c.finish, $('sideSel').value, 1.2);
-    var legs = [{ name: c.marks[0].name, gate: g, dt: 180 }, { name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: c.finish.radius_nm }];
-    if (fromPt && !(fromPt.lat > 50.66 && fromPt.lon > -1.6)) legs = legs.slice(1);
+    var c = meta.course, pts = [c.start].concat(c.marks).concat([c.finish]), legs = [];
+    c.marks.forEach(function (m, i) {
+      var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25;
+      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', 1.2), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
+    });
+    legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: c.finish.radius_nm || 0.4, at: [c.finish.lat, c.finish.lon] });
+    if (fromPt) {   // from a point on the water: drop the marks already rounded, judged by distance along the course
+      var along = function (la, lo) { var best = 1e9, acc = 0, at = 0; for (var k = 0; k < pts.length - 1; k++) { var a = pts[k], b = pts[k + 1], L = FSRouter.dist(a.lat, a.lon, b.lat, b.lon), d1 = FSRouter.dist(a.lat, a.lon, la, lo), d2 = FSRouter.dist(la, lo, b.lat, b.lon), off = d1 + d2 - L; if (off < best) { best = off; at = acc + Math.min(L, d1); } acc += L; } return at; };
+      var me = along(fromPt.lat, fromPt.lon), cum = 0;
+      legs = legs.filter(function (lg, k) { cum += FSRouter.dist(pts[k].lat, pts[k].lon, pts[k + 1].lat, pts[k + 1].lon); return k === legs.length - 1 || cum > me + 0.5; });
+    }
     return legs;
+  }
+  /* ---------- the RORC course library ---------- */
+  var RACES = [], dataBox = null;
+  /* forecasts on this server are cut to a band round the Cervantes course: a point must sit inside that band */
+  function inData(p) {
+    var B = meta.course && meta.course.band; if (!B) return !dataBox || (p.lat >= dataBox.s && p.lat <= dataBox.n && p.lon >= dataBox.w && p.lon <= dataBox.e);
+    return B.some(function (b) { var k = Math.cos(p.lat * R), ax = b[1] * k, ay = b[0], bx = b[3] * k, by = b[2], px = p.lon * k, py = p.lat, dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(px - ax - t * dx, py - ay - t * dy) * 60 <= b[4] + 0.5; });
+  }
+  function courseIssue(c) { var out = [c.start].concat(c.marks).concat([c.finish]).filter(function (p) { return !inData(p); }); return out.length ? 'Cannot route: ' + out.map(function (p) { return p.name; }).join(', ') + ' outside the forecast area on this server. The wider area comes with the next update.' : ''; }
+  function warnText(r) {
+    if (!r) return '';
+    var y = r.courseStatus === 'last-edition' ? 'the ' + r.courseYear + ' course (last edition)' : r.courseStatus === 'set-on-day' ? 'a course set on the day' : 'the ' + r.courseYear + ' course';
+    return r.courseStatus === 'published' ? '' : 'Showing ' + y + '. The 2027 course is not published yet and will change: check the sailing instructions.';
+  }
+  function applyRace(id) {
+    var r = RACES.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+    var keep = meta.course0 || (meta.course0 = meta.course); meta.course = { name: r.name, start: r.start, marks: r.marks.map(function (m) { return Object.assign({}, m); }), finish: r.finish, band: keep.band, window: keep.window, race: r };
+    $('raceTitle').textContent = r.name + ' · ' + r.start.name.replace(/^Start,\s*/, '').replace(/^RYS line,\s*/, '') + ' to ' + r.finish.name.replace(/^Finish,\s*/, '');
+    var w = warnText(r); $('courseWarn').hidden = !w; $('courseWarn').textContent = w + (r.setNote ? ' ' + r.setNote : '');
+    $('cbannerTxt').innerHTML = w ? '<b>Course not confirmed.</b> ' + w : ''; $('cbanner').hidden = !w || store('fs-hideBanner-' + r.id) === '1';
+    $('markSides').innerHTML = r.marks.length ? r.marks.map(function (m, i) { return '<div class="row"><label for="side' + i + '">' + m.name + '</label><select id="side' + i + '" data-mk="' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' + (m.sideAssumed ? '<span class="note">assumed</span>' : '') + '</div>'; }).join('') : '<p class="note">No marks between start and finish in this course.</p>';
+    r.marks.forEach(function (m, i) { $('side' + i).value = m.side || 'port'; $('side' + i).onchange = function () { meta.course.marks[i].side = this.value; meta.course.marks[i].sideAssumed = false; S.legs = null; draw(); }; });
+    var issue = courseIssue(meta.course);
+    $('courseNote').innerHTML = (r.nm ? 'About ' + r.nm + ' nm. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>' + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
+    store('fs-race', r.id); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; draw();
+  }
+  function loadRaces() {
+    var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
+    if (f && f.lat0 != null) { var la1 = f.lat0 + f.dlat * (f.ny - 1), lo1 = f.lon0 + f.dlon * (f.nx - 1); dataBox = { s: Math.min(f.lat0, la1), n: Math.max(f.lat0, la1), w: Math.min(f.lon0, lo1), e: Math.max(f.lon0, lo1) }; }
+    $('cbannerX').onclick = function () { $('cbanner').hidden = true; var r = meta.course.race; if (r) store('fs-hideBanner-' + r.id, '1'); };
+    fetch('../courses/rorc.json', { cache: 'no-store' }).then(function (x) { return x.json(); }).then(function (j) {
+      RACES = j.races; $('raceSel').innerHTML = RACES.map(function (r) { return '<option value="' + r.id + '">' + r.name + (r.date2027 ? ' · ' + r.date2027.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+r.date2027.slice(5, 7) - 1] : '') + (courseIssue(r) ? ' (wider area needed)' : '') + '</option>'; }).join('');
+      $('raceSel').onchange = function () { applyRace($('raceSel').value); };
+      var want = store('fs-race') || 'cervantes'; if (!RACES.some(function (r) { return r.id === want; })) want = 'cervantes';
+      $('raceSel').value = want; applyRace(want);
+    }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
   }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
   function run() {
     if (S.running) return;
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
+    var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     S.running = true; busy('Routing ' + (ms.length + (ms.length > 1 ? 1 : 0)) + ' solutions…');
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
     var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
