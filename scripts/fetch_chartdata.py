@@ -26,6 +26,10 @@ def overpass(q):
     raise SystemExit('Overpass unavailable')
 
 r4 = lambda x: round(float(x), 4)
+def ours(la, lo):   # UK, Ireland, France, Biscay, Iberian Atlantic and the North Sea; not the Mediterranean or the Baltic
+    if la < 43.6 and lo > -5.6: return False
+    if lo > 9.5 and la < 57.5 and la > 53.5: return False
+    return True
 
 # ---------- traffic separation schemes ----------
 KINDS = {'separation_zone': 'zone', 'separation_lane': 'lane', 'inshore_traffic_zone': 'inshore', 'precautionary_area': 'precaution'}
@@ -36,11 +40,23 @@ for e in els:
     rings = []
     if e['type'] == 'way' and e.get('geometry'):
         rings.append([[r4(p['lat']), r4(p['lon'])] for p in e['geometry']])
-    elif e['type'] == 'relation':
-        for m in e.get('members', []):
-            if m.get('role') in ('outer', '') and m.get('geometry'): rings.append([[r4(p['lat']), r4(p['lon'])] for p in m['geometry']])
+    elif e['type'] == 'relation':   # outer ways joined end to end into closed rings
+        segs = [[[r4(p['lat']), r4(p['lon'])] for p in m['geometry']] for m in e.get('members', []) if m.get('role') in ('outer', '') and m.get('geometry')]
+        while segs:
+            ring = segs.pop(0)
+            changed = True
+            while ring[0] != ring[-1] and changed:
+                changed = False
+                for i, sg in enumerate(segs):
+                    if sg[0] == ring[-1]: ring += sg[1:]
+                    elif sg[-1] == ring[-1]: ring += sg[::-1][1:]
+                    elif sg[-1] == ring[0]: ring = sg + ring[1:]
+                    elif sg[0] == ring[0]: ring = sg[::-1] + ring[1:]
+                    else: continue
+                    segs.pop(i); changed = True; break
+            rings.append(ring)
     for ring in rings:
-        if len(ring) >= 4 and ring[0] == ring[-1]:
+        if len(ring) >= 4 and ring[0] == ring[-1] and any(ours(q[0], q[1]) for q in ring):
             zones.append(dict(kind=kind, name=t.get('seamark:name') or t.get('name') or '', poly=ring, src='osm', dir=t.get('seamark:separation_lane:orientation') or t.get('seamark:orientation')))
 print('OSM TSS polygons', len(zones), flush=True)
 
@@ -55,7 +71,7 @@ for L, kind in SHOM.items():
         g = f.get('geometry') or {}; polys = [g['coordinates']] if g.get('type') == 'Polygon' else g.get('coordinates', []) if g.get('type') == 'MultiPolygon' else []
         for poly in polys:
             ring = [[r4(c[1]), r4(c[0])] for c in poly[0]]   # GeoJSON is lon, lat
-            if not any(S <= p[0] <= N and W <= p[1] <= E for p in ring): continue
+            if not any(S <= p[0] <= N and W <= p[1] <= E and ours(p[0], p[1]) for p in ring): continue
             zones.append(dict(kind=kind, name=(f.get('properties') or {}).get('nom', ''), poly=ring, src='shom', dir=(f.get('properties') or {}).get('orient'))); n += 1
     print('SHOM', L, n, flush=True)
 
@@ -74,8 +90,9 @@ for e in els:
     seen.add(key)
     ty = t.get('seamark:type', 'light_major')
     kind = 'light' if ty == 'light_major' or t.get('man_made') == 'lighthouse' else 'cardinal' if 'cardinal' in ty else 'safe' if 'safe' in ty else 'danger' if 'danger' in ty else 'special'
-    name = t.get('seamark:name') or t.get('name') or ''
-    if not name: continue
+    name = (t.get('seamark:name') or t.get('name') or '').strip()
+    if not name or name.isdigit() or not ours(key[0], key[1]): continue
+    if kind == 'special' and not (t.get('seamark:light:character') or t.get('seamark:light:1:character')): continue   # unlit yellow buoys are too many
     m = dict(n=name, k=kind, la=key[0], lo=key[1])
     ch = t.get('seamark:light:character') or t.get('seamark:light:1:character')
     if ch: m['lt'] = (ch + ' ' + (t.get('seamark:light:colour') or t.get('seamark:light:1:colour') or '')[:1].upper() + ' ' + (t.get('seamark:light:period') or t.get('seamark:light:1:period') or '') + ('s' if (t.get('seamark:light:period') or t.get('seamark:light:1:period')) else '')).strip()
