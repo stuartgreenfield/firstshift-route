@@ -12,12 +12,16 @@ export async function onRequestGet({ request, env, waitUntil }) {
   const cacheKey = new Request(`https://ais.cache/${box.s}/${box.n}/${box.w}/${box.e}`), cache = caches.default;
   const hit = !u.searchParams.has('debug') && await cache.match(cacheKey); if (hit) return hit;
 
+  const dbg0 = {};
   const r = await fetch('https://stream.aisstream.io/v0/stream', { headers: { Upgrade: 'websocket' } });
-  const ws = r.webSocket; if (!ws) return json({ error: 'Could not reach aisstream.io' }, 502);
+  dbg0.status = r.status;
+  const ws = r.webSocket; dbg0.ws = !!ws; if (!ws) return json({ error: 'Could not reach aisstream.io' }, 502);
   ws.accept();
-  const out = {}, dbg = { msgs: 0, other: [] };
+  const out = {}, dbg = Object.assign({ msgs: 0, other: [] }, dbg0);
   ws.addEventListener('close', ev => { dbg.close = [ev.code, ev.reason]; });
+  ws.addEventListener('error', ev => { dbg.err = String(ev && (ev.message || ev.error || ev.type)); });
   ws.addEventListener('message', ev => {
+    dbg.raw = (dbg.raw || 0) + 1; if (!dbg.t) dbg.t = typeof ev.data + ' ' + (ev.data && ev.data.constructor && ev.data.constructor.name);
     try {
       const m = JSON.parse(typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data)), md = m.MetaData || {}, b = m.Message || {};
       dbg.msgs++; if (!m.MetaData && dbg.other.length < 3) dbg.other.push(m);
@@ -26,7 +30,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
       if (md.ShipName && md.ShipName.trim()) x.name = md.ShipName.trim();
       if (p) { x.lat = md.latitude ?? p.Latitude; x.lon = md.longitude ?? p.Longitude; x.sog = p.Sog; x.cog = p.Cog; x.hdg = p.TrueHeading === 511 ? null : p.TrueHeading; x.cls = b.PositionReport ? 'A' : 'B'; x.t = md.time_utc; }
       const st = b.ShipStaticData || b.StaticDataReport; if (st) { if (st.Type != null) x.shiptype = st.Type; if (st.ReportB && st.ReportB.ShipType != null) x.shiptype = st.ReportB.ShipType; }
-    } catch (e) {}
+    } catch (e) { dbg.perr = String(e).slice(0, 120); }
   });
   ws.send(JSON.stringify({ APIKey: env.AISSTREAM_KEY, BoundingBoxes: [[[box.s, box.w], [box.n, box.e]]],
     FilterMessageTypes: ['PositionReport', 'StandardClassBPositionReport', 'ExtendedClassBPositionReport', 'ShipStaticData', 'StaticDataReport'] }));
