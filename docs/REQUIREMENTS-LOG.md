@@ -6,6 +6,9 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 12:03 | Sunrise: TCC 1.098 confirmed; fully crewed, 450 kg crew | Logged; crew weight as a boat setting later |
+| 11:28 | Fastnet demo starting now: Sunrise at 95% polars; play and speed up showing conditions on the chosen route; finish time box for every route and the combined route | Built (Fastnet live race, finish boxes) |
+| 11:22 | Show when each forecast reached the server and its age on the device | Built |
 | 10:20 | If the server has no forecast, the tool fetches forecasts itself over the internet | Proposed: light fallback from Open-Meteo (wind, waves along the course); awaiting Stuart |
 | 10:18 | See and use the full tool in the browser pane regularly | Done: opened in the pane; reloaded at each new version |
 | 10:16 | Boat code for several devices at once (no login) | Approved; to build |

@@ -336,10 +336,11 @@
      "cls": [
       "IRC 2"
      ],
-     "track": []
+     "track": [],
+     "crew": "fully crewed, 450 kg"
     }
    ],
-   "fleetNote": "Demo: Sunrise only. TCC 1.098 is the IRC rating LV Yachting lists for Sunrise III, JPK 1180 hull 2; to confirm.",
+   "fleetNote": "Demo: Sunrise only. TCC 1.098 confirmed by Stuart 11 Nov 2026; fully crewed, 450 kg crew.",
    "bandNear": 1
   },
   {
