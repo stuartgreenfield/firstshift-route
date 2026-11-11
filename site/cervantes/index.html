@@ -8,7 +8,7 @@
 /* Layout: the chart fills the screen. A slim top bar, a time bar fixed to the bottom edge, results in tabs that open
    as a bottom sheet on a phone and a side drawer on a pad or PC, settings in a sheet. Night mode turns everything red. */
 :root{
-  --bg:#EEF2F4; --panel:#FFFFFF; --glass:rgba(255,255,255,.92); --ink:#13202A; --muted:#5A6A75; --line:#D3DCE2; --soft:#F2F6F8;
+  --brand:#3574BA; --brandnavy:#042D5E; --bg:#EEF2F4; --panel:#FFFFFF; --glass:rgba(255,255,255,.92); --ink:#13202A; --muted:#5A6A75; --line:#D3DCE2; --soft:#F2F6F8;
   --sea:#DCE9F1; --sea2:#B9D3E3; --land:#E9DDB8; --landedge:#A8955F; --shoal:#E9A7A0; --shoaledge:#B0302A;
   --route:#B0127A; --onroute:#FFFFFF; --wind:#2F5F86; --tide:#1F8A70; --ghost:#5A6A75; --good:#2E7D4F; --warn:#B26A00;
   --out:#C5D3DC; --m1:#2E86AB; --m2:#D1495B; --m3:#E09F3E; --m4:#6A4C93; --m5:#3B8B5A;
@@ -16,18 +16,18 @@
   --gut:max(10px,env(safe-area-inset-left,0px)); --gutR:max(10px,env(safe-area-inset-right,0px));
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#06111A; --panel:#182D40; --glass:rgba(33,57,79,.95); --ink:#E2EBF0; --muted:#9AAEBB; --line:#2E4860; --soft:#223B53;
+  --brand:#6FA9E0; --brandnavy:#FFFFFF; --bg:#06111A; --panel:#182D40; --glass:rgba(33,57,79,.95); --ink:#E2EBF0; --muted:#9AAEBB; --line:#2E4860; --soft:#223B53;
   --sea:#0B1C29; --sea2:#123349; --land:#2B3427; --landedge:#55623F; --shoal:#5A2A2A; --shoaledge:#FF6B5E;
   --route:#FF4FB4; --onroute:#08131C; --wind:#8DB8DC; --tide:#55D1AE; --ghost:#8EA2AF; --good:#5FC488; --warn:#F0A43A;
   --out:#091620; --m1:#5CB8E0; --m2:#FF6F7F; --m3:#F2B861; --m4:#A98BD6; --m5:#6CCB8E; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#06111A; --panel:#182D40; --glass:rgba(33,57,79,.95); --ink:#E2EBF0; --muted:#9AAEBB; --line:#2E4860; --soft:#223B53;
+  --brand:#6FA9E0; --brandnavy:#FFFFFF; --bg:#06111A; --panel:#182D40; --glass:rgba(33,57,79,.95); --ink:#E2EBF0; --muted:#9AAEBB; --line:#2E4860; --soft:#223B53;
   --sea:#0B1C29; --sea2:#123349; --land:#2B3427; --landedge:#55623F; --shoal:#5A2A2A; --shoaledge:#FF6B5E;
   --route:#FF4FB4; --onroute:#08131C; --wind:#8DB8DC; --tide:#55D1AE; --ghost:#8EA2AF; --good:#5FC488; --warn:#F0A43A;
   --out:#091620; --m1:#5CB8E0; --m2:#FF6F7F; --m3:#F2B861; --m4:#A98BD6; --m5:#6CCB8E; color-scheme:dark}
 /* Night on deck: red only, low brightness, to keep night vision. Declared last so it wins over day and dark. */
 :root[data-night]{
-  --bg:#000000; --panel:#0A0000; --glass:rgba(10,0,0,.94); --ink:#E0322A; --muted:#8A1E18; --line:#3A0A08; --soft:#160302;
+  --brand:#E0322A; --brandnavy:#E0322A; --bg:#000000; --panel:#0A0000; --glass:rgba(10,0,0,.94); --ink:#E0322A; --muted:#8A1E18; --line:#3A0A08; --soft:#160302;
   --sea:#000000; --sea2:#0E0202; --land:#2A0806; --landedge:#5A120E; --shoal:#3C0604; --shoaledge:#B4231B;
   --route:#FF3B2F; --onroute:#000000; --wind:#7A1A14; --tide:#9A2A1A; --ghost:#8A1E18; --good:#FF5A40; --warn:#C8401E;
   --out:#050000; --m1:#FF3B2F; --m2:#C2281E; --m3:#E0602A; --m4:#9A1E16; --m5:#D04A2A; color-scheme:dark}
@@ -74,7 +74,7 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .tip.docked .x{display:block}
 .busy{position:absolute;left:50%;transform:translateX(-50%);top:64px;background:none;border:0;padding:4px 8px;font:12px var(--f-data);color:var(--ink);text-shadow:0 0 4px var(--bg),0 0 8px var(--bg);z-index:5;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
 .busy[hidden]{display:none!important}
-.busy.spin::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);border-top-color:var(--route);animation:spin .9s linear infinite;flex:none}
+.busy.spin::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);border-top-color:var(--brand);animation:spin .9s linear infinite;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* results panel: drawer on wide screens, bottom sheet on phones */
@@ -86,7 +86,8 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .tabs .tab{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .ti{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;shape-rendering:geometricPrecision}
 .ti .k{fill:currentColor}.ti .f{fill:currentColor;fill-opacity:.16}.ti .dash{stroke-dasharray:.01 3.1;stroke-width:2.1}
-.tab[aria-selected="true"] .ti{color:var(--route)}
+.tab[aria-selected="true"] .ti{color:var(--brand)}
+.tab[aria-selected="true"]{box-shadow:inset 0 -2px 0 var(--brand)}
 @media (max-width:420px){.tabs .tab{flex-direction:column;gap:2px;font-size:11.5px;padding:6px 2px}.ti{width:21px;height:21px}}
 .close{border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer;width:40px;height:40px}
 .pbody{overflow:auto;padding:12px 14px 16px;display:block;min-height:0;flex:1 1 auto}
@@ -102,7 +103,7 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 /* time bar, always at the bottom */
 .bar{grid-row:2;grid-column:1/-1;background:var(--panel);border-top:1px solid var(--line);padding:8px var(--gutR) calc(8px + env(safe-area-inset-bottom,0px)) var(--gut);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;align-items:center;z-index:4}
 @media (max-width:899px){.bar{grid-row:3}}
-.play{width:48px;height:44px;border-radius:10px;border:0;background:var(--route);color:var(--onroute);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.play{width:48px;height:44px;border-radius:10px;border:0;background:var(--brand);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .play svg{width:20px;height:20px;fill:currentColor}
 input[type=range]{width:100%;accent-color:var(--route);height:32px}
 .clock{font:500 14px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
@@ -135,7 +136,7 @@ input[type=text]{background:var(--soft);border:1px solid var(--line);border-radi
 .cbanner{position:absolute;left:calc(var(--gut) + 0px);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:4;max-width:min(560px,calc(100% - 2*var(--gut)));padding:7px 30px 7px 11px;border-radius:9px;border:1px solid var(--warn);background:var(--glass);font:600 12.5px var(--f-body);color:var(--ink)}
 .cbanner b{color:var(--warn)}
 .cbanner button{position:absolute;right:4px;top:3px;border:0;background:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px}
-.linkbtn{border:0;background:none;color:var(--route);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline}
+.linkbtn{border:0;background:none;color:var(--brand);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline}
 .pgrid{overflow:auto;max-height:280px;border:1px solid var(--line);border-radius:8px}
 .pgrid table{font:11.5px var(--f-data);width:auto}
 .pgrid th{position:sticky;top:0;background:var(--panel);padding:4px 6px;color:var(--muted);font-weight:500;z-index:1}
@@ -143,17 +144,17 @@ input[type=text]{background:var(--soft);border:1px solid var(--line);border-radi
 .pgrid td{padding:0;border-top:1px solid var(--line)}
 .pgrid td:first-child{position:sticky;left:0;background:var(--panel);padding:4px 6px;color:var(--muted)}
 .pgrid input{width:52px;min-height:28px;border:0;background:transparent;font:11.5px var(--f-data);text-align:right;padding:3px 5px;color:var(--ink)}
-.pgrid input:focus{outline:2px solid var(--route);background:var(--soft)}
+.pgrid input:focus{outline:2px solid var(--brand);background:var(--soft)}
 .plotbox canvas{width:100%;max-width:340px;height:auto;display:block;background:var(--soft);border-radius:10px}
 select{max-width:100%}
 textarea{width:100%;min-height:100px;font-size:12px}
 .chk{display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer}
-.chk input{width:20px;height:20px;accent-color:var(--route)}
+.chk input{width:20px;height:20px;accent-color:var(--brand)}
 .note{font-size:12px;color:var(--muted);margin:0}
 .xrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px}
 .xhelp h4{margin:12px 0 4px;font-size:13px}.xhelp ol{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
 .btn{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;min-height:40px}
-.btn.primary{background:var(--route);border-color:var(--route);color:var(--onroute)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{flex:1;border:0;background:var(--soft);padding:9px 8px;cursor:pointer;font-weight:600;min-height:42px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -176,13 +177,32 @@ tr.click{cursor:pointer}
 .tw{overflow-x:auto}
 .total{display:flex;justify-content:space-between;font:500 13px var(--f-data);padding:8px 10px;background:var(--soft);border-radius:8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* FirstShift brand: sails mark, two blues, Route's own tool colour as a thin band at the top */
+body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background:var(--route);z-index:20;pointer-events:none}
+.brand{grid-template-columns:auto 1fr;column-gap:8px;align-items:center}
+.brand .logo{grid-row:1 / span 2;grid-column:1;height:30px;width:auto}.brand>b,.brand>.chip{grid-column:2;min-width:0}
+.lg-d{display:none}
+:root[data-theme="dark"] .lg-l{display:none}:root[data-theme="dark"] .lg-d{display:inline}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lg-l{display:none}:root:not([data-theme="light"]) .lg-d{display:inline}}
+:root[data-night] .logo,:root[data-night] .lock{filter:brightness(.55) sepia(1) saturate(9) hue-rotate(-38deg)}
+.hbrand{display:flex;flex-direction:column;gap:2px}.hbrand .lock{height:30px;width:auto;align-self:flex-start}.hbrand span{font:600 14px var(--f-head);color:var(--muted)}
+#raceTitle{color:var(--brandnavy)}
+
+/* phones: the Route button says Route in words; From here moves down beside Play, so the header keeps the logo and race name */
+@media (max-width:899px){
+  #run svg{display:none}#run .lbl{display:inline;font-size:14px;letter-spacing:.01em}#run{padding:0 13px}
+  .brand .chip{display:none}.brand{grid-template-rows:auto;padding:6px 9px}.brand .logo{height:26px;grid-row:1}
+  .bar.fh{grid-template-columns:auto auto minmax(0,1fr) auto}
+  .bar #fromHere{height:44px;min-width:44px;background:var(--soft)}
+}
 </style>
 
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
     <div class="top">
-      <div class="brand"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div>
+      <div class="brand"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div>
       <div class="tools">
         <button class="ib primary" id="run" title="Route on the ticked models"><svg viewBox="0 0 24 24"><path d="M4 19c4-1 5-6 8-8s6-2 8-6"/><circle cx="4" cy="19" r="1.6"/><path d="M17 4h3v3"/></svg><span class="lbl">Route</span></button>
         <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
@@ -252,7 +272,7 @@ tr.click{cursor:pointer}
 <div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
 <div class="sheet" id="help" hidden>
   <div class="in" role="dialog" aria-label="Help">
-    <div class="shead"><h2>Help</h2><button class="close" id="helpX" aria-label="Close help">×</button></div>
+    <div class="shead"><h2 class="hbrand"><img class="lock lg-l" src="../brand/lockup-light.svg" alt="FirstShift: Yacht Racing Intelligence"><img class="lock lg-d" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><span>Route help</span></h2><button class="close" id="helpX" aria-label="Close help">×</button></div>
     <div class="sbody">
       <div class="xrow"><button class="btn primary" id="sayAll">Listen to the tour</button><button class="btn" id="sayStop" hidden>Stop</button></div>
       <p class="note">Each topic has its own Listen button. Route is a planning aid, not for navigation.</p>

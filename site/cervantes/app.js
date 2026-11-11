@@ -35,6 +35,10 @@
   var n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
   for (var i = 0; i < n; i++) { try { var w = new Worker('worker.js'); w.onmessage = function (e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }; workers.push(w); } catch (e) { break; } }
 
+  /* phones: From here sits beside Play in the bottom bar */
+  (function () { var mq = matchMedia('(max-width:899px)'), fh = $('fromHere'), home = fh.parentNode, next = fh.nextSibling;
+    function place() { var bar = document.querySelector('.bar'); if (mq.matches) { bar.insertBefore(fh, $('time')); bar.classList.add('fh'); } else if (fh.parentNode !== home) { home.insertBefore(fh, next); bar.classList.remove('fh'); } }
+    place(); if (mq.addEventListener) mq.addEventListener('change', place); })();
   /* ---------- offline: keep the app, forecasts and routes on the device (sw.js) ---------- */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
   window.addEventListener('online', function () { if (meta) chip(); }); window.addEventListener('offline', function () { if (meta) chip(); });
