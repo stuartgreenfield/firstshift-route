@@ -6,6 +6,9 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 10:01 | Morning After: AIS transponder on NMEA 2000, broadcast across the boat network | Noted: needs a NMEA 2000 wifi gateway or Signal K to reach Route; gateway make to confirm |
+| 10:01 | Online AIS: prefer a free service rather than a FirstShift receiver | Agreed direction: aisstream.io through a FirstShift relay; AISHub receiver later if coverage is thin |
+| 10:01 | UKHO tidal stream enquiry | Stuart sending it |
 | 09:59 | GeoGarage and C-MAP chart download button and help | Researched: both need a partner licence to show their charts inside Route; route export (GPX, KML) and help can be built now. Awaiting Stuart's choice |
 | 09:57 | Use NavimetriX as the model for the route comparison screen | Waiting: NavimetriX window not visible to Claude |
 | 09:51 | Traffic separation schemes in the tool, switchable, usable as no-go zones | Built: layer plus "keep out" switch; data from OpenStreetMap and Shom, refreshed weekly. Race keep-out boxes from sailing instructions (Fastnet 2025 entered) |
