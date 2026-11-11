@@ -40,6 +40,17 @@ jobs:
       - name: Fetch forecasts and build packs
         if: steps.fresh.outputs.skip != '1'
         run: python3 scripts/build.py cervantes fastnet
+      - name: Publish to the site branch
+        if: steps.fresh.outputs.skip != '1'
+        run: |
+          cp _headers site/_headers
+          cd site
+          rm -rf .git && git init -q -b site
+          git config user.name "FirstShift forecast job"
+          git config user.email "forecasts@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Forecasts $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
       - name: Pre-route each race for the standard settings
         if: steps.fresh.outputs.skip != '1'
         continue-on-error: true
@@ -48,14 +59,13 @@ jobs:
           npm i --no-save playwright@1.47.2
           npx playwright install --with-deps chromium
           PRE_HOURS=6 node scripts/preroute.js site cervantes fastnet
-      - name: Publish to the site branch
+      - name: Publish again with the pre-routes
         if: steps.fresh.outputs.skip != '1'
         run: |
-          cp _headers site/_headers
           cd site
-          git init -q -b site
+          rm -rf .git && git init -q -b site
           git config user.name "FirstShift forecast job"
           git config user.email "forecasts@users.noreply.github.com"
           git add -A
-          git commit -q -m "Forecasts $(date -u +%Y-%m-%dT%H:%MZ)"
+          git commit -q -m "Forecasts and pre-routes $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
