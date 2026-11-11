@@ -4,7 +4,7 @@
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]] };
-  var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true }, choice: {}, loaded: {} };
+  var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true, lay: true }, choice: {}, loaded: {} };
   var css = {};
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
@@ -264,6 +264,7 @@
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
       (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
       (LIGHTS.length ? '<label><input type="checkbox" data-l="lights"' + (S.show.lights ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink);border-top-style:dotted"></span>Lighthouses and main buoys</label>' : '') +
+      '<label><input type="checkbox" data-l="lay"' + (S.show.lay ? ' checked' : '') + '><span class="sw" style="border-color:var(--brand);border-top-style:dashed"></span>Laylines to the next mark</label>' +
       '<label><input type="checkbox" data-l="band"' + (S.show.band ? ' checked' : '') + '><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span>Forecast band edge</label>' +
       (S.ov ? '<label><input type="checkbox" data-big="1"' + (S.big ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Big picture: north-west Europe</label>' : '') +
       (meta.live ? '' : '<label><input type="checkbox" data-l="real"' + (S.show.real ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Real 2026 boats (YB)</label>');
@@ -600,6 +601,24 @@
     var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
     var bs = $('boatSave'); if (bs) bs.addEventListener('click', push);
     BC.push = push;
+  }
+  /* ---------- laylines to the next mark: from the polar's best upwind or downwind angle in the forecast wind at the mark ---------- */
+  function laylines() {
+    var s = S.sel; if (!s || !S.legs) return; var p = s.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos || pos.done) return;
+    var q = p[Math.min(p.length - 1, (pos.i || 0) + 1)], lg = S.legs[Math.min(q.leg, S.legs.length - 1)], at = lg && lg.at; if (!at) return;
+    var W = FSRouter.windSampler(P, s.models)(at[0], at[1], S.t), tws = W[0], twd = W[1]; if (!(tws > 0.5)) return;
+    var brg = FSRouter.brg(pos.la, pos.lo, at[0], at[1]), off = Math.abs(((brg - twd + 540) % 360) - 180), up = off < 70, down = off > 115; if (!up && !down) return;
+    var b = FSRouter.bestVmg(speedFn(opts(s.models)), tws, up), a = b[0]; if (!a) return;
+    var k = Math.cos(at[0] * R), L = 25, mx = X(at[1]), my = Y(at[0]);
+    ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 1.6; ctx.setLineDash([8, 5]); ctx.font = '600 10px Inter, sans-serif';
+    [[-1, 'starboard'], [1, 'port']].forEach(function (sd) {
+      var hdg = (twd + sd[0] * (up ? a : a) + 360) % 360, back = (hdg + 180) % 360;   // the boat's heading on this tack, and the line back from the mark
+      var ex = at[1] + Math.sin(back * R) * L / 60 / k, ey = at[0] + Math.cos(back * R) * L / 60;
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(X(ex), Y(ey)); ctx.stroke();
+      var lx = at[1] + Math.sin(back * R) * 14 / 60 / k, ly = at[0] + Math.cos(back * R) * 14 / 60; ctx.fillText((sd[1] === 'starboard' ? 'Stbd' : 'Port') + ' layline ' + pad(hdg) + '°', X(lx) + 6, Y(ly) - 4);
+    });
+    ctx.setLineDash([]); ctx.fillText((up ? "Upwind" : "Downwind") + " TWA " + a + "°, wind " + pad(twd) + "° " + Math.round(tws) + " kn", mx + 10, my + 30);
+    ctx.restore();
   }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
@@ -992,6 +1011,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
+    if (S.show.lay) { try { laylines(); } catch (e) {} }
     aisDraw();
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
