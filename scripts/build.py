@@ -15,7 +15,7 @@ def good(path, need_h):
         z = np.load(path); return len(z['hours']) >= 3 and float(z['hours'][-1]) >= need_h
     except Exception: return False
 
-log = {}
+log = {}; recv = {}
 for race in RACES:
     st = json.load(open(os.path.join(ROOT, 'static', race, 'static.json')))
     b = st['box']; data = os.path.join(ROOT, 'work', race); os.makedirs(data, exist_ok=True)
@@ -31,7 +31,7 @@ for race in RACES:
             except subprocess.TimeoutExpired:
                 log[f'{race}:{src}'] = f'{c} timed out'; continue
             if r.returncode == 0 and good(out, 30 + 6 * i):
-                log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; break
+                log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time())); break
             log[f'{race}:{src}'] = f'{c} failed: {(r.stderr or r.stdout)[-200:]}'
         else:   # no cycle worked: leave nothing behind, so the router simply goes without this source this time
             out = os.path.join(data, src + '.npz')
@@ -50,7 +50,8 @@ for race in RACES:
         log[f'{race}:overview'] = f'{c} ok' if ok else f'{c} failed: {((r.stderr or r.stdout) if r else "timed out")[-300:]}'
         print('overview', log[f'{race}:overview'], flush=True)
         if ok: break
+    json.dump(recv, open(os.path.join(data, 'received.json'), 'w'))   # when each forecast reached the server
     T0e = time.mktime(time.strptime(t0c, '%Y%m%d%H')) - time.timezone
     r = subprocess.run([sys.executable, os.path.join(HERE, 'pack_live.py')], env=dict(env, FS_SITE=os.path.join(ROOT, 'site', race), FS_STATIC=os.path.join(ROOT, 'static', race), FS_T0=str(T0e)))
     if r.returncode: sys.exit(r.returncode)
-json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=log), open(os.path.join(ROOT, 'site', 'status.json'), 'w'), indent=1)
+json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=log, received=recv), open(os.path.join(ROOT, 'site', 'status.json'), 'w'), indent=1)

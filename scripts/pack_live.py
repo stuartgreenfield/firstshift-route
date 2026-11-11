@@ -57,6 +57,8 @@ def thin(z, keys, sp=1, every=1):
     return z['lat'][::sp], z['lon'][::sp], hrs[keep], {k: z[k][keep][:, ::sp, ::sp] for k in keys}
 
 layers = []; runs = {}
+try: RECV = json.load(open(f'{D}/received.json'))
+except Exception: RECV = {}
 def add(kind, k, name, note, keys, sc, sp, ev):
     z = load(k)
     if z is None: print('skip', k); return
@@ -64,7 +66,7 @@ def add(kind, k, name, note, keys, sc, sp, ev):
     full = pack_layer(k, 'full', z['lat'], z['lon'], z['hours'], {q: z[q] for q in keys}, sc, cell(z['lat'], z['lon']))
     la, lo, h, f = thin(z, keys, sp, ev); lite = pack_layer(k, 'lite', la, lo, h, f, sc, cell(la, lo))
     run = time.strftime('%HZ %a %d %b', time.gmtime(float(z['t0']))); runs[k] = run
-    layers.append(dict(kind=kind, id=k, name=name, note=note + ', run ' + run, full=full, lite=lite))
+    layers.append(dict(kind=kind, id=k, name=name, note=note + ', run ' + run, full=full, lite=lite, run_t0=float(z['t0']), recv=RECV.get(k, {}).get('at')))
 
 for k, name, note, sp, ev in [('ukv', 'Met Office UKV', 'UK 2 km model, hourly', 2, 3), ('ecmwf', 'ECMWF IFS', 'global 9 km model', 1, 6), ('gfs', 'NOAA GFS', 'global 0.25°', 1, 3),
                                ('aifs', 'ECMWF AIFS', 'AI model, 6-hourly', 1, 6), ('mog', 'Met Office Global', 'global 10 km model', 1, 6)]:
@@ -96,7 +98,7 @@ if os.path.exists(f'{D}/overview.npz'):
 
 course = dict(static['course']); course['window'] = [h0, h1]
 made = time.strftime('Built %H:%M UTC %a %d %b %Y', time.gmtime())
-meta = dict(t0=T0, run=time.strftime('%H:%M UTC, %a %d %b %Y', time.gmtime(T0)), made=made + '. Live forecasts; fleet from the 2026 entry list until 2027 entries are published',
+meta = dict(built=int(time.time()), t0=T0, run=time.strftime('%H:%M UTC, %a %d %b %Y', time.gmtime(T0)), made=made + '. Live forecasts; fleet from the 2026 entry list until 2027 entries are published',
             live=True, runs=runs, layers=layers, overview=ov, coast=static['coast'], fleet=static['fleet'], course=course)
 json.dump(meta, open(f'{OUT}/pack.json', 'w'), separators=(',', ':'))
 print('layers', [L['id'] for L in layers], 'full MB', round(sum(L['full']['gz'] for L in layers) / 1e6, 2))

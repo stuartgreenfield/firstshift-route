@@ -47,14 +47,20 @@
   function layer(id) { return meta.layers.find(function (l) { return l.id === id; }); }
   function mb(b) { return b < 1e5 ? (b / 1e3).toFixed(0) + ' kB' : (b / 1e6).toFixed(1) + ' MB'; }
   function res(v) { var a = v.res_km[0], b = v.res_km[1]; return a < 1 ? Math.round((a + b) / 2 * 1000) + ' m' : (Math.abs(a - b) / a < 0.25 ? ((a + b) / 2).toFixed(1) + ' km' : a.toFixed(0) + '×' + b.toFixed(0) + ' km'); }
+  /* forecast age: the model run, when it reached the FirstShift server, when it reached this device */
+  function hhmm(ms) { var d = new Date(ms); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
+  function dayhm(ms) { var d = new Date(ms), today = new Date(); return (d.toDateString() === today.toDateString() ? '' : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ') + hhmm(ms); }
+  function ageTxt(h) { return h < 1 ? Math.round(h * 60) + ' min' : Math.floor(h) + ' h ' + String(Math.round((h % 1) * 60)).padStart(2, '0'); }
+  function runTxt(t0) { var d = new Date(t0 * 1000); return String(d.getUTCHours()).padStart(2, '0') + 'Z ' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()]; }
+  function ageCls(h) { return h > 18 ? ' style="color:var(--shoaledge);font-weight:700"' : h > 12 ? ' style="color:var(--warn);font-weight:700"' : ''; }
   function dataTable() {
     if (!meta) return;
-    var tot = 0, h = '<tr><th>Layer</th><th>Version</th><th>Grid</th><th>Step</th><th>Size</th></tr>', kinds = { wind: 'Wind', tide: 'Tide', wave: 'Sea state', depth: 'Depth' };
+    var tot = 0, now = Date.now(), h = '<tr><th>Layer</th><th>Version</th><th>Grid</th><th>Step</th><th>Size</th></tr>', kinds = { wind: 'Wind', tide: 'Tide', wave: 'Sea state', depth: 'Depth' };
     meta.layers.forEach(function (L) {
       var c = S.choice[L.id] || 'off', v = L[c === 'off' ? 'full' : c], loaded = S.loaded[L.id];
       if (c !== 'off' && loaded !== c) tot += L[c].gz;
       h += '<tr><td style="font-family:var(--f-body)">' + kinds[L.kind] + ': ' + L.name + (loaded ? ' <span class="pill">on device</span>' : '') + '</td><td><select data-dl="' + L.id + '" aria-label="' + L.name + '">' +
-        ['full', 'lite', 'off'].map(function (o) { return '<option value="' + o + '"' + (o === c ? ' selected' : '') + '>' + { full: 'Full', lite: 'Lite', off: 'Off' }[o] + '</option>'; }).join('') + '</select></td><td>' + (c === 'off' ? '-' : res(v)) + '</td><td>' + (c === 'off' || !v.step_h ? '-' : v.step_h + ' h') + '</td><td>' + (c === 'off' ? '-' : mb(L[c].gz)) + '</td></tr>';
+        ['full', 'lite', 'off'].map(function (o) { return '<option value="' + o + '"' + (o === c ? ' selected' : '') + '>' + { full: 'Full', lite: 'Lite', off: 'Off' }[o] + '</option>'; }).join('') + '</select></td><td>' + (c === 'off' ? '-' : res(v)) + '</td><td>' + (c === 'off' || !v.step_h ? '-' : v.step_h + ' h') + '</td><td>' + (c === 'off' ? '-' : mb(L[c].gz)) + '</td></tr>' + (L.kind === 'depth' ? '' : '<tr class="agerow"><td colspan="5">' + (L.run_t0 ? '<b' + ageCls((now / 1000 - L.run_t0) / 3600) + '>' + ageTxt((now / 1000 - L.run_t0) / 3600) + ' old</b> · run ' + runTxt(L.run_t0) : '') + (L.recv || meta.built ? ' · server ' + dayhm((L.recv || meta.built) * 1000) : '') + (S.gotAt && S.gotAt[L.id] ? ' · device ' + dayhm(S.gotAt[L.id]) : '') + '</td></tr>');
     });
     var ovRow = $('ovChk').closest('label'); if (ovRow) ovRow.hidden = !meta.overview;
     if (meta.overview) { if ($('ovChk').checked && !S.ov) tot += meta.overview.gz; $('ovSize').textContent = mb(meta.overview.gz) + (S.ov ? ' · on device' : ''); }
@@ -62,7 +68,7 @@
     $('bandNote').textContent = 'Cut to the race: forecasts only within ' + Math.round(Math.min.apply(null, bw)) + ' nm of the course in the Solent and ' + Math.round(Math.max.apply(null, bw)) + ' nm offshore (30% of each leg), from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' UTC: an hour before the first start to 1.4 times the slowest routed finish. Shown as a dashed line on the chart.';
     $('dataTable').innerHTML = h; $('dlTotal').textContent = tot ? mb(tot) + ' to fetch' : 'nothing new to fetch';
     [].forEach.call($('dataTable').querySelectorAll('select'), function (s) { s.onchange = function () { S.choice[s.dataset.dl] = s.value; S.plan = 'custom'; [].forEach.call($('plans').children, function (b) { b.setAttribute('aria-pressed', 'false'); }); dataTable(); }; });
-    $('dataNote').textContent = 'Forecast run ' + meta.run + '. ' + meta.made + '. Choose what this device downloads: full detail on Starlink, less on a phone signal.';
+    $('dataNote').textContent = 'Forecast run ' + meta.run + (meta.built ? '; published on the FirstShift server at ' + dayhm(meta.built * 1000) + ' UTC' : '') + '. Age is the time since each model run; amber over 12 hours, red over 18. Times in UTC. Choose what this device downloads: full detail on Starlink, less on a phone signal.';
   }
   function download() {
     var todo = meta.layers.filter(function (L) { var c = S.choice[L.id] || 'off'; return c !== S.loaded[L.id] && !(c === 'off' && !S.loaded[L.id]); });
@@ -82,7 +88,7 @@
       var runs = v.runs ? fetch('pack/' + v.runs).then(function (r) { return r.json(); }) : Promise.resolve(null);
       return Promise.all([fetch('pack/' + v.file).then(function (r) { if (!r.ok) throw new Error(L.name + ' did not download'); return r.arrayBuffer(); }), runs]).then(function (two) {
         var buf = two[0], spec = Object.assign({ kind: L.kind, id: L.id, name: L.name }, v); if (two[1]) spec.druns = two[1];
-        FSRouter.addLayer(P, spec, buf); S.loaded[L.id] = c;
+        FSRouter.addLayer(P, spec, buf); S.loaded[L.id] = c; (S.gotAt = S.gotAt || {})[L.id] = Date.now();
         return all(function () { var copy = buf.slice(0); return { msg: { type: 'layer', L: spec, buf: copy }, tr: [copy] }; });
       });
     })).then(function () {
@@ -92,10 +98,13 @@
       $('dlNote').textContent = 'Up to date.';
     }).catch(function (e) { busy(''); $('dlNote').textContent = e.message; });
   }
+  setInterval(function () { if (meta) { chip(); dataTable(); } }, 60000);
   function chip() {
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
-    $('dataChip').textContent = 'Route v0.4.1 · ' + (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    var age = (Date.now() / 1000 - meta.t0) / 3600;
+    $('dataChip').textContent = 'Route v0.4.1 · ' + (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
   /* ---------- controls ---------- */
