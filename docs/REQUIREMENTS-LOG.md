@@ -18,6 +18,7 @@ Status: Built · Partly built · To build · Researching · Later.
 | 10:16 | Routes made on one device visible on the others, plus a local route on each | To build with the boat code |
 | 10:08 | Regular demo of each version, a to-do list, and competitor-inspired ideas; feedback saved per item | Built: test card (claude.ai/artifact/YFzQi6rjdcpdww3Nrg31sw) with video, checklist, to-do, ideas |
 | 10:11 | Work out use on phone, Mac, PC and tablet at the same time without a login | Answered: boat code |
+| 17:13 | How does Google Play work for us? | Answered; to do (item 39): personal Play account, Polar Live closed test with 12 testers for 14 days, then production |
 | 17:09 | Will Route be on the Wix site like the other tools? | For later (items 36 to 38): route.firstshiftsailing.com, Route card on the tools site and Wix Tools page, phone app for the boat connection |
 | 17:06 | Standard warning box on every RORC course: check against the sailing instructions; some courses only published the day before and can change up to the start | Built (item 35) |
 | 16:50 | All courses, from the race list or made by hand, editable on screen and in the list of marks; marks enterable as latitude and longitude | To do: item 34, starting now |
