@@ -18,7 +18,7 @@ def excess(LA, LO):
     return best
 
 now_h = (time.time() - T0) / 3600
-h0 = max(0, int(np.floor(now_h - 1))); h1 = 48
+h0 = max(0, int(np.floor(now_h - 1))); h1 = int(static['course'].get('hours', 48))
 print('window', h0, h1, 'hours after', time.strftime('%Y-%m-%d %H:%MZ', time.gmtime(T0)))
 
 def pack_layer(lid, v, la, lo, hours, fields, scale, cell_nm):
@@ -63,7 +63,13 @@ def add(kind, k, name, note, keys, sc, sp, ev):
     z = load(k)
     if z is None: print('skip', k); return
     cell = lambda la, lo: max(abs(la[1] - la[0]) * 60, abs(lo[1] - lo[0]) * 60 * K)
-    full = pack_layer(k, 'full', z['lat'], z['lon'], z['hours'], {q: z[q] for q in keys}, sc, cell(z['lat'], z['lon']))
+    fsp = 1
+    while True:   # long races: thin the full layer until it fits comfortably under the host's 25 MiB per file
+        la_, lo_, h_, f_ = thin(z, keys, fsp, 1)
+        full = pack_layer(k, 'full', la_, lo_, h_, f_, sc, cell(la_, lo_))
+        if full['bytes'] < 18e6 or fsp >= 4: break
+        fsp += 1
+    if fsp > 1: print(k, 'full thinned by', fsp)
     la, lo, h, f = thin(z, keys, sp, ev); lite = pack_layer(k, 'lite', la, lo, h, f, sc, cell(la, lo))
     run = time.strftime('%HZ %a %d %b', time.gmtime(float(z['t0']))); runs[k] = run
     layers.append(dict(kind=kind, id=k, name=name, note=note + ', run ' + run, full=full, lite=lite, run_t0=float(z['t0']), recv=RECV.get(k, {}).get('at')))

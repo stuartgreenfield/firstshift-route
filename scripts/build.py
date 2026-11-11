@@ -2,7 +2,7 @@
 Runs on GitHub Actions every six hours; also runs on a laptop. Usage: python3 scripts/build.py [race ...]"""
 import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
-RACES = sys.argv[1:] or ['cervantes']
+RACES = sys.argv[1:] or ['cervantes', 'fastnet']
 SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'nwscur', 'ibicur', 'nwswav', 'ecwav']
 
 def cycles(lag_h=7, n=4):
@@ -20,7 +20,8 @@ for race in RACES:
     st = json.load(open(os.path.join(ROOT, 'static', race, 'static.json')))
     b = st['box']; data = os.path.join(ROOT, 'work', race); os.makedirs(data, exist_ok=True)
     cyc = cycles(); T0 = None
-    env = dict(os.environ, FS_DATA=data, FS_BOX=f"{b['s']},{b['n']},{b['w']},{b['e']}", FS_HOURS='54')
+    hrs = int(st['course'].get('hours', 48)) + 6
+    env = dict(os.environ, FS_DATA=data, FS_BOX=f"{b['s']},{b['n']},{b['w']},{b['e']}", FS_HOURS=str(hrs))
     def one(src):
         for i, c in enumerate(cyc):
             out = os.path.join(data, src + '.npz')
@@ -54,4 +55,8 @@ for race in RACES:
     T0e = time.mktime(time.strptime(t0c, '%Y%m%d%H')) - time.timezone
     r = subprocess.run([sys.executable, os.path.join(HERE, 'pack_live.py')], env=dict(env, FS_SITE=os.path.join(ROOT, 'site', race), FS_STATIC=os.path.join(ROOT, 'static', race), FS_T0=str(T0e)))
     if r.returncode: sys.exit(r.returncode)
+    if race != 'cervantes':   # every race uses the same router page; only its pack differs
+        import shutil
+        for f in os.listdir(os.path.join(ROOT, 'site', 'cervantes')):
+            if f.endswith(('.html', '.js')): shutil.copy(os.path.join(ROOT, 'site', 'cervantes', f), os.path.join(ROOT, 'site', race, f))
 json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=log, received=recv), open(os.path.join(ROOT, 'site', 'status.json'), 'w'), indent=1)

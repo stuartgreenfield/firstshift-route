@@ -153,6 +153,10 @@ textarea{width:100%;min-height:100px;font-size:12px}
 h3{font:600 13px var(--f-head);margin:6px 0 0}
 
 table{border-collapse:collapse;width:100%;font-size:12.5px}
+.finbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.fin{display:grid;grid-template-columns:auto 1fr;gap:0 4px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;background:var(--soft)}
+.fin b{grid-column:1 / -1;font:600 14px var(--f-data)}.fin em{grid-column:1 / -1;font:12px var(--f-data);color:var(--muted);font-style:normal}
+.fin.comb{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
 .agerow td{border-top:0!important;padding-top:0!important;font:11.5px var(--f-data);color:var(--muted)}
 th,td{padding:6px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
 th:first-child,td:first-child{text-align:left}
@@ -196,6 +200,7 @@ tr.click{cursor:pointer}
       <button class="close" id="panelX" aria-label="Close results">×</button>
     </div>
     <div class="pbody" id="t-decision">
+      <div class="finbox" id="finBox" aria-label="Finish times"></div>
       <p class="note" id="decNote">Press Route to sail the course on every model you have downloaded and ticked.</p>
       <div class="tw"><table id="matrix"></table></div>
       <p class="note" id="runNote"></p>

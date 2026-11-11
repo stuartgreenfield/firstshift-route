@@ -2,3 +2,5 @@ work/
 site/*/pack/
 site/status.json
 __pycache__/
+site/fastnet/*.html
+site/fastnet/*.js
