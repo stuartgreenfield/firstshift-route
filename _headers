@@ -4,3 +4,9 @@
 /status.json
   Cache-Control: no-cache
   Access-Control-Allow-Origin: *
+/*/*.js
+  Cache-Control: no-cache
+/*/index.html
+  Cache-Control: no-cache
+/*/
+  Cache-Control: no-cache
