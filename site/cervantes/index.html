@@ -233,6 +233,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .xh{font:600 14px var(--f-head);margin:14px 0 4px}
 .askrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.askrow .btn{min-height:36px;padding:6px 10px;font-size:13px}.ans{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:grid;gap:8px}.ans p{margin:0;font-size:14px;line-height:1.5}.ans .btn{justify-self:start}
 .bcode{font:700 16px var(--f-data);letter-spacing:.12em;color:var(--brand)}
+.edpt{border-top:1px solid var(--line);padding:8px 0;display:grid;gap:6px}.edhd{display:flex;justify-content:space-between;align-items:center;gap:8px}.edbtn{display:flex;gap:4px}.edbtn .btn{min-height:32px;padding:2px 10px}.edgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:6px}.edgrid input{min-width:0}.sheet .edgrid input.bad{border-color:#ff3b30;box-shadow:0 0 0 1px #ff3b30}.edadd{min-height:30px;padding:2px 10px;font-size:12px;justify-self:start;margin:2px 0}
+@media (max-width:520px){.edgrid{grid-template-columns:1fr 1fr}.edgrid input:first-child{grid-column:1/-1}}
 </style>
 
 <div class="app" id="app">

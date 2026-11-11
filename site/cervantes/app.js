@@ -649,13 +649,14 @@
   function racesSheet() {
     var c = meta.course, mine = myRaces(), h = '';
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
-      '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit this course</button><button class="btn" id="rNew">New course</button></div></div>';
+      '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
     h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (ready ? 'Forecasts ready' : 'Course only: forecasts for this area come later') + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
     h += bcBox();
     $('raceList').innerHTML = h; bcWire();
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
     $('rEdit').onclick = function () { startEdit(courseCopy()); };
+    $('rMarks').onclick = function () { startEdit(courseCopy()); editForm(); };
     $('rNew').onclick = function () { startEdit(null); };
     [].forEach.call($('raceList').querySelectorAll('[data-open]'), function (b) { b.onclick = function () { openMy(b.dataset.open); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-del]'), function (b) { b.onclick = function () {
@@ -676,49 +677,89 @@
     $('edUndo').onclick = function () { S.edit.pts.pop(); editPrompt(); draw(); };
     $('edCancel').onclick = function () { S.edit = null; $('editBar').hidden = true; draw(); };
     $('edDone').onclick = function () { if (S.edit.pts.length < 2) return; editForm(); };
+
   }
-  /* course editor: tap the chart to place the start, each mark, then the finish */
+  /* course editor: any course, from the race list or your own. On the chart: tap to place points, drag any point to move it.
+     In the list: names, rounding sides, positions typed as latitude and longitude, add, remove and reorder marks. */
+  function fmtPos(v, ns) { var h = v < 0 ? ns[1] : ns[0], a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60; if (m >= 59.995) { d++; m = 0; } return d + '°' + (m < 10 ? '0' : '') + m.toFixed(2) + '\'' + h; }
+  function parsePos(t, lat) {   /* 50°38.24'N, 50 38.24 N, 50.6373, -1.65, 1 38.98W */
+    t = String(t || '').trim().toUpperCase().replace(/[°'’′"″]/g, ' ').replace(/,/g, '.'); if (!t) return NaN;
+    var neg = /[SW]/.test(t) || /^-/.test(t), n = (t.match(/\d+(\.\d+)?/g) || []).map(Number); if (!n.length) return NaN;
+    var v = n.length === 1 ? n[0] : n[0] + n[1] / 60 + (n[2] || 0) / 3600; v = neg ? -v : v;
+    return Math.abs(v) <= (lat ? 90 : 180) ? v : NaN;
+  }
   function startEdit(c) {
     $('races').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
-    S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [] };
+    S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [], closed: !!c };
     $('editBar').hidden = false; editPrompt(); draw();
   }
   function editPrompt() {
     var n = S.edit.pts.length;
-    $('edTxt').textContent = n === 0 ? 'Tap the chart to place the start.' : n === 1 ? 'Tap to add each mark in order, and the finish last.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
+    $('edTxt').textContent = S.edit.closed ? 'Drag any point to move it. Tap the chart to add a mark before the finish. Done for names, sides and positions.' :
+      n === 0 ? 'Tap the chart to place the start.' : n === 1 ? 'Tap to add each mark in order, and the finish last. Drag a point to move it.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
     $('edDone').disabled = n < 2; $('edUndo').disabled = !n;
   }
-  function editTap(x, y) {
-    var la = LA(y), lo = LO(x);
-    if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) { busy('Outside the routing area: cannot route there.'); setTimeout(function () { busy(''); }, 2500); return; }
-    var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy('That is land. Tap open water.'); setTimeout(function () { busy(''); }, 2000); return; }
-    S.edit.pts.push({ lat: +la.toFixed(5), lon: +lo.toFixed(5) }); editPrompt(); draw();
+  function editOk(la, lo) {
+    if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) { busy('Outside the routing area: cannot route there.'); setTimeout(function () { busy(''); }, 2500); return false; }
+    var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy('That is land. Choose open water.'); setTimeout(function () { busy(''); }, 2000); return false; }
+    return true;
   }
+  function editTap(x, y) {
+    var la = LA(y), lo = LO(x); if (!editOk(la, lo)) return;
+    var q = { lat: +la.toFixed(5), lon: +lo.toFixed(5) };
+    if (S.edit.closed && S.edit.pts.length >= 2) S.edit.pts.splice(S.edit.pts.length - 1, 0, q); else S.edit.pts.push(q);
+    editPrompt(); draw();
+  }
+  function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
     var p = S.edit.pts; if (!p.length) return;
     ctx.save(); ctx.strokeStyle = css['--route']; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
     ctx.font = '600 12px Inter, sans-serif';
-    p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--route']; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = css['--ink'];
-      var lbl = i === 0 ? 'Start' : i === p.length - 1 && p.length > 1 ? 'Finish?' : String(i); ctx.fillText(q.name || lbl, x + 11, y - 9); });
+    p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat), on = S.drag === i; ctx.beginPath(); ctx.arc(x, y, on ? 11 : 8, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--route']; ctx.lineWidth = on ? 3 : 2; ctx.stroke(); ctx.fillStyle = css['--ink'];
+      var lbl = i === 0 ? 'Start' : i === p.length - 1 && (p.length > 1) ? (S.edit.closed ? 'Finish' : 'Finish?') : 'Mark ' + i; ctx.fillText(q.name || lbl, x + 12, y - 10); });
     ctx.restore();
   }
-  function editForm() {
-    var p = S.edit.pts, h = '<div class="row"><label for="edName">Course name</label><input id="edName" value="' + (S.edit.name || 'My course').replace(/"/g, '&quot;') + '"></div>';
+  function editRead() {   // take what is typed in the list back into the points
+    var p = S.edit.pts; if (!$('edName')) return true; var ok = true; S.edit.name = $('edName').value.trim() || 'My course';
     p.forEach(function (q, i) {
-      var kind = i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i;
-      h += '<div class="row"><label for="edN' + i + '">' + kind + '</label><input id="edN' + i + '" value="' + (q.name || kind).replace(/"/g, '&quot;') + '">' + (i > 0 && i < p.length - 1 ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '') + '</div>';
+      var la = parsePos($('edLa' + i).value, true), lo = parsePos($('edLo' + i).value, false);
+      if (isNaN(la) || isNaN(lo)) { ok = false; $('edLa' + i).classList.toggle('bad', isNaN(la)); $('edLo' + i).classList.toggle('bad', isNaN(lo)); return; }
+      q.lat = +la.toFixed(5); q.lon = +lo.toFixed(5); q.name = $('edN' + i).value.trim(); if ($('edS' + i)) q.side = $('edS' + i).value;
+    });
+    return ok;
+  }
+  function editForm() {
+    S.edit.closed = true; var p = S.edit.pts, h = '<div class="row"><label for="edName">Course name</label><input id="edName" value="' + (S.edit.name || 'My course').replace(/"/g, '&quot;') + '"></div>';
+    h += '<p class="note">Positions as on the chart, for example 50°38.24\'N and 1°38.98\'W, or in decimal degrees (50.6373, -1.6497).</p>';
+    p.forEach(function (q, i) {
+      var kind = i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i, mid = i > 0 && i < p.length - 1;
+      h += '<div class="edpt"><div class="edhd"><b>' + kind + '</b><span class="edbtn">' + (mid ? '<button class="btn" data-up="' + i + '" aria-label="Move up">↑</button><button class="btn" data-dn="' + i + '" aria-label="Move down">↓</button><button class="btn" data-rm="' + i + '" aria-label="Remove ' + kind + '">Remove</button>' : '') + '</span></div>' +
+        '<div class="edgrid"><input id="edN' + i + '" placeholder="Name" value="' + (q.name || kind).replace(/"/g, '&quot;') + '"><input id="edLa' + i + '" inputmode="text" aria-label="' + kind + ' latitude" value="' + fmtPos(q.lat, 'NS') + '"><input id="edLo' + i + '" inputmode="text" aria-label="' + kind + ' longitude" value="' + fmtPos(q.lon, 'EW') + '">' +
+        (mid ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '<span></span>') + '</div></div>';
+      if (i < p.length - 1) h += '<button class="btn edadd" data-add="' + (i + 1) + '">+ Add a mark here</button>';
     });
     var opts = [].map.call($('startSel').options, function (o) { return '<option value="' + o.value + '"' + (o.value === $('startSel').value ? ' selected' : '') + '>' + o.textContent + '</option>'; }).join('');
     h += '<div class="row"><label for="edStart">Start</label><select id="edStart">' + opts + '</select></div><p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
-    h += '<p class="note">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edBack">Back to the chart</button></div>';
-    $('raceList').innerHTML = '<h3>Your course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
+    h += '<p class="note" id="edNm">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edMap">Edit on the chart</button><button class="btn" id="edCancel2">Cancel</button></div>';
+    $('raceList').innerHTML = '<h3>Course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
     p.forEach(function (q, i) { if ($('edS' + i)) $('edS' + i).value = q.side || 'port'; });
-    $('edBack').onclick = function () { $('races').hidden = true; $('editBar').hidden = false; };
+    var redo = function (fn) { if (!editRead()) { busy('Check the positions marked in red.'); setTimeout(function () { busy(''); }, 2000); return; } fn(); editForm(); draw(); };
+    [].forEach.call($('raceList').querySelectorAll('[data-rm]'), function (b) { b.onclick = function () { redo(function () { p.splice(+b.dataset.rm, 1); }); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-up]'), function (b) { b.onclick = function () { var i = +b.dataset.up; if (i > 1) redo(function () { var t = p[i]; p[i] = p[i - 1]; p[i - 1] = t; }); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-dn]'), function (b) { b.onclick = function () { var i = +b.dataset.dn; if (i < p.length - 2) redo(function () { var t = p[i]; p[i] = p[i + 1]; p[i + 1] = t; }); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-add]'), function (b) { b.onclick = function () { redo(function () { var i = +b.dataset.add, a = p[i - 1], c = p[i]; p.splice(i, 0, { lat: +((a.lat + c.lat) / 2).toFixed(5), lon: +((a.lon + c.lon) / 2).toFixed(5), side: 'port' }); }); }; });
+    [].forEach.call($('raceList').querySelectorAll('.edgrid input'), function (el) { el.onchange = function () { if (editRead()) { $('edNm').textContent = courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.'; draw(); } }; });
+    $('edMap').onclick = function () { if (!editRead()) return; $('races').hidden = true; $('editBar').hidden = false; editPrompt(); draw(); };
+    $('edCancel2').onclick = function () { S.edit = null; $('races').hidden = true; draw(); };
     $('edSave').onclick = function () {
-      var pts = p.map(function (q, i) { return { name: $('edN' + i).value.trim() || (i ? 'Mark ' + i : 'Start'), lat: q.lat, lon: q.lon, side: $('edS' + i) ? $('edS' + i).value : undefined }; });
-      var c = { name: $('edName').value.trim() || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
-      var stv = $('edStart').value; S.edit = null; S.myId = null; applyCourseObj(asRace(c)); $('startSel').value = stv; $('startSel').dispatchEvent(new Event('change', { bubbles: true })); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
-      $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…'); var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; } else { S.from = null; run(); }
+      if (!editRead()) { busy('Check the positions marked in red.'); setTimeout(function () { busy(''); }, 2000); return; }
+      if (p.length < 2) return;
+      var bad = p.filter(function (q) { return q.lat < 35.5 || q.lat > 61.5 || q.lon < -15 || q.lon > 12; }); if (bad.length) { busy('Cannot route: a point is outside the routing area.'); setTimeout(function () { busy(''); }, 2500); return; }
+      var pts = p.map(function (q, i) { return { name: q.name || (i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i), lat: q.lat, lon: q.lon, side: i > 0 && i < p.length - 1 ? (q.side || 'port') : undefined }; });
+      var c = { name: S.edit.name || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
+      var stv = $('edStart').value, keepId = S.myId; S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; $('startSel').value = stv; $('startSel').dispatchEvent(new Event('change', { bubbles: true })); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
+      $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…');
+      var issue = courseIssue(meta.course); if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue; } else { S.from = null; run(); }
     };
   }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
@@ -1282,10 +1323,11 @@
   cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
   function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(150, Math.min(20000, view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
   cv.addEventListener('dblclick', function () { fit(); draw(); });
-  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
+  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(e.offsetX, e.offsetY) : -1; if (S.drag < 0) S.drag = null; else S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
   cv.addEventListener('pointermove', function (e) {
     if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') hover(e.offsetX, e.offsetY, false); return; }
     var prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
+    if (S.drag != null && ptrs.size === 1) { var dq = S.edit.pts[S.drag]; dq.lat = +LA(e.offsetY).toFixed(5); dq.lon = +LO(e.offsetX).toFixed(5); moved = 99; draw(); return; }
     if (ptrs.size === 1) { var dx = e.offsetX - prev[0], dy = e.offsetY - prev[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 6) { view.lo -= dx / (K * view.s); view.la += dy / view.s; draw(); if (e.pointerType === 'mouse') $('tip').hidden = true; } return; }
     var v = Array.from(ptrs.values()), d = Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]); moved = 99;
     if (pinch && !iosG) zoomAt((v[0][0] + v[1][0]) / 2, (v[0][1] + v[1][1]) / 2, d / pinch); pinch = d;
@@ -1299,7 +1341,8 @@
     cv.addEventListener('gesturechange', function (e) { if (!gMid || !(e.scale > 0)) return; zoomAt(gMid[0], gMid[1], e.scale / gScale); gScale = e.scale; });
     cv.addEventListener('gestureend', function () { gMid = null; });
   }
-  cv.addEventListener('pointerup', function (e) { if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(e.offsetX, e.offsetY, e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0; });
+  cv.addEventListener('pointerup', function (e) {
+    if (S.drag != null) { var dq = S.edit.pts[S.drag]; if (!editOk(dq.lat, dq.lon)) Object.assign(dq, S.dragFrom); S.drag = null; ptrs.delete(e.pointerId); pinch = 0; draw(); return; } if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(e.offsetX, e.offsetY, e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0; });
   cv.addEventListener('pointercancel', function (e) { ptrs.delete(e.pointerId); pinch = 0; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
