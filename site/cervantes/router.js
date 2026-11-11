@@ -96,8 +96,11 @@
   function adjust(smp, a) {
     if (!a) return smp;
     var w = smp.wind, c = smp.tide, d = a.wdir || 0, k = 1 + (a.wspd || 0) / 100, tw = a.wtime || 0, kc = 1 + (a.tspd || 0) / 100, tc = a.ttime || 0;
-    if (d || k !== 1 || tw) smp.wind = function (la, lo, t) { var W = w(la, lo, t - tw); return [W[0] * k, (W[1] + d + 360) % 360]; };
-    if (kc !== 1 || tc) smp.tide = function (la, lo, t) { var C = c(la, lo, t - tc); return [C[0] * kc, C[1] * kc]; };
+    /* an area drawn on the chart: full change inside it, fading to none 3 nm beyond its edge */
+    var B = a.box, wt = function () { return 1; };
+    if (B) wt = function (la, lo) { var k0 = Math.cos(la * R), dy = Math.max(B.s - la, 0, la - B.n) * 60, dx = Math.max(B.w - lo, 0, lo - B.e) * 60 * k0, dd = Math.sqrt(dx * dx + dy * dy); return dd <= 0 ? 1 : Math.max(0, 1 - dd / 3); };
+    if (d || k !== 1 || tw) smp.wind = function (la, lo, t) { var f = wt(la, lo); if (!f) return w(la, lo, t); var W = w(la, lo, t - tw * f); return [W[0] * (1 + (k - 1) * f), (W[1] + d * f + 360) % 360]; };
+    if (kc !== 1 || tc) smp.tide = function (la, lo, t) { var f = wt(la, lo); if (!f) return c(la, lo, t); var C = c(la, lo, t - tc * f), m = 1 + (kc - 1) * f; return [C[0] * m, C[1] * m]; };
     return smp;
   }
   function tideSampler(P, id) {

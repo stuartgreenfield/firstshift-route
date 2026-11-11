@@ -473,12 +473,15 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <p class="note">Below 100% for a light or new crew, tired sails or a sea the forecast misses; above it for a strong, heavy crew. Upwind runs to 55° TWA, reaching 70° to 110°, downwind from 130°, blended in between. <button class="linkbtn" id="tuReset">Reset to 100%</button></p>
       <div class="plotbox"><canvas id="polarPlot" width="560" height="600" aria-label="Polar diagram"></canvas><p class="note" id="plotKey"></p></div>
       <h3>If you think the forecast is wrong</h3>
-      <p class="note">Applies to every route. Wind and tide arrows on the chart still show the forecast as published.</p>
+      <p class="note">Applies to every route, over the whole race or an area you draw. Wind and tide arrows on the chart still show the forecast as published.</p>
       <div class="row tune"><label for="adjWdir">Wind direction</label><input type="range" id="adjWdir" min="-40" max="40" step="5" value="0"><b id="adjWdirV"></b></div>
       <div class="row tune"><label for="adjWspd">Wind strength</label><input type="range" id="adjWspd" min="-40" max="40" step="5" value="0"><b id="adjWspdV"></b></div>
       <div class="row tune"><label for="adjWtime">Wind timing</label><input type="range" id="adjWtime" min="-6" max="6" step="1" value="0"><b id="adjWtimeV"></b></div>
       <div class="row tune"><label for="adjTspd">Tide strength</label><input type="range" id="adjTspd" min="-50" max="50" step="10" value="0"><b id="adjTspdV"></b></div>
       <div class="row tune"><label for="adjTtime">Tide timing</label><input type="range" id="adjTtime" min="-60" max="60" step="15" value="0"><b id="adjTtimeV"></b></div>
+      <div class="row"><label for="adjWhere">Where</label><select id="adjWhere"><option value="all">The whole race</option><option value="box">Only an area I draw on the chart</option></select><input type="hidden" id="adjBox" value=""></div>
+      <div class="row" id="adjBoxRow" hidden><button class="btn" id="adjDraw">Draw the area</button><span class="note" id="adjBoxTxt">No area yet.</span></div>
+      <p class="note" id="adjBoxNote" hidden>Local knowledge: the changes apply inside the area and fade out over 3 nm beyond its edge. Use it for a sea breeze that the forecast misses, or a headland where the tide runs harder.</p>
       <div class="row"><button class="btn" id="adjReset">Back to the forecast</button><span class="note" id="adjNote" hidden>Overrides on: Route works them in when you close Settings.</span></div>
       <h3>Start and manoeuvres</h3>
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>

@@ -360,18 +360,23 @@
   }
   /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
   var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60]];
-  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); return a; }
+  function adjBox() { var v = ($('adjBox') || {}).value; if (!v || $('adjWhere').value !== 'box') return null; var q = v.split(',').map(Number); return q.length === 4 && q.every(function (x) { return x === x; }) ? { s: q[0], n: q[1], w: q[2], e: q[3] } : null; }
+  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } return a; }
   function adjInit() {
     ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
     $('adjReset').onclick = function () { ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); adjPill(); };
     $('adjPillX').onclick = function () { $('adjReset').onclick(); busy('Back to the forecast: routing again…'); S.from = null; run(); };
+    var boxTxt = function () { var b = adjBox(), on = $('adjWhere').value === 'box'; $('adjBoxRow').hidden = $('adjBoxNote').hidden = !on; $('adjBoxTxt').textContent = b ? dm(b.s, 'NS') + ' to ' + dm(b.n, 'NS') + ', ' + dm(b.w, 'EW') + ' to ' + dm(b.e, 'EW') : 'No area yet: changes are not used until you draw one.'; adjPill(); draw(); };
+    $('adjWhere').onchange = boxTxt; $('adjBox').addEventListener('change', boxTxt);
+    $('adjDraw').onclick = function () { S.adjDraw = []; $('sheet').hidden = true; busy('Tap one corner of the area on the chart'); };
+    S.adjBoxTxt = boxTxt; boxTxt();
     adjPill();
   }
   /* a note on the chart whenever the forecast has been changed, with one tap back to the forecast as published */
   function adjPill() {
     var a = adjVals(), t = [];
     if (a) ADJ.forEach(function (x) { var v = +$(x[0]).value; if (v) t.push(({ wdir: 'wind ', wspd: 'wind ', wtime: 'wind ', tspd: 'tide ', ttime: 'tide ' })[x[1]] + $(x[0] + 'V').textContent); });
-    $('adjPill').hidden = !a; $('adjPillTxt').textContent = 'Forecast changed: ' + t.join(', ');
+    $('adjPill').hidden = !a; $('adjPillTxt').textContent = 'Forecast changed' + (a && a.box ? ' in your area' : '') + ': ' + t.join(', ');
   }
   function HMAX() { var w = (meta.course0 || meta.course).window; return w ? w[1] : 48; }
   function legsFor(fromPt) {
@@ -1228,7 +1233,7 @@
     ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
     ['Your sails and reefs', 'Settings, Sails. Copy each sail from your sail log: the true wind angles and true wind speeds you use it in. Rows are checked from the top and the first that fits wins. Tick Show when to reef and enter the wind speed for each reef, upwind and downwind. The crossover chart colours each sail, marks the reefs and puts this route\'s winds on it as dots, so you can see any wind with no sail set. You can paste a chart grid from Expedition, PredictWind or SailGrib under Edit as text.'],
     ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCC, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],
-    ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. Close Settings and Route works it out again; Back to the forecast undoes it.'],
+    ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. To change only part of the race, set Where to an area, tap Draw the area and tap two opposite corners on the chart: the change applies inside it and fades out over 3 nm. Close Settings and Route works it out again; Back to the forecast undoes it.'],
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
     ['Ask Route', 'In the Plan tab, Ask Route answers set questions from the chosen route at the replay time: the next mark, the next tack or gybe, the next sail change, the biggest wind shift in the next 12 hours, and what the tide is doing. Read it out speaks the answer.'],
@@ -1372,6 +1377,9 @@
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
     if (S.show.lay) { try { laylines(); } catch (e) {} }
+    var ab = $('adjWhere') && $('adjWhere').value === 'box' ? adjBox() : null;   /* the area of a forecast override */
+    if (ab) { ctx.save(); ctx.strokeStyle = css['--warn'] || '#E8A33D'; ctx.lineWidth = 2; ctx.setLineDash([10, 6]); var x0 = X(ab.w), y0 = Y(ab.n); ctx.strokeRect(x0, y0, X(ab.e) - x0, Y(ab.s) - y0); ctx.setLineDash([]); ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.fillText(adjVals() ? 'Forecast changed here' : 'Override area', x0 + 6, y0 + 15); ctx.restore(); }
+    if (S.adjDraw && S.adjDraw.length) { ctx.save(); ctx.fillStyle = css['--warn'] || '#E8A33D'; ctx.beginPath(); ctx.arc(X(S.adjDraw[0][1]), Y(S.adjDraw[0][0]), 6, 0, 7); ctx.fill(); ctx.restore(); }
     aisDraw();
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
@@ -1682,6 +1690,13 @@
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
     if (S.edit) { editTap(x, y); return; }
+    if (S.adjDraw) {   /* drawing the area for a forecast override: two opposite corners */
+      S.adjDraw.push([LA(y), LO(x)]);
+      if (S.adjDraw.length < 2) { busy('Now tap the opposite corner'); draw(); return; }
+      var A = S.adjDraw[0], Bq = S.adjDraw[1]; S.adjDraw = null; busy('');
+      $('adjBox').value = [Math.min(A[0], Bq[0]), Math.max(A[0], Bq[0]), Math.min(A[1], Bq[1]), Math.max(A[1], Bq[1])].map(function (v) { return v.toFixed(4); }).join(',');
+      S.adjBoxTxt(); $('sheet').hidden = false; return;
+    }
     if (S.mobTap) { store('fs-mob', JSON.stringify({ lat: LA(y), lon: LO(x), t: Date.now(), how: 'tapped' })); beep(); mobShow(); return; }
     if ($('fromHere').getAttribute('aria-pressed') === 'true') {
       var la = LA(y), lo = LO(x), z = P.depth ? P.depth.nearest('z', la, lo) : NaN;
