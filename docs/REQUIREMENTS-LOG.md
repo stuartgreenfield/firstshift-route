@@ -6,6 +6,8 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 10:20 | If the server has no forecast, the tool fetches forecasts itself over the internet | Proposed: light fallback from Open-Meteo (wind, waves along the course); awaiting Stuart |
+| 10:18 | See and use the full tool in the browser pane regularly | Done: opened in the pane; reloaded at each new version |
 | 10:16 | Boat code for several devices at once (no login) | Approved; to build |
 | 10:16 | Connect to NMEA over the boat's wifi if it has one, otherwise mobile or Starlink; no new equipment to buy | Agreed; NMEA over wifi needs the free FirstShift app wrapper |
 | 10:16 | Logins later (paid version) | Later |
