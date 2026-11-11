@@ -564,8 +564,11 @@
     if (S.show.wind && $('windShow').value) arrows('wind');
     zonesDraw(); lightsDraw();
     marks();
-    S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 1.8, 0.9); });
-    if (S.sel && !S.sel.hidden) line(S.sel, 3.6, 1);
+    /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
+    var selOn = S.sel && !S.sel.hidden;
+    if (selOn) line(S.sel, 9, 0.35);
+    S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
+    if (selOn) line(S.sel, 2.2, 1);
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(s.r.path.map(function (q) { return q.t; }), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
