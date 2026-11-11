@@ -718,6 +718,33 @@
 
   /* ---------- results ---------- */
   function swatch(s) { var st = s.combined ? ['--route', []] : STYLE[s.id]; return '<span class="sw" style="border-color:var(' + st[0] + ');border-top-style:' + (st[1].length ? 'dashed' : 'solid') + ';margin-right:6px;vertical-align:middle"></span>'; }
+  /* ---------- compare routes: point of sail, worst conditions and crew work for each route ---------- */
+  function routeStats(s) {
+    var p = s.r.path, cr = sailsList(), st = { up: 0, reach: 0, down: 0, maxW: 0, maxWt: 0, maxS: 0, nm: 0, sails: 0, man: 0 }, last = null, side = 0;
+    for (var i = 1; i < p.length; i++) {
+      var q = p[i], a = p[i - 1], dt = q.t - a.t, twa = Math.abs(q.twa || 0);
+      if (twa < 60) st.up += dt; else if (twa > 120) st.down += dt; else st.reach += dt;
+      if ((q.tws || 0) > st.maxW) { st.maxW = q.tws; st.maxWt = q.t; }
+      if ((q.hs || 0) > st.maxS) st.maxS = q.hs;
+      st.nm += FSRouter.dist(a.la, a.lo, q.la, q.lo);
+      var sl = FSRouter.sailFor(q, cr);   /* a change counts once the new sail has been up for half an hour */
+      if (sl && sl !== last) { if (sl !== st.cand) { st.cand = sl; st.candT = q.t; } else if (q.t - st.candT >= 0.5) { if (last) st.sails++; last = sl; st.cand = null; } } else st.cand = null;
+      var sd = (q.twa || 0) < 0 ? -1 : 1; if (side && sd !== side) st.man++; side = sd;
+    }
+    var T = st.up + st.reach + st.down || 1; st.upP = st.up / T; st.reachP = st.reach / T; st.downP = st.down / T;
+    return st;
+  }
+  function compareTable() {
+    if (!S.routes || !S.routes.length) { $('compare').innerHTML = ''; return; }
+    var R = S.routes.map(function (s) { return { s: s, st: routeStats(s) }; }), pc = function (x) { return Math.round(x * 100) + '%'; };
+    var rows = [['Finish', function (x) { return clockH(x.s.r.finish).slice(4); }], ['Elapsed', function (x) { return fmtH(x.s.r.finish - S.start.t); }], ['Distance sailed', function (x) { return Math.round(x.st.nm) + ' nm'; }],
+      ['Upwind', function (x) { return pc(x.st.upP); }], ['Reaching', function (x) { return pc(x.st.reachP); }], ['Downwind', function (x) { return pc(x.st.downP); }],
+      ['Most wind', function (x) { return x.st.maxW.toFixed(0) + ' kn, ' + clockH(x.st.maxWt).slice(4, 13); }], ['Biggest sea', function (x) { return x.st.maxS ? x.st.maxS.toFixed(1) + ' m' : '-'; }],
+      ['Sail changes', function (x) { return x.st.sails; }], ['Tacks and gybes', function (x) { return x.st.man; }]];
+    var h = '<tr><th></th>' + R.map(function (x) { return '<th>' + swatch(x.s) + (x.s.combined ? 'Comb.' : short(x.s.id)) + '</th>'; }).join('') + '</tr>';
+    rows.forEach(function (r) { h += '<tr><td style="font-family:var(--f-body)">' + r[0] + '</td>' + R.map(function (x) { return '<td' + (x.s === S.sel ? ' class="best"' : '') + '>' + r[1](x) + '</td>'; }).join('') + '</tr>'; });
+    $('compare').innerHTML = h;
+  }
   function matrix() {
     var M = S.matrix; if (!M) return;
     var mins = M.models.map(function (m, j) { return Math.min.apply(null, M.cols[j]); });
@@ -727,7 +754,7 @@
         M.models.map(function (m, j) { return '<td class="' + (Math.abs(M.cols[j][i] - mins[j]) < 1e-6 ? 'best' : '') + '">' + fmtH(M.cols[j][i] - M.start) + '</td>'; }).join('') +
         '<td class="' + (s.best ? 'best' : '') + '">' + fmtH(s.mean - M.start) + '</td><td>' + fmtH(s.worst - M.start) + '</td></tr>';
     });
-    $('matrix').innerHTML = h;
+    $('matrix').innerHTML = h; compareTable();
     [].forEach.call($('matrix').querySelectorAll('tr.click'), function (tr) { tr.onclick = function () { S.sel = S.routes[+tr.dataset.i]; ghosts().then(function () { matrix(); plan(); fleetTable(); update(); }); }; });
     var best = S.routes.find(function (s) { return s.best; }), fins = S.routes.map(function (s) { return s.r.finish; }), spread = Math.max.apply(null, fins) - Math.min.apply(null, fins);
     var comb = S.routes.find(function (s) { return s.combined; });

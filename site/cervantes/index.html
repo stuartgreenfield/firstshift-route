@@ -221,6 +221,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .mobtime{font:600 34px var(--f-data);font-variant-numeric:tabular-nums}.mobtime small{display:block;font:12px var(--f-data);color:var(--muted)}
 #mobTxt>div{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}#mobTxt>div span{color:var(--muted);font-size:13px}#mobTxt>div b{font:600 20px var(--f-data);text-align:right}
 .bar{grid-template-columns:auto auto minmax(0,1fr) auto}
+@media (min-width:900px){.bar{grid-template-columns:auto auto minmax(200px,1fr) auto auto}}
 @media (max-width:899px){.bar.fh{grid-template-columns:auto auto auto minmax(0,1fr)}.bar.fh #time{grid-column:1/-1;grid-row:2}.bar.fh .clock{grid-column:4;grid-row:1}.bar.fh .now{grid-row:3}}
 
 #aisTable tr.danger td{color:#ff3b30;font-weight:700}#aisTable tr{cursor:pointer}.aish{font:600 13px var(--f-head);margin:4px 0 6px;display:flex;gap:8px;align-items:baseline}
@@ -269,6 +270,9 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="finbox" id="finBox" aria-label="Finish times"></div>
       <p class="note" id="decNote"></p>
       <div class="tw"><table id="matrix"></table></div>
+      <h4 class="xh">Compare the routes</h4>
+      <div class="tw"><table id="compare"></table></div>
+      <p class="note">Each route sailed in its own forecast: time on each point of sail, the most wind and sea it meets, and the work for the crew. Upwind is under 60° true wind angle, downwind over 120°.</p>
       <p class="note" id="runNote"></p>
     </div>
     <div class="pbody" id="t-plan" hidden><div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
