@@ -454,7 +454,7 @@
     var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + list.slice(0, 30).map(function (x) {
       var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span></td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
     $('aisTable').innerHTML = h; $('aisBox').hidden = false;
-    $('aisNote').textContent = list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : 'live') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
+    $('aisNote').textContent = list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'live from the shore network, updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
     [].forEach.call($('aisTable').querySelectorAll('tr[data-mmsi]'), function (tr) { tr.onclick = function () { var x = AIS.tg.t[tr.dataset.mmsi]; if (x) { view.la = x.lat; view.lo = x.lon; draw(); } }; });
   }
   function aisDraw() {
@@ -471,10 +471,22 @@
     });
     ctx.restore();
   }
+  /* live AIS from the shore network through FirstShift's relay (/api/ais), every 30 seconds while online */
+  function aisLive() {
+    if (AIS.src !== 'live' || AIS.busy || Date.now() - (AIS.liveAt || 0) < 30000 || !navigator.onLine) return;
+    var la0 = Math.max(35.5, LA(H)), la1 = Math.min(61.5, LA(70)), lo0 = Math.max(-15, LO(0)), lo1 = Math.min(12, LO(W)), cl = (la0 + la1) / 2, co = (lo0 + lo1) / 2;
+    la0 = Math.max(la0, cl - 3); la1 = Math.min(la1, cl + 3); lo0 = Math.max(lo0, co - 5); lo1 = Math.min(lo1, co + 5);
+    AIS.busy = true; AIS.liveAt = Date.now();
+    fetch('/api/ais?s=' + la0.toFixed(1) + '&n=' + la1.toFixed(1) + '&w=' + lo0.toFixed(1) + '&e=' + lo1.toFixed(1)).then(function (r) { return r.json(); }).then(function (j) {
+      AIS.busy = false; if (j.error) { AIS.err = j.error; aisUpdate(); return; } AIS.err = '';
+      j.targets.forEach(function (x) { AIS.tg.add(x, Date.now()); }); AIS.lines = (AIS.lines || 0) + j.targets.length; aisUpdate(); draw();
+    }).catch(function () { AIS.busy = false; AIS.err = 'Live AIS server not reachable.'; aisUpdate(); });
+  }
   function aisInit() {
-    var saved = store('fs-aisSrc'); if (saved && saved !== 'live') $('aisSrc').value = saved;
-    $('aisSrc').onchange = function () { AIS.src = this.value === 'live' ? 'off' : this.value; if (this.value === 'live') { busy('Live AIS needs a free aisstream.io key and a small FirstShift relay: coming next.'); setTimeout(function () { busy(''); }, 3500); this.value = 'off'; } store('fs-aisSrc', $('aisSrc').value); AIS.tg = new FSAIS.Targets(); AIS.fleet = null; AIS.lines = 0; aisUpdate(); draw(); };
+    var saved = store('fs-aisSrc'); if (saved) $('aisSrc').value = saved;
+    $('aisSrc').onchange = function () { AIS.src = this.value; store('fs-aisSrc', this.value); AIS.tg = new FSAIS.Targets(); AIS.fleet = null; AIS.lines = 0; AIS.liveAt = 0; aisUpdate(); draw(); };
     AIS.src = $('aisSrc').value;
+    setInterval(aisLive, 5000);
     setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
   }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
