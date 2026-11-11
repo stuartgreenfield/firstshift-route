@@ -18,6 +18,10 @@ Live: https://firstshift-route.pages.dev/cervantes/ and /fastnet/ (v0.5.0). Repo
 - docs/BOAT-CONNECTION-RESEARCH.md: linking Route to plotters and gateways.
 - Test card (to-do and feedback): https://claude.ai/artifact/YFzQi6rjdcpdww3Nrg31sw
 
+## Cloudflare settings still to do (Stuart)
+- AISSTREAM_KEY environment variable (free key from aisstream.io) for /api/ais.
+- KV namespace bound as ROUTE_KV for /api/boat/<code>.
+
 ## Waiting on Stuart
 - Plotter make and gateway details beyond "B&G Zeus" (which Zeus).
 - UKHO reply (English-side TSS, tidal streams).
