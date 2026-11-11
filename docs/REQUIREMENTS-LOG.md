@@ -18,6 +18,7 @@ Status: Built · Partly built · To build · Researching · Later.
 | 10:16 | Routes made on one device visible on the others, plus a local route on each | To build with the boat code |
 | 10:08 | Regular demo of each version, a to-do list, and competitor-inspired ideas; feedback saved per item | Built: test card (claude.ai/artifact/YFzQi6rjdcpdww3Nrg31sw) with video, checklist, to-do, ideas |
 | 10:11 | Work out use on phone, Mac, PC and tablet at the same time without a login | Answered: boat code |
+| 14:48 | AIS comes over the Zeus NMEA feed; build a test engine that emulates AIS over that channel and live test from a free online server | Built: AIS engine (decode and encode !AIVDM), targets, CPA alarm, test fleet in the app, Zeus 3 TCP emulator (scripts/ais-emulator.js), live relay /api/ais for aisstream.io. Waiting: free aisstream.io key |
 | 14:45 | Morning After's plotter: B&G Zeus 3 | Logged; dock test for the Wi-Fi stream and AIS written up in BOAT-CONNECTION-RESEARCH.md |
 | 14:40 | (item 1) Forecasts for the whole area | In progress: English Channel and southern North Sea area pages added to the forecast job; every Channel race and own courses inside the box route there. Irish Sea, Ireland and Biscay next |
 | 14:30 | (item 5) Man overboard | Built |
