@@ -43,10 +43,14 @@
     self.sample = function (k, la, lo, t) {
       var I = self.idx(la, lo); if (!I) return NaN;
       var T = self.tidx(t), out = 0, wt = 0;
+      var fy = I[2], fx = I[3], y0 = I[0], x0 = I[1], w00 = (1 - fy) * (1 - fx), w01 = (1 - fy) * fx, w10 = fy * (1 - fx), w11 = fy * fx;   // no arrays made per call: this runs millions of times a route
       for (var q = 0; q < 2; q++) {
         var ti = q ? T[1] : T[0], tw = q ? T[2] : 1 - T[2]; if (tw === 0) continue;
-        var c = [[0, 0, (1 - I[2]) * (1 - I[3])], [0, 1, (1 - I[2]) * I[3]], [1, 0, I[2] * (1 - I[3])], [1, 1, I[2] * I[3]]];
-        for (var j = 0; j < 4; j++) { var w = c[j][2] * tw; if (w <= 0) continue; var val = cell(k, ti, I[0] + c[j][0], I[1] + c[j][1]); if (val === val) { out += val * w; wt += w; } }
+        var w, val;
+        w = w00 * tw; if (w > 0) { val = cell(k, ti, y0, x0); if (val === val) { out += val * w; wt += w; } }
+        w = w01 * tw; if (w > 0) { val = cell(k, ti, y0, x0 + 1); if (val === val) { out += val * w; wt += w; } }
+        w = w10 * tw; if (w > 0) { val = cell(k, ti, y0 + 1, x0); if (val === val) { out += val * w; wt += w; } }
+        w = w11 * tw; if (w > 0) { val = cell(k, ti, y0 + 1, x0 + 1); if (val === val) { out += val * w; wt += w; } }
       }
       return wt > 0 ? out / wt : NaN;
     };
@@ -158,6 +162,12 @@
     var d1 = o(b1, b2, a1), d2 = o(b1, b2, a2), d3 = o(a1, a2, b1), d4 = o(a1, a2, b2);
     return d1 * d2 < 0 && d3 * d4 < 0;
   }
+  function crosses4(a1y, a1x, a2y, a2x, b1, b2) {   // as crosses(), without making arrays: called for every heading of every point
+    var d1 = (b2[1] - b1[1]) * (a1y - b1[0]) - (b2[0] - b1[0]) * (a1x - b1[1]), d2 = (b2[1] - b1[1]) * (a2y - b1[0]) - (b2[0] - b1[0]) * (a2x - b1[1]);
+    if (d1 * d2 >= 0) return false;
+    var d3 = (a2x - a1x) * (b1[0] - a1y) - (a2y - a1y) * (b1[1] - a1x), d4 = (a2x - a1x) * (b2[0] - a1y) - (a2y - a1y) * (b2[1] - a1x);
+    return d3 * d4 < 0;
+  }
   function dist(la1, lo1, la2, lo2) { var k = Math.cos((la1 + la2) / 2 * R), dy = (la2 - la1) * 60, dx = (lo2 - lo1) * 60 * k; return Math.sqrt(dx * dx + dy * dy); }
   function brg(la1, lo1, la2, lo2) { var k = Math.cos((la1 + la2) / 2 * R); return (Math.atan2((lo2 - lo1) * k, la2 - la1) / R + 360) % 360; }
 
@@ -191,7 +201,10 @@
     var nogo = (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; });
     function inside(ring, la, lo) { var c = false; for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) { var a = ring[i], q = ring[j]; if ((a[0] > la) !== (q[0] > la) && lo < (q[1] - a[1]) * (la - a[0]) / (q[0] - a[0]) + a[1]) c = !c; } return c; }
     function blocked(la, lo) { for (var i = 0; i < nogo.length; i++) { var b = nogo[i].b; if (la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3] && inside(nogo[i].r, la, lo)) return true; } return false; }
-    function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var z = depth.nearest('z', la, lo); return z === z && z <= -safety; }
+    /* water deep enough, as a ready-made map of cells: built once per depth layer and safety depth, so each step is a lookup rather than a search */
+    var wm = null;
+    if (depth) { depth._wet = depth._wet || {}; wm = depth._wet[safety]; if (!wm) { wm = new Uint8Array(depth.ny * depth.nx); for (var wy = 0; wy < depth.ny; wy++) for (var wx = 0; wx < depth.nx; wx++) { var zc = depth.cellAt('z', 0, wy, wx); if (zc === zc && zc <= -safety) wm[wy * depth.nx + wx] = 1; } depth._wet[safety] = wm; } }
+    function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var I = depth.idx(la, lo); if (!I) return false; return wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1; }
     var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [];
     for (var li = 0; li < o.legs.length; li++) {
       var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var far = leg.gate && dist(leg.gate.a[0], leg.gate.a[1], leg.gate.b[0], leg.gate.b[1]) > 2;   /* offshore rounding mark: aim at the mark itself */
@@ -199,7 +212,8 @@
       var oLa = 0, oLo = 0; pts.forEach(function (p) { oLa += p.la; oLo += p.lo; }); oLa /= pts.length; oLo /= pts.length;
       var kO = Math.cos(oLa * R), done = false;
       for (var step = 0; step < maxSteps; step++) {
-        var cand = [], hit = [], calm = 0;
+        var hit = [], calm = 0, ncand = 0, best = new Array(sectors), bestS = new Float64Array(sectors).fill(-Infinity), secW = 360 / sectors, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
+        var gate = leg.gate, ga = gate && gate.a, gb = gate && gate.b;
         for (var pi = 0; pi < pts.length; pi++) {
           var p = pts[pi], W = o.wind(p.la, p.lo, t), C = o.tide(p.la, p.lo, t), V = o.wave ? o.wave(p.la, p.lo, t) : [0, NaN];
           var tws = W[0], twd = W[1], kp = Math.cos(p.la * R); if (!(tws > 0)) calm++;
@@ -212,20 +226,18 @@
             var run = Math.max(0, dt - lost) / 3600;
             var dn = (s * cosH[hi] * run + C[1] * dt / 3600), de = (s * sinH[hi] * run + C[0] * dt / 3600);
             var nla = p.la + dn / 60, nlo = p.lo + de / (60 * kp);
-            if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
-            var c = { la: nla, lo: nlo, par: pi, hdg: H[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
             var arrived = false;
-            if (leg.gate) {
-              arrived = crosses([p.la, p.lo], [nla, nlo], leg.gate.a, leg.gate.b);
+            if (gate) {
+              arrived = crosses4(p.la, p.lo, nla, nlo, ga, gb);
               /* only a crossing that goes round the mark the right way counts: anticlockwise for a mark left to port, clockwise to starboard.
                  Without this a boat on the wrong side of a turn-back mark (Eddystone) could cross the line on its way out and count as rounded. */
-              if (arrived && leg.gate.side) {
-                var gk = Math.cos(leg.gate.a[0] * R), gx = (p.lo - leg.gate.a[1]) * gk, gy = p.la - leg.gate.a[0], hx = (nlo - leg.gate.a[1]) * gk, hy = nla - leg.gate.a[0], sw = gx * hy - gy * hx;
-                var right = leg.gate.side === 'port' ? sw > 0 : sw < 0;
+              if (arrived && gate.side) {
+                var gk = Math.cos(ga[0] * R), gx = (p.lo - ga[1]) * gk, gy = p.la - ga[0], hx = (nlo - ga[1]) * gk, hy = nla - ga[0], sw = gx * hy - gy * hx;
+                var right = gate.side === 'port' ? sw > 0 : sw < 0;
                 /* the line is a wall the wrong way: a boat cannot cross it going the wrong way round, so it cannot step across and back */
                 if (!right) continue;
                 /* and the rounding only counts close to the mark: going round the far end of the line is not rounding the mark */
-                if (Math.min(dist(p.la, p.lo, leg.gate.a[0], leg.gate.a[1]), dist(nla, nlo, leg.gate.a[0], leg.gate.a[1])) > 6) arrived = false;
+                if (Math.min(dist(p.la, p.lo, ga[0], ga[1]), dist(nla, nlo, ga[0], ga[1])) > 6) arrived = false;
               }
             }
             else {
@@ -233,7 +245,17 @@
               var dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy + 1e-12)));
               arrived = Math.hypot(ax + u * dx, ay + u * dy) <= (leg.r || 0.5);
             }
-            if (arrived) hit.push(c); else cand.push(c);
+            var sec = 0, score = 0;
+            if (!arrived) {   /* prune as we go: keep only the best point in each bearing sector from the leg origin, and test the water only for a new best */
+              var bx2 = (nlo - oLo) * kO, by2 = nla - oLa, bb = (Math.atan2(bx2, by2) / R + 360) % 360;
+              sec = Math.min(sectors - 1, Math.floor(bb / secW));
+              var dtg = dist(nla, nlo, tgt[0], tgt[1]), dfo = Math.sqrt(bx2 * bx2 + by2 * by2) * 60;
+              score = dfo - wDtg * dtg - (lost > 0 ? 0.01 : 0) + 2 * Math.max(0, near0 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
+              if (score <= bestS[sec]) { ncand++; continue; }
+            }
+            if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
+            var c = { la: nla, lo: nlo, par: pi, hdg: H[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
+            if (arrived) hit.push(c); else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
           }
         }
         t += dt / 3600;
@@ -242,7 +264,7 @@
           pts = hit.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
           done = true; break;
         }
-        if (!cand.length && calm === pts.length && pts.length) {   /* no wind anywhere on the front: the forecasts have run out before the finish */
+        if (!ncand && calm === pts.length && pts.length) {   /* no wind anywhere on the front: the forecasts have run out before the finish */
           var bp = pts[0], bd = 1e9; pts.forEach(function (q) { var d = dist(q.la, q.lo, tgt[0], tgt[1]); if (d < bd) { bd = d; bp = q; } });
           var togo = bd, prevP = tgt; for (var lj = li + 1; lj < o.legs.length; lj++) { var L2 = o.legs[lj], nx = L2.point || L2.gate.a; togo += dist(prevP[0], prevP[1], nx[0], nx[1]); prevP = nx; }
           if (o.partial) {   /* keep the route as far as the forecasts reach, and say how far is left */
@@ -253,17 +275,7 @@
           }
           var e0 = new Error('The forecasts end ' + Math.round(t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
         }
-        if (!cand.length) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
-        // prune: best point in each bearing sector from the leg origin
-        var best = new Array(sectors);
-        for (var ci = 0; ci < cand.length; ci++) {
-          var c2 = cand[ci], bx2 = (c2.lo - oLo) * kO, by2 = c2.la - oLa, b = (Math.atan2(bx2, by2) / R + 360) % 360;
-          var sec = Math.min(sectors - 1, Math.floor(b / (360 / sectors)));
-          var dtg = dist(c2.la, c2.lo, tgt[0], tgt[1]), dfo = Math.hypot(bx2, by2) * 60;
-          var score = dfo - (far ? 0.6 : 0.15) * dtg - (c2.tack ? 0.01 : 0); score += leg.point || far ? 2 * Math.max(0, 25 - dtg) : 2 * Math.max(0, 8 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
-          c2.score = score;
-          if (!best[sec] || score > best[sec].score) best[sec] = c2;
-        }
+        if (!ncand) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
         var keep = best.filter(Boolean);
         hist.push({ pts: keep, t: t, leg: li });
         pts = keep.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
