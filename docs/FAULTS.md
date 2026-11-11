@@ -12,3 +12,10 @@ Faults Stuart or testing has found, with what was checked and the fix. Newest fi
 
 ## F06 Scheduled forecast builds skipped (11 Nov)
 GitHub ran only the 07:47 back-up schedule today; 13:17 and 13:47 did not start. Manual dispatch at 19:00. Fix options: an outside timer (Cloudflare cron or a scheduled task) that calls the workflow dispatch. Open.
+Update 20:25: the 19:17 schedule did run, but at 20:14 (57 minutes late). GitHub delays and sometimes drops scheduled runs at busy times.
+
+## F07 Fastnet pre-routes stop after 2 of 6 start times (11 Nov)
+Channel and North Sea pages got all 6; Fastnet only 2 in the 19:30 publish. GitHub's log download fails through our connection, so the cause is not confirmed. Changed: Fastnet routed first, 25 minutes allowed per start, step 75 minutes, and each page now writes pre/log.json on the live site. Check after the next run.
+
+## F08 Scheduled publish overwrote the newer app (11 Nov)
+The 19:00 build started from main before v0.5.1 was committed and published the older app at 19:30. Re-overlaid at 20:22; later builds take v0.5.1 from main. Rule: do not overlay app changes while a build is running without re-checking after it publishes.
