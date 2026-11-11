@@ -25,4 +25,4 @@ jobs:
           git config user.name "FirstShift chart data job"
           git config user.email "forecasts@users.noreply.github.com"
           git add site/zones
-          git diff --cached --quiet && echo "No change" || (git commit -q -m "Chart data $(date -u +%Y-%m-%d)" && git push)
+          git diff --cached --quiet && echo "No change" || (git commit -q -m "Chart data $(date -u +%Y-%m-%d)" && git pull -q --rebase origin main && git push)
