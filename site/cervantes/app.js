@@ -12,11 +12,17 @@
   function readCss() { var cs = getComputedStyle(document.documentElement); ['--sea', '--sea2', '--land', '--landedge', '--shoal', '--shoaledge', '--route', '--wind', '--tide', '--ink', '--muted', '--panel', '--ghost', '--out', '--m1', '--m2', '--m3', '--m4', '--m5'].forEach(function (k) { css[k] = cs.getPropertyValue(k).trim(); }); }
   /* screen: follow the device, light, dark, or night red; the Night button flips between night and the last day setting */
   var dayMode = 'auto';
+  var MODEICON = { dark: '<svg viewBox="0 0 24 24"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg>',
+    night: '<svg viewBox="0 0 24 24"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z" fill="currentColor"/></svg>',
+    light: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>' };
   function setMode(mode) {
     var r = document.documentElement;
     if (mode === 'night') r.setAttribute('data-night', ''); else { r.removeAttribute('data-night'); dayMode = mode; store('fs-theme', mode); }
     if (mode === 'light' || mode === 'dark') r.setAttribute('data-theme', mode); else if (mode === 'auto') r.removeAttribute('data-theme');
     $('nightBtn').setAttribute('aria-pressed', mode === 'night'); store('fs-night', mode === 'night' ? '1' : '0');
+    var cur = mode === 'night' ? 'night' : mode === 'light' || (mode === 'auto' && !matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+    $('nightBtn').innerHTML = MODEICON[cur] + '<span class="lbl">' + { dark: 'Dark', night: 'Night', light: 'Light' }[cur] + '</span>';
+    $('nightBtn').title = 'Screen: ' + { dark: 'dark', night: 'night red', light: 'light' }[cur] + '. Tap for ' + { dark: 'night red', night: 'light', light: 'dark' }[cur];
     [].forEach.call($('modeSeg').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
     readCss(); buildDepth(); draw(); if (!$('sheet').hidden) plotPolar();
   }
@@ -164,7 +170,10 @@
     };
     $('time').oninput = function () { S.t = tFromSlider(); update(); };
     $('play').onclick = togglePlay;
-    $('nightBtn').onclick = function () { setNight(!document.documentElement.hasAttribute('data-night')); };
+    $('nightBtn').onclick = function () {   /* one button cycles dark, night red, light */
+      var r = document.documentElement, cur = r.hasAttribute('data-night') ? 'night' : r.getAttribute('data-theme') === 'light' || (!r.getAttribute('data-theme') && !matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+      setMode({ dark: 'night', night: 'light', light: 'dark' }[cur]);
+    };
     [].forEach.call($('modeSeg').children, function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
     if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'), ch = function () { if (dayMode === 'auto' && !document.documentElement.hasAttribute('data-night')) { readCss(); buildDepth(); draw(); } }; if (mq.addEventListener) mq.addEventListener('change', ch); else if (mq.addListener) mq.addListener(ch); }
     $('setBtn').onclick = function () { $('sheet').hidden = false; plotPolar(); };
