@@ -10,7 +10,7 @@ jobs:
           B=https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt
           R=$(date -u -d '-12 hours' +%Y-%m-%dT)$(printf '%02d' $(( ($(date -u -d '-12 hours' +%-H)/6)*6 ))):00:00Z; echo run $R
           for f in arome/0025/SP1/arome__0025__SP1__00H06H__$R.grib2 arome/0025/SP1/arome__0025__SP1__07H12H__$R.grib2 arome/001/SP1/arome__001__SP1__00H__$R.grib2 \
-                   arpege/01/SP1/arpege__01__SP1__000H012H__$R.grib2 arpege/01/SP1/arpege__01__SP1__000H024H__$R.grib2 arpege/01/SP1/arpege__01__SP1__013H024H__$R.grib2 arpege/01/SP1/arpege__01__SP1__073H102H__$R.grib2 \
+                   arpege/01/SP1/arpege__01__SP1__000H012H__$R.grib2 arpege/01/SP1/arpege__01__SP1__000H024H__$R.grib2 arpege/01/SP1/arpege__01__SP1__013H024H__$R.grib2 arpege/01/SP1/arpege__01__SP1__073H084H__$R.grib2 arpege/01/SP1/arpege__01__SP1__097H102H__$R.grib2 arome/0025/SP1/arome__0025__SP1__43H48H__$R.grib2 arome/0025/SP1/arome__0025__SP1__37H42H__$R.grib2 \
                    arpege/025/SP1/arpege__025__SP1__000H024H__$R.grib2 arpege/025/SP1/arpege__025__SP1__000H012H__$R.grib2; do
-            printf '%s ' $f; curl -s -o /dev/null -w '%{http_code} %{size_download}\n' -r 0-0 "$B/$R/$f"
+            printf '%s ' $f; curl -sI "$B/$R/$f" | grep -i content-length | tr -d '\r'
           done
