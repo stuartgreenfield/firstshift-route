@@ -168,6 +168,10 @@
     // mark to port: boat keeps the buoy on its left, so the ray (no-go side) points to the boat's right of the mark... the inside of a left turn
     var leftTurn = turn < 0, ray;
     if (side === 'port') ray = leftTurn ? (inside + 180) % 360 : inside; else ray = leftTurn ? inside : (inside + 180) % 360;
+    /* a turn-back mark (out and back, such as Eddystone on the Myth of Malham): the bisector would lie along the course itself,
+       so a boat could count as rounding when it reached the far end of the line, miles short of the mark. Put the line
+       square across the course instead, on the side the boat must not pass. */
+    if (Math.abs(turn) >= 135) ray = (bin + (side === 'port' ? -90 : 90) + 360) % 360;
     var L = (lenNm || 1.5) / 60, k = Math.cos(mark.lat * R);
     return { a: [mark.lat, mark.lon], b: [mark.lat + L * Math.cos(ray * R), mark.lon + L * Math.sin(ray * R) / k], ray: ray };
   }
