@@ -80,6 +80,11 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .tabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);align-items:center}
 .tab{flex:1;border:1px solid transparent;background:none;border-radius:8px;padding:8px 6px;cursor:pointer;font:600 13px var(--f-head);color:var(--muted);min-height:40px}
 .tab[aria-selected="true"]{background:var(--soft);border-color:var(--line);color:var(--ink)}
+.tabs .tab{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.ti{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;shape-rendering:geometricPrecision}
+.ti .k{fill:currentColor}.ti .f{fill:currentColor;fill-opacity:.16}.ti .dash{stroke-dasharray:.01 3.1;stroke-width:2.1}
+.tab[aria-selected="true"] .ti{color:var(--route)}
+@media (max-width:420px){.tabs .tab{flex-direction:column;gap:2px;font-size:11.5px;padding:6px 2px}.ti{width:21px;height:21px}}
 .close{border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer;width:40px;height:40px}
 .pbody{overflow:auto;padding:12px 14px 16px;display:block;min-height:0;flex:1 1 auto}
 .pbody>*+*{margin-top:12px!important}
@@ -183,10 +188,10 @@ tr.click{cursor:pointer}
   <section class="panel collapsed" id="panel" hidden aria-label="Results">
     <div class="grab"></div>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="decision" aria-selected="true">Decision</button>
-      <button class="tab" role="tab" data-tab="plan" aria-selected="false">Plan</button>
-      <button class="tab" role="tab" data-tab="fleet" aria-selected="false">Fleet</button>
-      <button class="tab" role="tab" data-tab="data" aria-selected="false">Data</button>
+      <button class="tab" role="tab" data-tab="decision" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5V13"/><path class="dash" d="M12 13 6.2 5.8"/><path d="M12 13l4.7-6"/><path class="k" d="M19.6 3l-.7 5.8-4.6-3.6z"/></svg><span>Decision</span></button>
+      <button class="tab" role="tab" data-tab="plan" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3v15"/><path class="f" d="M12.2 4.2v13.3h7.1z"/><path d="M9.6 6.6v10.9H4.2z"/><path d="M3 20h18l-2 2.2H5z"/></svg><span>Plan</span></button>
+      <button class="tab" role="tab" data-tab="fleet" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path class="k" d="M12 2.6l4 7.6H8z"/><path d="M6 12.6l4 7.6H2z"/><path d="M18 12.6l4 7.6h-8z"/></svg><span>Fleet</span></button>
+      <button class="tab" role="tab" data-tab="data" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16l9 4.5 9-4.5"/></svg><span>Data</span></button>
       <button class="close" id="panelX" aria-label="Close results">×</button>
     </div>
     <div class="pbody" id="t-decision">
