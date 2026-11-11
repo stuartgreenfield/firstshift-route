@@ -24,6 +24,7 @@ for race in RACES:
     env = dict(os.environ, FS_DATA=data, FS_BOX=f"{b['s']},{b['n']},{b['w']},{b['e']}", FS_HOURS=str(hrs))
     def one(src):
         for i, c in enumerate(cyc):
+            if src in ('ecmwf', 'ecwav') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)
             t1 = time.time()

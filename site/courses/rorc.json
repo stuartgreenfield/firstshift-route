@@ -331,7 +331,7 @@
     ]
    ],
    "bandMax": 35,
-   "hours": 132,
+   "hours": 240,
    "fleet": [
     {
      "name": "Sunrise",
@@ -425,7 +425,7 @@
     "w": -5.3,
     "e": 1.7
    },
-   "hours": 135,
+   "hours": 240,
    "start": {
     "name": "Start, RYS line, Cowes",
     "lat": 50.7769,
@@ -456,7 +456,7 @@
     "w": 0.6,
     "e": 5.4
    },
-   "hours": 135,
+   "hours": 240,
    "start": {
     "name": "Start, off Harwich",
     "lat": 51.93,

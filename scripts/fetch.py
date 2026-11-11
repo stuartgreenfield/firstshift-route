@@ -10,7 +10,8 @@ BOX = dict(s=49.2, n=51.0, w=-2.3, e=0.6)
 _run = os.environ.get('FS_RUN', '2026050206')
 RUN = _run[:8], _run[8:10]
 T0 = np.datetime64(f'{_run[:4]}-{_run[4:6]}-{_run[6:8]}T{_run[8:10]}:00').astype('datetime64[s]').astype(float)
-HOURS = list(range(0, int(os.environ.get('FS_HOURS', '48')) + 1))
+HOURS_LONG = list(range(0, int(os.environ.get('FS_HOURS', '48')) + 1))   # the global models (ECMWF, AIFS, GFS) run out to 10 days and more
+HOURS = [h for h in HOURS_LONG if h <= 144]                                  # the regional models and tides stop well short of that
 if os.environ.get('FS_BOX'):
     _b = [float(x) for x in os.environ['FS_BOX'].split(',')]; BOX = dict(s=_b[0], n=_b[1], w=_b[2], e=_b[3])
 OUT = os.environ.get('FS_DATA', os.path.join(os.path.dirname(__file__), 'data')); os.makedirs(OUT, exist_ok=True)
@@ -63,7 +64,7 @@ def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1):
     base = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'
     d, r = RUN
     out = {p: [] for p in params}; hrs = []; lat = lon = None
-    for hh in HOURS[::step]:
+    for hh in [h for h in HOURS_LONG if h % step == 0 and (h <= 144 or h % 6 == 0)]:   # ECMWF: 3-hourly to 144 h, then 6-hourly to 240 h
         stem = f'{d}/{r}z/{model}/0p25/{stream}/{d}{r}0000-{hh}h-{stream if model=="ifs" else "oper"}-fc'
         try:
             idx = [json.loads(l) for l in get(f'{base}/{stem}.index', tries=2).decode().splitlines() if l.strip()]
@@ -85,7 +86,7 @@ def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1):
 def gfs():
     d, r = RUN; base = 'https://noaa-gfs-bdp-pds.s3.amazonaws.com'
     U = []; V = []; hrs = []; lat = lon = None
-    for hh in [h for h in HOURS if h <= 48 or h % 3 == 0]:   # hourly for two days, then 3-hourly (GFS is hourly only to 120 h)
+    for hh in [h for h in HOURS_LONG if h <= 48 or (h % 3 == 0 and h <= 120) or h % 6 == 0]:   # hourly for two days, then 3-hourly (GFS is hourly only to 120 h)
         f = f'{base}/gfs.{d}/{r}/atmos/gfs.t{r}z.pgrb2.0p25.f{hh:03d}'
         lines = get(f + '.idx', tries=3).decode().splitlines()
         got = {}
