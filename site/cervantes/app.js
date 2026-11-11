@@ -47,7 +47,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); crewInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); crewInit(); askInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -538,6 +538,24 @@
       S.pendingCourse = { name: cc.n, start: P0[0], marks: P0.slice(1, -1), finish: P0[P0.length - 1] }; } catch (e) {} }
     if (st) S.pendingStart = st;
   }
+  /* ---------- Ask Route: fixed questions answered from the chosen route at the replay time (or now, from your GPS) ---------- */
+  function ask(q) {
+    var s = S.sel; if (!s) return 'Route first: there is no route to answer from yet.';
+    var p = s.r.path, ts = tsOf(p), t = S.t, pos = posAt(ts, p, t); if (!pos) return 'The replay time is before the start. Move the slider to the race.';
+    if (pos.done) return 'At this time the boat has finished, at ' + clockH(s.r.finish).slice(4) + ' UTC.';
+    var i0 = Math.max(1, (pos.i || 0) + 1), nm = function (a, b) { return FSRouter.dist(a.la, a.lo, b.la, b.lo); }, when = function (tt) { var m = Math.round((tt - t) * 60); return clockH(tt).slice(4) + ' UTC, ' + (m < 90 ? m + ' minutes' : (m / 60).toFixed(1) + ' hours') + ' from now'; };
+    var cur = p[i0], name = s.combined ? 'the combined route' : 'the ' + short(s.id) + ' route';
+    if (q === 'tack') { var side = cur.twa < 0 ? -1 : 1; for (var i = i0 + 1; i < p.length; i++) { var sd = p[i].twa < 0 ? -1 : 1; if (sd !== side) return 'On ' + name + ', the next ' + (Math.abs(p[i].twa) > 90 ? 'gybe' : 'tack') + ' is at ' + when(p[i - 1].t) + ', onto ' + (sd < 0 ? 'port' : 'starboard') + ' heading ' + pad(p[i].hdg) + '°, true wind angle ' + Math.abs(Math.round(p[i].twa)) + '°.'; } return 'No more tacks or gybes on ' + name + ' before the finish.'; }
+    if (q === 'sail') { var cr = sailsList(), now = FSRouter.sailFor(cur, cr); for (var j = i0 + 1; j < p.length; j++) { var sl = FSRouter.sailFor(p[j], cr); if (sl && sl !== now) { var k = j; while (k < p.length && FSRouter.sailFor(p[k], cr) === sl && p[k].t - p[j].t < 0.5) k++; if (k >= p.length || p[k].t - p[j].t >= 0.5) return 'Sail now: ' + (now || 'none set') + '. Next change to ' + sl + ' at ' + when(p[j].t) + ', true wind ' + Math.round(p[j].tws) + ' knots at ' + Math.abs(Math.round(p[j].twa)) + '°.'; } } return 'Stay with ' + (now || 'the same sail') + ' to the finish on ' + name + '.'; }
+    if (q === 'shift') { var best = null; for (var m = i0; m < p.length && p[m].t - t <= 12; m++) { var d = ((p[m].twd - cur.twd + 540) % 360) - 180; if (!best || Math.abs(d) > Math.abs(best.d)) best = { d: d, q: p[m] }; } if (!best || Math.abs(best.d) < 10) return 'No shift over 10° in the next 12 hours: wind stays about ' + pad(cur.twd) + '° at ' + Math.round(cur.tws) + ' knots.'; return 'Biggest shift in the next 12 hours: ' + Math.abs(Math.round(best.d)) + '° ' + (best.d > 0 ? 'veer' : 'back') + ', from ' + pad(cur.twd) + '° to ' + pad(best.q.twd) + '° by ' + when(best.q.t) + ', ' + Math.round(best.q.tws) + ' knots.'; }
+    if (q === 'mark') { var arr = s.r.arrivals.filter(function (a) { return a.t > t; })[0]; if (!arr) return 'All marks rounded.'; var lg = S.legs.filter(function (l) { return l.name === arr.name; })[0], at = lg && lg.at, dd = at ? FSRouter.dist(pos.la, pos.lo, at[0], at[1]) : null; return 'Next mark ' + arr.name + (dd != null ? ', ' + dd.toFixed(1) + ' nm away, bearing ' + pad(FSRouter.brg(pos.la, pos.lo, at[0], at[1])) + '°' : '') + '. Routed arrival ' + when(arr.t) + '.'; }
+    if (q === 'tide') { var c = cur.cu != null ? [cur.cu, cur.cv] : [0, 0], sp = Math.hypot(c[0], c[1]); if (sp < 0.1) return 'Tide is slack here.'; var dir = (Math.atan2(c[0], c[1]) / R + 360) % 360, rel = ((dir - cur.hdg + 540) % 360) - 180; return 'Tide ' + sp.toFixed(1) + ' knots setting ' + pad(dir) + '°: ' + (Math.abs(rel) < 45 ? 'with you' : Math.abs(rel) > 135 ? 'against you' : 'across you from ' + (rel > 0 ? 'port' : 'starboard')) + ' on a heading of ' + pad(cur.hdg) + '°.'; }
+    return [ask('mark'), ask('tack'), ask('sail'), ask('shift')].join(' ');
+  }
+  function askInit() {
+    [].forEach.call($('askRow').querySelectorAll('[data-q]'), function (b) { b.onclick = function () { $('askTxt').textContent = ask(b.dataset.q); $('askAns').hidden = false; }; });
+    $('askSay').onclick = function () { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance($('askTxt').textContent.replace(/°/g, ' degrees').replace(/UTC/g, 'U T C')); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; speechSynthesis.speak(u); } catch (e) {} };
+  }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop();
@@ -789,6 +807,9 @@
     ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. Close Settings and Route works it out again; Back to the forecast undoes it.'],
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
+    ['Ask Route', 'In the Plan tab, Ask Route answers set questions from the chosen route at the replay time: the next mark, the next tack or gybe, the next sail change, the biggest wind shift in the next 12 hours, and what the tide is doing. Read it out speaks the answer.'],
+    ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],
+    ['AIS', 'Settings, Display, AIS. Test fleet shows emulated race boats and ships to try the screens; Live online shows real AIS from shore stations when you have signal. The Fleet tab lists every target with range, bearing, CPA and time to CPA; a target inside the CPA alarm flashes red and beeps.'],
     ['Man overboard', 'Press and hold the red MOB button for one second. Route marks the position from the phone GPS, starts the clock and shows the bearing and distance back to where they went in, and to where the tide has probably carried them. Show on chart shrinks the panel so you can see both. Hold End MOB to finish. Route is no substitute for the boat\'s own MOB drill, the VHF DSC button and the Coastguard.'],
     ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you.']
   ];

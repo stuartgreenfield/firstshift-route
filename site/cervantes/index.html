@@ -231,6 +231,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px){.offb{position:absolute;left:var(--gut);top:46px;margin:0;font-size:8px;padding:1px 4px;z-index:6}}
 .modemenu{position:fixed;z-index:25;display:grid;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:180px}.modemenu[hidden]{display:none!important}.modemenu button{border:0;background:none;color:var(--ink);text-align:left;padding:10px 12px;border-radius:8px;font:600 14px var(--f-body);cursor:pointer}.modemenu button[aria-pressed="true"]{background:var(--soft);color:var(--brand)}
 .xh{font:600 14px var(--f-head);margin:14px 0 4px}
+.askrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.askrow .btn{min-height:36px;padding:6px 10px;font-size:13px}.ans{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:grid;gap:8px}.ans p{margin:0;font-size:14px;line-height:1.5}.ans .btn{justify-self:start}
 </style>
 
 <div class="app" id="app">
@@ -275,7 +276,11 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <p class="note">Each route sailed in its own forecast: time on each point of sail, the most wind and sea it meets, and the work for the crew. Upwind is under 60° true wind angle, downwind over 120°.</p>
       <p class="note" id="runNote"></p>
     </div>
-    <div class="pbody" id="t-plan" hidden><div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
+    <div class="pbody" id="t-plan" hidden>
+      <h4 class="xh" style="margin-top:0">Ask Route</h4>
+      <div class="askrow" id="askRow"><button class="btn" data-q="next">What next?</button><button class="btn" data-q="tack">Next tack or gybe</button><button class="btn" data-q="sail">Next sail change</button><button class="btn" data-q="shift">Biggest wind shift ahead</button><button class="btn" data-q="mark">Next mark</button><button class="btn" data-q="tide">Tide now</button></div>
+      <div class="ans" id="askAns" hidden><p id="askTxt"></p><button class="btn say" id="askSay">Read it out</button></div>
+      <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
       <h4 class="xh">Send to the crew</h4>
       <div class="xrow"><button class="btn primary" id="xCrew">Send to crew…</button><button class="btn" id="xCopy">Copy text</button></div>
       <p class="note">Sends a short summary (finish times, the first part of the plan) and a link that opens this course and start in Route on their phones. On a phone it opens the share sheet: choose WhatsApp, Messages or email. On a computer it opens WhatsApp in the browser, or use Copy text and paste it anywhere.</p>
