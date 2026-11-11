@@ -1,0 +1,49 @@
+name: Check
+# Drives every part of FirstShift Route in a real browser at phone, tablet and computer sizes (tests/check.js):
+# after every forecast build, after a change to the app, once a day, and by hand. The report and screenshots are
+# kept with the run; a failure fails the run, and GitHub emails the owner.
+on:
+  workflow_run:
+    workflows: [Forecasts]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['site/cervantes/**', 'site/courses/**', 'site/functions/**', 'tests/**']
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+concurrency:
+  group: check
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for the site to publish
+        if: github.event_name == 'push'
+        run: sleep 240
+      - name: Install the browser
+        run: |
+          npm i --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium || npx playwright install chromium
+      - name: Run the full check against the live site
+        run: node tests/check.js https://firstshift-route.pages.dev check-out
+      - name: Report
+        if: always()
+        run: |
+          if [ -f check-out/report.md ]; then cat check-out/report.md >> "$GITHUB_STEP_SUMMARY"; fi
+          python3 - <<'PY'
+          import json, sys
+          try: r = json.load(open('check-out/report.json'))
+          except Exception: sys.exit(1)
+          print(f"{r['pass']} passed, {r['fail']} failed")
+          sys.exit(1 if r['fail'] else 0)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-report
+          path: check-out
+          retention-days: 14
