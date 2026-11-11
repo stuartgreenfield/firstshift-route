@@ -19,3 +19,15 @@ Channel and North Sea pages got all 6; Fastnet only 2 in the 19:30 publish. GitH
 
 ## F08 Scheduled publish overwrote the newer app (11 Nov)
 The 19:00 build started from main before v0.5.1 was committed and published the older app at 19:30. Re-overlaid at 20:22; later builds take v0.5.1 from main. Rule: do not overlay app changes while a build is running without re-checking after it publishes.
+
+## F09 Out-and-back marks rounded short (11 Nov) - fixed
+Eddystone (Myth) rounding line lay along the course, 10 nm long: routes turned 10 nm short. Same geometry stopped the Fastnet routes at Fastnet Rock. Now a turn-back mark has its line square across the course.
+
+## F10 Race opened on a page without its forecasts (11 Nov) - fixed
+The remembered race (Myth) opened on the Cervantes page, whose forecasts start east of Swanage. A race now always opens on its own page.
+
+## F11 Area pages only 66 h / 54 h of forecast (11 Nov) - fixed
+Now 135 h, like the Fastnet.
+
+## F12 Forecast build published an older app (F08 again) - fixed
+The job now takes the newest app from main just before each publish.

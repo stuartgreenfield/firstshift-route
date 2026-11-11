@@ -117,3 +117,11 @@ Status: Built · Partly built · To build · Researching · Later.
   - Item 14: Layers: Show all and Just the route. Done.
   - Item 15: Fleet tab was empty (no 2027 entry lists); added Boats you are racing, add by hand or paste a list. Done.
 - Found: GitHub skipped the 13:17 scheduled forecast build (and its 13:47 back-up); a build was started by hand at 19:00. Needs a more reliable trigger.
+
+## 11 Nov 2026, 20:00 to 22:45 (stop and check)
+- 47. Guided set-up in the order a sailor thinks (boat, race, start, fleet, check, route); a new course moves to the area page that covers it. Built.
+- 48. "some gribs are 3 days some up to 14 ... inform the user": start step shows model by model whether the forecasts cover the race. Built. Longer (10-day) forecasts to do, after researching PredictWind (10 days, AROME then ECMWF chains, ensemble beyond) and NavimetriX (multi-GRIB chaining, ensemble routing).
+- "class start ... exact time": exact start to the minute in the set-up, course form and Settings. Built.
+- "automated testing ... each upgrade and once a day ... email report": tests/check.js (230 checks, 10 screen sizes); GitHub workflow Check runs after each forecast build, each app change, daily 05:41 UTC and by hand. Email report waits for Stuart's OK.
+- "Myth ... doesn't go around the Eddystone": real fault, fixed (out-and-back marks rounded 10 nm short). Also fixed the Fastnet not finishing.
+- Fixes from the check: race opened on the wrong page (Myth on Cervantes); every RORC race pre-routed; From here refuses land and recovers; phones on their side; address follows the course; smooth depth layer; area pages keep 135 h.
