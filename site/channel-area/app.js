@@ -472,7 +472,9 @@
     return AIS.fleet = f;
   }
   function aisEmulate() {   // positions at the replay time, encoded as !AIVDM and decoded back through the engine
-    var f = aisFleet(); if (!f) return; var lines = [], now = aisNowMs(), p = S.sel.r.path, ts = tsOf(p), t0 = S.start.t, k = Math.cos(50 * R);
+    var f = aisFleet(); if (!f) return;
+    if (AIS.lastT != null && Math.abs(S.t - AIS.lastT) > 0.25) Object.keys(AIS.tg.t).forEach(function (m) { AIS.tg.t[m].track = []; }); AIS.lastT = S.t;
+    var lines = [], now = aisNowMs(), p = S.sel.r.path, ts = tsOf(p), t0 = S.start.t, k = Math.cos(50 * R);
     f.forEach(function (b, i) {
       var x = Object.assign({}, b);
       if (b.kind === 'race') {
@@ -480,6 +482,7 @@
         x.lat = a.la + Math.sin((h - 90) * R) * 0 + Math.cos((h + 90) * R) * b.side / 60; x.lon = a.lo + Math.sin((h + 90) * R) * b.side / 60 / k; x.sog = (q.bsp || 6) * b.pace; x.cog = h; x.hdg = h;
       } else {
         var d = ((S.t - t0) * b.sog) % 120 - 60; x.lat = b.lat0 + Math.cos(b.cog * R) * d / 60; x.lon = b.lon0 + Math.sin(b.cog * R) * d / 60 / k; x.hdg = b.cog;
+        if (coastLand(x.lat, x.lon)) { if (AIS.tg.t[b.mmsi]) delete AIS.tg.t[b.mmsi]; return; }   /* a pretend ship never sails across land */
       }
       lines = lines.concat(FSAIS.encodePosition(x));
       if (!AIS.tg.t[b.mmsi] || !AIS.tg.t[b.mmsi].name) lines = lines.concat(FSAIS.encodeStatic(x, i));
@@ -513,11 +516,12 @@
   function aisDraw() {
     if (AIS.src === 'off' || !AIS.list) return; var flash = Math.floor(Date.now() / 400) % 2;
     ctx.save(); ctx.font = '600 10px Inter, sans-serif';
+    if (AIS.src === 'test') { ctx.font = '600 11px Inter, sans-serif'; ctx.fillStyle = css['--m3']; ctx.textAlign = 'right'; ctx.fillText('AIS: TEST FLEET, PRETEND BOATS', W - 12, H - 40); ctx.textAlign = 'left'; ctx.font = '600 10px Inter, sans-serif'; }
     AIS.list.forEach(function (x) {
       var px = X(x.lon), py = Y(x.lat); if (px < -20 || py < -20 || px > W + 20 || py > H + 20) return;
       var kind = FSAIS.shipKind(x), col = x.danger ? (flash ? '#ff3b30' : css['--ink']) : x.race ? css['--brand'] : kind === 'yacht' ? css['--ghost'] : css['--m3'];
       var h = x.hdg != null ? x.hdg : (x.cog || 0), sz = kind === 'yacht' ? 6 : 8;
-      if (x.track.length > 1) { ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath(); x.track.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.lineTo(px, py); ctx.stroke(); ctx.globalAlpha = 1; }
+      if (x.track.length > 1) { ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath(); var pq = null; x.track.concat([[x.lat, x.lon]]).forEach(function (q) { var jump = !pq || Math.abs(q[0] - pq[0]) > 0.05 || Math.abs(q[1] - pq[1]) > 0.08; if (jump) ctx.moveTo(X(q[1]), Y(q[0])); else ctx.lineTo(X(q[1]), Y(q[0])); pq = q; }); ctx.stroke(); ctx.globalAlpha = 1; }   /* a gap over about 3 nm (slider moved, or a test ship wrapping round) is not drawn as a track */
       if (x.sog > 0.5 && x.cog != null) { var d = x.sog / 10; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(X(x.lon + Math.sin(x.cog * R) * d / 60 / Math.cos(x.lat * R)), Y(x.lat + Math.cos(x.cog * R) * d / 60)); ctx.stroke(); ctx.setLineDash([]); }
       if (x.danger) { ctx.beginPath(); ctx.arc(px, py, 14, 0, 7); ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 2; ctx.stroke(); }
       triMark(px, py, h, sz, kind === 'yacht' && !x.race ? null : col, col, x.race ? 2.2 : 1.6);
@@ -537,7 +541,7 @@
     }).catch(function () { AIS.busy = false; AIS.err = 'Live AIS server not reachable.'; aisUpdate(); });
   }
   function aisInit() {
-    var saved = store('fs-aisSrc'); if (saved) $('aisSrc').value = saved;
+    var saved = store('fs-aisSrc'); if (saved && saved !== 'test') $('aisSrc').value = saved;   /* the pretend test fleet is never brought back on its own */
     $('aisSrc').onchange = function () { AIS.src = this.value; store('fs-aisSrc', this.value); AIS.tg = new FSAIS.Targets(); AIS.fleet = null; AIS.lines = 0; AIS.liveAt = 0; aisUpdate(); draw(); };
     AIS.src = $('aisSrc').value;
     setInterval(aisLive, 5000);
@@ -1240,6 +1244,7 @@
     for (var y = 80 + off; y < H; y += sp) for (var x = sp / 2 + off; x < W; x += sp) {
       var la = LA(y), lo = LO(x);
       if (kind === 'tide') { if (!P.depth || !(P.depth.nearest('z', la, lo) < 0)) continue; }
+      else if (coastLand(la, lo)) continue;   /* wind symbols only over the sea */
       var u = f.sample('u', la, lo, S.t), v = f.sample('v', la, lo, S.t); if (!(u === u) || !(v === v)) continue;
       var s = Math.hypot(u, v) / KN; if (s < (kind === 'wind' ? 0.5 : 0.15)) continue;
       var dx = u / Math.hypot(u, v), dy = -v / Math.hypot(u, v), lbl = kind === 'wind' || (Math.round(x / sp) + Math.round(y / sp)) % 2 === 0;
@@ -1384,7 +1389,8 @@
   function tFromSlider() { var a = S.tmin != null ? S.tmin : 5, b = S.tmax != null ? S.tmax : 30; return a + (b - a) * $('time').value / 1000; }
   function setTime(t) { S.t = t; var a = S.tmin != null ? S.tmin : 5, b = S.tmax != null ? S.tmax : 30; $('time').value = Math.round(1000 * (t - a) / (b - a)); update(); }
   function update() {
-    $('clock').innerHTML = clockH(S.t) + '<small>' + (S.start ? (S.t >= S.start.t ? fmtH(S.t - S.start.t) + ' since start' : 'before start') : 'UTC') + '</small>';
+    var ck = clockH(S.t), ckT = ck.slice(-5), ckD = ck.slice(0, -6), since = S.start ? (S.t >= S.start.t ? fmtH(S.t - S.start.t) : '') : '';
+    $('clock').innerHTML = '<span class="ckd">' + ckD + ' </span><b class="ckt">' + ckT + '</b><small>' + (S.start ? (S.t >= S.start.t ? '<span class="ckl">' + since + ' since start</span><span class="cks">+' + since + '</span>' : 'before start') : 'UTC') + '</small>';
     var s = S.sel, h = '';
     if (s) {
       var p = s.r.path, pos = posAt(tsOf(p), p, S.t);

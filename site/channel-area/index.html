@@ -116,6 +116,8 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 input[type=range]{width:100%;accent-color:var(--brand);height:32px}
 .clock{font:500 14px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
 .clock small{display:block;font-size:11px;color:var(--muted)}
+.clock .ckt{font-weight:500}.clock .cks{display:none}
+
 .now{grid-column:1/-1;display:flex;gap:4px 18px;overflow-x:auto;scrollbar-width:none}
 .now div{display:grid;flex:none}
 .now span{font:500 9.5px var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -268,6 +270,9 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .bcode{font:700 16px var(--f-data);letter-spacing:.12em;color:var(--brand)}
 .edpt{border-top:1px solid var(--line);padding:8px 0;display:grid;gap:6px}.edhd{display:flex;justify-content:space-between;align-items:center;gap:8px}.edbtn{display:flex;gap:4px}.edbtn .btn{min-height:32px;padding:2px 10px}.edgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:6px}.edgrid input{min-width:0}.sheet .edgrid input.bad{border-color:#ff3b30;box-shadow:0 0 0 1px #ff3b30}.edadd{min-height:30px;padding:2px 10px;font-size:12px;justify-self:start;margin:2px 0}
 @media (max-width:520px){.edgrid{grid-template-columns:1fr 1fr}.edgrid input:first-child{grid-column:1/-1}}
+@media (max-width:899px){.bar .clock{overflow:hidden}.clock{min-width:0;font-size:13px;line-height:1.2}.clock .ckd{display:block;font-size:11px;color:var(--muted)}.clock .ckt{font-size:16px}.clock small{font-size:10.5px}.clock .ckl{display:none}.clock .cks{display:inline}
+  .now{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 6px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:8.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden}}
+@media (max-width:360px){.bar{gap:6px 6px}.pgrp{gap:3px}.mobbtn{padding:0 8px}}
 </style>
 
 <div class="app" id="app">
