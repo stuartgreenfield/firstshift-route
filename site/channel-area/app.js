@@ -342,7 +342,10 @@
     $('raceTitle').textContent = r.name + ' · ' + r.start.name.replace(/^Start,\s*/, '').replace(/^RYS line,\s*/, '') + ' to ' + r.finish.name.replace(/^Finish,\s*/, '');
     $('raceTitle').setAttribute('data-short', r.name.replace(/^Rolex\s+/, '').replace(/\s+(Trophy\s+)?Race$/, '').replace(/\s+Trophy$/, ''));
     var w = warnText(r); $('courseWarn').hidden = !w; $('courseWarn').textContent = w + (r.setNote ? ' ' + r.setNote : '');
-    $('cbannerTxt').innerHTML = w ? '<b>Course not confirmed.</b> ' + w : ''; $('cbanner').hidden = !w || store('fs-hideBanner-' + r.id) === '1';
+    /* the standard warning on every RORC course, plus the course-not-confirmed line where it applies; hidden with x until the next visit */
+    var std = '<b>Check against the sailing instructions.</b> Before the start, check this course against the sailing instructions and any amendments. For some races the course is only published the day before, and it can be changed at any time up to the start.';
+    $('cbannerTxt').innerHTML = r.custom ? '' : std + (w ? '<br><b>Course not confirmed.</b> ' + w : '');
+    $('cbanner').hidden = !!r.custom || (S.bannerHidden || {})[r.id];
     $('markSides').innerHTML = r.marks.length ? r.marks.map(function (m, i) { return '<div class="row"><label for="side' + i + '">' + m.name + '</label><select id="side' + i + '" data-mk="' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' + (m.sideAssumed ? '<span class="note">assumed</span>' : '') + '</div>'; }).join('') : '<p class="note">No marks between start and finish in this course.</p>';
     r.marks.forEach(function (m, i) { $('side' + i).value = m.side || 'port'; $('side' + i).onchange = function () { meta.course.marks[i].side = this.value; meta.course.marks[i].sideAssumed = false; S.legs = null; draw(); }; });
     var issue = courseIssue(meta.course);
@@ -352,7 +355,7 @@
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
     if (f && f.lat0 != null) { var la1 = f.lat0 + f.dlat * (f.ny - 1), lo1 = f.lon0 + f.dlon * (f.nx - 1); dataBox = { s: Math.min(f.lat0, la1), n: Math.max(f.lat0, la1), w: Math.min(f.lon0, lo1), e: Math.max(f.lon0, lo1) }; }
-    $('cbannerX').onclick = function () { $('cbanner').hidden = true; var r = meta.course.race; if (r) store('fs-hideBanner-' + r.id, '1'); };
+    $('cbannerX').onclick = function () { $('cbanner').hidden = true; var r = meta.course.race; if (r) { S.bannerHidden = S.bannerHidden || {}; S.bannerHidden[r.id] = true; } };
     fetch('../courses/rorc.json', { cache: 'no-store' }).then(function (x) { return x.json(); }).then(function (j) {
       RACES = j.races; $('raceSel').innerHTML = RACES.map(function (r) { return '<option value="' + r.id + '">' + r.name + (r.date2027 ? ' · ' + r.date2027.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+r.date2027.slice(5, 7) - 1] : '') + (courseIssue(r) ? ' (wider area needed)' : '') + '</option>'; }).join('');
       $('raceSel').onchange = function () { applyRace($('raceSel').value); };
