@@ -4,7 +4,7 @@
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]] };
-  var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true }, choice: {}, loaded: {} };
+  var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true }, choice: {}, loaded: {} };
   var css = {};
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
@@ -31,7 +31,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras();
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return download();
@@ -184,6 +184,8 @@
     var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
+      (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
+      (LIGHTS.length ? '<label><input type="checkbox" data-l="lights"' + (S.show.lights ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink);border-top-style:dotted"></span>Lighthouses and main buoys</label>' : '') +
       '<label><input type="checkbox" data-l="band"' + (S.show.band ? ' checked' : '') + '><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span>Forecast band edge</label>' +
       (S.ov ? '<label><input type="checkbox" data-big="1"' + (S.big ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Big picture: north-west Europe</label>' : '') +
       (meta.live ? '' : '<label><input type="checkbox" data-l="real"' + (S.show.real ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Real 2026 boats (YB)</label>');
@@ -206,7 +208,7 @@
   function opts(models) {
     var spec = boatSpec(), b = FSBoat.resolve(spec), pol = b.pol;
     return { models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
-      sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, tackS: +$('tackS').value, gybeS: +$('gybeS').value };
+      sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, nogo: nogoRings(), tackS: +$('tackS').value, gybeS: +$('gybeS').value };
   }
   /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
   function legsFor(fromPt) {
@@ -388,6 +390,7 @@
     if (S.show.band) bandEdge();
     if (S.show.tide) arrows('tide');
     if (S.show.wind && $('windShow').value) arrows('wind');
+    zonesDraw(); lightsDraw();
     marks();
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 1.8, 0.9); });
     if (S.sel && !S.sel.hidden) line(S.sel, 3.6, 1);
@@ -396,6 +399,51 @@
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(s.r.path.map(function (q) { return q.t; }), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
     if (S.from) { ctx.strokeStyle = css['--ink']; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(S.from.lon), Y(S.from.lat), 10, 0, 7); ctx.stroke(); }
     scale();
+  }
+  /* ---------- traffic separation schemes, keep-out areas, lighthouses and buoys (not for navigation) ---------- */
+  var ZONES = [], LIGHTS = [], hatchPat = null;
+  function loadChartExtras() {
+    fetch('../zones/tss.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { ZONES = j.zones || []; draw(); } }).catch(function () {});
+    fetch('../zones/marks.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { LIGHTS = j.marks || []; draw(); } }).catch(function () {});
+  }
+  function viewBox() { return { s: LA(H), n: LA(0), w: LO(0), e: LO(W) }; }
+  function ringOn(ring, vb) { for (var i = 0; i < ring.length; i++) { var q = ring[i]; if (q[0] >= vb.s && q[0] <= vb.n && q[1] >= vb.w && q[1] <= vb.e) return true; } var la = 0, lo = 0; ring.forEach(function (q) { la += q[0]; lo += q[1]; }); la /= ring.length; lo /= ring.length; return la > vb.s - 2 && la < vb.n + 2 && lo > vb.w - 3 && lo < vb.e + 3; }
+  function hatch(colr) {
+    var c = document.createElement('canvas'); c.width = c.height = 10; var g = c.getContext('2d'); g.strokeStyle = colr; g.globalAlpha = 0.55; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, 10); g.lineTo(10, 0); g.moveTo(-2, 2); g.lineTo(2, -2); g.moveTo(8, 12); g.lineTo(12, 8); g.stroke(); return ctx.createPattern(c, 'repeat');
+  }
+  function polyPath(ring) { ctx.beginPath(); ring.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.closePath(); }
+  function zonesDraw() {
+    var vb = viewBox(), obs = (meta.course && meta.course.race && meta.course.race.obstructions) || [], pat = hatch(css['--shoaledge'] || '#B0302A');
+    if (S.show.tss && ZONES.length) {
+      ZONES.forEach(function (z) {
+        if (!ringOn(z.poly, vb)) return; polyPath(z.poly);
+        if (z.kind === 'zone') { ctx.fillStyle = pat; ctx.fill(); }
+        ctx.strokeStyle = css['--shoaledge']; ctx.globalAlpha = z.kind === 'lane' ? 0.6 : z.kind === 'zone' ? 0.85 : 0.45; ctx.lineWidth = z.kind === 'zone' ? 1.4 : 1; ctx.setLineDash(z.kind === 'lane' ? [] : z.kind === 'zone' ? [] : [5, 4]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      });
+    }
+    obs.forEach(function (o) { polyPath(o.poly); ctx.fillStyle = pat; ctx.fill(); ctx.strokeStyle = css['--shoaledge']; ctx.lineWidth = 2; ctx.stroke(); var q = o.poly[0]; ctx.fillStyle = css['--shoaledge']; ctx.font = '600 11px Inter, sans-serif'; ctx.fillText(o.name, X(q[1]) + 4, Y(q[0]) - 5); });
+  }
+  function lightsDraw() {
+    if (!S.show.lights || !LIGHTS.length) return;
+    var vb = viewBox(), z = view.s, named = z > 260, buoys = z > 160;
+    ctx.font = '10.5px Inter, sans-serif';
+    LIGHTS.forEach(function (m) {
+      if (m.la < vb.s || m.la > vb.n || m.lo < vb.w || m.lo > vb.e) return;
+      if (m.k !== 'light' && !buoys) return;
+      var x = X(m.lo), y = Y(m.la);
+      ctx.strokeStyle = css['--ink']; ctx.fillStyle = css['--ink']; ctx.lineWidth = 1.2;
+      if (m.k === 'light') { ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 2.6, y + 3); ctx.lineTo(x - 2.6, y + 3); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(x, y - 3, 5.5, -2.4, -0.7); ctx.stroke(); ctx.globalAlpha = 1; }
+      else { ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.stroke(); if (m.c) { ctx.fillStyle = css['--ink']; ctx.font = '600 8px Inter, sans-serif'; ctx.fillText(m.c, x - 2.4, y + 3); ctx.font = '10.5px Inter, sans-serif'; } }
+      if (named || (m.k === 'light' && z > 120)) { ctx.fillStyle = css['--muted']; ctx.fillText(m.n + (m.lt && z > 400 ? ' ' + m.lt : ''), x + 6, y + 3); }
+    });
+  }
+  /* no-go rings for the router: the race's keep-out boxes always; traffic separation lanes and zones when ticked */
+  function nogoRings() {
+    var c = meta.course, pts = [c.start].concat(c.marks).concat([c.finish]), s = 90, n = -90, w = 180, e = -180;
+    pts.forEach(function (p) { s = Math.min(s, p.lat); n = Math.max(n, p.lat); w = Math.min(w, p.lon); e = Math.max(e, p.lon); });
+    var rings = ((c.race && c.race.obstructions) || []).map(function (o) { return o.poly; });
+    if ($('tssNogo') && $('tssNogo').checked) ZONES.forEach(function (z) { if (z.kind !== 'lane' && z.kind !== 'zone') return; if (z.poly.some(function (q) { return q[0] > s - 1.5 && q[0] < n + 1.5 && q[1] > w - 2 && q[1] < e + 2; })) rings.push(z.poly); });
+    return rings;
   }
   function col(s) { return css[s.combined ? '--route' : STYLE[s.id][0]]; }
   function grid() {

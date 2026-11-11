@@ -167,7 +167,11 @@
     var nh = Math.round(360 / hstep), H = [], sinH = [], cosH = [];
     for (var i = 0; i < nh; i++) { H.push(i * hstep); sinH.push(Math.sin(i * hstep * R)); cosH.push(Math.cos(i * hstep * R)); }
     var safety = o.safety || 0, depth = o.depth;
-    function wet(la, lo) { if (!depth) return true; var z = depth.nearest('z', la, lo); return z === z && z <= -safety; }
+    /* no-go zones: traffic separation schemes and the sailing instructions' keep-out areas, each a ring of [lat, lon] */
+    var nogo = (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; });
+    function inside(ring, la, lo) { var c = false; for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) { var a = ring[i], q = ring[j]; if ((a[0] > la) !== (q[0] > la) && lo < (q[1] - a[1]) * (la - a[0]) / (q[0] - a[0]) + a[1]) c = !c; } return c; }
+    function blocked(la, lo) { for (var i = 0; i < nogo.length; i++) { var b = nogo[i].b; if (la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3] && inside(nogo[i].r, la, lo)) return true; } return false; }
+    function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var z = depth.nearest('z', la, lo); return z === z && z <= -safety; }
     var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [];
     for (var li = 0; li < o.legs.length; li++) {
       var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var tgt = leg.point || [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2];
