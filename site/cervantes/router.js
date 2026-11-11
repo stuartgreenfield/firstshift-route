@@ -78,10 +78,12 @@
 
   /* wind sampler for one model or the mean of several; returns [tws kn, twd deg from] */
   function windSampler(P, ids) {
-    var fs = ids.map(function (i) { return P.wind[i]; });
+    var fs = ids.map(function (i) { return P.wind[i]; }).filter(Boolean), all = Object.keys(P.wind).map(function (k) { return P.wind[k]; });
+    function live(f, t) { var h = f.hours; return !h || h.length < 2 || t <= h[h.length - 1] + 1; }
     return function (la, lo, t) {
-      var u = 0, v = 0, n = 0;
-      for (var i = 0; i < fs.length; i++) { var a = fs[i].sample('u', la, lo, t), b = fs[i].sample('v', la, lo, t); if (a === a && b === b) { u += a; v += b; n++; } }
+      var u = 0, v = 0, n = 0, use = fs.filter(function (f) { return live(f, t); });
+      if (!use.length) use = all.filter(function (f) { return live(f, t); });   /* hand-over: past a model's last hour, the other models carry on */
+      for (var i = 0; i < use.length; i++) { var a = use[i].sample('u', la, lo, t), b = use[i].sample('v', la, lo, t); if (a === a && b === b) { u += a; v += b; n++; } }
       if (!n) return [0, 0];
       u /= n; v /= n;
       return [Math.sqrt(u * u + v * v) / KN, (Math.atan2(-u, -v) / R + 360) % 360];
