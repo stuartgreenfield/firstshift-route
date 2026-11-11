@@ -45,7 +45,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -406,6 +406,77 @@
     $('mobCentre').onclick = function (e) { e.stopPropagation(); var m = mobGet(); if (!m) return; var small = $('mob').classList.toggle('small'); this.textContent = small ? 'Full panel' : 'Show on chart'; if (small) { view.la = m.lat; view.lo = m.lon; view.s = Math.max(view.s, 4000); } closePanel(); draw(); };
     if (mobGet()) mobShow();
   }
+  /* ---------- AIS: targets from an AIS feed (test fleet now; the boat's own receiver and an online feed next), CPA alarm ---------- */
+  var AIS = { tg: new FSAIS.Targets(), src: 'off', danger: {}, lastEmit: -1, fleet: null, warned: {} };
+  function aisNowMs() { return AIS.src === 'test' ? (T0 + S.t * 3600) * 1000 : Date.now(); }
+  function ownForCpa() {
+    if (me && Date.now() - me.at < 30000 && AIS.src !== 'test') return { lat: me.lat, lon: me.lon, sog: (me.sog || 0) / KN, cog: me.cog || 0, src: 'GPS' };
+    var s = S.sel; if (!s) return null; var p = s.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos || pos.done) return null;
+    var q = p[Math.min(p.length - 1, (pos.i || 0) + 1)]; return { lat: pos.la, lon: pos.lo, sog: q.bsp || 0, cog: q.hdg || 0, src: 'route' };
+  }
+  /* the test fleet: race boats near the chosen route, ships on straight tracks across the area */
+  function aisFleet() {
+    if (AIS.fleet || !S.sel) return AIS.fleet;
+    var names = ['JOLLY JACK', 'TIGER', 'DIABLE', 'SEA BISCUIT', 'NOIR', 'HAMPSHIRE ROSE', 'ARCHER', 'BLUE MOON'], f = [];
+    names.forEach(function (n, i) { f.push({ mmsi: 235100100 + i, cls: 'B', name: n, shiptype: 36, len: 10 + (i % 4) * 2, callsign: 'M' + (7100 + i), kind: 'race', pace: 0.94 + ((i * 37) % 13) / 100, side: ((i % 2) ? 1 : -1) * (0.3 + (i % 3) * 0.6) }); });
+    var c = meta.course, la0 = Math.min(c.start.lat, c.finish.lat), la1 = Math.max(c.start.lat, c.finish.lat), lo0 = Math.min(c.start.lon, c.finish.lon), lo1 = Math.max(c.start.lon, c.finish.lon);
+    c.marks.forEach(function (m) { la0 = Math.min(la0, m.lat); la1 = Math.max(la1, m.lat); lo0 = Math.min(lo0, m.lon); lo1 = Math.max(lo1, m.lon); });
+    var ships = [['ATLANTIC STAR', 71, 300, 252, 17], ['NORDIC SPIRIT', 80, 180, 72, 13], ['EVER BRIGHT', 70, 330, 250, 19], ['CELTIC FERRY', 60, 170, 160, 21], ['MARE DORICUM', 81, 240, 70, 12], ['PILOT ONE', 50, 20, 10, 9]];
+    ships.forEach(function (x, i) { f.push({ mmsi: 636000100 + i, cls: 'A', name: x[0], shiptype: x[1], len: x[2], callsign: 'D5' + i, dest: i % 2 ? 'ROTTERDAM' : 'SOUTHAMPTON', kind: 'ship', cog: x[3], sog: x[4],
+      lat0: la0 + (la1 - la0) * ((i + 1) / 7), lon0: lo0 + (lo1 - lo0) * ((i * 3 + 1) % 7) / 7 }); });
+    return AIS.fleet = f;
+  }
+  function aisEmulate() {   // positions at the replay time, encoded as !AIVDM and decoded back through the engine
+    var f = aisFleet(); if (!f) return; var lines = [], now = aisNowMs(), p = S.sel.r.path, ts = tsOf(p), t0 = S.start.t, k = Math.cos(50 * R);
+    f.forEach(function (b, i) {
+      var x = Object.assign({}, b);
+      if (b.kind === 'race') {
+        var tt = t0 + (S.t - t0) * b.pace, a = posAt(ts, p, tt); if (!a) return; var j = Math.min(p.length - 2, a.i || 0), h = hdgAt(p, a.k), q = p[j + 1];
+        x.lat = a.la + Math.sin((h - 90) * R) * 0 + Math.cos((h + 90) * R) * b.side / 60; x.lon = a.lo + Math.sin((h + 90) * R) * b.side / 60 / k; x.sog = (q.bsp || 6) * b.pace; x.cog = h; x.hdg = h;
+      } else {
+        var d = ((S.t - t0) * b.sog) % 120 - 60; x.lat = b.lat0 + Math.cos(b.cog * R) * d / 60; x.lon = b.lon0 + Math.sin(b.cog * R) * d / 60 / k; x.hdg = b.cog;
+      }
+      lines = lines.concat(FSAIS.encodePosition(x));
+      if (!AIS.tg.t[b.mmsi] || !AIS.tg.t[b.mmsi].name) lines = lines.concat(FSAIS.encodeStatic(x, i));
+    });
+    lines.forEach(function (l) { AIS.tg.add(FSAIS.decodeLine(l), now); });
+    AIS.lines = (AIS.lines || 0) + lines.length;
+  }
+  function aisUpdate() {
+    if (AIS.src === 'off') { $('aisBox').hidden = true; return; }
+    if (AIS.src === 'test') aisEmulate();
+    var own = ownForCpa(), lim = +$('cpaNm').value || 0.5, tl = +$('tcpaMin').value || 15, now = aisNowMs(), list = AIS.tg.list(10 * 60000, now), danger = {};
+    list.forEach(function (x) { x.c = own ? FSAIS.cpa(own, x) : null; x.danger = !!(x.c && x.c.cpa < lim && x.c.tcpa > 0 && x.c.tcpa < tl); if (x.danger) danger[x.mmsi] = 1; });
+    var fresh = Object.keys(danger).filter(function (m) { return !AIS.warned[m]; });
+    if (fresh.length && $('cpaSound').checked && (!AIS.lastBeep || Date.now() - AIS.lastBeep > 4000)) { beep(); AIS.lastBeep = Date.now(); }
+    AIS.warned = danger; AIS.list = list; AIS.own = own;
+    list.sort(function (a, b) { return (b.danger - a.danger) || ((a.c ? a.c.range : 99) - (b.c ? b.c.range : 99)); });
+    var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + list.slice(0, 30).map(function (x) {
+      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span></td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
+    $('aisTable').innerHTML = h; $('aisBox').hidden = false;
+    $('aisNote').textContent = list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : 'live') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
+    [].forEach.call($('aisTable').querySelectorAll('tr[data-mmsi]'), function (tr) { tr.onclick = function () { var x = AIS.tg.t[tr.dataset.mmsi]; if (x) { view.la = x.lat; view.lo = x.lon; draw(); } }; });
+  }
+  function aisDraw() {
+    if (AIS.src === 'off' || !AIS.list) return; var flash = Math.floor(Date.now() / 400) % 2;
+    ctx.save(); ctx.font = '600 10px Inter, sans-serif';
+    AIS.list.forEach(function (x) {
+      var px = X(x.lon), py = Y(x.lat); if (px < -20 || py < -20 || px > W + 20 || py > H + 20) return;
+      var kind = FSAIS.shipKind(x), col = x.danger ? (flash ? '#ff3b30' : '#ffffff') : kind === 'yacht' ? css['--ghost'] : '#F2994A';
+      var h = x.hdg != null ? x.hdg : (x.cog || 0), sz = kind === 'yacht' ? 6 : 8;
+      if (x.track.length > 1) { ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath(); x.track.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.lineTo(px, py); ctx.stroke(); ctx.globalAlpha = 1; }
+      if (x.sog > 0.5 && x.cog != null) { var d = x.sog / 10; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(X(x.lon + Math.sin(x.cog * R) * d / 60 / Math.cos(x.lat * R)), Y(x.lat + Math.cos(x.cog * R) * d / 60)); ctx.stroke(); ctx.setLineDash([]); }
+      triMark(px, py, h, sz, kind === 'yacht' ? null : col, col, 1.6);
+      if (view.s > 600 || x.danger) { ctx.fillStyle = col; ctx.fillText(x.name || String(x.mmsi), px + 9, py - 7); }
+    });
+    ctx.restore();
+  }
+  function aisInit() {
+    var saved = store('fs-aisSrc'); if (saved && saved !== 'live') $('aisSrc').value = saved;
+    $('aisSrc').onchange = function () { AIS.src = this.value === 'live' ? 'off' : this.value; if (this.value === 'live') { busy('Live AIS needs a free aisstream.io key and a small FirstShift relay: coming next.'); setTimeout(function () { busy(''); }, 3500); this.value = 'off'; } store('fs-aisSrc', $('aisSrc').value); AIS.tg = new FSAIS.Targets(); AIS.fleet = null; AIS.lines = 0; aisUpdate(); draw(); };
+    AIS.src = $('aisSrc').value;
+    setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
+  }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop();
@@ -764,6 +835,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
+    aisDraw();
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(tsOf(s.r.path), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });

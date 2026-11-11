@@ -222,6 +222,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 #mobTxt>div{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}#mobTxt>div span{color:var(--muted);font-size:13px}#mobTxt>div b{font:600 20px var(--f-data);text-align:right}
 .bar{grid-template-columns:auto auto minmax(0,1fr) auto}
 @media (max-width:899px){.bar.fh{grid-template-columns:auto auto auto minmax(0,1fr) auto}}
+
+#aisTable tr.danger td{color:#ff3b30;font-weight:700}#aisTable tr{cursor:pointer}.aish{font:600 13px var(--f-head);margin:4px 0 6px;display:flex;gap:8px;align-items:baseline}
 </style>
 
 <div class="app" id="app">
@@ -273,6 +275,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
         <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
+      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><div class="tw"><table id="aisTable"></table></div></div>
       <p class="note">Every IRC entry sailing your chosen route at its own TCC from its own class start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
       <div class="tw"><table id="fleet"></table></div>
     </div>
@@ -406,6 +409,12 @@ A4, 125, 181, 18, 60
 J3 reaching, 100, 125, 20, 60</textarea>
     </div>
     <div class="sbody" id="s-display" hidden>
+      <h3>AIS</h3>
+      <div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Live online (coming: needs a free key)</option></select></div>
+      <div class="row"><label for="cpaNm">CPA alarm inside</label><input type="number" id="cpaNm" value="0.5" min="0.1" max="5" step="0.1"> nm</div>
+      <div class="row"><label for="tcpaMin">and within</label><input type="number" id="tcpaMin" value="15" min="2" max="60" step="1"> min</div>
+      <label class="chk"><input type="checkbox" id="cpaSound" checked><span>Sound the CPA alarm</span></label>
+      <p class="note">Test fleet: eight race boats sailing near your route and ships crossing the area, sent as real AIS sentences through the same decoder the boat's feed and the online feed will use. They move with the replay time. CPA is worked out from your position: the phone GPS when it has one, otherwise the boat on the chosen route.</p>
       <h3>Screen</h3>
       <div class="seg" id="modeSeg" role="group" aria-label="Screen"><button data-mode="auto">Auto</button><button data-mode="light">Light</button><button data-mode="dark">Dark</button><button data-mode="night">Night red</button></div>
       <p class="note">Auto follows the phone or computer. Light for bright sun, Dark for dusk and the nav table, Night red keeps every colour at the red end, at low brightness, to protect night vision on deck; turn the screen brightness down too. The Night button on the chart switches between Night red and your day setting.</p>
@@ -423,4 +432,5 @@ J3 reaching, 100, 125, 20, 60</textarea>
 <script src="router.js"></script>
 <script src="engine.js"></script>
 <script src="boat.js"></script>
+<script src="ais.js"></script>
 <script src="app.js"></script>
