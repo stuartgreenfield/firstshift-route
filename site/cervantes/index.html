@@ -54,7 +54,7 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .ib[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .ib .lbl{display:none}
 @media (min-width:1200px){.ib .lbl{display:inline}}
-@media (max-width:899px){.tools{flex-wrap:nowrap}.brand{max-width:calc(100vw - 318px);flex:1 1 auto}.brand b{font-size:13px}#panelBtn{display:none}.ib{min-width:42px;height:42px;padding:0 9px}.tools{gap:5px}}
+@media (max-width:899px){#raceTitle{font-size:0!important}#raceTitle::after{content:attr(data-short);font-size:13.5px;white-space:nowrap}.tools{flex-wrap:nowrap}.brand{max-width:calc(100vw - 290px);flex:1 1 auto}.brand b{font-size:13px}#panelBtn{display:none}.ib{min-width:40px;height:42px;padding:0 7px}.tools{gap:5px}}
 :focus-visible{outline:2px solid var(--route);outline-offset:2px}
 
 /* popovers */
@@ -179,7 +179,7 @@ tr.click{cursor:pointer}
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
     <div class="top">
-      <div class="brand"><b id="raceTitle">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div>
+      <div class="brand"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div>
       <div class="tools">
         <button class="ib primary" id="run" title="Route on the ticked models"><svg viewBox="0 0 24 24"><path d="M4 19c4-1 5-6 8-8s6-2 8-6"/><circle cx="4" cy="19" r="1.6"/><path d="M17 4h3v3"/></svg><span class="lbl">Route</span></button>
         <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
