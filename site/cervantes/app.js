@@ -301,34 +301,40 @@
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
-    S.running = true; busy('Routing ' + (ms.length + (ms.length > 1 ? 1 : 0)) + ' solutions…');
+    S.running = true; busy('Quick route…');
+    var tq = Date.now();
+    pass(true).then(function () { return pass(false); }).then(function () { S.running = false; $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
+    .catch(function (e) { S.running = false; busy(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
+    function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
-    var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
-    var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
-    if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
-    Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }) }).then(function (r) { s.r = r; return s; }, function (e) { s.err = e.message; return s; }); })).then(function (res) {
-      S.routes = res.filter(function (s) { return s.r; });
-      var errs = res.filter(function (s) { return s.err; });
-      if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
-      busy('Sailing each route through every model…');
-      var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }), paths: [s.r.path] }); });
-      return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }); }).concat(selfJobs)).then(function (allr) {
-        var cols = allr.slice(0, ms.length), self = allr.slice(ms.length).map(function (x) { return x[0]; });
-        S.routes.forEach(function (s, i) { var k = (s.r.finish - start.t) / Math.max(0.1, self[i] - start.t); cols.forEach(function (c) { c[i] = start.t + (c[i] - start.t) * k; }); });
-        S.matrix = { models: ms, cols: cols, start: start.t };
-        S.routes.forEach(function (s, i) { var v = cols.map(function (c) { return c[i]; }); s.mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length; s.worst = Math.max.apply(null, v); });
-        var best = S.routes.slice().sort(function (a, b) { return a.mean - b.mean; })[0];
-        S.routes.forEach(function (s) { s.best = s === best; });
-        S.sel = best; S.base = base; S.legs = legs; S.start = start;
-        $('runNote').textContent = 'Routed in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.');
-        return ghosts();
-      });
-    }).then(function () {
-      S.running = false; busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
-      var maxT = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
-      S.tmin = Math.min(S.start.t, (starts[0] - T0) / 3600); S.tmax = Math.min(HMAX(), maxT + 1);
-      setTime(S.from ? S.from.t : S.start.t);
-    }).catch(function (e) { S.running = false; busy(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
+      var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
+      if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180 });   /* quick first pass: about a sixth of the work */
+      var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
+      if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
+      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }) }).then(function (r) { s.r = r; return s; }, function (e) { s.err = e.message; return s; }); })).then(function (res) {
+        S.routes = res.filter(function (s) { return s.r; });
+        var errs = res.filter(function (s) { return s.err; });
+        if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
+        busy(quick ? 'Quick route ready, refining…' : 'Refining: sailing each route through every model…');
+        var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }), paths: [s.r.path] }); });
+        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }); }).concat(selfJobs)).then(function (allr) {
+          var cols = allr.slice(0, ms.length), self = allr.slice(ms.length).map(function (x) { return x[0]; });
+          S.routes.forEach(function (s, i) { var k = (s.r.finish - start.t) / Math.max(0.1, self[i] - start.t); cols.forEach(function (c) { c[i] = start.t + (c[i] - start.t) * k; }); });
+          S.matrix = { models: ms, cols: cols, start: start.t };
+          S.routes.forEach(function (s, i) { var v = cols.map(function (c) { return c[i]; }); s.mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length; s.worst = Math.max.apply(null, v); });
+          var best = S.routes.slice().sort(function (a, b) { return a.mean - b.mean; })[0];
+          S.routes.forEach(function (s) { s.best = s === best; });
+          S.sel = best; S.base = base; S.legs = legs; S.start = start;
+          $('runNote').textContent = (quick ? 'Quick route in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.');
+          return ghosts();
+        });
+      }).then(function () {
+        busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
+        var maxT = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
+        S.tmin = Math.min(S.start.t, (starts[0] - T0) / 3600); S.tmax = Math.min(HMAX(), maxT + 1);
+        setTime(S.from ? S.from.t : S.start.t);
+      }).then(function () { if (quick) S.quickS = ((Date.now() - tq) / 1000).toFixed(1); });
+    }
   }
   function ghosts() {
     if (!S.sel) return Promise.resolve();
