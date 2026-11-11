@@ -164,11 +164,16 @@
     E.pts = o.pts || E.pts; E.onChange = o.onChange || E.onChange;
     try { var a = localStorage.getItem('fs-sails'), b = localStorage.getItem('fs-mains'); if (a) $('sails').value = a; if (b) $('mains').value = b; } catch (e) {}
     $('slPreset').innerHTML = '<option value="">Start from a typical inventory…</option>' + Object.keys(PRESETS).map(function (k) { return '<option value="' + k + '">' + PRESETS[k].name + '</option>'; }).join('');
-    $('slPreset').onchange = function () { $('slUse').hidden = !this.value; $('slUse').textContent = 'Replace my sails'; E.armed = null; };
+    /* choosing an inventory applies it at once; Undo puts your own table back */
+    $('slPreset').onchange = function () {
+      var k = this.value; if (!k || !PRESETS[k]) return;
+      E.undo = E.rows.map(function (r) { return r.slice(); });
+      E.rows = PRESETS[k].rows.map(function (r) { return r.slice(); }); table(); save('preset');
+      $('slUse').hidden = false; $('slUse').textContent = 'Undo: put my ' + E.undo.length + ' sails back';
+    };
     $('slUse').onclick = function () {
-      var k = $('slPreset').value; if (!k) return;
-      if (E.rows.length && E.armed !== k) { E.armed = k; this.textContent = 'Tap again to replace ' + E.rows.length + ' sails'; return; }
-      E.rows = PRESETS[k].rows.map(function (r) { return r.slice(); }); E.armed = null; $('slPreset').value = ''; this.hidden = true; table(); save('preset');
+      if (!E.undo) { this.hidden = true; return; }
+      E.rows = E.undo; E.undo = null; $('slPreset').value = ''; this.hidden = true; table(); save('edit');
     };
     $('slAdd').onclick = function () { var l = E.rows[E.rows.length - 1]; E.rows.push(['New sail', l ? l[1] : 0, l ? l[2] : 180, l ? l[4] < TOP ? l[4] : 0 : 0, TOP]); table(); save('edit'); var ins = $('slTable').querySelectorAll('.sl-n'); if (ins.length) { ins[ins.length - 1].focus(); ins[ins.length - 1].select(); } };
     $('rfOn').onchange = function () { E.reef = this.checked ? JSON.parse(JSON.stringify(E.reef || REEF0)) : null; reefTable(); save('reef'); };
