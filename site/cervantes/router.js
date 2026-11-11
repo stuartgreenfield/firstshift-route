@@ -172,8 +172,8 @@
        so a boat could count as rounding when it reached the far end of the line, miles short of the mark. Put the line
        square across the course instead, on the side the boat must not pass. */
     if (Math.abs(turn) >= 135) ray = (bin + (side === 'port' ? -90 : 90) + 360) % 360;
-    var L = (lenNm || 1.5) / 60, k = Math.cos(mark.lat * R);
-    return { a: [mark.lat, mark.lon], b: [mark.lat + L * Math.cos(ray * R), mark.lon + L * Math.sin(ray * R) / k], ray: ray };
+    var L = (Math.abs(turn) >= 135 ? Math.max(lenNm || 1.5, 20) : (lenNm || 1.5)) / 60, k = Math.cos(mark.lat * R);   // a turn-back line is long, so going round its far end never pays
+    return { a: [mark.lat, mark.lon], b: [mark.lat + L * Math.cos(ray * R), mark.lon + L * Math.sin(ray * R) / k], ray: ray, side: side };
   }
 
   /* ---------- isochrone router ---------- */
@@ -212,7 +212,19 @@
             if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
             var c = { la: nla, lo: nlo, par: pi, hdg: H[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
             var arrived = false;
-            if (leg.gate) arrived = crosses([p.la, p.lo], [nla, nlo], leg.gate.a, leg.gate.b);
+            if (leg.gate) {
+              arrived = crosses([p.la, p.lo], [nla, nlo], leg.gate.a, leg.gate.b);
+              /* only a crossing that goes round the mark the right way counts: anticlockwise for a mark left to port, clockwise to starboard.
+                 Without this a boat on the wrong side of a turn-back mark (Eddystone) could cross the line on its way out and count as rounded. */
+              if (arrived && leg.gate.side) {
+                var gk = Math.cos(leg.gate.a[0] * R), gx = (p.lo - leg.gate.a[1]) * gk, gy = p.la - leg.gate.a[0], hx = (nlo - leg.gate.a[1]) * gk, hy = nla - leg.gate.a[0], sw = gx * hy - gy * hx;
+                var right = leg.gate.side === 'port' ? sw > 0 : sw < 0;
+                /* the line is a wall the wrong way: a boat cannot cross it going the wrong way round, so it cannot step across and back */
+                if (!right) continue;
+                /* and the rounding only counts close to the mark: going round the far end of the line is not rounding the mark */
+                if (Math.min(dist(p.la, p.lo, leg.gate.a[0], leg.gate.a[1]), dist(nla, nlo, leg.gate.a[0], leg.gate.a[1])) > 6) arrived = false;
+              }
+            }
             else {
               var k = Math.cos(tgt[0] * R), ax = (p.lo - tgt[1]) * 60 * k, ay = (p.la - tgt[0]) * 60, bx = (nlo - tgt[1]) * 60 * k, by = (nla - tgt[0]) * 60;
               var dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy + 1e-12)));

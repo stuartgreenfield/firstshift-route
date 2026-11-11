@@ -61,10 +61,11 @@
     }
    ],
    "finish": {
-    "name": "Finish, Solent (assumed RYS line)",
-    "lat": 50.7769,
-    "lon": -1.3051,
-    "radius_nm": 0.4
+    "name": "Finish, North Head buoy",
+    "lat": 50.7115,
+    "lon": -1.592,
+    "radius_nm": 0.3,
+    "source": "SCRA 2026 Solent race marks list, 1K North Head G 50 42.69N 01 35.52W"
    },
    "nm": 235,
    "source": "https://www.yachtsandyachting.com/news/296303/RORC-Myth-of-Malham-Race-preview",
