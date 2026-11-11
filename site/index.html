@@ -1,8 +1,13 @@
 <!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FirstShift Route</title>
 <style>body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;color:#13202A;background:#EEF2F4}a{color:#B0127A}code{font-size:13px}</style>
-<h1>FirstShift Route</h1><p style="margin-top:-12px;color:#5A6A75">Version 0.5.0</p>
+<h1>FirstShift Route</h1><p style="margin-top:-12px;color:#5A6A75">Version 0.5.1</p>
 <p>Free race routing for FirstShift subscribers, built to the RORC rules on routing aids: public forecasts, computer-generated, the same for every competitor.</p>
-<ul><li><a href="cervantes/">RORC Cervantes Trophy: Cowes to Le Havre</a></li></ul>
+<ul>
+<li><a href="channel-area/">English Channel</a>: Myth of Malham, De Guingand Bowl, Morgan Cup, Cowes Dinard St Malo, Channel Race, Cherbourg Race and your own courses in the Channel</li>
+<li><a href="fastnet/">Rolex Fastnet Race</a></li>
+<li><a href="northsea-area/">Southern North Sea</a>: North Sea Race and your own courses there</li>
+<li><a href="cervantes/">Cervantes Trophy</a>: Cowes to Le Havre</li>
+</ul>
 <p id="st">Forecast status loading…</p>
 <script>fetch('status.json',{cache:'no-store'}).then(r=>r.json()).then(s=>{document.getElementById('st').textContent='Forecasts last built '+s.built+'.'}).catch(()=>{})</script>
