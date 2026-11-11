@@ -297,6 +297,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .nogps{opacity:.55}
 .fit{margin:10px 0 0;padding:9px 11px;border-radius:9px;border:1px solid var(--good);background:color-mix(in srgb,var(--good) 10%,var(--panel));font-size:13px;line-height:1.4}.fit.tight{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}.fit.no{border-color:#E5484D;background:color-mix(in srgb,#E5484D 12%,var(--panel))}.fit ul{margin:4px 0 0;padding-left:18px}.fit summary{cursor:pointer;margin-top:4px;font-weight:600}
 @media (min-width:900px), (orientation:landscape) and (max-height:500px){.now div{width:4.4em;overflow:hidden}.now div:first-child{width:6em}.now{flex:none}.bar .clock{width:11.5em;overflow:hidden}}
+/* wide layout without room for all seven readings beside the slider (landscape phones, small laptops, tablets): readings get their own row */
+@media (min-width:900px) and (max-width:1199px), (orientation:landscape) and (max-height:500px){.bar{grid-template-columns:auto auto minmax(160px,1fr) auto}.bar .now{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0 8px;overflow:hidden}.bar .now div,.bar .now div:first-child{width:auto;min-width:0}.bar .now b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}
 </style>
 
 <div class="app" id="app">

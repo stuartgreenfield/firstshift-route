@@ -70,8 +70,8 @@ async function waitRoutes(p, ms) {
     await tryIt('Course', 'new course: draw, start time, save, route', async () => {
       await p.evaluate(() => { document.getElementById('raceBtn').click(); }); await p.waitForTimeout(300);
       await p.evaluate(() => [...document.querySelectorAll('#races button')].find(x => x.textContent.trim() === 'New course').click()); await p.waitForTimeout(400);
-      const pts = await p.evaluate(() => { const r = document.getElementById('map').getBoundingClientRect(); return [[0.45, 0.62], [0.6, 0.68], [0.75, 0.6]].map(f => [r.left + r.width * f[0], r.top + r.height * f[1]]); });
-      for (const [x, y] of pts) { await p.mouse.click(x, y); await p.waitForTimeout(250); }
+      const pts = await p.evaluate(() => { const r = document.getElementById('map').getBoundingClientRect(), pn = document.getElementById('panel'), pr = pn && !pn.hidden ? pn.getBoundingClientRect() : null; const right = pr && pr.width && pr.left > r.left + 100 ? Math.min(r.right, pr.left) : r.right, w = right - r.left; const fr = []; for (const fy of [0.62, 0.75, 0.5, 0.85, 0.4]) for (const fx of [0.35, 0.5, 0.65, 0.8]) fr.push([fx, fy]); return fr.map(f => [r.left + w * f[0], r.top + r.height * f[1]]); });   /* tap the part of the chart the side panel does not cover; taps on land are refused, so keep going until three points are in */
+      for (const [x, y] of pts) { await p.mouse.click(x, y); await p.waitForTimeout(250); const k = await p.evaluate(() => +((document.getElementById('edTxt').textContent || '').match(/^(\d+) point/) || [0, 0])[1]); if (k >= 3) break; }
       const n = await p.evaluate(() => (document.getElementById('edTxt').textContent || ''));
       await p.evaluate(() => document.getElementById('edDone').click()); await p.waitForTimeout(400);
       const hasWhen = await p.evaluate(() => !!document.getElementById('edDay'));
