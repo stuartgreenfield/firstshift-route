@@ -713,7 +713,29 @@
     out.push((risks.length ? 'Watch for ' + risks.join(' and ') + '. ' : '') + (st.sails ? st.sails + ' sail changes' : 'No sail changes') + (st.reefs ? ' and ' + st.reefs + ' reef changes' : '') + ' in all. Planning aid, not for navigation.');
     return out.join('\n\n');
   }
+  /* departure planning: the chosen route's models from starts every 6 hours (quick routes), finish and elapsed for each */
+  function depRun() {
+    var s = S.sel, r = startRange(); if (!s || !r) { $('depTable').innerHTML = '<tr><td>Route first.</td></tr>'; return; }
+    if (S.running || S.depBusy) return; S.depBusy = true;
+    var c = meta.course, legs = (function () { var keepTo = S.to, keepFrom = S.from; S.to = null; var L = legsFor(null); S.to = keepTo; S.from = keepFrom; return L; })();
+    var base = Object.assign(opts(s.models), { dt: 1200, hstep: 10, sectors: 180 }), starts = [];
+    for (var ep = Math.ceil(Math.max(r[0], Date.now() / 1000) / 21600) * 21600; ep <= r[1] && starts.length < 20; ep += 21600) starts.push(ep);
+    var done = 0, rows = starts.map(function (ep) { return { ep: ep }; });
+    var show = function () {
+      var ok = rows.filter(function (x) { return x.r && !x.r.partial; }), best = ok.length ? Math.min.apply(0, ok.map(function (x) { return x.r.finish - (x.ep - T0) / 3600; })) : null;
+      $('depTable').innerHTML = '<tr><th>Start (UTC)</th><th>Finish</th><th>Elapsed</th></tr>' + rows.map(function (x) {
+        if (!x.r && !x.err) return '<tr><td>' + clockAbs(x.ep) + '</td><td colspan="2">…</td></tr>';
+        if (x.err || !x.r) return '<tr><td>' + clockAbs(x.ep) + '</td><td colspan="2">' + (x.err || '') + '</td></tr>';
+        if (x.r.partial) return '<tr><td>' + clockAbs(x.ep) + '</td><td colspan="2">Forecast ends ' + x.r.partial.togo + ' nm short</td></tr>';
+        var el = x.r.finish - (x.ep - T0) / 3600; return '<tr' + (el === best ? ' class="sel"' : '') + '><td>' + clockAbs(x.ep) + '</td><td>' + clockH(x.r.finish).slice(4) + '</td><td>' + fmtH(el) + (el === best ? ' <span class="pill">quickest</span>' : '') + '</td></tr>';
+      }).join('');
+    };
+    show(); $('depRun').textContent = 'Working…';
+    Promise.all(rows.map(function (x) { return pool({ type: 'route', o: Object.assign({}, base, { start: { lat: c.start.lat, lon: c.start.lon, t: (x.ep - T0) / 3600 }, legs: legs }) }).then(function (res) { x.r = res; }, function (e) { x.err = e.message.split('.')[0]; }).then(function () { done++; show(); }); }))
+      .then(function () { S.depBusy = false; $('depRun').textContent = 'Compare start times'; });
+  }
   function askInit() {
+    $('depRun').onclick = depRun;
     [].forEach.call($('askRow').querySelectorAll('[data-q]'), function (b) { b.onclick = function () { $('askTxt').textContent = ask(b.dataset.q); $('askAns').hidden = false; }; });
     $('askSay').onclick = function () { try { if (speechSynthesis.speaking) { speechSynthesis.cancel(); $('askSay').textContent = 'Read it out'; return; } var u = new SpeechSynthesisUtterance($('askTxt').textContent.replace(/°/g, ' degrees').replace(/UTC/g, 'U T C')); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; u.onend = u.onerror = function () { $('askSay').textContent = 'Read it out'; }; speechSynthesis.speak(u); $('askSay').textContent = 'Stop reading'; } catch (e) {} };
   }
