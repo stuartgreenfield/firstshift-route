@@ -57,7 +57,8 @@ jobs:
         timeout-minutes: 60
         run: |
           npm i --no-save playwright@1.47.2
-          npx playwright install --with-deps chromium
+          npx playwright install chromium || true
+          npx playwright install-deps chromium || echo 'system packages not refreshed; using what the runner has'
           PRE_HOURS=6 node scripts/preroute.js site cervantes fastnet channel-area northsea-area
       - name: Publish again with the pre-routes
         if: steps.fresh.outputs.skip != '1'

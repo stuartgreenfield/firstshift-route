@@ -13,7 +13,8 @@ const srv = http.createServer((q, s) => {
 const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.isArray(v) ? v.map(round) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, round(x)])) : v;
 
 (async () => {
-  const port = srv.address().port, b = await chromium.launch();
+  const port = srv.address().port;
+  let b; try { b = await chromium.launch(); } catch (e) { console.log('bundled browser failed, using the runner Chrome:', e.message.split('\n')[0]); b = await chromium.launch({ channel: 'chrome' }); }
   for (const race of races) {
     fs.rmSync(path.join(site, race, 'pre'), { recursive: true, force: true });
     const meta = JSON.parse(fs.readFileSync(path.join(site, race, 'pack', 'pack.json')));
