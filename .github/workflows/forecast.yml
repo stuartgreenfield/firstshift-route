@@ -39,7 +39,7 @@ jobs:
         run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
       - name: Fetch forecasts and build packs
         if: steps.fresh.outputs.skip != '1'
-        run: python3 scripts/build.py cervantes fastnet
+        run: python3 scripts/build.py cervantes fastnet channel-area northsea-area
       - name: Publish to the site branch
         if: steps.fresh.outputs.skip != '1'
         run: |
@@ -54,11 +54,11 @@ jobs:
       - name: Pre-route each race for the standard settings
         if: steps.fresh.outputs.skip != '1'
         continue-on-error: true
-        timeout-minutes: 40
+        timeout-minutes: 60
         run: |
           npm i --no-save playwright@1.47.2
           npx playwright install --with-deps chromium
-          PRE_HOURS=6 node scripts/preroute.js site cervantes fastnet
+          PRE_HOURS=6 node scripts/preroute.js site cervantes fastnet channel-area northsea-area
       - name: Publish again with the pre-routes
         if: steps.fresh.outputs.skip != '1'
         run: |

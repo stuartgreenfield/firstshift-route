@@ -344,6 +344,7 @@
       var home = meta.course0 ? meta.course0.raceId : meta.course.raceId; home = home || 'cervantes'; var want = home === 'cervantes' ? (store('fs-race') || home) : home; if (!RACES.some(function (r) { return r.id === want; })) want = home;
       var qr = new URLSearchParams(location.search).get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
       $('raceSel').value = want; applyRace(want);
+      if (!RACES.some(function (r) { return r.id === want; })) { var c0 = meta.course; $('raceTitle').textContent = c0.name + ' · ' + c0.start.name.replace(/^Start,\s*/, '') + ' to ' + c0.finish.name.replace(/^Finish,\s*/, ''); $('raceTitle').setAttribute('data-short', c0.name.replace(/^English /, '').replace(/^Southern /, '')); }
       var my = new URLSearchParams(location.search).get('my'); if (my) setTimeout(function () { openMy(my); }, 0);
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
   }

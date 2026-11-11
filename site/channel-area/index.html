@@ -1,0 +1,426 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FirstShift Route</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the chart fills the screen. A slim top bar, a time bar fixed to the bottom edge, results in tabs that open
+   as a bottom sheet on a phone and a side drawer on a pad or PC, settings in a sheet. Night mode turns everything red. */
+:root{
+  --brand:#3574BA; --brandnavy:#042D5E; --bg:#EEF2F4; --panel:#FFFFFF; --glass:rgba(255,255,255,.92); --ink:#13202A; --muted:#5A6A75; --line:#D3DCE2; --soft:#F2F6F8;
+  --sea:#DCE9F1; --sea2:#B9D3E3; --land:#E9DDB8; --landedge:#A8955F; --shoal:#E9A7A0; --shoaledge:#B0302A;
+  --route:#B0127A; --onroute:#FFFFFF; --wind:#2F5F86; --tide:#1F8A70; --ghost:#5A6A75; --good:#2E7D4F; --warn:#B26A00;
+  --out:#C5D3DC; --m1:#2E86AB; --m2:#D1495B; --m3:#E09F3E; --m4:#6A4C93; --m5:#3B8B5A;
+  --f-head:"Space Grotesk",system-ui,sans-serif; --f-body:Inter,system-ui,sans-serif; --f-data:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --gut:max(10px,env(safe-area-inset-left,0px)); --gutR:max(10px,env(safe-area-inset-right,0px));
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --brand:#6FA9E0; --brandnavy:#FFFFFF; --bg:#06111A; --panel:#182D40; --glass:rgba(33,57,79,.95); --ink:#E2EBF0; --muted:#9AAEBB; --line:#2E4860; --soft:#223B53;
+  --sea:#0B1C29; --sea2:#123349; --land:#2B3427; --landedge:#55623F; --shoal:#5A2A2A; --shoaledge:#FF6B5E;
+  --route:#FF4FB4; --onroute:#08131C; --wind:#8DB8DC; --tide:#55D1AE; --ghost:#8EA2AF; --good:#5FC488; --warn:#F0A43A;
+  --out:#091620; --m1:#5CB8E0; --m2:#FF6F7F; --m3:#F2B861; --m4:#A98BD6; --m5:#6CCB8E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --brand:#6FA9E0; --brandnavy:#FFFFFF; --bg:#06111A; --panel:#182D40; --glass:rgba(33,57,79,.95); --ink:#E2EBF0; --muted:#9AAEBB; --line:#2E4860; --soft:#223B53;
+  --sea:#0B1C29; --sea2:#123349; --land:#2B3427; --landedge:#55623F; --shoal:#5A2A2A; --shoaledge:#FF6B5E;
+  --route:#FF4FB4; --onroute:#08131C; --wind:#8DB8DC; --tide:#55D1AE; --ghost:#8EA2AF; --good:#5FC488; --warn:#F0A43A;
+  --out:#091620; --m1:#5CB8E0; --m2:#FF6F7F; --m3:#F2B861; --m4:#A98BD6; --m5:#6CCB8E; color-scheme:dark}
+/* Night on deck: red only, low brightness, to keep night vision. Declared last so it wins over day and dark. */
+:root[data-night]{
+  --brand:#E0322A; --brandnavy:#E0322A; --bg:#000000; --panel:#0A0000; --glass:rgba(10,0,0,.94); --ink:#E0322A; --muted:#8A1E18; --line:#3A0A08; --soft:#160302;
+  --sea:#000000; --sea2:#0E0202; --land:#2A0806; --landedge:#5A120E; --shoal:#3C0604; --shoaledge:#B4231B;
+  --route:#FF3B2F; --onroute:#000000; --wind:#7A1A14; --tide:#9A2A1A; --ghost:#8A1E18; --good:#FF5A40; --warn:#C8401E;
+  --out:#050000; --m1:#FF3B2F; --m2:#C2281E; --m3:#E0602A; --m4:#9A1E16; --m5:#D04A2A; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);margin:0;padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+button,select,input,textarea{font:inherit;color:inherit}
+.app{position:relative;height:100%;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr) auto}
+.chart{position:relative;grid-row:1;grid-column:1;background:var(--sea);overflow:hidden}
+canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;display:block}
+
+/* top bar */
+.top{position:absolute;top:8px;left:var(--gut);right:var(--gutR);display:flex;gap:8px;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:4}
+.top>*{pointer-events:auto}
+.brand{background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:6px 10px;display:grid;gap:1px;min-width:0}
+.brand b{font:600 14px/1.1 var(--f-head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{font:500 11px var(--f-data);color:var(--muted);background:none;border:0;padding:0;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
+.chip:hover{color:var(--ink)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ib{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--glass);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 11px;cursor:pointer;font-weight:600;font-size:13px}
+.ib svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib.primary{background:var(--route);border-color:var(--route);color:var(--onroute)}
+.ib[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.ib .lbl{display:none}
+@media (min-width:1200px){.ib .lbl{display:inline}}
+@media (max-width:899px){#raceTitle{font-size:0!important}#raceTitle::after{content:attr(data-short);font-size:13.5px;white-space:nowrap}.tools{flex-wrap:nowrap}.brand{max-width:none;flex:1 1 auto;min-width:0;flex:1 1 auto}.brand b{font-size:13px}#panelBtn{display:none}.ib{min-width:40px;height:42px;padding:0 7px}.tools{gap:5px}}
+:focus-visible{outline:2px solid var(--route);outline-offset:2px}
+
+/* popovers */
+.pop{position:absolute;top:60px;right:var(--gutR);max-height:calc(100% - 80px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;z-index:6;display:grid;gap:8px;min-width:240px;max-width:calc(100vw - 20px);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.pop select{width:100%;min-width:0;margin:0!important}
+.pophead{display:flex;justify-content:space-between;align-items:center;font:600 14px var(--f-head);margin:-4px -6px 2px 0}
+.pop label{display:flex;gap:9px;align-items:center;cursor:pointer;min-height:30px}
+.sw{width:20px;height:0;border-top:3px solid;display:inline-block;flex:none}
+
+/* info card */
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:12px/1.55 var(--f-data);box-shadow:0 6px 20px rgba(0,0,0,.2);min-width:220px;max-width:min(320px,calc(100vw - 20px));z-index:5}
+.tip.docked{pointer-events:auto;left:var(--gut)!important;right:var(--gutR);top:64px!important;max-width:none}
+.tip b{font-family:var(--f-body);font-weight:600}
+.tip .r{display:flex;justify-content:space-between;gap:12px}
+.tip .r span:first-child{color:var(--muted)}
+.tip .x{position:absolute;right:6px;top:4px;border:0;background:none;font-size:18px;cursor:pointer;color:var(--muted);display:none}
+.tip.docked .x{display:block}
+.busy{position:absolute;left:50%;transform:translateX(-50%);top:64px;background:none;border:0;padding:4px 8px;font:12px var(--f-data);color:var(--ink);text-shadow:0 0 4px var(--bg),0 0 8px var(--bg);z-index:5;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.busy[hidden]{display:none!important}
+.busy.spin::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);border-top-color:var(--brand);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* results panel: drawer on wide screens, bottom sheet on phones */
+.panel{grid-row:1;grid-column:2;width:400px;min-width:0;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:3}
+.panel[hidden]{display:none!important}
+.tabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);align-items:center}
+.tab{flex:1;border:1px solid transparent;background:none;border-radius:8px;padding:8px 6px;cursor:pointer;font:600 13px var(--f-head);color:var(--muted);min-height:40px}
+.tab[aria-selected="true"]{background:var(--soft);border-color:var(--line);color:var(--ink)}
+.tabs .tab{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.ti{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;shape-rendering:geometricPrecision}
+.ti .k{fill:currentColor}.ti .f{fill:currentColor;fill-opacity:.16}.ti .dash{stroke-dasharray:.01 3.1;stroke-width:2.1}
+.tab[aria-selected="true"] .ti{color:var(--brand)}
+.tab[aria-selected="true"]{box-shadow:inset 0 -2px 0 var(--brand)}
+@media (max-width:420px){.tabs .tab{flex-direction:column;gap:2px;font-size:11.5px;padding:6px 2px}.ti{width:21px;height:21px}}
+.close{border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer;width:40px;height:40px}
+.pbody{overflow:auto;padding:12px 14px 16px;display:block;min-height:0;flex:1 1 auto}
+.pbody>*+*{margin-top:12px!important}
+@media (max-width:899px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto}
+  .panel{grid-row:2;grid-column:1;width:auto;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;max-height:46vh}
+  .panel.collapsed .pbody{display:none}
+  .grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 0}
+}
+@media (min-width:900px){.grab{display:none}.panel.collapsed .pbody:not([hidden]){display:block}}
+
+/* time bar, always at the bottom */
+.bar{grid-row:2;grid-column:1/-1;background:var(--panel);border-top:1px solid var(--line);padding:8px var(--gutR) calc(8px + env(safe-area-inset-bottom,0px)) var(--gut);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;align-items:center;z-index:4}
+@media (max-width:899px){.bar{grid-row:3}}
+.play{width:48px;height:44px;border-radius:10px;border:0;background:var(--brand);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.play svg{width:20px;height:20px;fill:currentColor}
+input[type=range]{width:100%;accent-color:var(--brand);height:32px}
+.clock{font:500 14px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.clock small{display:block;font-size:11px;color:var(--muted)}
+.now{grid-column:1/-1;display:flex;gap:4px 18px;overflow-x:auto;scrollbar-width:none}
+.now div{display:grid;flex:none}
+.now span{font:500 9.5px var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.now b{font:500 16px var(--f-data);font-variant-numeric:tabular-nums}
+@media (min-width:900px){.bar{grid-template-columns:auto minmax(200px,1fr) auto auto}.now{grid-column:auto}}
+
+/* settings sheet */
+.sheet{position:fixed;inset:0;z-index:10;display:flex;justify-content:flex-end;background:rgba(0,0,0,.35)}
+.sheet[hidden]{display:none!important}
+.sheet .in{width:min(460px,100%);height:100%;background:var(--panel);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet h2{font:600 17px var(--f-head);margin:0}
+.htopic{border-top:1px solid var(--line);padding-top:10px}.htopic h3{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 4px;font-size:15px}.htopic p{margin:0;font-size:13.5px;line-height:1.55}.htopic.on{background:var(--soft)}.say{font-size:12px;min-height:32px;padding:4px 10px}
+.shead{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.stabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;flex:none;scrollbar-width:none}
+.shead{flex:none}
+.stabs .tab{flex:none;padding:8px 12px}
+.sbody{overflow:auto;padding:14px;display:block;flex:1 1 auto}
+.sbody>*+*{margin-top:12px!important}
+.row{display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap}
+.row>label:first-child{min-width:130px;color:var(--muted)}
+input[type=number],select,textarea{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-data);min-height:40px}
+select{font:500 14px var(--f-body)}
+.sheet input:not([type]),.sheet input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:40px;color:var(--ink);font:14px var(--f-body);min-width:0;flex:1 1 140px}
+input[type=number]{width:96px}
+input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-body);min-height:40px;flex:1 1 160px;min-width:0}
+.tune input[type=range]{flex:1 1 140px;width:auto;min-width:0}.tune b{font:600 13px var(--f-data);min-width:46px;text-align:right}
+.warnbox{margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));font-size:13px;line-height:1.4}
+.newdata{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 118px);z-index:6;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;padding:8px 8px 8px 14px;border-radius:12px;background:var(--glass);border:2px solid var(--route);box-shadow:0 4px 18px rgba(0,0,0,.25);font:600 13px var(--f-body);max-width:calc(100% - 2*var(--gut))}
+.cbanner{position:absolute;left:calc(var(--gut) + 0px);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:4;max-width:min(560px,calc(100% - 2*var(--gut)));padding:7px 30px 7px 11px;border-radius:9px;border:1px solid var(--warn);background:var(--glass);font:600 12.5px var(--f-body);color:var(--ink)}
+.cbanner b{color:var(--warn)}
+.cbanner button{position:absolute;right:4px;top:3px;border:0;background:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px}
+.linkbtn{border:0;background:none;color:var(--brand);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline}
+.pgrid{overflow:auto;max-height:280px;border:1px solid var(--line);border-radius:8px}
+.pgrid table{font:11.5px var(--f-data);width:auto}
+.pgrid th{position:sticky;top:0;background:var(--panel);padding:4px 6px;color:var(--muted);font-weight:500;z-index:1}
+.pgrid th:first-child{left:0;z-index:2}
+.pgrid td{padding:0;border-top:1px solid var(--line)}
+.pgrid td:first-child{position:sticky;left:0;background:var(--panel);padding:4px 6px;color:var(--muted)}
+.pgrid input{width:52px;min-height:28px;border:0;background:transparent;font:11.5px var(--f-data);text-align:right;padding:3px 5px;color:var(--ink)}
+.pgrid input:focus{outline:2px solid var(--brand);background:var(--soft)}
+.plotbox canvas{width:100%;max-width:340px;height:auto;display:block;background:var(--soft);border-radius:10px}
+select{max-width:100%}
+textarea{width:100%;min-height:100px;font-size:12px}
+.chk{display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--brand)}
+.note{font-size:12px;color:var(--muted);margin:0}
+.xrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px}
+.xhelp h4{margin:12px 0 4px;font-size:13px}.xhelp ol{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
+.btn{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;min-height:40px}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--soft);padding:9px 8px;cursor:pointer;font-weight:600;min-height:42px}
+.seg button{color:var(--muted)}.seg button[aria-pressed="true"]{background:var(--brand);color:#fff}
+h3{font:600 13px var(--f-head);margin:6px 0 0}
+
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+.finbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.fin{display:grid;grid-template-columns:auto 1fr;gap:0 4px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;background:var(--soft)}
+.fin b{grid-column:1 / -1;font:600 14px var(--f-data)}.fin em{grid-column:1 / -1;font:12px var(--f-data);color:var(--muted);font-style:normal}
+.fin.comb{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
+.agerow td{border-top:0!important;padding-top:0!important;font:11.5px var(--f-data);color:var(--muted)}
+th,td{padding:6px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{font:500 9.5px var(--f-data);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td{font-family:var(--f-data)}
+tr.sel td{background:var(--soft)}
+tr.click{cursor:pointer}
+.best{color:var(--good);font-weight:600}
+.pill{display:inline-block;font:500 10px var(--f-data);padding:2px 7px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+.tw{overflow-x:auto}
+.total{display:flex;justify-content:space-between;font:500 13px var(--f-data);padding:8px 10px;background:var(--soft);border-radius:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* FirstShift brand: sails mark, two blues, Route's own tool colour as a thin band at the top */
+body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background:var(--route);z-index:20;pointer-events:none}
+.lead{display:flex;gap:8px;min-width:0;pointer-events:none}.lead>*{pointer-events:auto}
+.logobox{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:10px;background:var(--glass);border:1px solid var(--line)}
+.logobox .logo{height:34px;width:auto}
+.brand{align-content:center}
+.lg-d{display:none}
+:root[data-theme="dark"] .lg-l{display:none}:root[data-theme="dark"] .lg-d{display:inline}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lg-l{display:none}:root:not([data-theme="light"]) .lg-d{display:inline}}
+:root[data-night] .logo,:root[data-night] .lock{filter:brightness(.55) sepia(1) saturate(9) hue-rotate(-38deg)}
+.hbrand{display:flex;flex-direction:column;gap:2px}.hbrand .lock{height:30px;width:auto;align-self:flex-start}.hbrand span{font:600 14px var(--f-head);color:var(--muted)}
+#raceTitle{color:var(--brandnavy)}
+
+/* phones: the Route button says Route in words; From here moves down beside Play, so the header keeps the logo and race name */
+@media (max-width:899px){
+  
+  .brand .chip{display:none}.brand{padding:6px 8px;height:44px;display:flex;align-items:center}.logobox{width:44px;height:44px}.logobox .logo{height:28px}.lead{gap:5px;min-width:0;flex:1 1 auto}
+  .bar.fh{grid-template-columns:auto auto minmax(0,1fr) auto}
+  .bar #fromHere{height:44px;min-width:44px;background:var(--soft)}
+}
+.rerow{display:flex;align-items:center;gap:10px;margin-bottom:10px}.rerow .btn{display:inline-flex;align-items:center;gap:6px;flex:none}.rerow .note{min-width:0}
+
+#raceBtn{cursor:pointer}#raceBtn #raceTitle::before{content:"";display:inline-block;width:0;height:0;border:4px solid transparent;border-top:5px solid var(--muted);margin:0 6px 1px 0;vertical-align:middle;float:right;margin-top:6px}
+.rcur{display:grid;gap:8px;padding-bottom:6px}.rcur b,.ritem b{display:block;font:600 15px var(--f-head)}
+#raceList h3{font:600 13px var(--f-head);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+.ritem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.ritem>div:first-child{min-width:0}.ritem .xrow{margin:0;flex:none}.ritem.on b{color:var(--brand)}
+.editbar{position:absolute;left:var(--gut);right:var(--gutR);top:64px;z-index:7;background:var(--panel);border:1px solid var(--route);border-radius:12px;padding:10px 12px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.editbar[hidden]{display:none!important}.editbar .xrow{margin:0}.editbar .btn{min-height:36px;padding:6px 12px}
+
+.mobbtn{width:52px;height:44px;border-radius:10px;border:2px solid #ff3b30;background:#b3120b;color:#fff;font:800 13px var(--f-head);letter-spacing:.04em;cursor:pointer;position:relative;overflow:hidden;touch-action:none}
+.mobbtn.holding::after,.mobend.holding::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.35);transform-origin:left;animation:fill 1s linear forwards}
+.mobend{position:relative;overflow:hidden;width:100%;border-color:#ff3b30;color:#ff3b30;font-weight:700}.mobend.holding::after{animation-duration:1.5s}
+@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.mob{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 60px);z-index:30;background:var(--panel);border:3px solid #ff3b30;border-radius:14px;padding:12px 14px;display:grid;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
+.mob[hidden]{display:none!important}
+.mob.small{gap:4px;padding:8px 12px}.mob.small .note,.mob.small .mobend,.mob.small #mobTxt>div:nth-of-type(n+3),.mob.small .mobtime small{display:none}.mob.small .mobtime{font-size:22px}.mob.small #mobTxt>div b{font-size:16px}
+.mobhead{display:flex;justify-content:space-between;align-items:center}.mobhead b{color:#ff3b30;font:800 18px var(--f-head);letter-spacing:.04em}
+.mobtime{font:600 34px var(--f-data);font-variant-numeric:tabular-nums}.mobtime small{display:block;font:12px var(--f-data);color:var(--muted)}
+#mobTxt>div{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}#mobTxt>div span{color:var(--muted);font-size:13px}#mobTxt>div b{font:600 20px var(--f-data);text-align:right}
+.bar{grid-template-columns:auto auto minmax(0,1fr) auto}
+@media (max-width:899px){.bar.fh{grid-template-columns:auto auto auto minmax(0,1fr) auto}}
+</style>
+
+<div class="app" id="app">
+  <div class="chart">
+    <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
+    <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
+
+    <div class="top">
+      <div class="lead"><div class="logobox" title="FirstShift: Yacht Racing Intelligence"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></div><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div></div>
+      <div class="tools">
+        <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
+        <button class="ib" id="layersBtn" aria-expanded="false" title="What the chart shows"><svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5z"/><path d="m2 13 10 5 10-5"/></svg><span class="lbl">Layers</span></button>
+        <button class="ib" id="panelBtn" aria-expanded="false" title="Results"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/></svg><span class="lbl">Results</span></button>
+        <button class="ib" id="nightBtn" aria-pressed="false" title="Night mode: red only"><svg viewBox="0 0 24 24"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg><span class="lbl">Night</span></button>
+        <button class="ib" id="helpBtn" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r=".6"/></svg></button>
+        <button class="ib" id="setBtn" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Settings</span></button>
+      </div>
+    </div>
+    <div class="pop" id="layers" hidden></div>
+    <div class="tip" id="tip" hidden><button class="x" id="tipX" aria-label="Close">×</button><div id="tipBody"></div></div>
+    <div class="busy" id="busy" hidden></div>
+  </div>
+
+  <section class="panel collapsed" id="panel" hidden aria-label="Results">
+    <div class="grab"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="decision" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5V13"/><path class="dash" d="M12 13 6.2 5.8"/><path d="M12 13l4.7-6"/><path class="k" d="M19.6 3l-.7 5.8-4.6-3.6z"/></svg><span>Decision</span></button>
+      <button class="tab" role="tab" data-tab="plan" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3v15"/><path class="f" d="M12.2 4.2v13.3h7.1z"/><path d="M9.6 6.6v10.9H4.2z"/><path d="M3 20h18l-2 2.2H5z"/></svg><span>Plan</span></button>
+      <button class="tab" role="tab" data-tab="fleet" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path class="k" d="M12 2.6l4 7.6H8z"/><path d="M6 12.6l4 7.6H2z"/><path d="M18 12.6l4 7.6h-8z"/></svg><span>Fleet</span></button>
+      <button class="tab" role="tab" data-tab="data" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16l9 4.5 9-4.5"/></svg><span>Data</span></button>
+      <button class="close" id="panelX" aria-label="Close results">×</button>
+    </div>
+    <div class="pbody" id="t-decision">
+      <div class="rerow"><button class="btn" id="run" title="Work the routes out again with the current settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>Route again</button><span class="note">Routes by itself when it opens, when new forecasts arrive and when you close Settings after a change.</span></div>
+      <div class="finbox" id="finBox" aria-label="Finish times"></div>
+      <p class="note" id="decNote"></p>
+      <div class="tw"><table id="matrix"></table></div>
+      <p class="note" id="runNote"></p>
+    </div>
+    <div class="pbody" id="t-plan" hidden><div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
+      <div class="xrow"><button class="btn" id="xGpx">Save GPX</button><button class="btn" id="xKml">Save KML</button><button class="btn" id="xShare" hidden>Open in chart app…</button><button class="btn" id="xHelpBtn" aria-expanded="false">How to load it</button></div>
+      <p class="note" id="xNote"></p>
+      <div id="xHelp" class="xhelp" hidden>
+        <p class="note"><b>The file is a planning aid, not for navigation.</b> GPX carries the route as waypoints at each turn plus the marks; KML shows the whole track in Google Earth and most chart apps.</p>
+        <h4>B&amp;G Zeus SR, Zeus S, Simrad NSS 4, NSX</h4><ol><li>Copy the GPX to a microSD card or USB stick.</li><li>Put it in the plotter, open the Waypoints &amp; Routes app and choose Import routes.</li><li>Follow the prompts and pick the file. Older Zeus 3 and 3S: Files, then pick the card and the file, then Import.</li></ol>
+        <h4>Raymarine Axiom (LightHouse)</h4><ol><li>Copy the GPX to a microSD card.</li><li>Homescreen, My data, Import/export, Import from card.</li><li>Pick the card slot and the .gpx file, then OK.</li></ol>
+        <h4>Garmin</h4><ol><li>Copy the GPX to a memory card and put it in.</li><li>Where To, Menu, Manage User Data, Data Transfer, File Type: GPX.</li><li>Then Import from the same Data Transfer menu.</li></ol>
+        <h4>GeoGarage, C-MAP, Navionics and other phone and tablet apps</h4><ol><li>On a phone or tablet, tap Open in chart app and choose the app from the share sheet, or save the file to Files first.</li><li>In the app, use its import or open file option if the share sheet does not offer it.</li><li>If the app will not take GPX, try the KML.</li></ol>
+        <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
+      </div></div>
+    <div class="pbody" id="t-fleet" hidden>
+      <p class="note">Every IRC entry sailing your chosen route at its own TCC from its own class start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
+      <div class="tw"><table id="fleet"></table></div>
+    </div>
+    <div class="pbody" id="t-data" hidden>
+      <p class="note" id="dataNote"></p>
+      <div class="seg" id="plans"><button data-plan="full">Full detail</button><button data-plan="coastal">Coastal</button><button data-plan="lite">Low bandwidth</button></div>
+      <p class="note" id="bandNote"></p>
+      <div class="tw"><table id="dataTable"></table></div>
+      <label class="chk"><input type="checkbox" id="ovChk" checked> <span>Big-picture chart of north-west Europe: ECMWF pressure and wind, 1°, 6-hourly for 3 days <span class="pill" id="ovSize"></span></span></label>
+      <div class="total"><span>Download</span><span id="dlTotal">-</span></div>
+      <div class="row"><button class="btn primary" id="dlBtn">Download selected</button><span class="note" id="dlNote"></span></div>
+      <p class="note">Sizes are compressed download sizes, already cut to the course band and race hours. Seabed depth is sent only where it is shallower than 20 m, and only needs downloading once per race area. Forecasts refresh every six hours.</p>
+    </div>
+  </section>
+
+  <div class="bar">
+    <button class="mobbtn" id="mobBtn" aria-label="Man overboard: press and hold" title="Man overboard: press and hold for one second">MOB</button>
+    <button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button>
+    <input type="range" id="time" min="0" max="1000" value="0" aria-label="Race time">
+    <div class="clock" id="clock">--</div>
+    <div class="now" id="now"></div>
+  </div>
+</div>
+
+<div class="newdata" id="newData" hidden><span id="newDataTxt">New forecast</span><button id="newDataBtn" class="btn primary">New data: update routing</button></div>
+<div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
+<div class="mob" id="mob" hidden role="alertdialog" aria-label="Man overboard">
+  <div class="mobhead"><b>MAN OVERBOARD</b><button class="btn" id="mobCentre">Show on chart</button></div>
+  <div id="mobTxt"></div>
+  <p class="note">Shout, point, throw the danbuoy and lifebuoy, press the DSC distress button on the VHF, call the Coastguard on channel 16. Keep a crew member pointing at all times.</p>
+  <button class="btn mobend" id="mobEnd">Hold to end MOB</button>
+</div>
+<div class="sheet" id="races" hidden>
+  <div class="in" role="dialog" aria-label="Races">
+    <div class="shead"><h2>Races</h2><button class="close" id="racesX" aria-label="Close races">×</button></div>
+    <div class="sbody" id="raceList"></div>
+  </div>
+</div>
+<div class="sheet" id="help" hidden>
+  <div class="in" role="dialog" aria-label="Help">
+    <div class="shead"><h2 class="hbrand"><img class="lock lg-l" src="../brand/lockup-light.svg" alt="FirstShift: Yacht Racing Intelligence"><img class="lock lg-d" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><span>Route help</span></h2><button class="close" id="helpX" aria-label="Close help">×</button></div>
+    <div class="sbody">
+      <div class="xrow"><button class="btn primary" id="sayAll">Listen to the tour</button><button class="btn" id="sayStop" hidden>Stop</button></div>
+      <p class="note">Each topic has its own Listen button. Route is a planning aid, not for navigation.</p>
+      <div id="helpList"></div>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="sheet" hidden>
+  <div class="in" role="dialog" aria-label="Settings">
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.5.0</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="stabs" role="tablist">
+      <button class="tab" data-s="boat" aria-selected="true">Boat</button>
+      <button class="tab" data-s="fc" aria-selected="false">Forecasts</button>
+      <button class="tab" data-s="course" aria-selected="false">Course</button>
+      <button class="tab" data-s="sails" aria-selected="false">Sails</button>
+      <button class="tab" data-s="display" aria-selected="false">Display</button>
+    </div>
+    <div class="sbody" id="s-boat">
+      <div class="row"><label for="myBoat">My boats</label><select id="myBoat"><option value="">Not saved yet</option></select><button class="btn" id="boatSave">Save boat</button><button class="btn" id="boatDel" hidden>Delete</button></div>
+      <div class="row"><label for="boatName">Boat name</label><input type="text" id="boatName" placeholder="Your boat" autocomplete="off"></div>
+      <h3>Boat speed from</h3>
+      <div class="seg" id="srcSeg" role="group" aria-label="Boat speed from"><button data-src="type" aria-pressed="true">Boat type</button><button data-src="tcc" aria-pressed="false">TCC only</button><button data-src="polar" aria-pressed="false">Own polar</button></div>
+      <div class="row"><label for="tcc">IRC TCC</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"><select id="boatPick" aria-label="Fill TCC from a race entry"><option value="">or fill from an entry…</option></select></div>
+      <div id="srcType">
+        <div class="row"><label for="boatType">Boat type</label><select id="boatType"></select></div>
+        <p class="note" id="typeEg"></p>
+      </div>
+      <p class="note" id="srcTccNote" hidden>FirstShift's generic polar, scaled so the boat sails at its TCC. Use Boat type or Own polar for a truer shape.</p>
+      <div id="srcPolar" hidden>
+        <div class="row"><label for="polarFile">Load your polar</label><input type="file" id="polarFile" accept=".pol,.txt,.csv,.tsv,.json,.xml"></div>
+        <p class="note">Your own data: ORC rating data (JSON) or the polar table copied from your ORC certificate, an Expedition, B&amp;G, OpenCPN or qtVlm polar, or any table with TWA down and TWS across. Paste it below or load the file; edit any number in the table.</p>
+        <textarea id="polarTxt" spellcheck="false" placeholder="Paste a polar here"></textarea>
+        <div class="row"><button class="btn" id="polarFromType">Start from the boat type</button><span class="note" id="polarRead"></span></div>
+        <div class="pgrid" id="polarGrid"></div>
+      </div>
+      <h3>Tuning for the day</h3>
+      <div class="row tune"><label for="tuUp">Upwind</label><input type="range" id="tuUp" min="85" max="110" step="1" value="100"><b id="tuUpV">100%</b></div>
+      <div class="row tune"><label for="tuReach">Reaching</label><input type="range" id="tuReach" min="85" max="110" step="1" value="100"><b id="tuReachV">100%</b></div>
+      <div class="row tune"><label for="tuRun">Downwind</label><input type="range" id="tuRun" min="85" max="110" step="1" value="100"><b id="tuRunV">100%</b></div>
+      <p class="note">Below 100% for a light or new crew, tired sails or a sea the forecast misses; above it for a strong, heavy crew. Upwind runs to 55° TWA, reaching 70° to 110°, downwind from 130°, blended in between. <button class="linkbtn" id="tuReset">Reset to 100%</button></p>
+      <div class="plotbox"><canvas id="polarPlot" width="560" height="600" aria-label="Polar diagram"></canvas><p class="note" id="plotKey"></p></div>
+      <h3>If you think the forecast is wrong</h3>
+      <p class="note">Applies to every route. Wind and tide arrows on the chart still show the forecast as published.</p>
+      <div class="row tune"><label for="adjWdir">Wind direction</label><input type="range" id="adjWdir" min="-40" max="40" step="5" value="0"><b id="adjWdirV"></b></div>
+      <div class="row tune"><label for="adjWspd">Wind strength</label><input type="range" id="adjWspd" min="-40" max="40" step="5" value="0"><b id="adjWspdV"></b></div>
+      <div class="row tune"><label for="adjWtime">Wind timing</label><input type="range" id="adjWtime" min="-6" max="6" step="1" value="0"><b id="adjWtimeV"></b></div>
+      <div class="row tune"><label for="adjTspd">Tide strength</label><input type="range" id="adjTspd" min="-50" max="50" step="10" value="0"><b id="adjTspdV"></b></div>
+      <div class="row tune"><label for="adjTtime">Tide timing</label><input type="range" id="adjTtime" min="-60" max="60" step="15" value="0"><b id="adjTtimeV"></b></div>
+      <div class="row"><button class="btn" id="adjReset">Back to the forecast</button><span class="note" id="adjNote" hidden>Overrides on: Route works them in when you close Settings.</span></div>
+      <h3>Start and manoeuvres</h3>
+      <div class="row"><label for="startSel">Class start</label><select id="startSel"></select></div>
+      <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
+      <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
+    </div>
+    <div class="sbody" id="s-fc" hidden>
+      <h3>Wind models to route on</h3>
+      <div id="models"></div>
+      <div class="row"><label for="tideSel">Tidal stream</label><select id="tideSel"></select></div>
+      <div class="row"><label for="waveSel">Sea state</label><select id="waveSel"></select></div>
+      <h3>Sea state effect</h3>
+      <div class="row"><label for="seaUp">Upwind loss</label><input type="number" id="seaUp" value="4" step="0.5"> % per m</div>
+      <div class="row"><label for="seaReach">Reaching loss</label><input type="number" id="seaReach" value="1.5" step="0.5"> % per m</div>
+      <div class="row"><label for="seaSurf">Downwind gain</label><input type="number" id="seaSurf" value="3" step="0.5"> % in 1.5 m+</div>
+      <p class="note">Only downloaded models can be used. Choose what to download under Results, Data.</p>
+    </div>
+    <div class="sbody" id="s-course" hidden>
+      <div class="row"><label for="depth">Safety depth</label><input type="range" id="depth" min="0" max="20" step="0.5" value="3" style="width:180px"><b id="depthV" style="font-family:var(--f-data)">3.0 m</b></div>
+      <p class="note">The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
+      <h3>Race</h3>
+      <div class="row"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
+      <p class="warnbox" id="courseWarn" hidden></p>
+      <h3>Keep-out areas</h3>
+      <label class="row" style="gap:8px"><input type="checkbox" id="tssNogo" checked> Keep out of traffic separation lanes and zones</label>
+      <p class="note">The router treats the lanes and separation zones near the course as no-go, as most sailing instructions require; the race's own keep-out boxes always apply. Source: OpenStreetMap and Shom. Not for navigation: check the sailing instructions.</p>
+      <h3>Marks and rounding</h3>
+      <div id="markSides"></div>
+      <p class="note" id="courseNote"></p>
+    </div>
+    <div class="sbody" id="s-sails" hidden>
+      <p class="note">One sail per line: name, from TWA, to TWA, from TWS, to TWS. First match wins. Replace with your own crossover chart.</p>
+      <textarea id="sails" spellcheck="false" style="min-height:240px"># sail, twa from, twa to, tws from, tws to
+J1, 0, 65, 0, 13
+J2, 0, 65, 13, 19
+J3, 0, 65, 19, 60
+Code 0, 65, 100, 0, 14
+J2 reaching, 65, 100, 14, 60
+A3, 100, 125, 0, 20
+A2, 125, 181, 0, 18
+A4, 125, 181, 18, 60
+J3 reaching, 100, 125, 20, 60</textarea>
+    </div>
+    <div class="sbody" id="s-display" hidden>
+      <h3>Screen</h3>
+      <div class="seg" id="modeSeg" role="group" aria-label="Screen"><button data-mode="auto">Auto</button><button data-mode="light">Light</button><button data-mode="dark">Dark</button><button data-mode="night">Night red</button></div>
+      <p class="note">Auto follows the phone or computer. Light for bright sun, Dark for dusk and the nav table, Night red keeps every colour at the red end, at low brightness, to protect night vision on deck; turn the screen brightness down too. The Night button on the chart switches between Night red and your day setting.</p>
+      <div class="row tune"><label for="windDim">Wind symbols</label><input type="range" id="windDim" min="15" max="100" step="5" value="55"><b id="windDimV"></b></div>
+      <div class="row tune"><label for="tideDim">Tide arrows</label><input type="range" id="tideDim" min="15" max="100" step="5" value="50"><b id="tideDimV"></b></div>
+      <div class="row"><label for="windSym">Wind symbol</label><select id="windSym"><option value="W6">W6 Barb with number</option><option value="W2">W2 Wind barb</option><option value="W5">W5 Slow streaks with numbers (moving)</option><option value="W7">W7 FirstShift triangle</option></select></div>
+      <div class="row"><label for="tideSym">Tide symbol</label><select id="tideSym"><option value="T6">T6 Translucent arrow, outlined</option><option value="T5">T5 Translucent weighted arrow</option><option value="T1">T1 Dotted arrow</option><option value="T3">T3 Tidal atlas arrow</option></select></div>
+      <p class="note">Barbs: the staff points into the wind; half feather 5 kn, full feather 10, pennant 50. Tide arrows point the way the water flows, rate in knots (atlas arrows in tenths).</p>
+      <div class="row"><label for="windShow">Wind shown from</label><select id="windShow"></select></div>
+      <div class="row"><label for="speed">Play speed</label><select id="speed"><option value="0.5">30 min a second</option><option value="1" selected>1 hour a second</option><option value="3">3 hours a second</option></select></div>
+    </div>
+  </div>
+</div>
+
+<script src="router.js"></script>
+<script src="engine.js"></script>
+<script src="boat.js"></script>
+<script src="app.js"></script>
