@@ -22,7 +22,7 @@
     $('nightBtn').setAttribute('aria-pressed', mode === 'night'); store('fs-night', mode === 'night' ? '1' : '0');
     var cur = mode === 'night' ? 'night' : mode === 'light' || (mode === 'auto' && !matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
     $('nightBtn').innerHTML = MODEICON[cur] + '<span class="lbl">' + { dark: 'Dark', night: 'Night', light: 'Light' }[cur] + '</span>';
-    $('nightBtn').title = 'Screen: ' + { dark: 'dark', night: 'night red', light: 'light' }[cur] + '. Tap for ' + { dark: 'night red', night: 'light', light: 'dark' }[cur];
+    $('nightBtn').title = 'Screen: ' + { dark: 'dark', night: 'night red', light: 'light' }[cur] + '. Tap to change';
     [].forEach.call($('modeSeg').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
     readCss(); buildDepth(); draw(); if (!$('sheet').hidden) plotPolar();
   }
@@ -41,11 +41,13 @@
     place(); if (mq.addEventListener) mq.addEventListener('change', place); })();
   /* ---------- offline: keep the app, forecasts and routes on the device (sw.js) ---------- */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
-  window.addEventListener('online', function () { if (meta) chip(); }); window.addEventListener('offline', function () { if (meta) chip(); });
+  function offBadge() { var o = !navigator.onLine; $('offBadge').hidden = !o; $('offBadge').title = o ? 'No signal: Route is using the forecast saved on this device' : ''; }
+  window.addEventListener('online', function () { offBadge(); if (meta) chip(); }); window.addEventListener('offline', function () { offBadge(); if (meta) chip(); });
+  setTimeout(offBadge, 0);
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); crewInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -183,10 +185,14 @@
     };
     $('time').oninput = function () { S.t = tFromSlider(); update(); };
     $('play').onclick = togglePlay;
-    $('nightBtn').onclick = function () {   /* one button cycles dark, night red, light */
-      var r = document.documentElement, cur = r.hasAttribute('data-night') ? 'night' : r.getAttribute('data-theme') === 'light' || (!r.getAttribute('data-theme') && !matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
-      setMode({ dark: 'night', night: 'light', light: 'dark' }[cur]);
+    $('nightBtn').onclick = function (e) {   /* screen menu: dark, night red, light, or follow the device */
+      e.stopPropagation(); var m = $('modeMenu'); if (!m.hidden) { m.hidden = true; return; }
+      var r = this.getBoundingClientRect(); m.style.top = (r.bottom + 6) + 'px'; m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+      var r0 = document.documentElement, cur = r0.hasAttribute('data-night') ? 'night' : (r0.getAttribute('data-theme') || 'auto');
+      [].forEach.call(m.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.m === cur)); }); m.hidden = false;
     };
+    [].forEach.call($('modeMenu').querySelectorAll('button'), function (b) { b.onclick = function () { setMode(b.dataset.m); $('modeMenu').hidden = true; }; });
+    document.addEventListener('click', function (e) { if (!$('modeMenu').hidden && !$('modeMenu').contains(e.target)) $('modeMenu').hidden = true; });
     [].forEach.call($('modeSeg').children, function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
     if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'), ch = function () { if (dayMode === 'auto' && !document.documentElement.hasAttribute('data-night')) { readCss(); buildDepth(); draw(); } }; if (mq.addEventListener) mq.addEventListener('change', ch); else if (mq.addListener) mq.addListener(ch); }
     /* Settings: route again by itself on closing, if anything that affects the routes changed */
@@ -286,8 +292,16 @@
   var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60]];
   function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); return a; }
   function adjInit() {
-    ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : ''); $('adjNote').hidden = !adjVals(); }; el.oninput = f; f(); });
-    $('adjReset').onclick = function () { ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); };
+    ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
+    $('adjReset').onclick = function () { ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); adjPill(); };
+    $('adjPillX').onclick = function () { $('adjReset').onclick(); busy('Back to the forecast: routing again…'); S.from = null; run(); };
+    adjPill();
+  }
+  /* a note on the chart whenever the forecast has been changed, with one tap back to the forecast as published */
+  function adjPill() {
+    var a = adjVals(), t = [];
+    if (a) ADJ.forEach(function (x) { var v = +$(x[0]).value; if (v) t.push(({ wdir: 'wind ', wspd: 'wind ', wtime: 'wind ', tspd: 'tide ', ttime: 'tide ' })[x[1]] + $(x[0] + 'V').textContent); });
+    $('adjPill').hidden = !a; $('adjPillTxt').textContent = 'Forecast changed: ' + t.join(', ');
   }
   function HMAX() { var w = (meta.course0 || meta.course).window; return w ? w[1] : 48; }
   function legsFor(fromPt) {
@@ -346,6 +360,8 @@
       $('raceSel').value = want; applyRace(want);
       if (!RACES.some(function (r) { return r.id === want; })) { var c0 = meta.course; $('raceTitle').textContent = c0.name + ' · ' + c0.start.name.replace(/^Start,\s*/, '') + ' to ' + c0.finish.name.replace(/^Finish,\s*/, ''); $('raceTitle').setAttribute('data-short', c0.name.replace(/^English /, '').replace(/^Southern /, '')); }
       var my = new URLSearchParams(location.search).get('my'); if (my) setTimeout(function () { openMy(my); }, 0);
+      if (S.pendingCourse) { applyCourseObj(asRace(S.pendingCourse)); S.pendingCourse = null; }
+      if (S.pendingStart && [].some.call($('startSel').options, function (o) { return o.value === S.pendingStart; })) $('startSel').value = S.pendingStart; S.pendingStart = null;
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
   }
   /* ---------- man overboard: hold the red button; marks the position from the GPS, then gives bearing, distance and
@@ -489,6 +505,39 @@
     setInterval(aisLive, 5000);
     setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
   }
+  /* replay speed: the button beside Play steps through the speeds in Settings, Display */
+  function spdLabel() { var v = +$('speed').value; $('spdBtn').textContent = v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'; }
+  function spdInit() { var o = [].map.call($('speed').options, function (x) { return x.value; }); $('spdBtn').onclick = function () { var i = o.indexOf($('speed').value); $('speed').value = o[(i + 1) % o.length]; $('speed').dispatchEvent(new Event('change', { bubbles: true })); spdLabel(); }; $('speed').addEventListener('change', spdLabel); spdLabel(); }
+  /* ---------- send to the crew: a summary and a link that opens the same course and start in Route ---------- */
+  function crewLink() {
+    var c = meta.course, base = location.origin + location.pathname, st = $('startSel').value;
+    if (c.race && !c.race.custom) return base + '?race=' + encodeURIComponent(c.race.id) + '&start=' + st;
+    var cc = { n: c.name, p: [c.start].concat(c.marks).concat([c.finish]).map(function (q) { return [+q.lat.toFixed(4), +q.lon.toFixed(4), q.name, q.side ? q.side[0] : '']; }) };
+    return base + '?course=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cc))))) + '&start=' + st;
+  }
+  function crewText() {
+    var c = meta.course, s = S.sel, lines = ['FirstShift Route: ' + c.name, 'Start ' + clockAbs(+$('startSel').value) + ' UTC'];
+    if (S.routes && S.routes.length) {
+      lines.push('Finish times:'); S.routes.forEach(function (r) { lines.push('  ' + (r.combined ? 'Combined' : short(r.id)) + ': ' + clockH(r.r.finish).slice(4) + ' (' + fmtH(r.r.finish - S.start.t) + ')' + (r === s ? ' <- chosen' : '')); });
+      var p = s.r.path, cr = sailsList(), out = [], cur = null;
+      for (var i = 1; i < p.length && out.length < 4; i++) { var sl = FSRouter.sailFor(p[i], cr) || '-'; if (!cur || cur.sl !== sl) { cur = { sl: sl, t: p[i - 1].t, h: p[i].hdg }; out.push(cur); } }
+      lines.push('First legs (' + (s.combined ? 'Combined' : short(s.id)) + '):'); out.forEach(function (o) { lines.push('  ' + clockH(o.t).slice(4) + ' ' + o.sl + ', heading ' + pad(o.h) + '°'); });
+    }
+    lines.push('Open in Route: ' + crewLink()); lines.push('Planning aid, not for navigation.');
+    return lines.join('\n');
+  }
+  function crewInit() {
+    $('xCrew').onclick = function () {
+      var t = crewText();
+      if (navigator.share) { navigator.share({ title: 'FirstShift Route: ' + meta.course.name, text: t }).catch(function () {}); return; }
+      window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
+    };
+    $('xCopy').onclick = function () { var t = crewText(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('xNote').textContent = 'Copied: paste it into WhatsApp, a message or an email.'; }, function () { $('xNote').textContent = t; }); };
+    var q = new URLSearchParams(location.search), cs = q.get('course'), st = q.get('start');
+    if (cs) { try { var cc = JSON.parse(decodeURIComponent(escape(atob(cs)))), P0 = cc.p.map(function (a) { return { lat: a[0], lon: a[1], name: a[2], side: a[3] === 's' ? 'starboard' : 'port' }; });
+      S.pendingCourse = { name: cc.n, start: P0[0], marks: P0.slice(1, -1), finish: P0[P0.length - 1] }; } catch (e) {} }
+    if (st) S.pendingStart = st;
+  }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop();
@@ -576,6 +625,8 @@
       var kind = i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i;
       h += '<div class="row"><label for="edN' + i + '">' + kind + '</label><input id="edN' + i + '" value="' + (q.name || kind).replace(/"/g, '&quot;') + '">' + (i > 0 && i < p.length - 1 ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '') + '</div>';
     });
+    var opts = [].map.call($('startSel').options, function (o) { return '<option value="' + o.value + '"' + (o.value === $('startSel').value ? ' selected' : '') + '>' + o.textContent + '</option>'; }).join('');
+    h += '<div class="row"><label for="edStart">Start</label><select id="edStart">' + opts + '</select></div><p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
     h += '<p class="note">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edBack">Back to the chart</button></div>';
     $('raceList').innerHTML = '<h3>Your course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
     p.forEach(function (q, i) { if ($('edS' + i)) $('edS' + i).value = q.side || 'port'; });
@@ -583,8 +634,8 @@
     $('edSave').onclick = function () {
       var pts = p.map(function (q, i) { return { name: $('edN' + i).value.trim() || (i ? 'Mark ' + i : 'Start'), lat: q.lat, lon: q.lon, side: $('edS' + i) ? $('edS' + i).value : undefined }; });
       var c = { name: $('edName').value.trim() || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
-      S.edit = null; S.myId = null; applyCourseObj(asRace(c)); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
-      $('races').hidden = true; var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; } else { S.from = null; run(); }
+      var stv = $('edStart').value; S.edit = null; S.myId = null; applyCourseObj(asRace(c)); $('startSel').value = stv; $('startSel').dispatchEvent(new Event('change', { bubbles: true })); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
+      $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…'); var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; } else { S.from = null; run(); }
     };
   }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
