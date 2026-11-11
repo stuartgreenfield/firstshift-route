@@ -31,7 +31,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); if (W) { fit(); fitted = true; }
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return loadPre().then(function () { earlyPre(); return download(); });
@@ -425,6 +425,40 @@
     });
     s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="6" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
     $('plan').innerHTML = h;
+  }
+  /* ---------- help: text and a spoken run-through, using the device's own speech (free, works offline) ---------- */
+  var HELP = [
+    ['What Route does', 'Route works out the fastest way round the race course for your boat, in each forecast model, with the tide. It routes as soon as you open it, and again whenever you press Route. A planning aid, not for navigation.'],
+    ['Decision', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
+    ['Play the race', 'Press the pink play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
+    ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
+    ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCC, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],
+    ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. Press Route to see the effect, and Back to the forecast to undo.'],
+    ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
+    ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
+    ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you.']
+  ];
+  var speaking = -1;
+  function voice() { var v = speechSynthesis.getVoices(); return v.filter(function (x) { return /en-GB/i.test(x.lang); })[0] || v.filter(function (x) { return /^en/i.test(x.lang); })[0] || null; }
+  function sayStop() { try { speechSynthesis.cancel(); } catch (e) {} speaking = -1; hiTopic(); $('sayStop').hidden = true; }
+  function hiTopic() { [].forEach.call(document.querySelectorAll('.htopic'), function (d, i) { d.classList.toggle('on', i === speaking); }); }
+  function say(list) {
+    sayStop(); if (!window.speechSynthesis) { $('helpList').insertAdjacentHTML('afterbegin', '<p class="note">This device has no speech: read the text below.</p>'); return; }
+    $('sayStop').hidden = false;
+    list.forEach(function (i, n) {
+      var u = new SpeechSynthesisUtterance(HELP[i][0] + '. ' + HELP[i][1]); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; u.rate = 1;
+      u.onstart = function () { speaking = i; hiTopic(); var el = document.querySelectorAll('.htopic')[i]; if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+      if (n === list.length - 1) u.onend = function () { speaking = -1; hiTopic(); $('sayStop').hidden = true; };
+      speechSynthesis.speak(u);
+    });
+  }
+  function helpInit() {
+    $('helpList').innerHTML = HELP.map(function (h, i) { return '<div class="htopic"><h3>' + h[0] + '<button class="btn say" data-say="' + i + '">Listen</button></h3><p>' + h[1] + '</p></div>'; }).join('');
+    [].forEach.call(document.querySelectorAll('[data-say]'), function (b) { b.onclick = function () { say([+b.dataset.say]); }; });
+    $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
+    $('sayStop').onclick = sayStop;
+    $('helpBtn').onclick = function () { $('help').hidden = false; };
+    $('helpX').onclick = function () { sayStop(); $('help').hidden = true; };
   }
   /* ---------- route export: GPX and KML (planning aid, not for navigation) ---------- */
   function xEsc(t) { return String(t).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
