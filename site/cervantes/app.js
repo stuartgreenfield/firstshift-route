@@ -666,7 +666,7 @@
   /* ---------- boat code: one code keeps boat settings and My races the same on every crew device (/api/boat/<code>) ---------- */
   var BC = { code: store('fs-boatcode') || '', at: +(store('fs-boatcode-at') || 0), msg: '' };
   function bcNew() { var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', c = ''; var r = new Uint32Array(6); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(r) : r.forEach(function (x, i) { r[i] = Math.random() * 1e9; }); for (var i = 0; i < 6; i++) c += A[r[i] % A.length]; return c; }
-  function bcData() { var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var st = snapSettings(); st.__src = src && src.src; return { myraces: myRaces(), settings: st }; }
+  function bcData() { var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var st = snapSettings(); st.__src = src && src.src; var d = { myraces: myRaces(), settings: st }; if (BC.moment) d.moment = BC.moment; return d; }
   function bcPush() {
     if (!BC.code || !navigator.onLine) return Promise.resolve();
     return fetch('/api/boat/' + BC.code, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: bcData() }) }).then(function (r) { return r.json(); }).then(function (j) {
@@ -677,6 +677,7 @@
     if (!BC.code || !navigator.onLine) return Promise.resolve(false);
     return fetch('/api/boat/' + BC.code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       if (j.error) { BC.msg = j.error; return false; }
+      if (j.data && j.data.moment && (!BC.moment || j.data.moment.at > BC.moment.at)) BC.moment = j.data.moment;   /* keep the latest crew moment, so this device's next share does not drop it */
       if (!force && j.at <= BC.at) { BC.msg = 'Up to date'; return false; }
       var mine = myRaces(), byId = {}; mine.concat(j.data.myraces || []).forEach(function (r) { if (!byId[r.id] || byId[r.id].savedAt < r.savedAt) byId[r.id] = r; });
       setMyRaces(Object.keys(byId).map(function (k) { return byId[k]; }).sort(function (a, b) { return b.savedAt - a.savedAt; }));
@@ -704,6 +705,25 @@
     var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
     var bs = $('boatSave'); if (bs) bs.addEventListener('click', push);
     BC.push = push;
+    /* crew moments: the navigator sends a snapshot to every device on the boat code; the others see it within two minutes */
+    var dev = store('fs-dev'); if (!dev) { dev = bcNew() + bcNew(); store('fs-dev', dev); } BC.dev = dev;
+    var seen = +(store('fs-moment-seen') || 0);
+    function showMoment(m) {
+      $('momentTxt').textContent = 'From the boat, ' + new Date(m.at).toUTCString().slice(17, 22) + ' UTC:\n' + m.text.split('\n').slice(0, 4).join('\n'); $('momentBox').hidden = false;
+      $('momentOpen').onclick = function () { $('momentBox').hidden = true; seen = m.at; store('fs-moment-seen', String(m.at)); if (m.link) location.href = m.link; };
+      $('momentX').onclick = function () { $('momentBox').hidden = true; seen = m.at; store('fs-moment-seen', String(m.at)); };
+    }
+    setInterval(function () {
+      if (!BC.code || !navigator.onLine || document.hidden) return;
+      fetch('/api/boat/' + BC.code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { var m = j.data && j.data.moment; if (m && (!BC.moment || m.at > BC.moment.at)) BC.moment = m; if (m && m.at > seen && m.dev !== BC.dev) showMoment(m); }).catch(function () {});
+    }, 120000);
+    $('xMoment').onclick = function () {
+      if (!BC.code) { $('xMomentNote').textContent = 'Make or join a boat code first: tap the race name, then Boat code.'; return; }
+      if (!S.sel) { $('xMomentNote').textContent = 'Route first.'; return; }
+      var t = crewText(); BC.moment = { at: Date.now(), dev: BC.dev, text: t, link: crewLink() };
+      $('xMomentNote').textContent = 'Sending…';
+      bcPush().then(function () { $('xMomentNote').textContent = /^Shared/.test(BC.msg) ? 'Sent. Devices on boat code ' + BC.code + ' show it within two minutes while Route is open.' : BC.msg; });
+    };
   }
   /* ---------- laylines to the next mark: from the polar's best upwind or downwind angle in the forecast wind at the mark ---------- */
   function laylines() {

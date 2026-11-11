@@ -300,6 +300,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 /* wide layout without room for all seven readings beside the slider (landscape phones, small laptops, tablets): readings get their own row */
 @media (min-width:900px) and (max-width:1199px), (orientation:landscape) and (max-height:500px){.bar{grid-template-columns:auto auto minmax(160px,1fr) auto}.bar .now{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0 8px;overflow:hidden}.bar .now div,.bar .now div:first-child{width:auto;min-width:0}.bar .now b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}
 .hpic{display:block;max-width:min(100%,320px);height:auto;margin:8px 0 4px;border-radius:10px;border:1px solid var(--line,#2a3a4f)}
+.newdata.moment{white-space:normal;max-width:min(92vw,520px);z-index:9;font-size:13px}.newdata.moment #momentTxt{white-space:pre-line}
 </style>
 
 <div class="app" id="app">
@@ -354,7 +355,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="ans" id="askAns" hidden><p id="askTxt"></p><button class="btn say" id="askSay">Read it out</button></div>
       <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
       <h4 class="xh">Send to the crew</h4>
-      <div class="xrow"><button class="btn primary" id="xCrew">Send to crew…</button><button class="btn" id="xCopy">Copy text</button></div>
+      <div class="xrow"><button class="btn primary" id="xCrew">Send to crew…</button><button class="btn" id="xCopy">Copy text</button><button class="btn" id="xMoment" title="Shows on every phone, tablet and computer on your boat code">Send to boat code devices</button></div><p class="note" id="xMomentNote"></p>
       <ol class="steps"><li>Tap <b>Send to crew</b>. On a phone, choose WhatsApp (or Messages, or email) and the crew group.</li><li>The crew get the message below. When they tap the link, Route opens on their phone with the same course and start, and works out the same routes.</li><li>No app to install and no login: the link is all they need.</li></ol>
       <details class="sltext"><summary>See the message</summary><pre class="crewpre" id="crewPre"></pre></details>
       <h4 class="xh">Put the route on the plotter or a chart app</h4>
@@ -402,6 +403,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   </div>
 </div>
 
+<div class="newdata moment" id="momentBox" hidden><span id="momentTxt"></span><button id="momentOpen" class="btn primary">Show</button><button id="momentX" class="btn" aria-label="Dismiss">×</button></div>
 <div class="newdata" id="newData" hidden><span id="newDataTxt">New forecast</span><button id="newDataBtn" class="btn primary">New data: update routing</button></div>
 <div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
 <div class="mob" id="mob" hidden role="alertdialog" aria-label="Man overboard">
