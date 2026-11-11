@@ -737,6 +737,20 @@
     });
   }
 
+
+  /* exact class start: a day from the forecast window and a time to the minute (UTC); routes from that minute */
+  function startRange() { var o = [].map.call($('startSel').options, function (x) { return +x.value; }).filter(function (x) { return x > 0; }); return o.length ? [Math.min.apply(null, o), Math.max.apply(null, o)] : null; }
+  function startDayList() { var r = startRange(), out = []; if (!r) return out; for (var t = Math.floor(r[0] / 86400) * 86400; t <= r[1]; t += 86400) out.push({ v: t, k: new Date(t * 1000).toUTCString().slice(0, 11) }); return out; }
+  function hhmm(ep) { return new Date(ep * 1000).toUTCString().slice(17, 22); }
+  function exactEpoch(dayV, tm) { var m = /^(\d{1,2}):(\d{2})/.exec(tm || ''); if (!m) return NaN; return +dayV + (+m[1]) * 3600 + (+m[2]) * 60; }
+  function startCheck(ep) { var r = startRange(); if (!r || !(ep === ep)) return 'Enter a time, for example 10:20.'; if (ep < r[0] - 3600 || ep > r[1]) return 'Starts can be from ' + clockAbs(r[0]) + ' to ' + clockAbs(r[1]) + ' UTC with these forecasts.'; return ''; }
+  function setStart(ep) {
+    var v = String(Math.round(ep)), sel = $('startSel');
+    if (![].some.call(sel.options, function (o) { return o.value === v; })) { var o = document.createElement('option'); o.value = v; o.textContent = clockAbs(+v) + ' (exact)'; var after = [].filter.call(sel.options, function (x) { return +x.value < +v; }).pop(); if (after) after.after(o); else sel.prepend(o); }
+    sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  function startPickerHtml(id, cur) { var days = startDayList(), cd = Math.floor(cur / 86400) * 86400; return '<div class="row"><label for="' + id + 'Day">Day</label><select id="' + id + 'Day">' + days.map(function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; }).join('') + '</select></div><div class="row"><label for="' + id + 'Time">Time (UTC)</label><input type="time" id="' + id + 'Time" step="60" value="' + hhmm(cur) + '" required></div><p class="note" id="' + id + 'Err" style="color:var(--warn)"></p>'; }
+  function startPickerRead(id) { var ep = exactEpoch($(id + 'Day').value, $(id + 'Time').value), e = startCheck(ep); $(id + 'Err').textContent = e; return e ? NaN : ep; }
   /* Will the forecasts last the race? Each wind model's last hour against a rough finish time (course length at about
      5.5 knots times the TCC). A model that ends early hands over to the longer ones; only when every model has ended
      can Route not finish the race. */
@@ -784,17 +798,13 @@
       $('wzType').value = $('boatType').value;
       if ($('wzMy')) $('wzMy').onchange = function () { if (!this.value) return; $('myBoat').value = this.value; $('myBoat').dispatchEvent(new Event('change')); store('fs-boatset', '1'); wizShow(1); };
     } else if (n === 3) {
-      var days = {}, order = [], cur = $('startSel').value;
-      [].forEach.call($('startSel').options, function (o) { var d = new Date(+o.value * 1000), k = d.toUTCString().slice(0, 11); if (!days[k]) { days[k] = []; order.push(k); } days[k].push({ v: o.value, t: d.toUTCString().slice(17, 22) }); });
-      var cd = order.filter(function (k) { return days[k].some(function (x) { return x.v === cur; }); })[0] || order[0];
-      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Times in UTC: UK time in winter, one hour behind UK summer time.</p>' +
-        '<div class="row"><label for="wzDay">Day</label><select id="wzDay">' + order.map(function (k) { return '<option' + (k === cd ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>' +
-        '<div class="row"><label for="wzTime">Time</label><select id="wzTime"></select></div>' +
+      var cur = +$('startSel').value;
+      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
         '<div id="wzFit"></div><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
       B.innerHTML = h + '</div>';
-      var fit = function () { $('wzFit').innerHTML = $('wzTime').value ? fitHtml($('wzTime').value) : ''; };
-      var fill = function () { var l = days[$('wzDay').value] || []; $('wzTime').innerHTML = l.map(function (x) { return '<option value="' + x.v + '"' + (x.v === cur ? ' selected' : '') + '>' + x.t + ' UTC</option>'; }).join(''); fit(); };
-      $('wzDay').onchange = fill; $('wzTime').onchange = fit; fill();
+      var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
+      $('wzDay').onchange = fit; $('wzTime').oninput = fit; fit();
+      var order = startDayList();
       if (!order.length) { $('wizHint').textContent = 'No start times: the forecast has not loaded yet.'; }
     } else if (n === 4) {
       var mf = myFleet(), ent = (meta.fleet || []).filter(function (f) { return f.irc && f.start; });
@@ -837,7 +847,7 @@
       if (window.FSSails) { if ($('wzSails').value) FSSails.usePreset($('wzSails').value); if ($('wzReef').checked !== FSSails.summary().reef) FSSails.reefs($('wzReef').checked); }
       $('boatSave').click(); store('fs-boatset', '1'); wizShow(2); return;
     }
-    if (n === 3) { if ($('wzTime').value) { $('startSel').value = $('wzTime').value; $('startSel').dispatchEvent(new Event('change', { bubbles: true })); } wizShow(4); return; }
+    if (n === 3) { var ep3 = startPickerRead('wz'); if (!(ep3 === ep3)) return; setStart(ep3); wizShow(4); return; }
     if (n === 4) { var t = $('wzMfPaste').value; if (t.trim()) { $('mfPaste').value = t; $('mfPasteGo').click(); } wizShow(5); return; }
     if (n === 5) { wizClose(true); return; }
   }
@@ -931,19 +941,17 @@
         (mid ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '<span></span>') + '</div></div>';
       if (i < p.length - 1) h += '<button class="btn edadd" data-add="' + (i + 1) + '">+ Add a mark here</button>';
     });
-    /* when is the start: a day and a time, asked first so a new course always routes from the right start */
-    var days = {}, dayOrder = [], cur = $('startSel').value;
-    [].forEach.call($('startSel').options, function (o) { var d = new Date(+o.value * 1000), k = d.toUTCString().slice(0, 11); if (!days[k]) { days[k] = []; dayOrder.push(k); } days[k].push({ v: o.value, t: d.toUTCString().slice(17, 22) }); });
-    var curDay = dayOrder.filter(function (k) { return days[k].some(function (x) { return x.v === cur; }); })[0] || dayOrder[0];
-    var when = '<div class="edwhen"><b>When is the start?</b><div class="row" style="margin-top:6px"><select id="edDay" aria-label="Start day">' + dayOrder.map(function (k) { return '<option' + (k === curDay ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select><select id="edTime" aria-label="Start time, UTC"></select></div><p class="note" style="margin:6px 0 0">Times in UTC: UK time in winter, one hour behind UK summer time. Then Save and route.</p><div id="edFit"></div><input type="hidden" id="edStart" value="' + cur + '"></div>';
+    /* when is the start: the exact class start, asked first so a new course always routes from the right start */
+    var cur = $('startSel').value;
+    var when = '<div class="edwhen"><b>When is the start?</b>' + startPickerHtml('ed', +cur) + '<p class="note" style="margin:6px 0 0">The exact class start, in UTC: UK time in winter, one hour behind UK summer time. Then Save and route.</p><div id="edFit"></div><input type="hidden" id="edStart" value="' + cur + '"></div>';
     h = when + h;
     var opts = '';
     h += '<p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
     h += '<p class="note" id="edNm">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edMap">Edit on the chart</button><button class="btn" id="edCancel2">Cancel</button></div>';
     $('raceList').innerHTML = '<h3>Course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
-    var edC = function () { return { start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }; }, edFit = function () { if ($('edFit')) $('edFit').innerHTML = fitHtml($('edStart').value, edC()); };
-    var fillT = function () { var k = $('edDay').value, list = days[k] || []; $('edTime').innerHTML = list.map(function (x) { return '<option value="' + x.v + '"' + (x.v === $('edStart').value ? ' selected' : '') + '>' + x.t + ' UTC</option>'; }).join(''); $('edStart').value = $('edTime').value; edFit(); };
-    if ($('edDay')) { $('edDay').onchange = fillT; $('edTime').onchange = function () { $('edStart').value = this.value; edFit(); }; fillT(); }
+    var edC = function () { return { start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }; };
+    var edFit = function () { var ep = startPickerRead('ed'); if (ep === ep) $('edStart').value = String(ep); if ($('edFit')) $('edFit').innerHTML = ep === ep ? fitHtml(ep, edC()) : ''; };
+    if ($('edDay')) { $('edDay').onchange = edFit; $('edTime').oninput = edFit; edFit(); }
     $('raceList').scrollTop = 0;
     p.forEach(function (q, i) { if ($('edS' + i)) $('edS' + i).value = q.side || 'port'; });
     var redo = function (fn) { if (!editRead()) { busy('Check the positions marked in red.'); setTimeout(function () { busy(''); }, 2000); return; } fn(); editForm(); draw(); };
@@ -960,7 +968,8 @@
       var bad = p.filter(function (q) { return q.lat < 35.5 || q.lat > 61.5 || q.lon < -15 || q.lon > 12; }); if (bad.length) { busy('Cannot route: a point is outside the routing area.'); setTimeout(function () { busy(''); }, 2500); return; }
       var pts = p.map(function (q, i) { return { name: q.name || (i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i), lat: q.lat, lon: q.lon, side: i > 0 && i < p.length - 1 ? (q.side || 'port') : undefined }; });
       var c = { name: S.edit.name || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
-      var stv = $('edStart').value, keepId = S.myId; S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; $('startSel').value = stv; $('startSel').dispatchEvent(new Event('change', { bubbles: true })); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
+      if ($('edDay') && !(startPickerRead('ed') === startPickerRead('ed'))) { busy('Check the start time.'); setTimeout(function () { busy(''); }, 2000); return; }
+      var stv = $('edStart').value, keepId = S.myId; S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
       $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…');
       var issue = courseIssue(meta.course), reg = issue ? regionFor(c) : null;
       if (reg && reg.id !== HERE) {   /* outside this page's forecasts but inside a whole-area page: keep the course there and open it */
@@ -1057,6 +1066,9 @@
     [].forEach.call($('mfList').querySelectorAll('button'), function (b) { b.onclick = function () { var x = myFleet(); x.splice(+b.dataset.i, 1); setMyFleet(x); }; });
   }
   function mfInit() {
+    var exSync = function () { var v = +$('startSel').value; if (v) $('startExact').value = hhmm(v); };
+    $('startSel').addEventListener('change', exSync); setTimeout(exSync, 0);
+    $('startExact').onchange = function () { var d = Math.floor(+$('startSel').value / 86400) * 86400, ep = exactEpoch(d, this.value), e = startCheck(ep); $('startExactErr').textContent = e; if (!e) setStart(ep); };
     $('startSel').addEventListener('change', function () { var l = lastGet(); if (l) { l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } });
     $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCC between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
     $('mfPasteGo').onclick = function () {

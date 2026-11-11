@@ -474,7 +474,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="row tune"><label for="adjTtime">Tide timing</label><input type="range" id="adjTtime" min="-60" max="60" step="15" value="0"><b id="adjTtimeV"></b></div>
       <div class="row"><button class="btn" id="adjReset">Back to the forecast</button><span class="note" id="adjNote" hidden>Overrides on: Route works them in when you close Settings.</span></div>
       <h3>Start and manoeuvres</h3>
-      <div class="row"><label for="startSel">Class start</label><select id="startSel"></select></div>
+      <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>
       <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
       <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
     </div>
