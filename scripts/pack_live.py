@@ -78,7 +78,8 @@ def add(kind, k, name, note, keys, sc, sp, ev):
     layers.append(dict(kind=kind, id=k, name=name, note=note + ', run ' + run, full=full, lite=lite, run_t0=float(z['t0']), recv=RECV.get(k, {}).get('at')))
 
 for k, name, note, sp, ev in [('ukv', 'Met Office UKV', 'UK 2 km model, hourly', 2, 3), ('ecmwf', 'ECMWF IFS', 'global 9 km model', 1, 6), ('gfs', 'NOAA GFS', 'global 0.25°', 1, 3),
-                               ('aifs', 'ECMWF AIFS', 'AI model, 6-hourly', 1, 6), ('mog', 'Met Office Global', 'global 10 km model', 1, 6)]:
+                               ('aifs', 'ECMWF AIFS', 'AI model, 6-hourly', 1, 6), ('mog', 'Met Office Global', 'global 10 km model', 1, 6),
+                               ('icon', 'DWD ICON-EU', 'Europe 7 km model, hourly to 78 h', 2, 3)]:
     add('wind', k, name, note, ['u', 'v'], dict(u=0.01, v=0.01), sp, ev)
 for k, name, note in [('nwscur', 'Copernicus NW Shelf', 'tidal streams, 1.5 km hourly'), ('ibicur', 'Copernicus Iberia-Biscay-Ireland', 'tidal streams, 3 km hourly')]:
     add('tide', k, name, note, ['u', 'v'], dict(u=0.001, v=0.001), 2, 1)

@@ -99,6 +99,33 @@ def gfs():
     return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
 
 
+# ---------- DWD ICON-EU (opendata.dwd.de, free, no login): 7 km Europe, hourly to 78 h then 3-hourly to 120 h ----------
+SHARED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'work', '_shared'); os.makedirs(SHARED, exist_ok=True)
+AREA = dict(s=35.0, n=62.0, w=-15.5, e=12.5)   # the whole FirstShift area: one download serves every race
+
+def icon_eu():
+    import bz2
+    d, r = RUN; run = d + r; base = 'https://opendata.dwd.de/weather/nwp/icon-eu/grib'
+    U = []; V = []; hrs = []; lat = lon = None
+    for hh in [h for h in HOURS if (h <= 78 or h % 3 == 0) and h <= 120]:
+        got = {}
+        for var in ('u_10m', 'v_10m'):
+            p = os.path.join(SHARED, f'icon_{run}_{hh:03d}_{var}.npz')
+            if not os.path.exists(p):
+                f = f'{base}/{r}/{var}/icon-eu_europe_regular-lat-lon_single-level_{run}_{hh:03d}_{var.upper()}.grib2.bz2'
+                buf = bz2.decompress(get(f, tries=3))
+                global BOX
+                keep = BOX; BOX = AREA
+                try: a, la, lo = grib_crop(buf)
+                finally: BOX = keep
+                np.savez(p, a=a, la=la, lo=lo)
+            z = np.load(p); la, lo = z['la'], z['lo']
+            iy = np.where((la >= BOX['s'] - .3) & (la <= BOX['n'] + .3))[0]; ix = np.where((lo >= BOX['w'] - .3) & (lo <= BOX['e'] + .3))[0]
+            got[var] = z['a'][np.ix_(iy, ix)]; lat, lon = la[iy], lo[ix]
+        U.append(got['u_10m']); V.append(got['v_10m']); hrs.append(hh); print('icon', hh, end=' | ', flush=True)
+    return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
+
+
 # ---------- Met Office NetCDF on AWS ----------
 def metoffice(model):
     import netCDF4
@@ -217,6 +244,8 @@ if __name__ == '__main__':
         elif s == 'ecwav':
             o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)
+        elif s == 'icon':
+            o, h, la, lo = icon_eu(); save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
         elif s == 'gfs':
             o, h, la, lo = gfs(); save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
         elif s in ('ukv', 'mog'):

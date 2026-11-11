@@ -3,7 +3,7 @@ Runs on GitHub Actions every six hours; also runs on a laptop. Usage: python3 sc
 import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area']
-SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'nwscur', 'ibicur', 'nwswav', 'ecwav']
+SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'nwscur', 'ibicur', 'nwswav', 'ecwav']
 
 def cycles(lag_h=7, n=4):
     """Latest 00/06/12/18 UTC cycles that should be published by now, newest first."""
