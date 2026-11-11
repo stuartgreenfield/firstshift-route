@@ -130,6 +130,7 @@ input[type=range]{width:100%;accent-color:var(--brand);height:32px}
 .row>label:first-child{min-width:130px;color:var(--muted)}
 input[type=number],select,textarea{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-data);min-height:40px}
 select{font:500 14px var(--f-body)}
+.sheet input:not([type]),.sheet input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:40px;color:var(--ink);font:14px var(--f-body);min-width:0;flex:1 1 140px}
 input[type=number]{width:96px}
 input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-body);min-height:40px;flex:1 1 160px;min-width:0}
 .tune input[type=range]{flex:1 1 140px;width:auto;min-width:0}.tune b{font:600 13px var(--f-data);min-width:46px;text-align:right}
@@ -201,13 +202,22 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   .bar #fromHere{height:44px;min-width:44px;background:var(--soft)}
 }
 .rerow{display:flex;align-items:center;gap:10px;margin-bottom:10px}.rerow .btn{display:inline-flex;align-items:center;gap:6px;flex:none}.rerow .note{min-width:0}
+
+#raceBtn{cursor:pointer}#raceBtn #raceTitle::before{content:"";display:inline-block;width:0;height:0;border:4px solid transparent;border-top:5px solid var(--muted);margin:0 6px 1px 0;vertical-align:middle;float:right;margin-top:6px}
+.rcur{display:grid;gap:8px;padding-bottom:6px}.rcur b,.ritem b{display:block;font:600 15px var(--f-head)}
+#raceList h3{font:600 13px var(--f-head);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+.ritem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.ritem>div:first-child{min-width:0}.ritem .xrow{margin:0;flex:none}.ritem.on b{color:var(--brand)}
+.editbar{position:absolute;left:var(--gut);right:var(--gutR);top:64px;z-index:7;background:var(--panel);border:1px solid var(--route);border-radius:12px;padding:10px 12px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.editbar[hidden]{display:none!important}.editbar .xrow{margin:0}.editbar .btn{min-height:36px;padding:6px 12px}
 </style>
 
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
+    <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
+
     <div class="top">
-      <div class="lead"><div class="logobox" title="FirstShift: Yacht Racing Intelligence"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></div><div class="brand"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div></div>
+      <div class="lead"><div class="logobox" title="FirstShift: Yacht Racing Intelligence"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></div><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div></div>
       <div class="tools">
         <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
         <button class="ib" id="layersBtn" aria-expanded="false" title="What the chart shows"><svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5z"/><path d="m2 13 10 5 10-5"/></svg><span class="lbl">Layers</span></button>
@@ -275,6 +285,12 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 
 <div class="newdata" id="newData" hidden><span id="newDataTxt">New forecast</span><button id="newDataBtn" class="btn primary">New data: update routing</button></div>
 <div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
+<div class="sheet" id="races" hidden>
+  <div class="in" role="dialog" aria-label="Races">
+    <div class="shead"><h2>Races</h2><button class="close" id="racesX" aria-label="Close races">×</button></div>
+    <div class="sbody" id="raceList"></div>
+  </div>
+</div>
 <div class="sheet" id="help" hidden>
   <div class="in" role="dialog" aria-label="Help">
     <div class="shead"><h2 class="hbrand"><img class="lock lg-l" src="../brand/lockup-light.svg" alt="FirstShift: Yacht Racing Intelligence"><img class="lock lg-d" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><span>Route help</span></h2><button class="close" id="helpX" aria-label="Close help">×</button></div>

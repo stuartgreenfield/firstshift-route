@@ -45,7 +45,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -316,6 +316,9 @@
   }
   function applyRace(id) {
     var r = RACES.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+    applyCourseObj(r);
+  }
+  function applyCourseObj(r) {
     var keep = meta.course0 || (meta.course0 = meta.course); meta.course = { name: r.name, start: r.start, marks: r.marks.map(function (m) { return Object.assign({}, m); }), finish: r.finish, band: keep.band, window: keep.window, race: r };
     $('raceTitle').textContent = r.name + ' · ' + r.start.name.replace(/^Start,\s*/, '').replace(/^RYS line,\s*/, '') + ' to ' + r.finish.name.replace(/^Finish,\s*/, '');
     $('raceTitle').setAttribute('data-short', r.name.replace(/^Rolex\s+/, '').replace(/\s+(Trophy\s+)?Race$/, '').replace(/\s+Trophy$/, ''));
@@ -324,8 +327,8 @@
     $('markSides').innerHTML = r.marks.length ? r.marks.map(function (m, i) { return '<div class="row"><label for="side' + i + '">' + m.name + '</label><select id="side' + i + '" data-mk="' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' + (m.sideAssumed ? '<span class="note">assumed</span>' : '') + '</div>'; }).join('') : '<p class="note">No marks between start and finish in this course.</p>';
     r.marks.forEach(function (m, i) { $('side' + i).value = m.side || 'port'; $('side' + i).onchange = function () { meta.course.marks[i].side = this.value; meta.course.marks[i].sideAssumed = false; S.legs = null; draw(); }; });
     var issue = courseIssue(meta.course);
-    $('courseNote').innerHTML = (r.nm ? 'About ' + r.nm + ' nm. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>' + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
-    store('fs-race', r.id); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W) fit(); draw();
+    $('courseNote').innerHTML = (r.custom ? 'Your own course' + (r.nm ? ', about ' + r.nm + ' nm' : '') + '. ' : (r.nm ? 'About ' + r.nm + ' nm. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>') + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
+    if (!r.custom) store('fs-race', r.id); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W) fit(); draw();
   }
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
@@ -336,7 +339,106 @@
       $('raceSel').onchange = function () { applyRace($('raceSel').value); };
       var home = meta.course0 ? meta.course0.raceId : meta.course.raceId; home = home || 'cervantes'; var want = home === 'cervantes' ? (store('fs-race') || home) : home; if (!RACES.some(function (r) { return r.id === want; })) want = home;
       $('raceSel').value = want; applyRace(want);
+      var my = new URLSearchParams(location.search).get('my'); if (my) setTimeout(function () { openMy(my); }, 0);
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
+  }
+  /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
+  var READY = {};   // races with forecasts on the server: their own page
+  var HERE = location.pathname.replace(/\/+$/, '').split('/').pop();
+  function myRaces() { try { return JSON.parse(store('fs-myraces') || '[]'); } catch (e) { return []; } }
+  function setMyRaces(a) { store('fs-myraces', JSON.stringify(a)); }
+  function snapSettings() { var o = {}; [].forEach.call(document.querySelectorAll('#sheet input[id], #sheet select[id], #sheet textarea[id]'), function (el) { if (/^side\d|^adjNote/.test(el.id)) return; o[el.id] = el.type === 'checkbox' ? el.checked : el.value; }); return o; }
+  function putSettings(o) {
+    Object.keys(o || {}).forEach(function (id) { var el = $(id); if (!el) return; if (el.type === 'checkbox') el.checked = o[id]; else el.value = o[id]; ['input', 'change'].forEach(function (t) { el.dispatchEvent(new Event(t, { bubbles: true })); }); });
+    var src = o.__src; if (src) { var b = document.querySelector('#srcSeg [data-src="' + src + '"]'); if (b) b.click(); }
+  }
+  function courseCopy() { var c = meta.course; return { name: c.name, start: Object.assign({}, c.start), marks: c.marks.map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: Object.assign({}, c.finish) }; }
+  function courseNm(c) { var p = [c.start].concat(c.marks).concat([c.finish]), d = 0; for (var i = 1; i < p.length; i++) d += FSRouter.dist(p[i - 1].lat, p[i - 1].lon, p[i].lat, p[i].lon); return Math.round(d); }
+  function asRace(c, id) { return { id: id || 'my', custom: true, courseStatus: 'published', name: c.name, start: c.start, marks: c.marks, finish: Object.assign({ radius_nm: 0.4 }, c.finish), nm: courseNm(c) }; }
+  function saveMyRace(name) {
+    var a = myRaces(), c = courseCopy(); c.name = name || c.name;
+    var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var set = snapSettings(); set.__src = src && src.src;
+    var fin = S.sel ? fmtH(S.sel.r.finish - S.start.t) : '';
+    var cur = S.myId && a.filter(function (x) { return x.id === S.myId; })[0];
+    var rec = { id: cur ? cur.id : 'r' + Date.now().toString(36), name: c.name, page: HERE, course: c, settings: set, savedAt: Date.now(), summary: fin ? (S.sel.combined ? 'Combined' : short(S.sel.id)) + ' ' + fin : '', raceId: meta.course.race && !meta.course.race.custom ? meta.course.race.id : null };
+    a = a.filter(function (x) { return x.id !== rec.id; }); a.unshift(rec); setMyRaces(a); S.myId = rec.id; return rec;
+  }
+  function openMy(id) {
+    var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
+    if (rec.page && rec.page !== HERE) { location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
+    S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); $('races').hidden = true; S.from = null; run();
+  }
+  function racesSheet() {
+    var c = meta.course, mine = myRaces(), h = '';
+    h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
+      '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit this course</button><button class="btn" id="rNew">New course</button></div></div>';
+    h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
+    h += '<h3>RORC races</h3>' + RACES.map(function (r) { var ready = READY[r.id]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (ready ? 'Forecasts ready' : 'Course only: forecasts for this area come later') + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
+    $('raceList').innerHTML = h;
+    $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
+    $('rEdit').onclick = function () { startEdit(courseCopy()); };
+    $('rNew').onclick = function () { startEdit(null); };
+    [].forEach.call($('raceList').querySelectorAll('[data-open]'), function (b) { b.onclick = function () { openMy(b.dataset.open); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-del]'), function (b) { b.onclick = function () {
+      if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
+      setMyRaces(myRaces().filter(function (x) { return x.id !== b.dataset.del; })); if (S.myId === b.dataset.del) S.myId = null; racesSheet(); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-race]'), function (b) { b.onclick = function () {
+      var id = b.dataset.race; if (READY[id] && id !== HERE) { location.href = '../' + id + '/'; return; }
+      S.myId = null; applyRace(id); $('races').hidden = true; if (!courseIssue(meta.course)) { S.from = null; run(); } };
+    });
+  }
+  function racesInit() {
+    fetch('../status.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { Object.keys(j.sources || {}).forEach(function (k) { READY[k.split(':')[0]] = true; }); }).catch(function () { READY[HERE] = true; });
+    READY[HERE] = true;
+    $('raceBtn').onclick = function () { racesSheet(); $('races').hidden = false; };
+    $('dataChip').addEventListener('click', function (e) { e.stopPropagation(); });
+    $('racesX').onclick = function () { $('races').hidden = true; };
+    $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };
+    $('edUndo').onclick = function () { S.edit.pts.pop(); editPrompt(); draw(); };
+    $('edCancel').onclick = function () { S.edit = null; $('editBar').hidden = true; draw(); };
+    $('edDone').onclick = function () { if (S.edit.pts.length < 2) return; editForm(); };
+  }
+  /* course editor: tap the chart to place the start, each mark, then the finish */
+  function startEdit(c) {
+    $('races').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
+    S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [] };
+    $('editBar').hidden = false; editPrompt(); draw();
+  }
+  function editPrompt() {
+    var n = S.edit.pts.length;
+    $('edTxt').textContent = n === 0 ? 'Tap the chart to place the start.' : n === 1 ? 'Tap to add each mark in order, and the finish last.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
+    $('edDone').disabled = n < 2; $('edUndo').disabled = !n;
+  }
+  function editTap(x, y) {
+    var la = LA(y), lo = LO(x);
+    if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) { busy('Outside the routing area: cannot route there.'); setTimeout(function () { busy(''); }, 2500); return; }
+    var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy('That is land. Tap open water.'); setTimeout(function () { busy(''); }, 2000); return; }
+    S.edit.pts.push({ lat: +la.toFixed(5), lon: +lo.toFixed(5) }); editPrompt(); draw();
+  }
+  function editDraw() {
+    var p = S.edit.pts; if (!p.length) return;
+    ctx.save(); ctx.strokeStyle = css['--route']; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = '600 12px Inter, sans-serif';
+    p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--route']; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = css['--ink'];
+      var lbl = i === 0 ? 'Start' : i === p.length - 1 && p.length > 1 ? 'Finish?' : String(i); ctx.fillText(q.name || lbl, x + 11, y - 9); });
+    ctx.restore();
+  }
+  function editForm() {
+    var p = S.edit.pts, h = '<div class="row"><label for="edName">Course name</label><input id="edName" value="' + (S.edit.name || 'My course').replace(/"/g, '&quot;') + '"></div>';
+    p.forEach(function (q, i) {
+      var kind = i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i;
+      h += '<div class="row"><label for="edN' + i + '">' + kind + '</label><input id="edN' + i + '" value="' + (q.name || kind).replace(/"/g, '&quot;') + '">' + (i > 0 && i < p.length - 1 ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '') + '</div>';
+    });
+    h += '<p class="note">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edBack">Back to the chart</button></div>';
+    $('raceList').innerHTML = '<h3>Your course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
+    p.forEach(function (q, i) { if ($('edS' + i)) $('edS' + i).value = q.side || 'port'; });
+    $('edBack').onclick = function () { $('races').hidden = true; $('editBar').hidden = false; };
+    $('edSave').onclick = function () {
+      var pts = p.map(function (q, i) { return { name: $('edN' + i).value.trim() || (i ? 'Mark ' + i : 'Start'), lat: q.lat, lon: q.lon, side: $('edS' + i) ? $('edS' + i).value : undefined }; });
+      var c = { name: $('edName').value.trim() || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
+      S.edit = null; S.myId = null; applyCourseObj(asRace(c)); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
+      $('races').hidden = true; var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; } else { S.from = null; run(); }
+    };
   }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
@@ -345,7 +447,7 @@
     return fetch('pre/routes.json?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.built === (meta.built || meta.t0)) S.pre = j; }).catch(function () {});
   }
   function startPt() { return S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 }; }
-  function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return m.side || ''; }), base.tackS, base.gybeS, base.safety, base.sea.up, base.sea.reach, base.sea.surf, base.adj]); }
+  function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return (m.side || '') + m.lat.toFixed(3) + m.lon.toFixed(3); }), meta.course.finish.lat.toFixed(3) + meta.course.finish.lon.toFixed(3), base.tackS, base.gybeS, base.safety, base.sea.up, base.sea.reach, base.sea.surf, base.adj]); }
   function fullKey(base, st) { return JSON.stringify([liteKey(base, st), base.models.slice().sort(), base.tide, base.wave, base.nogo.length]); }
   function preEntry(full) {
     if (!S.pre || S.from) return null;
@@ -593,6 +695,7 @@
     if (selOn) line(S.sel, 9, 0.35);
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
     if (selOn) line(S.sel, 2.2, 1);
+    if (S.edit) editDraw();
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(s.r.path.map(function (q) { return q.t; }), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
@@ -876,6 +979,7 @@
   cv.addEventListener('pointercancel', function (e) { ptrs.delete(e.pointerId); pinch = 0; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
+    if (S.edit) { editTap(x, y); return; }
     if ($('fromHere').getAttribute('aria-pressed') === 'true') {
       var la = LA(y), lo = LO(x), z = P.depth ? P.depth.nearest('z', la, lo) : NaN;
       if (!(z <= -(+$('depth').value))) { busy('That is land or too shallow. Tap open water.'); return; }
