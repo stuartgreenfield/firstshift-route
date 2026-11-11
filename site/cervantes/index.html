@@ -127,6 +127,7 @@ input[type=number]{width:96px}
 input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-body);min-height:40px;flex:1 1 160px;min-width:0}
 .tune input[type=range]{flex:1 1 140px;width:auto;min-width:0}.tune b{font:600 13px var(--f-data);min-width:46px;text-align:right}
 .warnbox{margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));font-size:13px;line-height:1.4}
+.newdata{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 118px);z-index:6;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;padding:8px 8px 8px 14px;border-radius:12px;background:var(--glass);border:2px solid var(--route);box-shadow:0 4px 18px rgba(0,0,0,.25);font:600 13px var(--f-body);max-width:calc(100% - 2*var(--gut))}
 .cbanner{position:absolute;left:calc(var(--gut) + 0px);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:4;max-width:min(560px,calc(100% - 2*var(--gut)));padding:7px 30px 7px 11px;border-radius:9px;border:1px solid var(--warn);background:var(--glass);font:600 12.5px var(--f-body);color:var(--ink)}
 .cbanner b{color:var(--warn)}
 .cbanner button{position:absolute;right:4px;top:3px;border:0;background:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px}
@@ -230,6 +231,7 @@ tr.click{cursor:pointer}
   </div>
 </div>
 
+<div class="newdata" id="newData" hidden><span id="newDataTxt">New forecast</span><button id="newDataBtn" class="btn primary">New data: update routing</button></div>
 <div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">

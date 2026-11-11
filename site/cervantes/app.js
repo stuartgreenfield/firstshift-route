@@ -35,7 +35,30 @@
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return download();
-  }).then(function () { run(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; });
+  }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; });
+
+  /* ---------- new forecasts: check every 5 minutes; a button downloads them and routes again ---------- */
+  var nextMeta = null;
+  function watchForNew() {
+    if (!meta.live) return;
+    setInterval(function () {
+      fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
+        if ((m.built || m.t0) === (meta.built || meta.t0) || (nextMeta && (nextMeta.built || nextMeta.t0) === (m.built || m.t0))) return;
+        nextMeta = m;
+        $('newData').hidden = false;
+        $('newDataTxt').textContent = 'New forecast: ' + clockAbs(m.t0).replace(/ (\d\d):00$/, ' $1Z') + ' run';
+      }).catch(function () {});
+    }, 5 * 60 * 1000);
+    $('newDataBtn').onclick = function () {
+      if (!nextMeta || S.running) return;
+      var m = nextMeta, raceId = meta.course && meta.course.race ? meta.course.race.id : null; nextMeta = null;
+      $('newData').hidden = true; busy('Downloading the new forecast…');
+      meta = m; T0 = m.t0; meta.course0 = m.course; S.loaded = {}; S.gotAt = {}; S.ov = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = [];
+      if (raceId) applyRace(raceId);
+      var st = (+$('startSel').value - T0) / 3600; S.tmin = Math.min(st, S.tmin - 0); S.tmax = Math.min(HMAX(), S.tmax);
+      download().then(function () { chip(); dataTable(); run(); }).catch(function (e) { busy(''); $('dlNote').textContent = e.message; });
+    };
+  }
 
   /* ---------- data plans ---------- */
   var PLANS = {
