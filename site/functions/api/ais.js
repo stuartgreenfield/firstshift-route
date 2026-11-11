@@ -20,10 +20,11 @@ export async function onRequestGet({ request, env, waitUntil }) {
   const out = {}, dbg = Object.assign({ msgs: 0, other: [] }, dbg0);
   ws.addEventListener('close', ev => { dbg.close = [ev.code, ev.reason]; });
   ws.addEventListener('error', ev => { dbg.err = String(ev && (ev.message || ev.error || ev.type)); });
-  ws.addEventListener('message', ev => {
+  ws.addEventListener('message', async ev => {
     dbg.raw = (dbg.raw || 0) + 1; if (!dbg.t) dbg.t = typeof ev.data + ' ' + (ev.data && ev.data.constructor && ev.data.constructor.name);
     try {
-      const m = JSON.parse(typeof ev.data === 'string' ? ev.data : new TextDecoder().decode(ev.data)), md = m.MetaData || {}, b = m.Message || {};
+      const txt = typeof ev.data === 'string' ? ev.data : ev.data && typeof ev.data.text === 'function' ? await ev.data.text() : new TextDecoder().decode(ev.data);   // aisstream sends each message as binary (a Blob here)
+      const m = JSON.parse(txt), md = m.MetaData || {}, b = m.Message || {};
       dbg.msgs++; if (!m.MetaData && dbg.other.length < 3) dbg.other.push(m);
       const p = b.PositionReport || b.StandardClassBPositionReport || b.ExtendedClassBPositionReport;
       const x = out[md.MMSI] || (out[md.MMSI] = { mmsi: md.MMSI });
