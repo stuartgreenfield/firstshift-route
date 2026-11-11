@@ -217,6 +217,20 @@
         S.from = { lat: la, lon: lo, t: t, gps: true }; $('fromHere').setAttribute('aria-pressed', 'false'); busy(''); run();
       }, function () { tap('No GPS fix.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
     };
+    /* while racing: once From here has a GPS fix, route again from the boat's position on a timer */
+    (function () {
+      var sel = $('autoFrom'), v = store('fs-autofrom'); if (v != null) sel.value = v; sel.onchange = function () { store('fs-autofrom', sel.value); };
+      var last = 0;
+      setInterval(function () {
+        var mins = +sel.value; if (!mins || !S.from || !S.from.gps || S.running || document.hidden || !navigator.geolocation) return;
+        if (Date.now() - last < mins * 60000) return; last = Date.now();
+        navigator.geolocation.getCurrentPosition(function (g) {
+          var la = g.coords.latitude, lo = g.coords.longitude, t = (Date.now() / 1000 - T0) / 3600, gz = P.depth ? P.depth.nearest('z', la, lo) : NaN;
+          if (t > HMAX() - 1 || !inData({ lat: la, lon: lo }) || !(gz <= -(+$('depth').value))) { $('runNote').textContent = 'Automatic reroute paused: the position is outside the forecast area or in shallow water.'; return; }
+          S.from = { lat: la, lon: lo, t: t, gps: true }; run();
+        }, function () { $('runNote').textContent = 'Automatic reroute paused: no GPS fix.'; }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+      }, 30000);
+    })();
     $('time').oninput = function () { S.t = tFromSlider(); update(); };
     $('play').onclick = togglePlay;
     $('nightBtn').onclick = function (e) {   /* screen menu: dark, night red, light, or follow the device */
@@ -232,7 +246,7 @@
     /* Settings: route again by itself on closing, if anything that affects the routes changed */
     var setSnap = '';
     function settingsSnap() { return [].map.call(document.querySelectorAll('#sheet input, #sheet select, #sheet textarea'), function (el) { return el.id + '=' + (el.type === 'checkbox' ? el.checked : el.value); }).join('|') + '|' + JSON.stringify(meta && meta.course ? [meta.course.name, meta.course.marks, meta.course.start, meta.course.finish] : ''); }
-    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk)=/;
+    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom)=/;
     function routeSnap() { return settingsSnap().split('|').filter(function (x) { return !DISPLAY_ONLY.test(x); }).join('|'); }
     $('setBtn').onclick = function () { setSnap = routeSnap(); $('sheet').hidden = false; plotPolar(); };
     $('sheetX').onclick = function () { $('sheet').hidden = true; if (setSnap && routeSnap() !== setSnap && !S.running) { busy('Settings changed: routing again…'); S.from = null; run(); } setSnap = ''; };
@@ -1190,6 +1204,7 @@
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
+    ['Routing while racing', 'Press From here: Route finds the boat by the phone or tablet GPS and routes from there, from now. If there is no GPS, tap the chart where the boat is. To keep the route fresh, Settings, Course, While racing: choose Every 10, 20 or 30 minutes and Route routes again from the new position on that timer while the screen is on.'],
     ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
     ['Your sails and reefs', 'Settings, Sails. Copy each sail from your sail log: the true wind angles and true wind speeds you use it in. Rows are checked from the top and the first that fits wins. Tick Show when to reef and enter the wind speed for each reef, upwind and downwind. The crossover chart colours each sail, marks the reefs and puts this route\'s winds on it as dots, so you can see any wind with no sail set. You can paste a chart grid from Expedition, PredictWind or SailGrib under Edit as text.'],
     ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCC, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],

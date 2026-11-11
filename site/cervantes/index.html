@@ -495,6 +495,9 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="sbody" id="s-course" hidden>
       <div class="row"><label for="depth">Safety depth</label><input type="range" id="depth" min="0" max="20" step="0.5" value="3" style="width:180px"><b id="depthV" style="font-family:var(--f-data)">3.0 m</b></div>
       <p class="note">The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
+      <h3>While racing</h3>
+      <div class="row"><label for="autoFrom">Reroute from GPS</label><select id="autoFrom"><option value="0">Only when I press From here</option><option value="10">Every 10 minutes</option><option value="20">Every 20 minutes</option><option value="30">Every 30 minutes</option></select></div>
+      <p class="note">After From here has found the boat by GPS, Route routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
       <h3>Race</h3>
       <div class="row"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
       <p class="warnbox" id="courseWarn" hidden></p>
