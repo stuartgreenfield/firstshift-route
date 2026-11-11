@@ -18,6 +18,18 @@ Status: Built · Partly built · To build · Researching · Later.
 | 10:16 | Routes made on one device visible on the others, plus a local route on each | To build with the boat code |
 | 10:08 | Regular demo of each version, a to-do list, and competitor-inspired ideas; feedback saved per item | Built: test card (claude.ai/artifact/YFzQi6rjdcpdww3Nrg31sw) with video, checklist, to-do, ideas |
 | 10:11 | Work out use on phone, Mac, PC and tablet at the same time without a login | Answered: boat code |
+| 14:06 | Continue the list unattended for 2 hours; skip anything needing Stuart's input; save to Mac and GitHub | Working through: MOB, plotter research, whole-area forecasts |
+| 14:02 | Load a new race or build your own course | Built: race menu (tap the race name), My races on the device, course editor (items 10, 31, 32) |
+| 13:57 | Route button out of the header; logo in its own box, race name in a second box | Built: routes on closing Settings after a change; Route again in Decision |
+| 13:55 | Settings: Boat tab rendering wrong, tab strip cut through | Fixed |
+| 13:32 | Slider to dim wind barbs and tide arrows | Built (item 33) |
+| 13:25 | Use the FirstShift logo colours and sails logo through the tool | Built: sails mark, two blues for controls, pink kept as Route's tool colour |
+| 13:23 | Start a new race without losing the running one; menu for RORC races or own course | Built 14:02 (items 31, 32, 10) |
+| 13:17 | Dark mode: lighter surfaces per layer rather than edges only | Built |
+| 13:14 | Moon button cycles night red, dark and light | Built |
+| 13:13 | Reload takes a few seconds; offline at sea? | Answered; offline mode built (item 11) |
+| 12:59 | iPhone pinch not working; dark mode as default | Fixed (F02); dark default (item 30) |
+| 12:54 | Replay slider glitch | Fixed (F01) |
 | 12:38 | Vision: flexible, no logins, phone-first best-of-breed UI, fast, voice/text/picture help, route choice with polar, wind and tide overrides, reroute from position, AIS competitors in range and over the horizon when online, Q&A while racing, crew moments, friends and family view | Assessed with Stuart and approved: to-do items 21 to 29. Satellite AIS, AI answers and YB feed flagged as cost or third-party |
 | 12:17 | Research every way to link Route to onboard plotters and instruments, all manufacturers (NMEA 0183, NMEA 2000, wifi, gateways) | To do: research job added to the list |
 | 12:14 | Charts: build options 1 and 2 (GPX/KML export, help, open-in buttons); keep Route free of other businesses | Approved: to build. Option 3 (licensed charts) not pursued |
