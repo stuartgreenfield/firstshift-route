@@ -11,7 +11,7 @@ onmessage = function (e) {
     if (m.type === 'route') {
       var s = samplers(m.o);
       var r = FSRouter.route({ start: m.o.start, legs: m.o.legs, wind: s.wind, tide: s.tide, wave: s.wave, speed: s.speed, sea: s.sea, depth: P.depth,
-        safety: m.o.safety, nogo: m.o.nogo, tackS: m.o.tackS, gybeS: m.o.gybeS, dt: m.o.dt || 600, hstep: m.o.hstep || 5, sectors: m.o.sectors || 360, maxHours: m.o.maxHours || 46 });
+        safety: m.o.safety, nogo: m.o.nogo, tackS: m.o.tackS, gybeS: m.o.gybeS, dt: m.o.dt || 600, hstep: m.o.hstep || 5, sectors: m.o.sectors || 360, maxHours: m.o.maxHours || 46, partial: m.o.partial !== false });
       postMessage({ id: m.id, ok: true, r: r }); return;
     }
     if (m.type === 'sail') { var s2 = samplers(m.o); postMessage({ id: m.id, ok: true, r: m.paths.map(function (p) { return FSRouter.sailTrack(p, s2); }) }); return; }

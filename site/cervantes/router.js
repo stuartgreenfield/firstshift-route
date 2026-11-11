@@ -230,6 +230,12 @@
         if (!cand.length && calm === pts.length && pts.length) {   /* no wind anywhere on the front: the forecasts have run out before the finish */
           var bp = pts[0], bd = 1e9; pts.forEach(function (q) { var d = dist(q.la, q.lo, tgt[0], tgt[1]); if (d < bd) { bd = d; bp = q; } });
           var togo = bd, prevP = tgt; for (var lj = li + 1; lj < o.legs.length; lj++) { var L2 = o.legs[lj], nx = L2.point || L2.gate.a; togo += dist(prevP[0], prevP[1], nx[0], nx[1]); prevP = nx; }
+          if (o.partial) {   /* keep the route as far as the forecasts reach, and say how far is left */
+            var kb = pts.indexOf(bp), path0 = [], kk = kb;
+            for (var hJ = hist.length - 1; hJ >= 0; hJ--) { var c4 = hist[hJ].pts[kk]; path0.push({ t: hist[hJ].t, la: c4.la, lo: c4.lo, hdg: c4.hdg, tws: c4.tws, twd: c4.twd, twa: c4.twa, bsp: c4.bsp, cu: c4.cu, cv: c4.cv, hs: c4.hs, wd: c4.wd, leg: hist[hJ].leg, tack: c4.tack }); kk = c4.par; }
+            path0.reverse(); path0.unshift({ t: o.start.t, la: o.start.lat, lo: o.start.lon, leg: 0 });
+            return { arrivals: arrivals, path: path0, finish: path0[path0.length - 1].t, partial: { togo: Math.round(togo), leg: leg.name, end: t } };
+          }
           var e0 = new Error('The forecasts end ' + Math.round(t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
         }
         if (!cand.length) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
