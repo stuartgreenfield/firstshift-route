@@ -31,3 +31,9 @@ Now 135 h, like the Fastnet.
 
 ## F12 Forecast build published an older app (F08 again) - fixed
 The job now takes the newest app from main just before each publish.
+
+## F13 Marks rounded at the far end of the gate line (11 Nov) - fixed
+A mark is a short line from the buoy on the side the boat must not pass. Any crossing counted, either way round, anywhere along the line. Routes "rounded" Fastnet Rock about 24 nm south of the Rock by going round the line's far end, and Eddystone could be taken on the wrong side. Now the line is a wall the wrong way round, and a rounding only counts within 6 nm of the mark. Fastnet routes are 3 to 6 h longer: the honest answer.
+
+## F14 Sails inventory drop-down looked dead (11 Nov) - fixed
+Choosing an inventory only showed a Replace button, which then asked for a second tap. Now the choice applies at once, with Undo.

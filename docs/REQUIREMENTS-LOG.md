@@ -125,3 +125,11 @@ Status: Built · Partly built · To build · Researching · Later.
 - "automated testing ... each upgrade and once a day ... email report": tests/check.js (230 checks, 10 screen sizes); GitHub workflow Check runs after each forecast build, each app change, daily 05:41 UTC and by hand. Email report waits for Stuart's OK.
 - "Myth ... doesn't go around the Eddystone": real fault, fixed (out-and-back marks rounded 10 nm short). Also fixed the Fastnet not finishing.
 - Fixes from the check: race opened on the wrong page (Myth on Cervantes); every RORC race pre-routed; From here refuses land and recovers; phones on their side; address follows the course; smooth depth layer; area pages keep 135 h.
+
+## 11 Nov 2026, 22:50 to 12 Nov, overnight ("work through the jobs during the night and skip any that needs my input")
+- "yes send email": daily email of the morning check, 06:17 UK, scheduled task. Built (to-do 50).
+- "north head buoy is half a nautical mile south of north head point" and "eddystone to port": Myth finish at North Head buoy, 50 42.69N 001 35.52W (SCRA 2026 Solent race marks list, mark 1K); Eddystone to port. Done (to-do 51).
+- Found while checking the Myth: rounding marks could be "rounded" by sailing round the far end of the router's gate line, up to 24 nm short at Fastnet Rock. Fixed (F13).
+- "Sail type panel drop down not working": choosing a typical inventory needed two more taps. Now applies at once with Undo. Fixed (F14).
+- Overnight, no input needed: landscape readings row (check failures); forecast build watchdog (to-do 44); Open-Meteo device fallback (17); 10-day ECMWF, AIFS and GFS (48); GPS reroute timer (24); help pictures (22); crew moments through the boat code (28); area overrides (23); router 2.5 to 3 times faster (20); isochrones and tap-to-route (4, idea 7); wind over the water (idea 11); race briefing (idea 3).
+- Skipped, needs Stuart: new areas (Irish Sea, Biscay: which first), tide sources and UKHO data (licences), RORC entry list source, friends and family page (YB or RORC permission), Google Play steps, phone design pass (taste), Safari on the Mac.
