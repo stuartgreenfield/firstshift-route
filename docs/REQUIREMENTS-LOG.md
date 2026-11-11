@@ -6,6 +6,8 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 09:59 | GeoGarage and C-MAP chart download button and help | Researched: both need a partner licence to show their charts inside Route; route export (GPX, KML) and help can be built now. Awaiting Stuart's choice |
+| 09:57 | Use NavimetriX as the model for the route comparison screen | Waiting: NavimetriX window not visible to Claude |
 | 09:51 | Traffic separation schemes in the tool, switchable, usable as no-go zones | Built: layer plus "keep out" switch; data from OpenStreetMap and Shom, refreshed weekly. Race keep-out boxes from sailing instructions (Fastnet 2025 entered) |
 | 09:51 | Main buoys and lighthouses in RORC race areas as a simple list, shown on the basic chart; not for navigation | Built: lighthouses, cardinal, safe water, isolated danger and named special buoys from OpenStreetMap |
 | 09:51 | Constant list of requirement changes, Mac kept up to date, regular progress report, better communication | Running: this log, progress report doc (claude.ai/artifact/FQpEkDnC8W41DzVSeAS743), Mac copies |
