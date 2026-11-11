@@ -102,8 +102,12 @@
     });
     var ovRow = $('ovChk').closest('label'); if (ovRow) ovRow.hidden = !meta.overview;
     if (meta.overview) { if ($('ovChk').checked && !S.ov) tot += meta.overview.gz; $('ovSize').textContent = mb(meta.overview.gz) + (S.ov ? ' · on device' : ''); }
-    var bw = meta.course.band.map(function (b) { return b[4]; }), w = meta.course.window;
+    var w = meta.course.window, RG = (meta.course0 || meta.course).region;
+    if (RG) $('bandNote').textContent = 'Whole area: forecasts for every point from ' + RG.s + '° to ' + RG.n + '°N and ' + Math.abs(RG.w) + '°W to ' + Math.abs(RG.e) + '°' + (RG.e >= 0 ? 'E' : 'W') + ', from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' UTC. Any course inside the box routes. Shown as a dashed line on the chart.';
+    else {
+    var bw = meta.course.band.map(function (b) { return b[4]; });
     $('bandNote').textContent = 'Cut to the race: forecasts only within ' + Math.round(Math.min.apply(null, bw)) + ' nm of the course in the Solent and ' + Math.round(Math.max.apply(null, bw)) + ' nm offshore (30% of each leg), from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' UTC: an hour before the first start to 1.4 times the slowest routed finish. Shown as a dashed line on the chart.';
+    }
     $('dataTable').innerHTML = h; $('dlTotal').textContent = tot ? mb(tot) + ' to fetch' : 'nothing new to fetch';
     [].forEach.call($('dataTable').querySelectorAll('select'), function (s) { s.onchange = function () { S.choice[s.dataset.dl] = s.value; S.plan = 'custom'; [].forEach.call($('plans').children, function (b) { b.setAttribute('aria-pressed', 'false'); }); dataTable(); }; });
     $('dataNote').textContent = 'Forecast run ' + meta.run + (meta.built ? '; published on the FirstShift server at ' + dayhm(meta.built * 1000) + ' UTC' : '') + '. Age is the time since each model run; amber over 12 hours, red over 18. Times in UTC. Choose what this device downloads: full detail on Starlink, less on a phone signal.';
@@ -338,6 +342,7 @@
       RACES = j.races; $('raceSel').innerHTML = RACES.map(function (r) { return '<option value="' + r.id + '">' + r.name + (r.date2027 ? ' · ' + r.date2027.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+r.date2027.slice(5, 7) - 1] : '') + (courseIssue(r) ? ' (wider area needed)' : '') + '</option>'; }).join('');
       $('raceSel').onchange = function () { applyRace($('raceSel').value); };
       var home = meta.course0 ? meta.course0.raceId : meta.course.raceId; home = home || 'cervantes'; var want = home === 'cervantes' ? (store('fs-race') || home) : home; if (!RACES.some(function (r) { return r.id === want; })) want = home;
+      var qr = new URLSearchParams(location.search).get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
       $('raceSel').value = want; applyRace(want);
       var my = new URLSearchParams(location.search).get('my'); if (my) setTimeout(function () { openMy(my); }, 0);
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
@@ -431,7 +436,7 @@
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit this course</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
-    h += '<h3>RORC races</h3>' + RACES.map(function (r) { var ready = READY[r.id]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (ready ? 'Forecasts ready' : 'Course only: forecasts for this area come later') + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
+    h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (ready ? 'Forecasts ready' : 'Course only: forecasts for this area come later') + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
     $('raceList').innerHTML = h;
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
     $('rEdit').onclick = function () { startEdit(courseCopy()); };
@@ -441,7 +446,7 @@
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
       setMyRaces(myRaces().filter(function (x) { return x.id !== b.dataset.del; })); if (S.myId === b.dataset.del) S.myId = null; racesSheet(); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-race]'), function (b) { b.onclick = function () {
-      var id = b.dataset.race; if (READY[id] && id !== HERE) { location.href = '../' + id + '/'; return; }
+      var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { location.href = '../' + pg + '/' + (pg !== id ? '?race=' + id : ''); return; }
       S.myId = null; applyRace(id); $('races').hidden = true; if (!courseIssue(meta.course)) { S.from = null; run(); } };
     });
   }
@@ -929,12 +934,16 @@
   /* ---------- course band edge ---------- */
   var bandPath = null;
   function bandEdge() {
+    var RG = (meta.course0 || meta.course).region;
+    if (RG) { ctx.save(); ctx.strokeStyle = css['--muted']; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.2; ctx.strokeRect(X(RG.w), Y(RG.n), X(RG.e) - X(RG.w), Y(RG.s) - Y(RG.n)); ctx.restore(); return; }
     if (!bandPath) {
       // outline of the band from the depth layer's run ends, or from the geometry
       var B = meta.course.band, k = Math.cos(50.1 * R), pts = [];
       function ex(la, lo) { var best = 1e9; B.forEach(function (s) { var ax = s[1] * 60 * k, ay = s[0] * 60, bx = s[3] * 60 * k, by = s[2] * 60, px = lo * 60 * k, py = la * 60, dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy))); best = Math.min(best, Math.hypot(px - ax - u * dx, py - ay - u * dy) - s[4]); }); return best; }
       var segs = [], st = 0.02;
-      for (var la = 49.2; la < 51.0; la += st) for (var lo = -2.3; lo < 0.6; lo += st / 0.64) {
+      var bb = B.reduce(function (a, b) { var w = b[4] / 60 + 0.1; return [Math.min(a[0], b[0] - w, b[2] - w), Math.max(a[1], b[0] + w, b[2] + w), Math.min(a[2], b[1] - w / 0.6, b[3] - w / 0.6), Math.max(a[3], b[1] + w / 0.6, b[3] + w / 0.6)]; }, [90, -90, 180, -180]);
+      st = Math.max(0.02, (bb[1] - bb[0]) / 220);
+      for (var la = bb[0]; la < bb[1]; la += st) for (var lo = bb[2]; lo < bb[3]; lo += st / 0.64) {
         var a0 = ex(la, lo) <= 0, a1 = ex(la, lo + st / 0.64) <= 0, a2 = ex(la + st, lo) <= 0;
         if (a0 !== a1) segs.push([la, lo + st / 0.64, la + st, lo + st / 0.64]);
         if (a0 !== a2) segs.push([la + st, lo, la + st, lo + st / 0.64]);

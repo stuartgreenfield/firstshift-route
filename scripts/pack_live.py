@@ -10,6 +10,9 @@ static = json.load(open(os.path.join(ST, 'static.json')))
 band = static['course']['band']
 
 def excess(LA, LO):
+    if not band:   # a whole region: everything inside the box
+        R0 = static['course'].get('region') or static['box']
+        return np.where((LA >= R0['s']) & (LA <= R0['n']) & (LO >= R0['w']) & (LO <= R0['e']), -1.0, 1e9)
     best = np.full(np.shape(LA), 1e9)
     for la1, lo1, la2, lo2, W in band:
         ax, ay = lo1 * 60 * K, la1 * 60; bx, by = lo2 * 60 * K, la2 * 60; px, py = LO * 60 * K, LA * 60

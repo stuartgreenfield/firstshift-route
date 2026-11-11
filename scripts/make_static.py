@@ -6,7 +6,8 @@ import json, os, sys, gzip, io, time, urllib.request, numpy as np, tifffile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RACE = sys.argv[1]
 lib = json.load(open(os.path.join(ROOT, 'site', 'courses', 'rorc.json')))
-R = [r for r in lib['races'] if r['id'] == RACE][0]
+R = [r for r in lib['races'] + lib.get('regions', []) if r['id'] == RACE][0]
+REGION = R.get('region')   # a whole sea area rather than one course: every point inside the box is routable
 OUT = os.path.join(ROOT, 'static', RACE); os.makedirs(OUT, exist_ok=True)
 KM = 111.2
 
@@ -17,12 +18,16 @@ for i, (a, b) in enumerate(zip(via[:-1], via[1:])):
     K0 = np.cos(np.radians((a[0] + b[0]) / 2)); L = np.hypot((b[0] - a[0]) * 60, (b[1] - a[1]) * 60 * K0)
     near = i < R.get('bandNear', 2)   # the Solent legs stay narrow
     SEG.append((a, b, float(min(R.get('bandMax', 35), max(10.0 if near else R.get('bandMin', 25), 0.30 * L)))))
-s = min(min(a[0], b[0]) - W / 60 for a, b, W in SEG) - 0.1; n = max(max(a[0], b[0]) + W / 60 for a, b, W in SEG) + 0.1
-K = np.cos(np.radians((s + n) / 2))
-w = min(min(a[1], b[1]) - W / 60 / K for a, b, W in SEG) - 0.1; e = max(max(a[1], b[1]) + W / 60 / K for a, b, W in SEG) + 0.1
+if REGION:
+    s, n, w, e = REGION['s'], REGION['n'], REGION['w'], REGION['e']; K = np.cos(np.radians((s + n) / 2))
+else:
+    s = min(min(a[0], b[0]) - W / 60 for a, b, W in SEG) - 0.1; n = max(max(a[0], b[0]) + W / 60 for a, b, W in SEG) + 0.1
+    K = np.cos(np.radians((s + n) / 2))
+    w = min(min(a[1], b[1]) - W / 60 / K for a, b, W in SEG) - 0.1; e = max(max(a[1], b[1]) + W / 60 / K for a, b, W in SEG) + 0.1
 box = dict(s=round(float(s), 3), n=round(float(n), 3), w=round(float(w), 3), e=round(float(e), 3)); print('box', box, 'segments', [(round(W), ) for *_, W in SEG])
 
 def excess(LA, LO):
+    if REGION: return np.full(np.shape(LA), -1.0)
     best = np.full(np.shape(LA), 1e9)
     for a, b, W in SEG:
         ax, ay = a[1] * 60 * K, a[0] * 60; bx, by = b[1] * 60 * K, b[0] * 60; px, py = LO * 60 * K, LA * 60
@@ -85,7 +90,7 @@ cst = st * 4
 coast = dict(file='coast.wasm', lat0=lat0 - st / 2 + cst / 2, dlat=cst, ny=land.shape[0], lon0=lon0 - st / 2 + cst / 2, dlon=cst, nx=land.shape[1], gz=len(gzip.compress(np.packbits(land.ravel()).tobytes(), 6)))
 
 course = dict(name=R['name'], raceId=RACE, start=R['start'], marks=R['marks'], finish=R['finish'], hours=R.get('hours', 48),
-              band=[[a[0], a[1], b[0], b[1], W] for a, b, W in SEG])
+              band=None if REGION else [[a[0], a[1], b[0], b[1], W] for a, b, W in SEG], region=REGION)
 fleet = R.get('fleet', [])
 json.dump(dict(depth=depth, coast=coast, course=course, fleet=fleet, nodes=via, box=box, fleet_note=R.get('fleetNote', '')), open(f'{OUT}/static.json', 'w'), separators=(',', ':'))
 print('wrote', OUT)
