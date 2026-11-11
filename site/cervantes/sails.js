@@ -180,5 +180,8 @@
     fromText();
   }
 
-  root.FSSails = { init: init, draw: draw, fromGrid: fromGrid, parse: parse, reefRows: reefRows, winner: winner, PRESETS: PRESETS };
+  function usePreset(k) { if (!PRESETS[k]) return; E.rows = PRESETS[k].rows.map(function (r) { return r.slice(); }); table(); save('preset'); }
+  function reefs(on) { E.reef = on ? JSON.parse(JSON.stringify(E.reef || REEF0)) : null; reefTable(); save('reef'); }
+  function summary() { return { sails: E.rows.length, names: E.rows.map(function (r) { return r[0]; }), reef: !!E.reef }; }
+  root.FSSails = { usePreset: usePreset, reefs: reefs, summary: summary, init: init, draw: draw, fromGrid: fromGrid, parse: parse, reefRows: reefRows, winner: winner, PRESETS: PRESETS };
 })(this);

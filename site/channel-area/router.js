@@ -192,10 +192,10 @@
       var oLa = 0, oLo = 0; pts.forEach(function (p) { oLa += p.la; oLo += p.lo; }); oLa /= pts.length; oLo /= pts.length;
       var kO = Math.cos(oLa * R), done = false;
       for (var step = 0; step < maxSteps; step++) {
-        var cand = [], hit = [];
+        var cand = [], hit = [], calm = 0;
         for (var pi = 0; pi < pts.length; pi++) {
           var p = pts[pi], W = o.wind(p.la, p.lo, t), C = o.tide(p.la, p.lo, t), V = o.wave ? o.wave(p.la, p.lo, t) : [0, NaN];
-          var tws = W[0], twd = W[1], kp = Math.cos(p.la * R);
+          var tws = W[0], twd = W[1], kp = Math.cos(p.la * R); if (!(tws > 0)) calm++;
           for (var hi = 0; hi < nh; hi++) {
             var twa = ((H[hi] - twd + 540) % 360) - 180, s = o.speed(tws, twa);
             if (s <= 0.05) continue;
@@ -222,6 +222,11 @@
           hist.push({ pts: hit, t: t, leg: li }); arrivals.push({ name: leg.name, t: t });
           pts = hit.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
           done = true; break;
+        }
+        if (!cand.length && calm === pts.length && pts.length) {   /* no wind anywhere on the front: the forecasts have run out before the finish */
+          var bp = pts[0], bd = 1e9; pts.forEach(function (q) { var d = dist(q.la, q.lo, tgt[0], tgt[1]); if (d < bd) { bd = d; bp = q; } });
+          var togo = bd, prevP = tgt; for (var lj = li + 1; lj < o.legs.length; lj++) { var L2 = o.legs[lj], nx = L2.point || L2.gate.a; togo += dist(prevP[0], prevP[1], nx[0], nx[1]); prevP = nx; }
+          var e0 = new Error('The forecasts end ' + Math.round(t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
         }
         if (!cand.length) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
         // prune: best point in each bearing sector from the leg origin
