@@ -339,7 +339,8 @@
      "track": []
     }
    ],
-   "fleetNote": "Demo: Sunrise only. TCC 1.098 is the IRC rating LV Yachting lists for Sunrise III, JPK 1180 hull 2; to confirm."
+   "fleetNote": "Demo: Sunrise only. TCC 1.098 is the IRC rating LV Yachting lists for Sunrise III, JPK 1180 hull 2; to confirm.",
+   "bandNear": 1
   },
   {
    "id": "channel",

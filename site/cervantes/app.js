@@ -31,7 +31,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return download();
@@ -224,8 +224,9 @@
   function legsFor(fromPt) {
     var c = meta.course, pts = [c.start].concat(c.marks).concat([c.finish]), legs = [];
     c.marks.forEach(function (m, i) {
-      var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25;
-      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', 1.2), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
+      var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25, legNm = FSRouter.dist(pts[i].lat, pts[i].lon, m.lat, m.lon);
+      /* an offshore rounding mark gets a long gate ray, so the router has to sail round it rather than past it */
+      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1))), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
     });
     legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: c.finish.radius_nm || 0.4, at: [c.finish.lat, c.finish.lon] });
     if (fromPt) {   // from a point on the water: drop the marks already rounded, judged by distance along the course
@@ -258,7 +259,7 @@
     r.marks.forEach(function (m, i) { $('side' + i).value = m.side || 'port'; $('side' + i).onchange = function () { meta.course.marks[i].side = this.value; meta.course.marks[i].sideAssumed = false; S.legs = null; draw(); }; });
     var issue = courseIssue(meta.course);
     $('courseNote').innerHTML = (r.nm ? 'About ' + r.nm + ' nm. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>' + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
-    store('fs-race', r.id); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; draw();
+    store('fs-race', r.id); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W) fit(); draw();
   }
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
@@ -363,7 +364,16 @@
   var cv = $('map'), ctx = cv.getContext('2d'), W = 0, H = 0, dpr = 1, K = Math.cos(50.1 * R), view = { lo: -0.8, la: 50.15, s: 300 }, fitted = false;
   function resize() { var r = cv.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); if (!fitted && W) { fit(); fitted = true; } }
   function resizeDraw() { resize(); draw(); }
-  function fit() { var top = 70; view.s = Math.min(W / (2.25 * K), (H - top) / 1.4); view.lo = -0.8; view.la = 50.15 + top / 2 / view.s; }
+  /* frame the whole course: start, marks, finish and the forecast band */
+  function fit() {
+    var top = 70, c = meta && (meta.course || {}), pts = [];
+    if (c && c.start) pts = [c.start].concat(c.marks || []).concat([c.finish]).map(function (p) { return [p.lat, p.lon]; });
+    ((c && c.band) || []).forEach(function (b) { pts.push([b[0], b[1]], [b[2], b[3]]); });
+    if (!pts.length) { view.s = Math.min(W / (2.25 * K), (H - top) / 1.4); view.lo = -0.8; view.la = 50.15 + top / 2 / view.s; return; }
+    var s = 90, n = -90, w = 180, e = -180; pts.forEach(function (p) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); e = Math.max(e, p[1]); });
+    var pad = 0.08; s -= (n - s) * pad; n += (n - s) * pad; w -= (e - w) * pad; e += (e - w) * pad;
+    view.s = Math.max(150, Math.min(W / ((e - w) * K), (H - top - 90) / (n - s))); view.lo = (w + e) / 2; view.la = (s + n) / 2 + top / 2 / view.s;
+  }
   function X(lo) { return (lo - view.lo) * K * view.s + W / 2; }
   function Y(la) { return (view.la - la) * view.s + H / 2; }
   function LO(x) { return (x - W / 2) / (K * view.s) + view.lo; }

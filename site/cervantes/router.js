@@ -176,7 +176,8 @@
     function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var z = depth.nearest('z', la, lo); return z === z && z <= -safety; }
     var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [];
     for (var li = 0; li < o.legs.length; li++) {
-      var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var tgt = leg.point || [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2];
+      var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var far = leg.gate && dist(leg.gate.a[0], leg.gate.a[1], leg.gate.b[0], leg.gate.b[1]) > 2;   /* offshore rounding mark: aim at the mark itself */
+      var tgt = leg.point || (far ? leg.gate.a : [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2]);
       var oLa = 0, oLo = 0; pts.forEach(function (p) { oLa += p.la; oLo += p.lo; }); oLa /= pts.length; oLo /= pts.length;
       var kO = Math.cos(oLa * R), done = false;
       for (var step = 0; step < maxSteps; step++) {
@@ -211,14 +212,14 @@
           pts = hit.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
           done = true; break;
         }
-        if (!cand.length) throw new Error('No way through on the leg to ' + leg.name + '. Try a smaller safety depth.');
+        if (!cand.length) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
         // prune: best point in each bearing sector from the leg origin
         var best = new Array(sectors);
         for (var ci = 0; ci < cand.length; ci++) {
           var c2 = cand[ci], bx2 = (c2.lo - oLo) * kO, by2 = c2.la - oLa, b = (Math.atan2(bx2, by2) / R + 360) % 360;
           var sec = Math.min(sectors - 1, Math.floor(b / (360 / sectors)));
           var dtg = dist(c2.la, c2.lo, tgt[0], tgt[1]), dfo = Math.hypot(bx2, by2) * 60;
-          var score = dfo - 0.15 * dtg - (c2.tack ? 0.01 : 0); score += leg.point ? 2 * Math.max(0, 25 - dtg) : 2 * Math.max(0, 8 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
+          var score = dfo - (far ? 0.6 : 0.15) * dtg - (c2.tack ? 0.01 : 0); score += leg.point || far ? 2 * Math.max(0, 25 - dtg) : 2 * Math.max(0, 8 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
           c2.score = score;
           if (!best[sec] || score > best[sec].score) best[sec] = c2;
         }
