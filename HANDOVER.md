@@ -9,8 +9,8 @@ Live: https://firstshift-route.pages.dev/cervantes/ and /fastnet/ (v0.5.0). Repo
 
 ## Areas and models
 - Race pages: cervantes, fastnet. Area pages (whole box routable, built by make_static.py from 'regions' in site/courses/rorc.json): channel-area (Myth, De Guingand, Morgan, Dinard, Channel Race, Cherbourg) and northsea-area (North Sea Race). A race's 'page' field says which page opens it; the race menu adds ?race=<id>.
-- Wind models: UKV, ECMWF IFS, GFS, AIFS, Met Office Global, DWD ICON-EU (downloaded once for the whole area into work/_shared, then cut per page). Tides: Copernicus NW Shelf and IBI. Waves: Copernicus NW Shelf, ECMWF.
-- Meteo-France ARPEGE and AROME: the AWS bucket mf-nwp-models is stale (2019); the current open data is on data.gouv.fr object storage, not reachable from the build container, so it needs testing from GitHub.
+- Wind models: UKV, ECMWF IFS, GFS, AIFS, Met Office Global, DWD ICON-EU, Meteo-France AROME and ARPEGE (downloaded once for the whole area into work/_shared, then cut per page). Tides: Copernicus NW Shelf and IBI. Waves: Copernicus NW Shelf, ECMWF.
+- Meteo-France AROME (arome/0025/SP1, 6-hour files to 48 h) and ARPEGE (arpege/01/SP1, 12-hour files to 102 h) from https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt/<run ISO>/..., Licence Ouverte. Not reachable from the Claude build container; works on GitHub.
 
 ## Docs
 - docs/REQUIREMENTS-LOG.md: every request, newest first, with status.
