@@ -119,6 +119,18 @@ input[type=range]{width:100%;accent-color:var(--route);height:32px}
 .row>label:first-child{min-width:130px;color:var(--muted)}
 input[type=number],select,textarea{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-data);min-height:40px}
 input[type=number]{width:96px}
+input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-body);min-height:40px;flex:1 1 160px;min-width:0}
+.tune input[type=range]{flex:1 1 140px;width:auto;min-width:0}.tune b{font:600 13px var(--f-data);min-width:46px;text-align:right}
+.linkbtn{border:0;background:none;color:var(--route);font:inherit;font-weight:600;padding:0;cursor:pointer;text-decoration:underline}
+.pgrid{overflow:auto;max-height:280px;border:1px solid var(--line);border-radius:8px}
+.pgrid table{font:11.5px var(--f-data);width:auto}
+.pgrid th{position:sticky;top:0;background:var(--panel);padding:4px 6px;color:var(--muted);font-weight:500;z-index:1}
+.pgrid th:first-child{left:0;z-index:2}
+.pgrid td{padding:0;border-top:1px solid var(--line)}
+.pgrid td:first-child{position:sticky;left:0;background:var(--panel);padding:4px 6px;color:var(--muted)}
+.pgrid input{width:52px;min-height:28px;border:0;background:transparent;font:11.5px var(--f-data);text-align:right;padding:3px 5px;color:var(--ink)}
+.pgrid input:focus{outline:2px solid var(--route);background:var(--soft)}
+.plotbox canvas{width:100%;max-width:340px;height:auto;display:block;background:var(--soft);border-radius:10px}
 select{max-width:100%}
 textarea{width:100%;min-height:100px;font-size:12px}
 .chk{display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer}
@@ -205,7 +217,7 @@ tr.click{cursor:pointer}
 
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.4</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.4.1</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
       <button class="tab" data-s="fc" aria-selected="false">Forecasts</button>
@@ -214,14 +226,33 @@ tr.click{cursor:pointer}
       <button class="tab" data-s="display" aria-selected="false">Display</button>
     </div>
     <div class="sbody" id="s-boat">
-      <div class="row"><label for="boatPick">Fill from entry</label><select id="boatPick"><option value="">Choose an entry…</option></select></div>
-      <div class="row"><label for="tcc">IRC TCC</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"></div>
+      <div class="row"><label for="myBoat">My boats</label><select id="myBoat"><option value="">Not saved yet</option></select><button class="btn" id="boatSave">Save boat</button><button class="btn" id="boatDel" hidden>Delete</button></div>
+      <div class="row"><label for="boatName">Boat name</label><input type="text" id="boatName" placeholder="Your boat" autocomplete="off"></div>
+      <h3>Boat speed from</h3>
+      <div class="seg" id="srcSeg" role="group" aria-label="Boat speed from"><button data-src="type" aria-pressed="true">Boat type</button><button data-src="tcc" aria-pressed="false">TCC only</button><button data-src="polar" aria-pressed="false">Own polar</button></div>
+      <div class="row"><label for="tcc">IRC TCC</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"><select id="boatPick" aria-label="Fill TCC from a race entry"><option value="">or fill from an entry…</option></select></div>
+      <div id="srcType">
+        <div class="row"><label for="boatType">Boat type</label><select id="boatType"></select></div>
+        <p class="note" id="typeEg"></p>
+      </div>
+      <p class="note" id="srcTccNote" hidden>FirstShift's generic polar, scaled so the boat sails at its TCC. Use Boat type or Own polar for a truer shape.</p>
+      <div id="srcPolar" hidden>
+        <div class="row"><label for="polarFile">Load your polar</label><input type="file" id="polarFile" accept=".pol,.txt,.csv,.tsv,.json,.xml"></div>
+        <p class="note">Your own data: ORC rating data (JSON) or the polar table copied from your ORC certificate, an Expedition, B&amp;G, OpenCPN or qtVlm polar, or any table with TWA down and TWS across. Paste it below or load the file; edit any number in the table.</p>
+        <textarea id="polarTxt" spellcheck="false" placeholder="Paste a polar here"></textarea>
+        <div class="row"><button class="btn" id="polarFromType">Start from the boat type</button><span class="note" id="polarRead"></span></div>
+        <div class="pgrid" id="polarGrid"></div>
+      </div>
+      <h3>Tuning for the day</h3>
+      <div class="row tune"><label for="tuUp">Upwind</label><input type="range" id="tuUp" min="85" max="110" step="1" value="100"><b id="tuUpV">100%</b></div>
+      <div class="row tune"><label for="tuReach">Reaching</label><input type="range" id="tuReach" min="85" max="110" step="1" value="100"><b id="tuReachV">100%</b></div>
+      <div class="row tune"><label for="tuRun">Downwind</label><input type="range" id="tuRun" min="85" max="110" step="1" value="100"><b id="tuRunV">100%</b></div>
+      <p class="note">Below 100% for a light or new crew, tired sails or a sea the forecast misses; above it for a strong, heavy crew. Upwind runs to 55° TWA, reaching 70° to 110°, downwind from 130°, blended in between. <button class="linkbtn" id="tuReset">Reset to 100%</button></p>
+      <div class="plotbox"><canvas id="polarPlot" width="560" height="600" aria-label="Polar diagram"></canvas><p class="note" id="plotKey"></p></div>
+      <h3>Start and manoeuvres</h3>
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select></div>
       <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
       <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
-      <h3>Full polar</h3>
-      <p class="note">Paste Expedition, B&amp;G or Polar Live polar text to use it instead of the TCC.</p>
-      <textarea id="polarTxt" placeholder="Optional. Empty uses the FirstShift generic polar for the TCC."></textarea>
     </div>
     <div class="sbody" id="s-fc" hidden>
       <h3>Wind models to route on</h3>
@@ -267,4 +298,5 @@ J3 reaching, 100, 125, 20, 60</textarea>
 
 <script src="router.js"></script>
 <script src="engine.js"></script>
+<script src="boat.js"></script>
 <script src="app.js"></script>

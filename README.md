@@ -1,6 +1,6 @@
 # firstshift-route
 
-FirstShift Route: the race router and its forecast job. Version 0.4.
+FirstShift Route: the race router and its forecast job. Version 0.4.1.
 
 - `site/` is the web app (one folder per race) published by Cloudflare Pages from the `site` branch.
 - `scripts/build.py` fetches the newest free forecasts (ECMWF, AIFS, GFS, Met Office UKV and Global, Copernicus tides and waves) and builds the packs.

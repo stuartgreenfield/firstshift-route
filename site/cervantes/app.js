@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.4';
+  var VERSION = 'FirstShift Route v0.4.1';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]] };
@@ -90,7 +90,7 @@
   function chip() {
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
-    $('dataChip').textContent = 'Route v0.4 · ' + (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    $('dataChip').textContent = 'Route v0.4.1 · ' + (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
   }
 
   /* ---------- controls ---------- */
@@ -107,7 +107,8 @@
     $('startSel').value = String(starts[0]);
     S.tmin = (starts[0] - T0) / 3600; S.tmax = Math.min(48, S.tmin + 26);
     meta.fleet.filter(function (f) { return f.irc; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (f) { $('boatPick').insertAdjacentHTML('beforeend', '<option value="' + f.name + '">' + f.name + ' · TCC ' + f.tcc.toFixed(3) + '</option>'); });
-    $('boatPick').onchange = function () { var f = meta.fleet.find(function (x) { return x.name === $('boatPick').value; }); if (f) { $('tcc').value = f.tcc.toFixed(3); if (!meta.live) $('startSel').value = String(f.start); } };
+    $('boatPick').onchange = function () { var f = meta.fleet.find(function (x) { return x.name === $('boatPick').value; }); if (f) { $('tcc').value = f.tcc.toFixed(3); if (!$('boatName').value) $('boatName').value = f.name; if (!meta.live) $('startSel').value = String(f.start); boatChanged(); } };
+    initBoat();
     $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
     $('run').onclick = function () { S.from = null; run(); };
     $('fromHere').onclick = function () { var on = $('fromHere').getAttribute('aria-pressed') !== 'true'; $('fromHere').setAttribute('aria-pressed', on); busy(on ? 'Tap the chart where the boat is now' : ''); };
@@ -115,7 +116,7 @@
     $('play').onclick = togglePlay;
     $('nightBtn').onclick = function () { setNight(!document.documentElement.hasAttribute('data-night')); };
     [].forEach.call($('modeSeg').children, function (b) { b.onclick = function () { setNight(b.dataset.mode === 'night'); }; });
-    $('setBtn').onclick = function () { $('sheet').hidden = false; };
+    $('setBtn').onclick = function () { $('sheet').hidden = false; plotPolar(); };
     $('sheetX').onclick = function () { $('sheet').hidden = true; };
     $('sheet').onclick = function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; };
     [].forEach.call(document.querySelectorAll('.stabs .tab'), function (b) { b.onclick = function () { [].forEach.call(document.querySelectorAll('.stabs .tab'), function (x) { x.setAttribute('aria-selected', x === b); $('s-' + x.dataset.s).hidden = x !== b; }); }; });
@@ -197,9 +198,8 @@
 
   /* ---------- routing ---------- */
   function opts(models) {
-    var pol = null, txt = $('polarTxt').value.trim();
-    if (txt) { try { pol = FSPolar.parsePolar(txt); } catch (e) { pol = null; } }
-    return { models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol,
+    var spec = boatSpec(), b = FSBoat.resolve(spec), pol = b.pol;
+    return { models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
       sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, tackS: +$('tackS').value, gybeS: +$('gybeS').value };
   }
   function legsFor(fromPt) {
@@ -606,6 +606,64 @@
     else { tip.style.left = ''; tip.style.top = ''; dot(la, lo, 5, 'transparent', css['--ink']); }
   }
   function r2(k, v) { return '<div class="r"><span>' + k + '</span><span>' + v + '</span></div>'; }
+  /* ---------- the boat: type, TCC or own polar, tuning, saved boats ---------- */
+  var boatSrc = 'type';
+  function boatSpec() { return { src: boatSrc, type: $('boatType').value, tcc: +$('tcc').value || 1, text: $('polarTxt').value, tune: { up: +$('tuUp').value, reach: +$('tuReach').value, run: +$('tuRun').value } }; }
+  function setSrc(src) {
+    boatSrc = src; [].forEach.call($('srcSeg').querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.src === src)); });
+    $('srcType').hidden = src !== 'type'; $('srcPolar').hidden = src !== 'polar'; $('srcTccNote').hidden = src !== 'tcc';
+  }
+  function polarGrid(pol) {
+    if (!pol || pol.tws.length * pol.twa.length > 900) { $('polarGrid').innerHTML = ''; return; }
+    var h = '<table><thead><tr><th>TWA \\ TWS</th>' + pol.tws.map(function (w) { return '<th>' + w + '</th>'; }).join('') + '</tr></thead><tbody>';
+    pol.twa.forEach(function (a, j) { h += '<tr><td>' + a + '°</td>' + pol.tws.map(function (w, i) { var x = pol.v[i][j]; return '<td><input inputmode="decimal" data-i="' + i + '" data-j="' + j + '" value="' + (x == null ? '' : (+x).toFixed(2)) + '" aria-label="' + a + '° at ' + w + ' kn"></td>'; }).join('') + '</tr>'; });
+    $('polarGrid').innerHTML = h + '</tbody></table>';
+  }
+  var gridPol = null;
+  function readOwn(rebuildGrid) {
+    var r = FSBoat.readPolar($('polarTxt').value);
+    if (!$('polarTxt').value.trim()) { $('polarRead').textContent = 'No polar yet: routing uses the TCC until you add one.'; gridPol = null; if (rebuildGrid) polarGrid(null); return; }
+    if (!r) { $('polarRead').textContent = 'Could not read this polar. Check it has wind speeds across and angles down.'; gridPol = null; if (rebuildGrid) polarGrid(null); return; }
+    gridPol = r.pol; $('polarRead').textContent = r.kind + ' read: ' + r.pol.tws.length + ' wind speeds, ' + r.pol.twa.length + ' angles' + (r.pol.name ? ' · ' + r.pol.name : '') + '.';
+    if (rebuildGrid) polarGrid(r.pol);
+  }
+  function plotPolar() {
+    var cv = $('polarPlot'), c = cv.getContext('2d'), W = cv.width, H = cv.height, cs = getComputedStyle(document.documentElement), tok = function (k) { return cs.getPropertyValue(k).trim(); };
+    var b = FSBoat.resolve(boatSpec()), cx = 24, cy = H / 2, ws = [6, 10, 14, 20], cols = ['--m1', '--m2', '--m3', '--m4'], max = 0, R0 = Math.min(H / 2 - 24, W - 60);
+    ws.forEach(function (w) { var t = FSRouter.polarTable(b.pol); for (var a = 0; a <= 180; a += 5) max = Math.max(max, t(w, a)); });
+    var k = R0 / Math.max(4, Math.ceil(max / 2) * 2);
+    c.clearRect(0, 0, W, H); c.font = '20px "JetBrains Mono", monospace'; c.lineWidth = 1;
+    c.strokeStyle = tok('--line'); c.fillStyle = tok('--muted');
+    for (var r = 2; r * k <= R0 + 1; r += 2) { c.beginPath(); c.arc(cx, cy, r * k, -Math.PI / 2, Math.PI / 2); c.stroke(); if (r % 4 === 0) c.fillText(r + (r + 4 > R0 / k ? ' kn' : ''), cx + r * k - 12, cy + 24); }
+    [0, 45, 90, 135, 180].forEach(function (a) { var q = a * Math.PI / 180; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.sin(q) * (R0 + 8), cy - Math.cos(q) * (R0 + 8)); c.stroke(); if (a && a < 180) c.fillText(a + '°', cx + Math.sin(q) * (R0 + 14), cy - Math.cos(q) * (R0 + 14) + 6); });
+    function curve(pol, w, dash, colr, lw) { var t = FSRouter.polarTable(pol); c.setLineDash(dash); c.strokeStyle = colr; c.lineWidth = lw; c.beginPath(); for (var a = 25; a <= 180; a += 2) { var s = t(w, a), q = a * Math.PI / 180, x = cx + Math.sin(q) * s * k, y = cy - Math.cos(q) * s * k; if (a === 25) c.moveTo(x, y); else c.lineTo(x, y); } c.stroke(); c.setLineDash([]); }
+    var tuned = b.pol !== b.base;
+    ws.forEach(function (w, i) { if (tuned) curve(b.base, w, [6, 6], tok(cols[i]), 2); curve(b.pol, w, [], tok(cols[i]), 4); });
+    c.fillStyle = tok('--ink'); c.font = '600 22px Inter, sans-serif'; c.fillText(b.kind, W - c.measureText(b.kind).width - 14, 34);
+    $('plotKey').innerHTML = ws.map(function (w, i) { return '<span style="color:' + tok(cols[i]) + ';font-weight:700">━</span> ' + w + ' kn'; }).join(' &nbsp; ') + (tuned ? ' &nbsp; dashed: before tuning' : '') + '. Boat speed in knots; wind from the top.';
+  }
+  var spTimer = null;
+  function boatChanged() { spCache = {}; ['Up', 'Reach', 'Run'].forEach(function (n) { $('tu' + n + 'V').textContent = $('tu' + n).value + '%'; }); clearTimeout(spTimer); spTimer = setTimeout(plotPolar, 60); }
+  function boats() { try { return JSON.parse(store('fsBoats') || '{}') || {}; } catch (e) { return {}; } }
+  function listBoats(sel) { var b = boats(); $('myBoat').innerHTML = '<option value="">' + (Object.keys(b).length ? 'Choose a saved boat…' : 'Not saved yet') + '</option>' + Object.keys(b).sort().map(function (n) { return '<option>' + n.replace(/</g, '&lt;') + '</option>'; }).join(''); $('myBoat').value = sel || ''; $('boatDel').hidden = !sel; }
+  function initBoat() {
+    $('boatType').innerHTML = FSBoat.TYPES.map(function (t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join('');
+    $('boatType').value = 'perf';
+    var eg = function () { var t = FSBoat.TYPES.filter(function (x) { return x.id === $('boatType').value; })[0]; $('typeEg').textContent = (t ? t.eg.charAt(0).toUpperCase() + t.eg.slice(1) + '. ' : '') + 'A FirstShift generic shape for the type, not a class polar; the TCC sets the overall speed.'; };
+    eg(); $('boatType').onchange = function () { eg(); boatChanged(); };
+    [].forEach.call($('srcSeg').querySelectorAll('button'), function (b) { b.onclick = function () { setSrc(b.dataset.src); if (b.dataset.src === 'polar') readOwn(true); boatChanged(); }; });
+    $('tcc').addEventListener('input', boatChanged);
+    ['tuUp', 'tuReach', 'tuRun'].forEach(function (id) { $(id).oninput = boatChanged; });
+    $('tuReset').onclick = function () { ['tuUp', 'tuReach', 'tuRun'].forEach(function (id) { $(id).value = 100; }); boatChanged(); };
+    $('polarTxt').oninput = function () { readOwn(true); boatChanged(); };
+    $('polarFile').onchange = function () { var f = $('polarFile').files[0]; if (!f) return; var rd = new FileReader(); rd.onload = function () { $('polarTxt').value = String(rd.result); readOwn(true); boatChanged(); }; rd.readAsText(f); };
+    $('polarFromType').onclick = function () { $('polarTxt').value = FSBoat.toGrid(FSBoat.typedPolar($('boatType').value, +$('tcc').value || 1)); readOwn(true); boatChanged(); };
+    $('polarGrid').addEventListener('change', function (e) { var t = e.target; if (!gridPol || !t.dataset) return; var v = parseFloat(t.value); gridPol.v[+t.dataset.i][+t.dataset.j] = isFinite(v) ? v : null; $('polarTxt').value = FSBoat.toGrid(gridPol); readOwn(false); boatChanged(); });
+    $('boatSave').onclick = function () { var n = $('boatName').value.trim() || 'My boat', b = boats(); $('boatName').value = n; b[n] = { spec: boatSpec(), tackS: +$('tackS').value, gybeS: +$('gybeS').value }; store('fsBoats', JSON.stringify(b)); listBoats(n); busy('Saved ' + n + ' on this device'); setTimeout(function () { busy(''); }, 1600); };
+    $('boatDel').onclick = function () { var n = $('myBoat').value, b = boats(); if (!n) return; delete b[n]; store('fsBoats', JSON.stringify(b)); listBoats(''); };
+    $('myBoat').onchange = function () { var n = $('myBoat').value, b = boats()[n]; $('boatDel').hidden = !n; if (!b) return; var s = b.spec; $('boatName').value = n; $('tcc').value = (+s.tcc).toFixed(3); $('boatType').value = s.type || 'perf'; eg(); $('polarTxt').value = s.text || ''; $('tuUp').value = s.tune.up; $('tuReach').value = s.tune.reach; $('tuRun').value = s.tune.run; if (b.tackS) $('tackS').value = b.tackS; if (b.gybeS) $('gybeS').value = b.gybeS; setSrc(s.src); readOwn(true); boatChanged(); };
+    listBoats(''); setSrc('type'); boatChanged();
+  }
   var spCache = {};
-  function speedFn(o) { var key = o.polar ? 'p' + $('polarTxt').value.length : 't' + o.tcc; if (!spCache[key]) spCache[key] = FSRouter.polarTable(o.polar && o.polar.v ? o.polar : FSPolar.startFromTcc(o.tcc)); return spCache[key]; }
+  function speedFn(o) { var key = o.polKey || 't' + o.tcc; if (!spCache[key]) spCache[key] = FSRouter.polarTable(o.polar && o.polar.v ? o.polar : FSPolar.startFromTcc(o.tcc)); return spCache[key]; }
 })();
