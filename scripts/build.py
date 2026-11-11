@@ -33,6 +33,9 @@ for race in RACES:
             if r.returncode == 0 and good(out, 30 + 6 * i):
                 log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; break
             log[f'{race}:{src}'] = f'{c} failed: {(r.stderr or r.stdout)[-200:]}'
+        else:   # no cycle worked: leave nothing behind, so the router simply goes without this source this time
+            out = os.path.join(data, src + '.npz')
+            if os.path.exists(out): os.remove(out)
         print(src, log[f'{race}:{src}'], flush=True)
     # all sources at once: the job takes about as long as the slowest source, not the sum
     from concurrent.futures import ThreadPoolExecutor

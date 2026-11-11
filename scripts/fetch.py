@@ -17,14 +17,20 @@ OUT = os.environ.get('FS_DATA', os.path.join(os.path.dirname(__file__), 'data'))
 CACHE = os.path.join(OUT, 'cache'); os.makedirs(CACHE, exist_ok=True)
 
 
+ECMWF_S3 = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'
+ECMWF_MIRRORS = [ECMWF_S3, 'https://data.ecmwf.int/forecasts']   # same paths on both; ECMWF's own server takes over when S3 says slow down
+
 def get(u, rng=None, tries=8):
+    import random
     for k in range(tries):
         try:
-            rq = urllib.request.Request(u)
+            url = u
+            if u.startswith(ECMWF_S3) and k % 2 == 1: url = ECMWF_MIRRORS[1] + u[len(ECMWF_S3):]
+            rq = urllib.request.Request(url)
             if rng: rq.add_header('Range', f'bytes={rng[0]}-{rng[1]}')
             return urllib.request.urlopen(rq, timeout=120).read()
         except Exception as e:
-            err = e; time.sleep(2 * (k + 1))
+            err = e; time.sleep(2 * (k + 1) + random.random() * 3)
     raise err
 
 

@@ -45,7 +45,10 @@ def pack_layer(lid, v, la, lo, hours, fields, scale, cell_nm):
 def load(k):
     p = f'{D}/{k}.npz'
     if not os.path.exists(p): return None
-    z = dict(np.load(p)); z['hours'] = z['hours'] + (float(z['t0']) - T0) / 3600   # every layer on the common clock
+    try: z = dict(np.load(p))
+    except Exception as e: print('unreadable', k, e); return None                    # a failed fetch never stops the others
+    if 'hours' not in z or z['hours'].dtype == object or not len(z['hours']): return None
+    z['hours'] = z['hours'] + (float(z['t0']) - T0) / 3600   # every layer on the common clock
     if not len(z['hours']) or z['hours'][-1] < h0 + 6: return None                  # too short to be useful
     return z
 
