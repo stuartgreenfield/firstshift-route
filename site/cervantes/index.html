@@ -54,7 +54,7 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .ib[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .ib .lbl{display:none}
 @media (min-width:1200px){.ib .lbl{display:inline}}
-@media (max-width:899px){#raceTitle{font-size:0!important}#raceTitle::after{content:attr(data-short);font-size:13.5px;white-space:nowrap}.tools{flex-wrap:nowrap}.brand{max-width:none;flex:1 1 auto;min-width:0;flex:1 1 auto}.brand b{font-size:13px}#panelBtn{display:none}.ib{min-width:40px;height:42px;padding:0 7px}.tools{gap:5px}}
+@media (max-width:899px){#raceTitle{display:none!important}.rshort{display:block!important;font:600 13.5px/1.1 var(--f-head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--brandnavy);min-width:0}.rshort::after{content:"";display:inline-block;border:4px solid transparent;border-top:5px solid var(--muted);margin:0 0 1px 6px;vertical-align:middle}.tools{flex-wrap:nowrap}.brand{max-width:none;flex:1 1 auto;min-width:0;flex:1 1 auto}.brand b{font-size:13px}#panelBtn{display:none}.ib{min-width:40px;height:42px;padding:0 7px}.tools{gap:5px}}
 :focus-visible{outline:2px solid var(--route);outline-offset:2px}
 
 /* popovers */
@@ -227,7 +227,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lg-l{display:none}:root:not([data-theme="light"]) .lg-d{display:inline}}
 :root[data-night] .logo,:root[data-night] .lock{filter:brightness(.55) sepia(1) saturate(9) hue-rotate(-38deg)}
 .hbrand{display:flex;flex-direction:column;gap:2px}.hbrand .lock{height:30px;width:auto;align-self:flex-start}.hbrand span{font:600 14px var(--f-head);color:var(--muted)}
-#raceTitle{color:var(--brandnavy)}
+#raceTitle{color:var(--brandnavy)}.rshort{display:none}
 
 /* phones: the Route button says Route in words; From here moves down beside Play, so the header keeps the logo and race name */
 @media (max-width:899px){
@@ -285,7 +285,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
 
     <div class="top">
-      <div class="lead"><div class="logobox" title="FirstShift: Yacht Racing Intelligence"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></div><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><span class="offb" id="offBadge" hidden>Offline</span><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div></div>
+      <div class="lead"><div class="logobox" title="FirstShift: Yacht Racing Intelligence"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></div><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><b id="raceShort" class="rshort"></b><span class="offb" id="offBadge" hidden>Offline</span><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div></div>
       <div class="tools">
         <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
         <button class="ib" id="layersBtn" aria-expanded="false" title="What the chart shows"><svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5z"/><path d="m2 13 10 5 10-5"/></svg><span class="lbl">Layers</span></button>
