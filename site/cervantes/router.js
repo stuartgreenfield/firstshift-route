@@ -89,6 +89,14 @@
       return [Math.sqrt(u * u + v * v) / KN, (Math.atan2(-u, -v) / R + 360) % 360];
     };
   }
+  /* user overrides when the forecast looks wrong: wind veer (deg, + = clockwise), strength (%), timing (h, + = later); tide strength (%), timing (h) */
+  function adjust(smp, a) {
+    if (!a) return smp;
+    var w = smp.wind, c = smp.tide, d = a.wdir || 0, k = 1 + (a.wspd || 0) / 100, tw = a.wtime || 0, kc = 1 + (a.tspd || 0) / 100, tc = a.ttime || 0;
+    if (d || k !== 1 || tw) smp.wind = function (la, lo, t) { var W = w(la, lo, t - tw); return [W[0] * k, (W[1] + d + 360) % 360]; };
+    if (kc !== 1 || tc) smp.tide = function (la, lo, t) { var C = c(la, lo, t - tc); return [C[0] * kc, C[1] * kc]; };
+    return smp;
+  }
   function tideSampler(P, id) {
     var f = id && P.tide[id];
     return function (la, lo, t) { if (!f) return [0, 0]; var u = f.sample('u', la, lo, t), v = f.sample('v', la, lo, t); return [u === u ? u / KN : 0, v === v ? v / KN : 0]; };
@@ -276,6 +284,6 @@
     return out;
   }
 
-  return { Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
+  return { Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, adjust: adjust, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
     seaFactor: seaFactor, SEA: SEA, route: route, sailTrack: sailTrack, markGate: markGate, dist: dist, brg: brg, sailFor: sailFor, parseCrossover: parseCrossover };
 });
