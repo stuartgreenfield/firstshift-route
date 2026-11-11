@@ -425,16 +425,24 @@
   }
   function lightsDraw() {
     if (!S.show.lights || !LIGHTS.length) return;
-    var vb = viewBox(), z = view.s, named = z > 260, buoys = z > 160;
+    var vb = viewBox(), z = view.s, buoys = z > 700, taken = [];   /* view.s: pixels per degree of latitude */
+    function free(x, y, w, h) { for (var i = 0; i < taken.length; i++) { var t = taken[i]; if (x < t[0] + t[2] && x + w > t[0] && y < t[1] + t[3] && y + h > t[1]) return false; } taken.push([x, y, w, h]); return true; }
     ctx.font = '10.5px Inter, sans-serif';
-    LIGHTS.forEach(function (m) {
-      if (m.la < vb.s || m.la > vb.n || m.lo < vb.w || m.lo > vb.e) return;
-      if (m.k !== 'light' && !buoys) return;
-      var x = X(m.lo), y = Y(m.la);
-      ctx.strokeStyle = css['--ink']; ctx.fillStyle = css['--ink']; ctx.lineWidth = 1.2;
-      if (m.k === 'light') { ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 2.6, y + 3); ctx.lineTo(x - 2.6, y + 3); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(x, y - 3, 5.5, -2.4, -0.7); ctx.stroke(); ctx.globalAlpha = 1; }
-      else { ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.stroke(); if (m.c) { ctx.fillStyle = css['--ink']; ctx.font = '600 8px Inter, sans-serif'; ctx.fillText(m.c, x - 2.4, y + 3); ctx.font = '10.5px Inter, sans-serif'; } }
-      if (named || (m.k === 'light' && z > 120)) { ctx.fillStyle = css['--muted']; ctx.fillText(m.n + (m.lt && z > 400 ? ' ' + m.lt : ''), x + 6, y + 3); }
+    [true, false].forEach(function (pass) {   /* lighthouses first, so they keep their labels */
+      LIGHTS.forEach(function (m) {
+        if ((m.k === 'light') !== pass) return;
+        if (m.la < vb.s || m.la > vb.n || m.lo < vb.w || m.lo > vb.e) return;
+        if (m.k !== 'light' && !buoys) return;
+        var x = X(m.lo), y = Y(m.la);
+        if (!free(x - 4, y - 7, 8, 11)) return;
+        ctx.strokeStyle = css['--ink']; ctx.fillStyle = css['--ink']; ctx.lineWidth = 1.2;
+        if (m.k === 'light') { ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 2.6, y + 3); ctx.lineTo(x - 2.6, y + 3); ctx.closePath(); ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.stroke(); }
+        var show = m.k === 'light' ? z > 350 : z > 1100;
+        if (!show) return;
+        var label = m.n + (m.lt && z > 1400 ? ' ' + m.lt : ''), w = ctx.measureText(label).width;
+        if (free(x + 6, y - 6, w, 12)) { ctx.fillStyle = css['--muted']; ctx.fillText(label, x + 6, y + 3); }
+      });
     });
   }
   /* no-go rings for the router: the race's keep-out boxes always; traffic separation lanes and zones when ticked */
