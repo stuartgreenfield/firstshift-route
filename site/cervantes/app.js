@@ -148,7 +148,20 @@
     initBoat();
     $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
     $('run').onclick = function () { S.from = null; run(); };
-    $('fromHere').onclick = function () { var on = $('fromHere').getAttribute('aria-pressed') !== 'true'; $('fromHere').setAttribute('aria-pressed', on); busy(on ? 'Tap the chart where the boat is now' : ''); };
+    $('fromHere').onclick = function () {   /* reroute from where the boat is now: the device's GPS first, else tap the chart */
+      var on = $('fromHere').getAttribute('aria-pressed') !== 'true'; $('fromHere').setAttribute('aria-pressed', on);
+      if (!on) { busy(''); return; }
+      var tap = function (why) { if ($('fromHere').getAttribute('aria-pressed') === 'true') busy((why ? why + ' ' : '') + 'Tap the chart where the boat is now'); };
+      if (!navigator.geolocation) return tap('');
+      busy('Finding your position…');
+      navigator.geolocation.getCurrentPosition(function (g) {
+        if ($('fromHere').getAttribute('aria-pressed') !== 'true') return;
+        var la = g.coords.latitude, lo = g.coords.longitude, t = (Date.now() / 1000 - T0) / 3600;
+        if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) return tap('Your position is outside the routing area.');
+        if (t < 0 || t > HMAX() - 1) return tap('Now is outside the forecast window.');
+        S.from = { lat: la, lon: lo, t: t, gps: true }; $('fromHere').setAttribute('aria-pressed', 'false'); busy(''); run();
+      }, function () { tap('No GPS fix.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+    };
     $('time').oninput = function () { S.t = tFromSlider(); update(); };
     $('play').onclick = togglePlay;
     $('nightBtn').onclick = function () { setNight(!document.documentElement.hasAttribute('data-night')); };
