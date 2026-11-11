@@ -47,7 +47,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); crewInit(); askInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); crewInit(); askInit(); bcInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -556,6 +556,48 @@
     [].forEach.call($('askRow').querySelectorAll('[data-q]'), function (b) { b.onclick = function () { $('askTxt').textContent = ask(b.dataset.q); $('askAns').hidden = false; }; });
     $('askSay').onclick = function () { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance($('askTxt').textContent.replace(/°/g, ' degrees').replace(/UTC/g, 'U T C')); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; speechSynthesis.speak(u); } catch (e) {} };
   }
+  /* ---------- boat code: one code keeps boat settings and My races the same on every crew device (/api/boat/<code>) ---------- */
+  var BC = { code: store('fs-boatcode') || '', at: +(store('fs-boatcode-at') || 0), msg: '' };
+  function bcNew() { var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', c = ''; var r = new Uint32Array(6); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(r) : r.forEach(function (x, i) { r[i] = Math.random() * 1e9; }); for (var i = 0; i < 6; i++) c += A[r[i] % A.length]; return c; }
+  function bcData() { var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var st = snapSettings(); st.__src = src && src.src; return { myraces: myRaces(), settings: st }; }
+  function bcPush() {
+    if (!BC.code || !navigator.onLine) return Promise.resolve();
+    return fetch('/api/boat/' + BC.code, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: bcData() }) }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error) { BC.msg = j.error; return; } BC.at = j.at; store('fs-boatcode-at', String(j.at)); BC.msg = 'Shared ' + new Date(j.at).toUTCString().slice(17, 22) + ' UTC';
+    }).catch(function () { BC.msg = 'Not shared: no connection. It will share next time.'; });
+  }
+  function bcPull(force) {
+    if (!BC.code || !navigator.onLine) return Promise.resolve(false);
+    return fetch('/api/boat/' + BC.code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error) { BC.msg = j.error; return false; }
+      if (!force && j.at <= BC.at) { BC.msg = 'Up to date'; return false; }
+      var mine = myRaces(), byId = {}; mine.concat(j.data.myraces || []).forEach(function (r) { if (!byId[r.id] || byId[r.id].savedAt < r.savedAt) byId[r.id] = r; });
+      setMyRaces(Object.keys(byId).map(function (k) { return byId[k]; }).sort(function (a, b) { return b.savedAt - a.savedAt; }));
+      if (j.data.settings) putSettings(j.data.settings);
+      BC.at = j.at; store('fs-boatcode-at', String(j.at)); BC.msg = 'Updated from the boat ' + new Date(j.at).toUTCString().slice(17, 22) + ' UTC'; return true;
+    }).catch(function () { BC.msg = 'Could not reach the boat code server.'; return false; });
+  }
+  function bcBox() {
+    var h = '<h3>Boat code</h3>';
+    if (BC.code) h += '<p class="note">This device shares boat settings and My races under <b class="bcode">' + BC.code + '</b>. Give the code (or the link) to the crew. ' + (BC.msg || '') + '</p><div class="xrow"><button class="btn" id="bcShare">Send the code to crew</button><button class="btn" id="bcSync">Update now</button><button class="btn" id="bcLeave">Stop sharing</button></div>';
+    else h += '<p class="note">One code keeps the boat, its settings and My races the same on every phone, tablet and computer aboard. No logins.</p><div class="xrow"><button class="btn primary" id="bcMake">Make a boat code</button></div><div class="row"><label for="bcIn">Join with a code</label><input id="bcIn" maxlength="6" autocapitalize="characters" placeholder="ABC234"><button class="btn" id="bcJoin">Join</button></div>';
+    return h;
+  }
+  function bcWire() {
+    if ($('bcMake')) $('bcMake').onclick = function () { BC.code = bcNew(); store('fs-boatcode', BC.code); bcPush().then(racesSheet); };
+    if ($('bcJoin')) $('bcJoin').onclick = function () { var c = $('bcIn').value.trim().toUpperCase(); if (!/^[A-HJ-NP-Z2-9]{6}$/.test(c)) { $('bcIn').focus(); return; } BC.code = c; BC.at = 0; store('fs-boatcode', c); bcPull(true).then(function (ok) { racesSheet(); if (ok) { S.from = null; run(); } }); };
+    if ($('bcSync')) $('bcSync').onclick = function () { bcPull(false).then(function (ok) { return ok ? null : bcPush(); }).then(racesSheet); };
+    if ($('bcLeave')) $('bcLeave').onclick = function () { BC.code = ''; store('fs-boatcode', ''); racesSheet(); };
+    if ($('bcShare')) $('bcShare').onclick = function () { var link = location.origin + location.pathname + '?boat=' + BC.code, t = 'FirstShift Route boat code ' + BC.code + ': open ' + link + ' to share our boat settings and races.'; if (navigator.share) navigator.share({ title: 'FirstShift Route boat code', text: t }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener'); };
+  }
+  function bcInit() {
+    var q = new URLSearchParams(location.search).get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q)) { BC.code = q.toUpperCase(); BC.at = 0; store('fs-boatcode', BC.code); }
+    if (BC.code) setTimeout(function () { bcPull(false); }, 1500);
+    var push = function () { if (BC.code) setTimeout(bcPush, 300); };
+    var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
+    var bs = $('boatSave'); if (bs) bs.addEventListener('click', push);
+    BC.push = push;
+  }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop();
@@ -575,7 +617,7 @@
     var fin = S.sel ? fmtH(S.sel.r.finish - S.start.t) : '';
     var cur = S.myId && a.filter(function (x) { return x.id === S.myId; })[0];
     var rec = { id: cur ? cur.id : 'r' + Date.now().toString(36), name: c.name, page: HERE, course: c, settings: set, savedAt: Date.now(), summary: fin ? (S.sel.combined ? 'Combined' : short(S.sel.id)) + ' ' + fin : '', raceId: meta.course.race && !meta.course.race.custom ? meta.course.race.id : null };
-    a = a.filter(function (x) { return x.id !== rec.id; }); a.unshift(rec); setMyRaces(a); S.myId = rec.id; return rec;
+    a = a.filter(function (x) { return x.id !== rec.id; }); a.unshift(rec); setMyRaces(a); S.myId = rec.id; if (BC.push) BC.push(); return rec;
   }
   function openMy(id) {
     var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
@@ -588,7 +630,8 @@
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit this course</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
     h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (ready ? 'Forecasts ready' : 'Course only: forecasts for this area come later') + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
-    $('raceList').innerHTML = h;
+    h += bcBox();
+    $('raceList').innerHTML = h; bcWire();
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
     $('rEdit').onclick = function () { startEdit(courseCopy()); };
     $('rNew').onclick = function () { startEdit(null); };
