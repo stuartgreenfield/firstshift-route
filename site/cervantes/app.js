@@ -1232,7 +1232,8 @@
     });
   }
   function helpInit() {
-    $('helpList').innerHTML = HELP.map(function (h, i) { return '<div class="htopic"><h3>' + h[0] + '<button class="btn say" data-say="' + i + '">Listen</button></h3><p>' + h[1] + '</p></div>'; }).join('');
+    var PIC = { 'What Route does': 'overview', 'Decision': 'decision', 'Play the race': 'bar', 'Plan': 'plan', 'Setting up a race': 'setup', 'Your sails and reefs': 'sails', 'Your boat': 'boat', 'Routing while racing': 'course', 'Fleet': 'fleet' };
+    $('helpList').innerHTML = HELP.map(function (h, i) { return '<div class="htopic"><h3>' + h[0] + '<button class="btn say" data-say="' + i + '">Listen</button></h3><p>' + h[1] + '</p>' + (PIC[h[0]] ? '<img class="hpic" loading="lazy" alt="Screen picture: ' + h[0] + '" src="../help/' + PIC[h[0]] + '.webp">' : '') + '</div>'; }).join('');
     [].forEach.call(document.querySelectorAll('[data-say]'), function (b) { b.onclick = function () { say([+b.dataset.say]); }; });
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
     $('sayStop').onclick = sayStop;

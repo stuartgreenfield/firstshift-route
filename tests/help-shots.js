@@ -1,0 +1,30 @@
+/* Pictures for the help topics: node tests/help-shots.js [base url] [out dir]. Run against a local copy of the site. */
+const { chromium, devices } = require('playwright');
+const BASE = (process.argv[2] || 'http://localhost:8766').replace(/\/$/, ''), OUT = process.argv[3] || 'site/help';
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ ...devices['iPhone 13'], geolocation: { latitude: 50.55, longitude: -2.2 }, permissions: ['geolocation'] });
+  await ctx.addInitScript(() => { try { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-theme', 'dark'); } catch (e) {} });
+  const p = await ctx.newPage();
+  await p.goto(BASE + '/channel-area/?race=myth');
+  await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length > 0, null, { timeout: 300000 });
+  await p.waitForFunction(() => !document.getElementById('prog') || document.getElementById('prog').hidden, null, { timeout: 300000 }).catch(() => {});
+  await p.evaluate(() => { const x = document.getElementById('cbannerX'); if (x) x.click(); const t = document.getElementById('time'); t.value = 380; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.waitForTimeout(800);
+  const shot = async (name, sel) => { const el = sel ? await p.$(sel) : null; await (el || p).screenshot({ path: `${OUT}/${name}.png` }); console.log(name); };
+  await shot('overview');
+  await shot('bar', '.bar');
+  const tab = async t => { await p.evaluate(t => { if (document.getElementById('panel').hidden) document.getElementById('panelBtn').click(); document.querySelector('.tab[data-tab="' + t + '"]').click(); }, t); await p.waitForTimeout(400); };
+  await tab('decision'); await shot('decision', '#panel');
+  await tab('plan'); await shot('plan', '#panel');
+  await tab('fleet'); await shot('fleet', '#panel');
+  await p.evaluate(() => document.getElementById('panelBtn').click()).catch(() => {});
+  await p.evaluate(() => { document.getElementById('setBtn').click(); document.querySelector('.stabs .tab[data-s="sails"]').click(); }); await p.waitForTimeout(500); await shot('sails', '#sheet');
+  await p.evaluate(() => document.querySelector('.stabs .tab[data-s="boat"]').click()); await p.waitForTimeout(300); await shot('boat', '#sheet');
+  await p.evaluate(() => document.querySelector('.stabs .tab[data-s="course"]').click()); await p.waitForTimeout(300); await shot('course', '#sheet');
+  await p.evaluate(() => document.getElementById('sheetX').click());
+  const c2 = await b.newContext({ ...devices['iPhone 13'] }); await c2.addInitScript(() => { try { localStorage.setItem('fs-theme', 'dark'); } catch (e) {} }); const p2 = await c2.newPage();
+  await p2.goto(BASE + '/channel-area/'); await p2.waitForSelector('#wiz:not([hidden])', { timeout: 120000 }); await p2.waitForTimeout(600);
+  await (await p2.$('#wiz')).screenshot({ path: `${OUT}/setup.png` }); console.log('setup');
+  await b.close();
+})();

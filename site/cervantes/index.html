@@ -299,6 +299,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (min-width:900px), (orientation:landscape) and (max-height:500px){.now div{width:4.4em;overflow:hidden}.now div:first-child{width:6em}.now{flex:none}.bar .clock{width:11.5em;overflow:hidden}}
 /* wide layout without room for all seven readings beside the slider (landscape phones, small laptops, tablets): readings get their own row */
 @media (min-width:900px) and (max-width:1199px), (orientation:landscape) and (max-height:500px){.bar{grid-template-columns:auto auto minmax(160px,1fr) auto}.bar .now{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0 8px;overflow:hidden}.bar .now div,.bar .now div:first-child{width:auto;min-width:0}.bar .now b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}
+.hpic{display:block;max-width:min(100%,320px);height:auto;margin:8px 0 4px;border-radius:10px;border:1px solid var(--line,#2a3a4f)}
 </style>
 
 <div class="app" id="app">
