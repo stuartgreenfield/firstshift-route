@@ -45,7 +45,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -342,6 +342,64 @@
       var my = new URLSearchParams(location.search).get('my'); if (my) setTimeout(function () { openMy(my); }, 0);
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
   }
+  /* ---------- man overboard: hold the red button; marks the position from the GPS, then gives bearing, distance and
+     time to where they went in, and to where the tide has probably carried them (drift from the tide model) ---------- */
+  var mobWatch = null, mobLock = null, me = null;
+  function mobGet() { try { return JSON.parse(store('fs-mob') || 'null'); } catch (e) { return null; } }
+  function beep() { try { var a = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.35, 0.7].forEach(function (d) { var o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination); g.gain.value = 0.25; o.start(a.currentTime + d); o.stop(a.currentTime + d + 0.22); }); } catch (e) {} }
+  function mobDrift(m) {   // carry the person with the tide from the moment they went in to now, a minute at a time
+    var id = $('tideSel').value, f = id && P.tide && P.tide[id]; if (!f) return null;
+    var tide = FSRouter.tideSampler(P, id), la = m.lat, lo = m.lon, t0 = (m.t / 1000 - T0) / 3600, t1 = (Date.now() / 1000 - T0) / 3600;
+    for (var t = t0; t < t1; t += 1 / 60) { var c = tide(la, lo, Math.min(t, HMAX())); la += c[1] / 60 / 60; lo += c[0] / 60 / 60 / Math.cos(la * R); }
+    return { lat: la, lon: lo };
+  }
+  function mobStart() {
+    var go = function (la, lo, how) { var m = { lat: la, lon: lo, t: Date.now(), how: how }; store('fs-mob', JSON.stringify(m)); beep(); mobShow(); };
+    if (me && Date.now() - me.at < 30000) go(me.lat, me.lon, 'GPS');
+    else if (navigator.geolocation) { $('mobTxt').textContent = 'Getting a GPS fix…'; $('mob').hidden = false;
+      navigator.geolocation.getCurrentPosition(function (g) { go(g.coords.latitude, g.coords.longitude, 'GPS'); }, function () { $('mobTxt').textContent = 'No GPS fix. Tap the chart where they went in.'; S.mobTap = true; }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }); }
+    else { $('mob').hidden = false; $('mobTxt').textContent = 'No GPS on this device. Tap the chart where they went in.'; S.mobTap = true; }
+  }
+  function mobShow() {
+    var m = mobGet(); if (!m) return; $('mob').hidden = false; S.mobTap = false;
+    if (navigator.geolocation && mobWatch == null) mobWatch = navigator.geolocation.watchPosition(function (g) { me = { lat: g.coords.latitude, lon: g.coords.longitude, sog: g.coords.speed, cog: g.coords.heading, at: Date.now() }; mobTick(); }, function () {}, { enableHighAccuracy: true, maximumAge: 2000 });
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { mobLock = l; }).catch(function () {}); } catch (e) {}
+    var tn = (Date.now() / 1000 - T0) / 3600; if (S.tmin != null && tn >= S.tmin && tn <= S.tmax) setTime(tn);   // chart arrows at the time now
+    if (!S.mobTimer) S.mobTimer = setInterval(mobTick, 1000); mobTick();
+  }
+  function mobLine(label, from, to) {
+    var d = FSRouter.dist(from.lat, from.lon, to.lat, to.lon), b = FSRouter.brg(from.lat, from.lon, to.lat, to.lon);
+    return '<div><span>' + label + '</span><b>' + pad(b) + '° T</b><b>' + (d < 0.5 ? Math.round(d * 1852) + ' m' : d.toFixed(2) + ' nm') + '</b></div>';
+  }
+  function mobTick() {
+    var m = mobGet(); if (!m) return;
+    var sec = Math.floor((Date.now() - m.t) / 1000), dr = mobDrift(m);
+    var h = '<div class="mobtime">' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') + '<small>since ' + new Date(m.t).toUTCString().slice(17, 22) + ' UTC · ' + m.lat.toFixed(4) + ' ' + m.lon.toFixed(4) + '</small></div>';
+    if (me && Date.now() - me.at < 20000) { h += mobLine('To where they went in', me, m); if (dr) h += mobLine('To tide drift estimate', me, dr); if (me.sog != null) h += '<div><span>Your SOG, COG</span><b>' + (me.sog / KN).toFixed(1) + ' kn</b><b>' + (me.cog != null && !isNaN(me.cog) ? pad(me.cog) + '° T' : '-') + '</b></div>'; }
+    else h += '<p class="note">Waiting for your GPS position for bearing and distance.</p>';
+    if (dr) { var dd = FSRouter.dist(m.lat, m.lon, dr.lat, dr.lon); h += '<p class="note">Tide has probably carried them ' + (dd < 0.5 ? Math.round(dd * 1852) + ' m' : dd.toFixed(2) + ' nm') + ' towards ' + pad(FSRouter.brg(m.lat, m.lon, dr.lat, dr.lon)) + '° T (tide model, not wind drift).</p>'; }
+    $('mobTxt').innerHTML = h; S.mob = m; S.mobDr = dr; draw();
+  }
+  function mobEnd() { store('fs-mob', ''); S.mob = null; S.mobDr = null; $('mob').hidden = true; clearInterval(S.mobTimer); S.mobTimer = null; if (mobWatch != null) navigator.geolocation.clearWatch(mobWatch); mobWatch = null; try { if (mobLock) mobLock.release(); } catch (e) {} draw(); }
+  function mobDraw() {
+    var m = S.mob; if (!m) return; var x = X(m.lon), y = Y(m.lat);
+    ctx.save(); ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 9, y - 9); ctx.lineTo(x + 9, y + 9); ctx.moveTo(x + 9, y - 9); ctx.lineTo(x - 9, y + 9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 14, 0, 7); ctx.stroke();
+    if (S.mobDr) { var dx = X(S.mobDr.lon), dy = Y(S.mobDr.lat); ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(dx, dy); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(dx, dy, 7, 0, 7); ctx.stroke(); }
+    if (me) { ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(X(me.lon), Y(me.lat), 5, 0, 7); ctx.fill(); ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.moveTo(X(me.lon), Y(me.lat)); ctx.lineTo(x, y); ctx.stroke(); }
+    ctx.restore();
+  }
+  function hold(btn, ms, fn) {   // press and hold, so a pocket or a wave cannot set it off
+    var t = null, start = function (e) { e.preventDefault(); btn.classList.add('holding'); t = setTimeout(function () { btn.classList.remove('holding'); t = null; fn(); }, ms); }, stop = function () { btn.classList.remove('holding'); if (t) clearTimeout(t); t = null; };
+    btn.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (n) { btn.addEventListener(n, stop); });
+    btn.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
+  }
+  function mobInit() {
+    hold($('mobBtn'), 1000, mobStart);
+    hold($('mobEnd'), 1500, mobEnd);
+    $('mobCentre').onclick = function (e) { e.stopPropagation(); var m = mobGet(); if (!m) return; var small = $('mob').classList.toggle('small'); this.textContent = small ? 'Full panel' : 'Show on chart'; if (small) { view.la = m.lat; view.lo = m.lon; view.s = Math.max(view.s, 4000); } closePanel(); draw(); };
+    if (mobGet()) mobShow();
+  }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop();
@@ -562,6 +620,7 @@
     ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. Close Settings and Route works it out again; Back to the forecast undoes it.'],
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
+    ['Man overboard', 'Press and hold the red MOB button for one second. Route marks the position from the phone GPS, starts the clock and shows the bearing and distance back to where they went in, and to where the tide has probably carried them. Show on chart shrinks the panel so you can see both. Hold End MOB to finish. Route is no substitute for the boat\'s own MOB drill, the VHF DSC button and the Coastguard.'],
     ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you.']
   ];
   var speaking = -1;
@@ -696,6 +755,7 @@
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
+    if (S.mob) mobDraw();
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(s.r.path.map(function (q) { return q.t; }), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
@@ -980,6 +1040,7 @@
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
     if (S.edit) { editTap(x, y); return; }
+    if (S.mobTap) { store('fs-mob', JSON.stringify({ lat: LA(y), lon: LO(x), t: Date.now(), how: 'tapped' })); beep(); mobShow(); return; }
     if ($('fromHere').getAttribute('aria-pressed') === 'true') {
       var la = LA(y), lo = LO(x), z = P.depth ? P.depth.nearest('z', la, lo) : NaN;
       if (!(z <= -(+$('depth').value))) { busy('That is land or too shallow. Tap open water.'); return; }

@@ -209,6 +209,19 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .ritem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.ritem>div:first-child{min-width:0}.ritem .xrow{margin:0;flex:none}.ritem.on b{color:var(--brand)}
 .editbar{position:absolute;left:var(--gut);right:var(--gutR);top:64px;z-index:7;background:var(--panel);border:1px solid var(--route);border-radius:12px;padding:10px 12px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .editbar[hidden]{display:none!important}.editbar .xrow{margin:0}.editbar .btn{min-height:36px;padding:6px 12px}
+
+.mobbtn{width:52px;height:44px;border-radius:10px;border:2px solid #ff3b30;background:#b3120b;color:#fff;font:800 13px var(--f-head);letter-spacing:.04em;cursor:pointer;position:relative;overflow:hidden;touch-action:none}
+.mobbtn.holding::after,.mobend.holding::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.35);transform-origin:left;animation:fill 1s linear forwards}
+.mobend{position:relative;overflow:hidden;width:100%;border-color:#ff3b30;color:#ff3b30;font-weight:700}.mobend.holding::after{animation-duration:1.5s}
+@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.mob{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 60px);z-index:30;background:var(--panel);border:3px solid #ff3b30;border-radius:14px;padding:12px 14px;display:grid;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:520px;margin:0 auto}
+.mob[hidden]{display:none!important}
+.mob.small{gap:4px;padding:8px 12px}.mob.small .note,.mob.small .mobend,.mob.small #mobTxt>div:nth-of-type(n+3),.mob.small .mobtime small{display:none}.mob.small .mobtime{font-size:22px}.mob.small #mobTxt>div b{font-size:16px}
+.mobhead{display:flex;justify-content:space-between;align-items:center}.mobhead b{color:#ff3b30;font:800 18px var(--f-head);letter-spacing:.04em}
+.mobtime{font:600 34px var(--f-data);font-variant-numeric:tabular-nums}.mobtime small{display:block;font:12px var(--f-data);color:var(--muted)}
+#mobTxt>div{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}#mobTxt>div span{color:var(--muted);font-size:13px}#mobTxt>div b{font:600 20px var(--f-data);text-align:right}
+.bar{grid-template-columns:auto auto minmax(0,1fr) auto}
+@media (max-width:899px){.bar.fh{grid-template-columns:auto auto auto minmax(0,1fr) auto}}
 </style>
 
 <div class="app" id="app">
@@ -276,6 +289,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   </section>
 
   <div class="bar">
+    <button class="mobbtn" id="mobBtn" aria-label="Man overboard: press and hold" title="Man overboard: press and hold for one second">MOB</button>
     <button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button>
     <input type="range" id="time" min="0" max="1000" value="0" aria-label="Race time">
     <div class="clock" id="clock">--</div>
@@ -285,6 +299,12 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 
 <div class="newdata" id="newData" hidden><span id="newDataTxt">New forecast</span><button id="newDataBtn" class="btn primary">New data: update routing</button></div>
 <div class="cbanner" id="cbanner" hidden><span id="cbannerTxt"></span><button id="cbannerX" aria-label="Hide course warning">×</button></div>
+<div class="mob" id="mob" hidden role="alertdialog" aria-label="Man overboard">
+  <div class="mobhead"><b>MAN OVERBOARD</b><button class="btn" id="mobCentre">Show on chart</button></div>
+  <div id="mobTxt"></div>
+  <p class="note">Shout, point, throw the danbuoy and lifebuoy, press the DSC distress button on the VHF, call the Coastguard on channel 16. Keep a crew member pointing at all times.</p>
+  <button class="btn mobend" id="mobEnd">Hold to end MOB</button>
+</div>
 <div class="sheet" id="races" hidden>
   <div class="in" role="dialog" aria-label="Races">
     <div class="shead"><h2>Races</h2><button class="close" id="racesX" aria-label="Close races">×</button></div>
