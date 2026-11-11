@@ -274,7 +274,7 @@
   function sailFor(row, crossover) {
     if (!crossover || row.twa == null) return '';
     var a = Math.abs(row.twa), w = row.tws;
-    for (var i = 0; i < crossover.length; i++) { var c = crossover[i]; if (a >= c.a0 && a < c.a1 && w >= c.w0 && w < c.w1) return c.sail; }
+    for (var i = 0; i < crossover.length; i++) { var c = crossover[i]; if (a >= c.a0 && (a < c.a1 || (c.a1 >= 180 && a <= 180)) && w >= c.w0 && w < c.w1) return c.sail; }
     return '';
   }
   function parseCrossover(text) {

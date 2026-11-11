@@ -134,6 +134,22 @@ select{font:500 14px var(--f-body)}
 input[type=number]{width:96px}
 input[type=text]{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;font:14px var(--f-body);min-height:40px;flex:1 1 160px;min-width:0}
 .tune input[type=range]{flex:1 1 140px;width:auto;min-width:0}.tune b{font:600 13px var(--f-data);min-width:46px;text-align:right}
+.sltab .sl-h,.sltab .sl-r{display:grid;grid-template-columns:10px minmax(0,1fr) repeat(4,minmax(44px,54px)) 62px;gap:4px;align-items:center}
+.sltab .sl-h{grid-template-columns:10px minmax(0,1fr) repeat(4,minmax(44px,54px)) 62px;font:600 10.5px/1.15 var(--f-body);color:var(--muted);text-align:center;margin-bottom:4px}
+.sltab .sl-h span:first-child{grid-column:1/3;text-align:left}
+.sltab .sl-r{margin-bottom:4px}.sltab .sw{width:10px;height:28px;border-radius:3px}
+.sltab input{min-height:38px;padding:6px 5px;width:100%;min-width:0;background:var(--soft);border:1px solid var(--line);border-radius:7px;font:13px var(--f-data);text-align:center}
+.sltab input.sl-n{text-align:left;font-family:var(--f-body);padding-left:8px}
+.sltab .sl-b{display:flex;gap:2px}.sltab .slb{width:30px;height:36px;padding:0;border:1px solid var(--line);background:none;border-radius:7px;cursor:pointer;color:var(--muted);font-size:13px}.sltab .slb:disabled{opacity:.3}
+.sltab input::-webkit-inner-spin-button,.sltab input::-webkit-outer-spin-button,.rftab input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.sltab input[type=number],.rftab input[type=number]{-moz-appearance:textfield}
+.rftab .rf-h,.rftab .rf-r{display:grid;grid-template-columns:70px 1fr 1fr;gap:6px;align-items:center;max-width:340px}
+.rftab .rf-h{font:600 10.5px/1.15 var(--f-body);color:var(--muted);text-align:center;margin-bottom:4px}.rftab .rf-r{margin-bottom:4px}
+.rftab input{min-height:38px;width:100%;text-align:center}
+.slchart{display:block;width:100%;height:240px;border:1px solid var(--line);border-radius:8px;background:var(--soft);cursor:crosshair}
+.linkbtn{background:none;border:0;padding:0;color:var(--brand);text-decoration:underline;cursor:pointer;font:inherit}
+.warnt{color:var(--warn)}
+.sltext summary{cursor:pointer;font-weight:600;padding:6px 0}
+@media (max-width:420px){.sltab .sl-h,.sltab .sl-r{grid-template-columns:6px minmax(0,1fr) repeat(4,38px) 52px;gap:3px}.sltab input{font-size:13px;padding:6px 1px}.sltab input.sl-n{padding-left:6px}.sltab .slb{width:25px}.sltab .sw{width:6px}}
 .warnbox{margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));font-size:13px;line-height:1.4}
 .newdata{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 118px);z-index:6;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;padding:8px 8px 8px 14px;border-radius:12px;background:var(--glass);border:2px solid var(--route);box-shadow:0 4px 18px rgba(0,0,0,.25);font:600 13px var(--f-body);max-width:calc(100% - 2*var(--gut))}
 .cbanner{position:absolute;left:calc(var(--gut) + 0px);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:4;max-width:min(560px,calc(100% - 2*var(--gut)));padding:7px 30px 7px 11px;border-radius:9px;border:1px solid var(--warn);background:var(--glass);font:600 12.5px var(--f-body);color:var(--ink)}
@@ -225,7 +241,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px){.bar.fh{grid-template-columns:auto auto auto minmax(0,1fr)}.bar.fh #time{grid-column:1/-1;grid-row:2}.bar.fh .clock{grid-column:4;grid-row:1}.bar.fh .now{grid-row:3}}
 
 #aisTable tr.danger td{color:#ff3b30;font-weight:700}#aisTable tr{cursor:pointer}.aish{font:600 13px var(--f-head);margin:4px 0 6px;display:flex;gap:8px;align-items:baseline}
-.pgrp{display:flex;gap:4px;align-items:stretch}.spd{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:600 12px var(--f-data);cursor:pointer;padding:0 6px}
+.pgrp{display:flex;gap:4px;align-items:stretch}.fol{display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}.fol[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}.spd{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:600 12px var(--f-data);cursor:pointer;padding:0 6px}
 .adjpill{position:absolute;left:var(--gut);bottom:14px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:calc(100% - var(--gut) - var(--gutR));background:var(--panel);border:1px solid #F0A43A;border-radius:10px;padding:6px 8px 6px 12px;font-size:13px}.adjpill[hidden]{display:none!important}.adjpill .btn{min-height:34px;padding:4px 10px}
 .offb{font:700 10px var(--f-data);letter-spacing:.06em;text-transform:uppercase;color:#1b1200;background:#F0A43A;border-radius:6px;padding:2px 6px;margin-left:8px;align-self:center;flex:none}.offb[hidden]{display:none!important}
 @media (max-width:899px){.offb{position:absolute;left:var(--gut);top:46px;margin:0;font-size:8px;padding:1px 4px;z-index:6}}
@@ -318,7 +334,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 
   <div class="bar">
     <button class="mobbtn" id="mobBtn" aria-label="Man overboard: press and hold" title="Man overboard: press and hold for one second">MOB</button>
-    <div class="pgrp"><button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button><button class="spd" id="spdBtn" aria-label="Replay speed" title="Replay speed: tap to change">3h/s</button></div>
+    <div class="pgrp"><button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button><button class="spd" id="spdBtn" aria-label="Replay speed" title="Replay speed: tap to change">3h/s</button><button class="spd fol" id="followBtn" aria-label="Follow the boat" aria-pressed="true" title="Follow the boat"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M12 7l3.5 9-3.5-2-3.5 2z" fill="currentColor"/></svg></button></div>
     <input type="range" id="time" min="0" max="1000" value="0" aria-label="Race time">
     <div class="clock" id="clock">--</div>
     <div class="now" id="now"></div>
@@ -421,17 +437,38 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <p class="note" id="courseNote"></p>
     </div>
     <div class="sbody" id="s-sails" hidden>
-      <p class="note">One sail per line: name, from TWA, to TWA, from TWS, to TWS. First match wins. Replace with your own crossover chart.</p>
-      <textarea id="sails" spellcheck="false" style="min-height:240px"># sail, twa from, twa to, tws from, tws to
+      <p class="note">Copy each sail from your sail log or your sailmaker’s crossover chart: the true wind angles and true wind speeds you use it in. Route names the sail and the reef for every stretch of the route. Rows are checked from the top and the first that fits wins, so put the special cases first.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><select id="slPreset" style="flex:1 1 220px;min-width:0"></select><button class="btn" id="slUse" hidden>Replace my sails</button></div>
+      <h3>Headsails and downwind sails</h3>
+      <div id="slTable" class="sltab"></div>
+      <button class="btn" id="slAdd">+ Add a sail</button>
+      <h3>Mainsail reefs</h3>
+      <label class="row" style="gap:8px"><input type="checkbox" id="rfOn"> Show when to reef</label>
+      <div id="rfBox" hidden>
+        <p class="note">The true wind speed at which each reef goes in. Reef earlier upwind, where the apparent wind is stronger. Leave a box empty if you do not carry that reef.</p>
+        <div id="rfRows" class="rftab"></div>
+        <label class="row" style="gap:8px;margin-top:8px">Upwind means a true wind angle below <input type="number" inputmode="decimal" id="rfSplit" min="30" max="150" style="width:70px">°</label>
+        <p class="note">Starting points from John Jourdane’s Pacific Cup guide: “Reefing begins sooner upwind than downwind because the apparent wind is greater sailing a beat or close reach.” <button class="linkbtn" id="rfReset">Use these again</button></p>
+      </div>
+      <h3>Crossover chart</h3>
+      <canvas id="slChart" class="slchart" aria-label="Sail crossover chart: true wind angle across, true wind speed up"></canvas>
+      <p class="note" id="slMiss"></p>
+      <p class="note" id="slAt">Tap the chart to see which sail it picks for that wind.</p>
+      <details class="sltext"><summary>Edit as text, or paste a chart</summary>
+        <p class="note">One sail per line: name, TWA from, TWA to, TWS from, TWS to. You can also paste a grid from Expedition, PredictWind or SailGrib (first line the wind speeds, then one line per wind angle with the sail for each speed) and Route turns it into rows.</p>
+        <textarea id="sails" spellcheck="false" style="min-height:200px"># sail, twa from, twa to, tws from, tws to
 J1, 0, 65, 0, 13
 J2, 0, 65, 13, 19
 J3, 0, 65, 19, 60
 Code 0, 65, 100, 0, 14
 J2 reaching, 65, 100, 14, 60
 A3, 100, 125, 0, 20
-A2, 125, 181, 0, 18
-A4, 125, 181, 18, 60
-J3 reaching, 100, 125, 20, 60</textarea>
+J3 reaching, 100, 125, 20, 60
+A2, 125, 180, 0, 18
+A4, 125, 180, 18, 60</textarea>
+        <p class="note">Mainsail, the same way.</p>
+        <textarea id="mains" spellcheck="false" style="min-height:120px"># no reefs set</textarea>
+      </details>
     </div>
     <div class="sbody" id="s-display" hidden>
       <h3>AIS</h3>
@@ -458,4 +495,5 @@ J3 reaching, 100, 125, 20, 60</textarea>
 <script src="engine.js"></script>
 <script src="boat.js"></script>
 <script src="ais.js"></script>
+<script src="sails.js"></script>
 <script src="app.js"></script>

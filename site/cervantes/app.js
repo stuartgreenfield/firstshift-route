@@ -223,7 +223,8 @@
     $('tipX').onclick = function () { $('tip').hidden = true; };
     $('windShow').onchange = draw;
     ['windSym', 'tideSym'].forEach(function (id) { var v = store('fs-' + id); if (v && $(id).querySelector('option[value="' + v + '"]')) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); syncSym(); draw(); animate(); }; });
-    $('sails').oninput = function () { plan(); update(); };
+    if (window.FSSails) FSSails.init({ pts: function () { return S.sel && S.sel.r ? S.sel.r.path : []; }, onChange: function () { plan(); compareTable(); update(); } });
+    ['sails', 'mains'].forEach(function (id) { $(id).addEventListener('input', function () { plan(); update(); }); });
     if (!wide()) $('panel').hidden = false;
     dayMode = ['auto', 'light', 'dark'].indexOf(store('fs-theme')) >= 0 ? store('fs-theme') : 'dark'; setMode(store('fs-night') === '1' ? 'night' : dayMode);
     var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readCss(); buildDepth(); draw(); });
@@ -514,7 +515,7 @@
   }
   /* replay speed: the button beside Play steps through the speeds in Settings, Display */
   function spdLabel() { var v = +$('speed').value; $('spdBtn').textContent = v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'; }
-  function spdInit() { var o = [].map.call($('speed').options, function (x) { return x.value; }); $('spdBtn').onclick = function () { var i = o.indexOf($('speed').value); $('speed').value = o[(i + 1) % o.length]; $('speed').dispatchEvent(new Event('change', { bubbles: true })); spdLabel(); }; $('speed').addEventListener('change', spdLabel); spdLabel(); }
+  function spdInit() { var o = [].map.call($('speed').options, function (x) { return x.value; }); $('spdBtn').onclick = function () { var i = o.indexOf($('speed').value); $('speed').value = o[(i + 1) % o.length]; $('speed').dispatchEvent(new Event('change', { bubbles: true })); spdLabel(); }; $('speed').addEventListener('change', spdLabel); spdLabel(); $('followBtn').onclick = function () { followSet(!follow); }; followSet(follow); }
   /* ---------- send to the crew: a summary and a link that opens the same course and start in Route ---------- */
   function crewLink() {
     var c = meta.course, base = location.origin + location.pathname, st = $('startSel').value;
@@ -526,8 +527,8 @@
     var c = meta.course, s = S.sel, lines = ['FirstShift Route: ' + c.name, 'Start ' + clockAbs(+$('startSel').value) + ' UTC'];
     if (S.routes && S.routes.length) {
       lines.push('Finish times:'); S.routes.forEach(function (r) { lines.push('  ' + (r.combined ? 'Combined' : short(r.id)) + ': ' + clockH(r.r.finish).slice(4) + ' (' + fmtH(r.r.finish - S.start.t) + ')' + (r === s ? ' <- chosen' : '')); });
-      var p = s.r.path, cr = sailsList(), out = [], cur = null;
-      for (var i = 1; i < p.length && out.length < 4; i++) { var sl = FSRouter.sailFor(p[i], cr) || '-'; if (!cur || cur.sl !== sl) { cur = { sl: sl, t: p[i - 1].t, h: p[i].hdg }; out.push(cur); } }
+      var p = s.r.path, cr = sailsList(), mr = mainsList(), out = [], cur = null;
+      for (var i = 1; i < p.length && out.length < 4; i++) { var sl = rig(p[i], cr, mr); if (!cur || cur.sl !== sl) { cur = { sl: sl, t: p[i - 1].t, h: p[i].hdg }; out.push(cur); } }
       lines.push('First legs (' + (s.combined ? 'Combined' : short(s.id)) + '):'); out.forEach(function (o) { lines.push('  ' + clockH(o.t).slice(4) + ' ' + o.sl + ', heading ' + pad(o.h) + '°'); });
     }
     lines.push('Open in Route: ' + crewLink()); lines.push('Planning aid, not for navigation.');
@@ -553,7 +554,7 @@
     var i0 = Math.max(1, (pos.i || 0) + 1), nm = function (a, b) { return FSRouter.dist(a.la, a.lo, b.la, b.lo); }, when = function (tt) { var m = Math.round((tt - t) * 60); return clockH(tt).slice(4) + ' UTC, ' + (m < 90 ? m + ' minutes' : (m / 60).toFixed(1) + ' hours') + ' from now'; };
     var cur = p[i0], name = s.combined ? 'the combined route' : 'the ' + short(s.id) + ' route';
     if (q === 'tack') { var side = cur.twa < 0 ? -1 : 1; for (var i = i0 + 1; i < p.length; i++) { var sd = p[i].twa < 0 ? -1 : 1; if (sd !== side) return 'On ' + name + ', the next ' + (Math.abs(p[i].twa) > 90 ? 'gybe' : 'tack') + ' is at ' + when(p[i - 1].t) + ', onto ' + (sd < 0 ? 'port' : 'starboard') + ' heading ' + pad(p[i].hdg) + '°, true wind angle ' + Math.abs(Math.round(p[i].twa)) + '°.'; } return 'No more tacks or gybes on ' + name + ' before the finish.'; }
-    if (q === 'sail') { var cr = sailsList(), now = FSRouter.sailFor(cur, cr); for (var j = i0 + 1; j < p.length; j++) { var sl = FSRouter.sailFor(p[j], cr); if (sl && sl !== now) { var k = j; while (k < p.length && FSRouter.sailFor(p[k], cr) === sl && p[k].t - p[j].t < 0.5) k++; if (k >= p.length || p[k].t - p[j].t >= 0.5) return 'Sail now: ' + (now || 'none set') + '. Next change to ' + sl + ' at ' + when(p[j].t) + ', true wind ' + Math.round(p[j].tws) + ' knots at ' + Math.abs(Math.round(p[j].twa)) + '°.'; } } return 'Stay with ' + (now || 'the same sail') + ' to the finish on ' + name + '.'; }
+    if (q === 'sail') { var cr = sailsList(), mr = mainsList(), now = rig(cur, cr, mr); for (var j = i0 + 1; j < p.length; j++) { var sl = rig(p[j], cr, mr); if (sl && sl !== now) { var k = j; while (k < p.length && rig(p[k], cr, mr) === sl && p[k].t - p[j].t < 0.5) k++; if (k >= p.length || p[k].t - p[j].t >= 0.5) return 'Sail now: ' + (now || 'none set') + '. Next change to ' + sl + ' at ' + when(p[j].t) + ', true wind ' + Math.round(p[j].tws) + ' knots at ' + Math.abs(Math.round(p[j].twa)) + '°.'; } } return 'Stay with ' + (now || 'the same sail') + ' to the finish on ' + name + '.'; }
     if (q === 'shift') { var best = null; for (var m = i0; m < p.length && p[m].t - t <= 12; m++) { var d = ((p[m].twd - cur.twd + 540) % 360) - 180; if (!best || Math.abs(d) > Math.abs(best.d)) best = { d: d, q: p[m] }; } if (!best || Math.abs(best.d) < 10) return 'No shift over 10° in the next 12 hours: wind stays about ' + pad(cur.twd) + '° at ' + Math.round(cur.tws) + ' knots.'; return 'Biggest shift in the next 12 hours: ' + Math.abs(Math.round(best.d)) + '° ' + (best.d > 0 ? 'veer' : 'back') + ', from ' + pad(cur.twd) + '° to ' + pad(best.q.twd) + '° by ' + when(best.q.t) + ', ' + Math.round(best.q.tws) + ' knots.'; }
     if (q === 'mark') { var arr = s.r.arrivals.filter(function (a) { return a.t > t; })[0]; if (!arr) return 'All marks rounded.'; var lg = S.legs.filter(function (l) { return l.name === arr.name; })[0], at = lg && lg.at, dd = at ? FSRouter.dist(pos.la, pos.lo, at[0], at[1]) : null; return 'Next mark ' + arr.name + (dd != null ? ', ' + dd.toFixed(1) + ' nm away, bearing ' + pad(FSRouter.brg(pos.la, pos.lo, at[0], at[1])) + '°' : '') + '. Routed arrival ' + when(arr.t) + '.'; }
     if (q === 'tide') { var c = cur.cu != null ? [cur.cu, cur.cv] : [0, 0], sp = Math.hypot(c[0], c[1]); if (sp < 0.1) return 'Tide is slack here.'; var dir = (Math.atan2(c[0], c[1]) / R + 360) % 360, rel = ((dir - cur.hdg + 540) % 360) - 180; return 'Tide ' + sp.toFixed(1) + ' knots setting ' + pad(dir) + '°: ' + (Math.abs(rel) < 45 ? 'with you' : Math.abs(rel) > 135 ? 'against you' : 'across you from ' + (rel > 0 ? 'port' : 'starboard')) + ' on a heading of ' + pad(cur.hdg) + '°.'; }
@@ -847,7 +848,7 @@
   function swatch(s) { var st = s.combined ? ['--route', []] : STYLE[s.id]; return '<span class="sw" style="border-color:var(' + st[0] + ');border-top-style:' + (st[1].length ? 'dashed' : 'solid') + ';margin-right:6px;vertical-align:middle"></span>'; }
   /* ---------- compare routes: point of sail, worst conditions and crew work for each route ---------- */
   function routeStats(s) {
-    var p = s.r.path, cr = sailsList(), st = { up: 0, reach: 0, down: 0, maxW: 0, maxWt: 0, maxS: 0, nm: 0, sails: 0, man: 0 }, last = null, side = 0;
+    var p = s.r.path, cr = sailsList(), mr = mainsList(), st = { up: 0, reach: 0, down: 0, maxW: 0, maxWt: 0, maxS: 0, nm: 0, sails: 0, reefs: 0, man: 0 }, last = null, side = 0, lastR = null;
     for (var i = 1; i < p.length; i++) {
       var q = p[i], a = p[i - 1], dt = q.t - a.t, twa = Math.abs(q.twa || 0);
       if (twa < 60) st.up += dt; else if (twa > 120) st.down += dt; else st.reach += dt;
@@ -856,6 +857,8 @@
       st.nm += FSRouter.dist(a.la, a.lo, q.la, q.lo);
       var sl = FSRouter.sailFor(q, cr);   /* a change counts once the new sail has been up for half an hour */
       if (sl && sl !== last) { if (sl !== st.cand) { st.cand = sl; st.candT = q.t; } else if (q.t - st.candT >= 0.5) { if (last) st.sails++; last = sl; st.cand = null; } } else st.cand = null;
+      var rf = mr.length ? reefOf(q, mr) || 'full' : null;   /* the same half-hour rule for reefs */
+      if (rf && rf !== lastR) { if (rf !== st.rc) { st.rc = rf; st.rcT = q.t; } else if (q.t - st.rcT >= 0.5) { if (lastR) st.reefs++; lastR = rf; st.rc = null; } } else st.rc = null;
       var sd = (q.twa || 0) < 0 ? -1 : 1; if (side && sd !== side) st.man++; side = sd;
     }
     var T = st.up + st.reach + st.down || 1; st.upP = st.up / T; st.reachP = st.reach / T; st.downP = st.down / T;
@@ -867,7 +870,7 @@
     var rows = [['Finish', function (x) { return clockH(x.s.r.finish).slice(4); }], ['Elapsed', function (x) { return fmtH(x.s.r.finish - S.start.t); }], ['Distance sailed', function (x) { return Math.round(x.st.nm) + ' nm'; }],
       ['Upwind', function (x) { return pc(x.st.upP); }], ['Reaching', function (x) { return pc(x.st.reachP); }], ['Downwind', function (x) { return pc(x.st.downP); }],
       ['Most wind', function (x) { return x.st.maxW.toFixed(0) + ' kn, ' + clockH(x.st.maxWt).slice(4, 13); }], ['Biggest sea', function (x) { return x.st.maxS ? x.st.maxS.toFixed(1) + ' m' : '-'; }],
-      ['Sail changes', function (x) { return x.st.sails; }], ['Tacks and gybes', function (x) { return x.st.man; }]];
+      ['Sail changes', function (x) { return x.st.sails; }]].concat(mainsList().length ? [['Reefs in or out', function (x) { return x.st.reefs; }]] : []).concat([ ['Tacks and gybes', function (x) { return x.st.man; }]]);
     var h = '<tr><th></th>' + R.map(function (x) { return '<th>' + swatch(x.s) + (x.s.combined ? 'Comb.' : short(x.s.id)) + '</th>'; }).join('') + '</tr>';
     rows.forEach(function (r) { h += '<tr><td style="font-family:var(--f-body)">' + r[0] + '</td>' + R.map(function (x) { return '<td' + (x.s === S.sel ? ' class="best"' : '') + '>' + r[1](x) + '</td>'; }).join('') + '</tr>'; });
     $('compare').innerHTML = h;
@@ -889,11 +892,14 @@
     $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
   }
   function sailsList() { return FSRouter.parseCrossover($('sails').value); }
+  function mainsList() { return FSRouter.parseCrossover($('mains').value); }
+  function reefOf(q, mr) { var m = (mr || mainsList()).length ? FSRouter.sailFor(q, mr || mainsList()) : ''; return m && !/^full/i.test(m) ? m : ''; }
+  function rig(q, cr, mr) { var sl = FSRouter.sailFor(q, cr || sailsList()), m = reefOf(q, mr); return (sl || '-') + (m ? ', ' + m.toLowerCase() : ''); }
   function plan() {
     var s = S.sel; if (!s) return;
-    var cr = sailsList(), p = s.r.path, rows = [], cur = null;
+    var cr = sailsList(), mr = mainsList(), p = s.r.path, rows = [], cur = null;
     for (var i = 1; i < p.length; i++) {
-      var q = p[i], sail = FSRouter.sailFor(q, cr) || '-';
+      var q = p[i], sail = rig(q, cr, mr);
       if (!cur || cur.sail !== sail || cur.leg !== q.leg) { cur = { sail: sail, leg: q.leg, t0: p[i - 1].t, n: 0, hx: 0, hy: 0, tws: 0, twa: 0, bsp: 0, tacks: 0 }; rows.push(cur); }
       cur.t1 = q.t; cur.n++; cur.hx += Math.sin(q.hdg * R); cur.hy += Math.cos(q.hdg * R); cur.tws += q.tws; cur.twa += Math.abs(q.twa); cur.bsp += q.bsp; if (q.tack) cur.tacks++;
     }
@@ -904,7 +910,7 @@
       h += '<tr><td>' + clockH(r.t0).slice(4) + '</td><td style="font-family:var(--f-body)">' + r.sail + '</td><td>' + pad(Math.atan2(r.hx, r.hy) / R) + '°</td><td>' + (r.tws / r.n).toFixed(1) + '</td><td>' + Math.round(r.twa / r.n) + '°</td><td>' + (r.bsp / r.n).toFixed(1) + '</td><td>' + r.tacks + '</td></tr>';
     });
     s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="6" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
-    $('plan').innerHTML = h;
+    $('plan').innerHTML = h; if (window.FSSails) FSSails.draw();
   }
   /* ---------- help: text and a spoken run-through, using the device's own speech (free, works offline) ---------- */
   var HELP = [
@@ -912,6 +918,8 @@
     ['Decision', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
+    ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
+    ['Your sails and reefs', 'Settings, Sails. Copy each sail from your sail log: the true wind angles and true wind speeds you use it in. Rows are checked from the top and the first that fits wins. Tick Show when to reef and enter the wind speed for each reef, upwind and downwind. The crossover chart colours each sail, marks the reefs and puts this route\'s winds on it as dots, so you can see any wind with no sail set. You can paste a chart grid from Expedition, PredictWind or SailGrib under Edit as text.'],
     ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCC, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],
     ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. Close Settings and Route works it out again; Back to the forecast undoes it.'],
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
@@ -1310,10 +1318,23 @@
       if (pos && !pos.done && pos.i != null) {
         var q = p[pos.i + 1] || p[pos.i], lg = S.legs[Math.min(q.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a;
         var vmc = q.bsp * Math.cos((q.hdg - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
-        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + (q.twa < 0 ? 'P' : 'S')) + kv('TWS', q.tws.toFixed(1)) + kv('VMG mark', vmc.toFixed(1)) + kv('Sail', FSRouter.sailFor(q, sailsList()) || '-') + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
+        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + (q.twa < 0 ? 'P' : 'S')) + kv('TWS', q.tws.toFixed(1)) + kv('VMG mark', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
       } else if (pos && pos.done) h = kv('Finished', clockH(s.r.finish).slice(4));
     }
-    $('now').innerHTML = h; draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
+    $('now').innerHTML = h; followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
+  }
+  /* Follow the boat: with it on, moving the time slider or playing keeps the chosen route's boat in the middle of the open chart.
+     Dragging the chart turns it off; the button turns it back on. */
+  var follow = store('fs-follow') !== '0';
+  function followSet(on) { follow = on; store('fs-follow', on ? '1' : '0'); $('followBtn').setAttribute('aria-pressed', on); $('followBtn').title = on ? 'Following the boat: tap to stop' : 'Follow the boat: keeps it in the middle as the time moves'; if (on) { followBoat(); draw(); } }
+  function followBoat() {
+    if (!follow || !S.sel || !W) return;
+    var p = S.sel.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos) pos = { la: p[0].la, lo: p[0].lo };
+    var top = 70, bot = H, bar = document.querySelector('.bar'), pn = $('panel'), cr = cv.getBoundingClientRect();
+    [bar, !wide() && pn && !pn.hidden && !pn.classList.contains('collapsed') ? pn : null].forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (r.height && r.top > cr.top + top && r.left < cr.left + W / 2 && r.right > cr.left + W / 2) bot = Math.min(bot, r.top - cr.top); });
+    var left = 0, right = W; if (wide() && pn && !pn.hidden) { var r2 = pn.getBoundingClientRect(); if (r2.left - cr.left > W / 2) right = r2.left - cr.left; else if (r2.right - cr.left < W / 2) left = r2.right - cr.left; }
+    var cx = (left + right) / 2, cy = (top + bot) / 2;
+    view.lo = pos.lo - (cx - W / 2) / (K * view.s); view.la = pos.la + (cy - H / 2) / view.s;
   }
   function kv(k, v) { return '<div><span>' + k + '</span><b>' + v + '</b></div>'; }
   function pad(x) { return String(Math.round(((x % 360) + 360) % 360)).padStart(3, '0'); }
@@ -1331,7 +1352,7 @@
     if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') hover(e.offsetX, e.offsetY, false); return; }
     var prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
     if (S.drag != null && ptrs.size === 1) { var dq = S.edit.pts[S.drag]; dq.lat = +LA(e.offsetY).toFixed(5); dq.lon = +LO(e.offsetX).toFixed(5); moved = 99; draw(); return; }
-    if (ptrs.size === 1) { var dx = e.offsetX - prev[0], dy = e.offsetY - prev[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 6) { view.lo -= dx / (K * view.s); view.la += dy / view.s; draw(); if (e.pointerType === 'mouse') $('tip').hidden = true; } return; }
+    if (ptrs.size === 1) { var dx = e.offsetX - prev[0], dy = e.offsetY - prev[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 6) { if (follow) followSet(false); view.lo -= dx / (K * view.s); view.la += dy / view.s; draw(); if (e.pointerType === 'mouse') $('tip').hidden = true; } return; }
     var v = Array.from(ptrs.values()), d = Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]); moved = 99;
     if (pinch && !iosG) zoomAt((v[0][0] + v[1][0]) / 2, (v[0][1] + v[1][1]) / 2, d / pinch); pinch = d;
   });
@@ -1386,7 +1407,7 @@
       rows.push(r2('VMG to mark', (best.bsp * Math.cos((best.hdg - FSRouter.brg(best.la, best.lo, tg[0], tg[1])) * R)).toFixed(1) + ' kn'));
       rows.push(r2('True wind', best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '\u00b0'));
       rows.push(r2(Math.abs(best.twa) < 90 ? 'Upwind target' : 'Downwind target', Math.abs(best.twa) < 90 ? bu[0] + '\u00b0 · ' + bu[1].toFixed(1) + ' kn · VMG ' + bu[2].toFixed(1) : bdn[0] + '\u00b0 · ' + bdn[1].toFixed(1) + ' kn · VMG ' + bdn[2].toFixed(1)));
-      var sl = FSRouter.sailFor(best, sailsList()); if (sl) rows.push(r2('Sail', sl));
+      var sl = FSRouter.sailFor(best, sailsList()), rf = reefOf(best); if (sl || rf) rows.push(r2('Sail', (sl || '-') + (rf ? ', ' + rf.toLowerCase() : '')));
       if (best.tack) rows.push(r2('Manoeuvre', Math.abs(best.twa) > 90 ? 'gybe' : 'tack'));
     }
     var near = null, nd = docked ? 16 : 10;
@@ -1451,9 +1472,9 @@
     $('polarFile').onchange = function () { var f = $('polarFile').files[0]; if (!f) return; var rd = new FileReader(); rd.onload = function () { $('polarTxt').value = String(rd.result); readOwn(true); boatChanged(); }; rd.readAsText(f); };
     $('polarFromType').onclick = function () { $('polarTxt').value = FSBoat.toGrid(FSBoat.typedPolar($('boatType').value, +$('tcc').value || 1)); readOwn(true); boatChanged(); };
     $('polarGrid').addEventListener('change', function (e) { var t = e.target; if (!gridPol || !t.dataset) return; var v = parseFloat(t.value); gridPol.v[+t.dataset.i][+t.dataset.j] = isFinite(v) ? v : null; $('polarTxt').value = FSBoat.toGrid(gridPol); readOwn(false); boatChanged(); });
-    $('boatSave').onclick = function () { var n = $('boatName').value.trim() || 'My boat', b = boats(); $('boatName').value = n; b[n] = { spec: boatSpec(), tackS: +$('tackS').value, gybeS: +$('gybeS').value }; store('fsBoats', JSON.stringify(b)); listBoats(n); busy('Saved ' + n + ' on this device'); setTimeout(function () { busy(''); }, 1600); };
+    $('boatSave').onclick = function () { var n = $('boatName').value.trim() || 'My boat', b = boats(); $('boatName').value = n; b[n] = { spec: boatSpec(), tackS: +$('tackS').value, gybeS: +$('gybeS').value, sails: $('sails').value, mains: $('mains').value }; store('fsBoats', JSON.stringify(b)); listBoats(n); busy('Saved ' + n + ' on this device'); setTimeout(function () { busy(''); }, 1600); };
     $('boatDel').onclick = function () { var n = $('myBoat').value, b = boats(); if (!n) return; delete b[n]; store('fsBoats', JSON.stringify(b)); listBoats(''); };
-    $('myBoat').onchange = function () { var n = $('myBoat').value, b = boats()[n]; $('boatDel').hidden = !n; if (!b) return; var s = b.spec; $('boatName').value = n; $('tcc').value = (+s.tcc).toFixed(3); $('boatType').value = s.type || 'perf'; eg(); $('polarTxt').value = s.text || ''; $('tuUp').value = s.tune.up; $('tuReach').value = s.tune.reach; $('tuRun').value = s.tune.run; if (b.tackS) $('tackS').value = b.tackS; if (b.gybeS) $('gybeS').value = b.gybeS; setSrc(s.src); readOwn(true); boatChanged(); };
+    $('myBoat').onchange = function () { var n = $('myBoat').value, b = boats()[n]; $('boatDel').hidden = !n; if (!b) return; var s = b.spec; $('boatName').value = n; $('tcc').value = (+s.tcc).toFixed(3); $('boatType').value = s.type || 'perf'; eg(); $('polarTxt').value = s.text || ''; $('tuUp').value = s.tune.up; $('tuReach').value = s.tune.reach; $('tuRun').value = s.tune.run; if (b.tackS) $('tackS').value = b.tackS; if (b.gybeS) $('gybeS').value = b.gybeS; ['sails', 'mains'].forEach(function (id) { if (b[id]) { $(id).value = b[id]; $(id).dispatchEvent(new Event('input')); } }); setSrc(s.src); readOwn(true); boatChanged(); };
     listBoats(''); setSrc('type'); boatChanged();
   }
   var spCache = {};
