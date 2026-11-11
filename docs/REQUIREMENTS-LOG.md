@@ -18,6 +18,8 @@ Status: Built · Partly built · To build · Researching · Later.
 | 10:16 | Routes made on one device visible on the others, plus a local route on each | To build with the boat code |
 | 10:08 | Regular demo of each version, a to-do list, and competitor-inspired ideas; feedback saved per item | Built: test card (claude.ai/artifact/YFzQi6rjdcpdww3Nrg31sw) with video, checklist, to-do, ideas |
 | 10:11 | Work out use on phone, Mac, PC and tablet at the same time without a login | Answered: boat code |
+| 12:14 | Charts: build options 1 and 2 (GPX/KML export, help, open-in buttons); keep Route free of other businesses | Approved: to build. Option 3 (licensed charts) not pursued |
+| 12:14 | Routing must be almost instant once forecasts are loaded | Measured: Fastnet, 5 solutions, 54 s on a 2-core test machine. Plan: server pre-routes on each forecast, quick first route then refine, faster engine |
 | 12:12 | Open-Meteo device fallback when GitHub has no forecast | Approved by Stuart: to build |
 | 12:12 | Morning After plotter: B&G Zeus | Noted: Zeus wifi hotspot can send NMEA 0183 over TCP port 10110 (user reports); Route needs the app wrapper to read it; model to confirm |
 | 10:01 | Morning After: AIS transponder on NMEA 2000, broadcast across the boat network | Noted: needs a NMEA 2000 wifi gateway or Signal K to reach Route; gateway make to confirm |
