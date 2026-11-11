@@ -107,6 +107,14 @@
     if (kc !== 1 || tc) smp.tide = function (la, lo, t) { var f = wt(la, lo); if (!f) return c(la, lo, t); var C = c(la, lo, t - tc * f), m = 1 + (kc - 1) * f; return [C[0] * m, C[1] * m]; };
     return smp;
   }
+  /* the wind the boat feels is the wind over the water, not over the ground: a tide running with the wind takes strength out of it and one running against it adds strength, and a cross-tide shifts it */
+  function waterWind(wind, tide) {
+    return function (la, lo, t) {
+      var W = wind(la, lo, t), C = tide(la, lo, t); if (!(W[0] > 0) || (!C[0] && !C[1])) return W;
+      var rx = -W[0] * Math.sin(W[1] * R) - C[0], ry = -W[0] * Math.cos(W[1] * R) - C[1];
+      return [Math.sqrt(rx * rx + ry * ry), (Math.atan2(-rx, -ry) / R + 360) % 360];
+    };
+  }
   function tideSampler(P, id) {
     var f = id && P.tide[id];
     return function (la, lo, t) { if (!f) return [0, 0]; var u = f.sample('u', la, lo, t), v = f.sample('v', la, lo, t); return [u === u ? u / KN : 0, v === v ? v / KN : 0]; };
@@ -330,6 +338,6 @@
     return out;
   }
 
-  return { Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, adjust: adjust, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
+  return { waterWind: waterWind, Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, adjust: adjust, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
     seaFactor: seaFactor, SEA: SEA, route: route, sailTrack: sailTrack, markGate: markGate, dist: dist, brg: brg, sailFor: sailFor, parseCrossover: parseCrossover };
 });

@@ -492,6 +492,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <h3>Wind models to route on</h3>
       <div id="models"></div>
       <div class="row"><label for="tideSel">Tidal stream</label><select id="tideSel"></select></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="tideWind" checked> Sail on the wind over the water</label></div>
+      <p class="note">On: Route takes the tide out of the forecast wind, so the boat sails on the wind it feels. Wind against tide blows harder, wind with tide softer, and a cross-tide shifts it. Off: the forecast wind as it is.</p>
       <div class="row"><label for="waveSel">Sea state</label><select id="waveSel"></select></div>
       <h3>Sea state effect</h3>
       <div class="row"><label for="seaUp">Upwind loss</label><input type="number" id="seaUp" value="4" step="0.5"> % per m</div>
