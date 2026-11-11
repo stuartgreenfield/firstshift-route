@@ -3,7 +3,7 @@
   var VERSION = 'FirstShift Route v0.5.1';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
-  var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]] };
+  var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]] };
   var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true, lay: true }, choice: {}, loaded: {} };
   var css = {};
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -52,7 +52,7 @@
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return loadPre().then(function () { earlyPre(); return download(); });
-  }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; });
+  }).then(function () { return omFallback(); }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; });
 
   /* ---------- new forecasts: check every 5 minutes; a button downloads them and routes again ---------- */
   var nextMeta = null;
@@ -115,7 +115,7 @@
     $('dataNote').textContent = 'Forecast run ' + meta.run + (meta.built ? '; published on the FirstShift server at ' + dayhm(meta.built * 1000) + ' UTC' : '') + '. Age is the time since each model run; amber over 12 hours, red over 18. Times in UTC. Choose what this device downloads: full detail on Starlink, less on a phone signal.';
   }
   function download() {
-    var todo = meta.layers.filter(function (L) { var c = S.choice[L.id] || 'off'; return c !== S.loaded[L.id] && !(c === 'off' && !S.loaded[L.id]); });
+    var todo = meta.layers.filter(function (L) { if (L.device) return false; var c = S.choice[L.id] || 'off'; return c !== S.loaded[L.id] && !(c === 'off' && !S.loaded[L.id]); });
     var ovJob = Promise.resolve();
     if (meta.overview && $('ovChk').checked && !S.ov) ovJob = fetch('pack/' + meta.overview.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { S.ov = b; layersPop(); });
     if (!$('ovChk').checked && S.ov) { S.ov = null; if (S.big) toggleBig(); }
@@ -146,12 +146,37 @@
       $('dlNote').textContent = 'Up to date.';
     }).catch(function (e) { busy(''); prog(''); $('dlNote').textContent = e.message; });
   }
+  /* ---------- fallback: when the server's forecasts are missing or old, fetch wind for the area straight from Open-Meteo on this device ---------- */
+  function omFallback() {
+    var age = (Date.now() / 1000 - meta.t0) / 3600, none = !Object.keys(P.wind).length;
+    if (!navigator.onLine || !(none || (meta.live && age > 12)) || P.wind.om) return Promise.resolve();
+    var c = meta.course, la = [c.start.lat, c.finish.lat], lo = [c.start.lon, c.finish.lon]; c.marks.forEach(function (m) { la.push(m.lat); lo.push(m.lon); });
+    var b = dataBox || { s: Math.min.apply(0, la) - 0.7, n: Math.max.apply(0, la) + 0.7, w: Math.min.apply(0, lo) - 1, e: Math.max.apply(0, lo) + 1 };
+    var step = 0.25; while (((b.n - b.s) / step + 1) * ((b.e - b.w) / step + 1) > 300) step += 0.25;
+    var ny = Math.floor((b.n - b.s) / step) + 1, nx = Math.floor((b.e - b.w) / step) + 1, lats = [], lons = [];
+    for (var y = 0; y < ny; y++) for (var x = 0; x < nx; x++) { lats.push((b.s + y * step).toFixed(2)); lons.push((b.w + x * step).toFixed(2)); }
+    prog('Fresh wind from Open-Meteo', null, (none ? 'The forecast pack did not load' : 'The server forecast is ' + Math.round(age) + ' h old') + ', so Route is fetching wind for ' + lats.length + ' points straight to this device.');
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
+    return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lats.join(',') + '&longitude=' + lons.join(',') + '&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timeformat=unixtime&forecast_days=7', ctl ? { signal: ctl.signal } : {})
+      .then(function (r) { if (!r.ok) throw new Error('Open-Meteo answered ' + r.status); return r.json(); }).then(function (j) {
+        clearTimeout(tm); if (!Array.isArray(j)) j = [j];
+        var times = j[0].hourly.time, nt = times.length, plane = ny * nx, buf = new ArrayBuffer(plane * nt * 4), u = new Int16Array(buf, 0, plane * nt), v = new Int16Array(buf, plane * nt * 2, plane * nt);
+        j.forEach(function (pt, k) { var ws = pt.hourly.wind_speed_10m, wd = pt.hourly.wind_direction_10m; for (var ti = 0; ti < nt; ti++) { var sp = ws[ti], d = wd[ti], i = ti * plane + k; if (sp == null || d == null) { u[i] = v[i] = -32768; continue; } u[i] = Math.round(-sp * Math.sin(d * R) * 100); v[i] = Math.round(-sp * Math.cos(d * R) * 100); } });
+        var hours = times.map(function (t) { return (t - T0) / 3600; }), spec = { kind: 'wind', id: 'om', name: 'Open-Meteo (fetched on this device)', ny: ny, nx: nx, lat0: b.s, lon0: b.w, dlat: step, dlon: step, hours: hours, u: { off: 0, n: plane * nt, scale: 0.01 }, v: { off: plane * nt * 2, n: plane * nt, scale: 0.01 } };
+        var full = { ny: ny, nx: nx, lat0: b.s, lon0: b.w, dlat: step, dlon: step, hours: hours, bytes: buf.byteLength, gz: buf.byteLength, size: buf.byteLength, step_h: 1, res_km: [step * 111, step * 111 * Math.cos(b.s * R)] };
+        if (!meta.layers.some(function (L) { return L.id === 'om'; })) meta.layers.push({ kind: 'wind', id: 'om', name: 'Open-Meteo (on this device)', full: full, device: true });
+        FSRouter.addLayer(P, spec, buf); S.loaded.om = 'full'; S.choice.om = 'full';
+        S.omNote = 'Includes wind fetched on this device from Open-Meteo because the server forecast is ' + (none ? 'missing' : Math.round(age) + ' h old') + '.';
+        var copy = buf.slice(0);
+        return all(function () { return { msg: { type: 'layer', L: spec, buf: copy }, tr: [copy] }; }).then(function () { prog(''); modelsList(); selects(); dataTable(); chip(); var cb = document.querySelector('[data-m="om"]'); if (cb && !cb.checked) cb.checked = true; });
+      }).catch(function (e) { clearTimeout(tm); prog(''); S.omNote = 'Could not fetch fresh wind from Open-Meteo: ' + e.message; });
+  }
   setInterval(function () { if (meta) { chip(); dataTable(); } }, 60000);
   function chip() {
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.5.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    $('dataChip').textContent = 'Route v0.5.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -295,7 +320,7 @@
   function clockAbs(epoch) { var d = new Date(epoch * 1000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
   function clockH(h) { return clockAbs(T0 + h * 3600); }
   function fmtH(h) { var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0'); }
-  function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE' }[id] || id; }
+  function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE', om: 'Open-Meteo' }[id] || id; }
   /* Progress card. Nielsen Norman Group: waits of 2 to 10 seconds get a looped indicator, longer ones a percent-done bar with a step count
      and a rough time left (Katie Sherwin, "Progress Indicators Make a Slow System Less Insufferable", 2014). */
   var PG = { t0: 0, est: 0 };
