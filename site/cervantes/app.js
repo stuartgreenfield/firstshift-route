@@ -844,14 +844,15 @@
      Wind: W2 barb, W5 slow streaks with numbers, W6 barb with number, W7 FirstShift triangle.
      Tide: T5 translucent weighted arrow, T6 translucent arrow outlined, T1 dotted arrow, T3 tidal atlas arrow. */
   function head(x, y, dx, dy, len, w) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - dx * len - dy * w, y - dy * len + dx * w); ctx.lineTo(x - dx * len + dy * w, y - dy * len - dx * w); ctx.closePath(); ctx.fill(); }
+  var BB = null;   /* while set, barbs collect into two paths drawn once per frame instead of hundreds of separate strokes */
   function barb(x, y, dx, dy, s) {
-    var L = 24, ux = -dx, uy = -dy, ex = x + ux * L, ey = y + uy * L, r = Math.round(s / 5) * 5, pos = 0, px = -uy, py = ux, fl = 11;
-    ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill();
-    ctx.beginPath();
-    while (r >= 50) { var bx = ex - ux * pos, by = ey - uy * pos; ctx.moveTo(bx, by); ctx.lineTo(bx + px * fl, by + py * fl); ctx.lineTo(bx - ux * 6, by - uy * 6); ctx.fill(); pos += 8; r -= 50; }
-    while (r >= 10) { bx = ex - ux * pos; by = ey - uy * pos; ctx.moveTo(bx, by); ctx.lineTo(bx + px * fl + ux * 4, by + py * fl + uy * 4); pos += 4.5; r -= 10; }
-    if (r >= 5) { if (pos === 0) pos = 4.5; bx = ex - ux * pos; by = ey - uy * pos; ctx.moveTo(bx, by); ctx.lineTo(bx + px * fl / 2 + ux * 2, by + py * fl / 2 + uy * 2); }
-    ctx.stroke();
+    var L = 24, ux = -dx, uy = -dy, ex = x + ux * L, ey = y + uy * L, r = Math.round(s / 5) * 5, pos = 0, px = -uy, py = ux, fl = 11, bx, by;
+    var own = !BB, l = own ? new Path2D() : BB.l, f = own ? new Path2D() : BB.f;
+    l.moveTo(x, y); l.lineTo(ex, ey); f.moveTo(x + 2, y); f.arc(x, y, 2, 0, 7);
+    while (r >= 50) { bx = ex - ux * pos; by = ey - uy * pos; f.moveTo(bx, by); f.lineTo(bx + px * fl, by + py * fl); f.lineTo(bx - ux * 6, by - uy * 6); f.closePath(); pos += 8; r -= 50; }
+    while (r >= 10) { bx = ex - ux * pos; by = ey - uy * pos; l.moveTo(bx, by); l.lineTo(bx + px * fl + ux * 4, by + py * fl + uy * 4); pos += 4.5; r -= 10; }
+    if (r >= 5) { if (pos === 0) pos = 4.5; bx = ex - ux * pos; by = ey - uy * pos; l.moveTo(bx, by); l.lineTo(bx + px * fl / 2 + ux * 2, by + py * fl / 2 + uy * 2); }
+    if (own) { ctx.lineWidth = 1.6; ctx.stroke(l); ctx.fill(f); }
   }
   function arrows(kind) {
     var A0 = ctx.globalAlpha;   /* the brightness slider; symbols' own transparency multiplies it */
@@ -860,6 +861,7 @@
     var sp = kind === 'wind' ? (sym === 'W5' ? 30 : 60) : ({ T5: 46, T6: 46, T1: 38, T3: 42 }[sym] || 40);
     ctx.strokeStyle = css[kind === 'wind' ? '--wind' : '--tide']; ctx.fillStyle = ctx.strokeStyle; ctx.font = '10px "JetBrains Mono", monospace'; ctx.lineCap = 'round';
     var now = performance.now();
+    if (kind === 'wind' && (sym === 'W2' || sym === 'W6')) BB = { l: new Path2D(), f: new Path2D() };
     var off = kind === 'tide' ? sp / 2 : 0;
     for (var y = 80 + off; y < H; y += sp) for (var x = sp / 2 + off; x < W; x += sp) {
       var la = LA(y), lo = LO(x);
@@ -887,6 +889,7 @@
       else if (sym === 'T1') { var L4 = 8 + s * 7; for (var q = 0; q <= 4; q++) { var fq = q / 4 - 0.5; ctx.beginPath(); ctx.arc(x + dx * L4 * fq, y + dy * L4 * fq, 1.4, 0, 7); ctx.fill(); } head(x + dx * (L4 / 2 + 5), y + dy * (L4 / 2 + 5), dx, dy, 5, 2.8); if (s >= 0.5 && lbl) { ctx.globalAlpha = A0 * 0.8; ctx.fillText(s.toFixed(1), x + 5, y + 11); ctx.globalAlpha = A0 * 1; } }
       else if (sym === 'T3') { var L5 = 10 + s * 7, w5 = 0.8 + s * 1.6; ctx.lineWidth = w5; ctx.beginPath(); ctx.moveTo(x - dx * L5 / 2, y - dy * L5 / 2); ctx.lineTo(x + dx * (L5 / 2 - 4), y + dy * (L5 / 2 - 4)); ctx.stroke(); head(x + dx * L5 / 2, y + dy * L5 / 2, dx, dy, 4 + w5, 1.8 + w5); if (s >= 0.5 && lbl) { ctx.globalAlpha = A0 * 0.8; ctx.fillText(Math.round(s * 10), x + 5, y - 5); ctx.globalAlpha = A0 * 1; } }
     }
+    if (BB) { ctx.lineWidth = 1.6; ctx.stroke(BB.l); ctx.fill(BB.f); BB = null; }
     ctx.lineCap = 'butt';
   }
   // the slow-streak wind symbol moves, so redraw about 20 times a second while it is on screen
