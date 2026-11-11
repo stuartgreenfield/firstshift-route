@@ -72,7 +72,15 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .tip .r span:first-child{color:var(--muted)}
 .tip .x{position:absolute;right:6px;top:4px;border:0;background:none;font-size:18px;cursor:pointer;color:var(--muted);display:none}
 .tip.docked .x{display:block}
-.busy{position:absolute;left:50%;transform:translateX(-50%);top:64px;background:none;border:0;padding:4px 8px;font:12px var(--f-data);color:var(--ink);text-shadow:0 0 4px var(--bg),0 0 8px var(--bg);z-index:5;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.busy{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);background:var(--glass);border:1px solid var(--line);border-radius:9px;padding:6px 10px;box-shadow:0 2px 10px rgba(0,0,0,.25);font:12px var(--f-data);color:var(--ink);text-shadow:0 0 4px var(--bg),0 0 8px var(--bg);z-index:5;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.prog{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:8;width:min(360px,calc(100% - 2*var(--gut,16px)));background:var(--panel);border:1px solid var(--brand);border-radius:12px;padding:10px 12px;box-shadow:0 4px 18px rgba(0,0,0,.35);pointer-events:none}
+.prog[hidden]{display:none!important}
+.pg-t{display:flex;justify-content:space-between;gap:10px;font:600 13.5px var(--f-body);color:var(--ink)}.pg-t b{font:600 13px var(--f-data);color:var(--brand)}
+.pg-bar{height:6px;border-radius:3px;background:var(--soft);margin:8px 0 6px;overflow:hidden;position:relative}
+.pg-bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--brand);border-radius:3px;transition:width .35s ease}
+.prog.ind .pg-bar i{width:35%!important;animation:pgind 1.2s ease-in-out infinite}
+@keyframes pgind{0%{left:-35%}100%{left:100%}}
+.pg-d{font:12px var(--f-data);color:var(--muted)}
 .busy[hidden]{display:none!important}
 .busy.spin::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);border-top-color:var(--brand);animation:spin .9s linear infinite;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -150,6 +158,15 @@ input[type=text]{background:var(--soft);border:1px solid var(--line);border-radi
 .warnt{color:var(--warn)}
 .sltext summary{cursor:pointer;font-weight:600;padding:6px 0}
 @media (max-width:420px){.sltab .sl-h,.sltab .sl-r{grid-template-columns:6px minmax(0,1fr) repeat(4,38px) 52px;gap:3px}.sltab input{font-size:13px;padding:6px 1px}.sltab input.sl-n{padding-left:6px}.sltab .slb{width:25px}.sltab .sw{width:6px}}
+.steps{margin:4px 0 8px;padding-left:20px;font-size:13px;line-height:1.45}.steps li{margin:2px 0}
+.crewpre{white-space:pre-wrap;font:12px var(--f-data);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0 0;max-height:220px;overflow:auto}
+.mfadd{display:grid;grid-template-columns:minmax(0,1fr) 86px auto;gap:6px;margin:6px 0}.mfadd input{min-height:40px;min-width:0}
+.mfrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}.mfrow b{flex:1;min-width:0;font-weight:600}.mfrow .slb{width:30px;height:32px;border:1px solid var(--line);background:none;border-radius:7px;color:var(--muted);cursor:pointer}
+.aisrb{margin-left:6px;padding:2px 8px;min-height:26px;font-size:11px;border-radius:6px;border:1px solid var(--brand);background:none;color:var(--brand);cursor:pointer}
+.aistcc{display:inline-flex;gap:4px;margin-top:4px}.aistcc input{width:76px;min-height:30px;padding:3px 6px}
+.cpawarn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:9;background:#C62828;color:#fff;border-radius:10px;padding:8px 14px;font:700 14px var(--f-body);box-shadow:0 4px 16px rgba(0,0,0,.4);pointer-events:none;max-width:calc(100% - 32px);text-align:center}.cpawarn[hidden]{display:none!important}
+@media (max-width:899px){.cbanner{line-height:1.35}.cbanner:not(.open){max-height:calc(2.7em + 8px);overflow:hidden;cursor:pointer}.cbanner:not(.open)::after{content:'Tap for more';position:absolute;right:30px;bottom:3px;font:600 10px var(--f-body);color:var(--warn);background:var(--glass);padding-left:6px}.cpawarn{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 112px)}}
+.lquick{display:flex;gap:6px;margin:2px 0 8px}.lquick .btn{min-height:34px;padding:5px 10px;font-size:12.5px}
 .warnbox{margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--panel));font-size:13px;line-height:1.4}
 .newdata{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 118px);z-index:6;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;padding:8px 8px 8px 14px;border-radius:12px;background:var(--glass);border:2px solid var(--route);box-shadow:0 4px 18px rgba(0,0,0,.25);font:600 13px var(--f-body);max-width:calc(100% - 2*var(--gut))}
 .cbanner{position:absolute;left:calc(var(--gut) + 0px);top:calc(env(safe-area-inset-top,0px) + 66px);z-index:4;max-width:min(560px,calc(100% - 2*var(--gut)));padding:7px 30px 7px 11px;border-radius:9px;border:1px solid var(--warn);background:var(--glass);font:600 12.5px var(--f-body);color:var(--ink)}
@@ -241,10 +258,10 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px){.bar.fh{grid-template-columns:auto auto auto minmax(0,1fr)}.bar.fh #time{grid-column:1/-1;grid-row:2}.bar.fh .clock{grid-column:4;grid-row:1}.bar.fh .now{grid-row:3}}
 
 #aisTable tr.danger td{color:#ff3b30;font-weight:700}#aisTable tr{cursor:pointer}.aish{font:600 13px var(--f-head);margin:4px 0 6px;display:flex;gap:8px;align-items:baseline}
-.pgrp{display:flex;gap:4px;align-items:stretch}.fol{display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}.fol[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}.spd{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:600 12px var(--f-data);cursor:pointer;padding:0 6px}
-.adjpill{position:absolute;left:var(--gut);bottom:14px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:calc(100% - var(--gut) - var(--gutR));background:var(--panel);border:1px solid #F0A43A;border-radius:10px;padding:6px 8px 6px 12px;font-size:13px}.adjpill[hidden]{display:none!important}.adjpill .btn{min-height:34px;padding:4px 10px}
+.pgrp{display:flex;gap:4px;align-items:stretch}#spdBtn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.05}.spl{font:600 8px var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.edwhen{border:1px solid var(--brand);border-radius:10px;padding:10px;background:color-mix(in srgb,var(--brand) 8%,var(--panel))}.edwhen .row{gap:8px;flex-wrap:wrap}.edwhen select{flex:1 1 140px;min-width:0}.fol{display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}.fol[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}.spd{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:600 12px var(--f-data);cursor:pointer;padding:0 6px}
+.adjpill{position:absolute;left:var(--gut);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:calc(100% - var(--gut) - var(--gutR));background:var(--panel);border:1px solid #F0A43A;border-radius:10px;padding:6px 8px 6px 12px;font-size:13px}.adjpill[hidden]{display:none!important}.adjpill .btn{min-height:34px;padding:4px 10px}
 .offb{font:700 10px var(--f-data);letter-spacing:.06em;text-transform:uppercase;color:#1b1200;background:#F0A43A;border-radius:6px;padding:2px 6px;margin-left:8px;align-self:center;flex:none}.offb[hidden]{display:none!important}
-@media (max-width:899px){.offb{position:absolute;left:var(--gut);top:46px;margin:0;font-size:8px;padding:1px 4px;z-index:6}}
+@media (max-width:899px){.offb{position:static;margin:0 0 0 6px;font-size:10px;padding:3px 6px}}
 .modemenu{position:fixed;z-index:25;display:grid;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:180px}.modemenu[hidden]{display:none!important}.modemenu button{border:0;background:none;color:var(--ink);text-align:left;padding:10px 12px;border-radius:8px;font:600 14px var(--f-body);cursor:pointer}.modemenu button[aria-pressed="true"]{background:var(--soft);color:var(--brand)}
 .xh{font:600 14px var(--f-head);margin:14px 0 4px}
 .askrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.askrow .btn{min-height:36px;padding:6px 10px;font-size:13px}.ans{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:grid;gap:8px}.ans p{margin:0;font-size:14px;line-height:1.5}.ans .btn{justify-self:start}
@@ -256,6 +273,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
+    <div class="modemenu" id="spdMenu" hidden role="menu" aria-label="Replay speed"></div>
+    <div class="cpawarn" id="cpaWarn" hidden></div>
     <div class="modemenu" id="modeMenu" hidden role="menu" aria-label="Screen"><button data-m="dark">Dark</button><button data-m="night">Night red</button><button data-m="light">Light</button><button data-m="auto">Follow this device</button></div>
     <div class="adjpill" id="adjPill" hidden><span id="adjPillTxt"></span><button class="btn" id="adjPillX">Back to the forecast</button></div>
     <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
@@ -274,6 +293,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="pop" id="layers" hidden></div>
     <div class="tip" id="tip" hidden><button class="x" id="tipX" aria-label="Close">×</button><div id="tipBody"></div></div>
     <div class="busy" id="busy" hidden></div>
+    <div class="prog" id="prog" role="status" aria-live="polite" hidden><div class="pg-t"><span id="pgT"></span><b id="pgP"></b></div><div class="pg-bar"><i id="pgBar"></i></div><div class="pg-d" id="pgD"></div></div>
   </div>
 
   <section class="panel collapsed" id="panel" hidden aria-label="Results">
@@ -302,9 +322,12 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
       <h4 class="xh">Send to the crew</h4>
       <div class="xrow"><button class="btn primary" id="xCrew">Send to crew…</button><button class="btn" id="xCopy">Copy text</button></div>
-      <p class="note">Sends a short summary (finish times, the first part of the plan) and a link that opens this course and start in Route on their phones. On a phone it opens the share sheet: choose WhatsApp, Messages or email. On a computer it opens WhatsApp in the browser, or use Copy text and paste it anywhere.</p>
+      <ol class="steps"><li>Tap <b>Send to crew</b>. On a phone, choose WhatsApp (or Messages, or email) and the crew group.</li><li>The crew get the message below. When they tap the link, Route opens on their phone with the same course and start, and works out the same routes.</li><li>No app to install and no login: the link is all they need.</li></ol>
+      <details class="sltext"><summary>See the message</summary><pre class="crewpre" id="crewPre"></pre></details>
       <h4 class="xh">Put the route on the plotter or a chart app</h4>
-      <p class="note">Save GPX makes a route file with a waypoint at every turn: copy it to an SD card or USB stick for the plotter (How to load it gives the steps for your make). Save KML is the whole track for Google Earth. Open in chart app, on phones and tablets only, hands the file straight to GeoGarage, C-MAP, Navionics or any app that takes routes.</p>
+      <p class="note"><b>For a plotter</b> (Zeus, Axiom, Garmin): the plotter cannot take the route over the internet, so it goes on a memory card.</p>
+      <ol class="steps"><li>On a computer, tap <b>Save GPX</b>. The route file goes to your Downloads folder.</li><li>Put a microSD card in the computer and drag the file onto it.</li><li>Put the card in the plotter and import the route: <b>How to load it</b> has the menus for each make.</li></ol>
+      <p class="note"><b>For a chart app on a phone or tablet</b> (GeoGarage, C-MAP, Navionics): tap <b>Open in chart app</b> and pick the app. This button only shows on phones and tablets.</p>
       <div class="xrow"><button class="btn" id="xGpx">Save GPX</button><button class="btn" id="xKml">Save KML</button><button class="btn" id="xShare" hidden>Open in chart app…</button><button class="btn" id="xHelpBtn" aria-expanded="false">How to load it</button></div>
       <p class="note" id="xNote"></p>
       <div id="xHelp" class="xhelp" hidden>
@@ -317,8 +340,13 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
       <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><div class="tw"><table id="aisTable"></table></div></div>
-      <p class="note">Every IRC entry sailing your chosen route at its own TCC from its own class start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
+      <p class="note">Every boat you are racing, sailing your chosen route at its own TCC from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
+      <p class="note warnt" id="fleetEmpty" hidden>No entry list for this race yet. Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>
+      <h4 class="xh">Boats you are racing</h4>
+      <div id="mfList"></div>
+      <div class="mfadd"><input id="mfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="mfTcc" type="number" inputmode="decimal" step="0.001" min="0.5" max="2" placeholder="TCC" aria-label="IRC TCC"><button class="btn" id="mfAdd">Add</button></div>
+      <details class="sltext"><summary>Paste an entry list</summary><p class="note">One boat per line: name and TCC, for example <i>Jolly Jack, 1.021</i>. Copy it from the race entry list or a spreadsheet.</p><textarea id="mfPaste" spellcheck="false" style="min-height:120px"></textarea><button class="btn" id="mfPasteGo">Add these boats</button></details>
     </div>
     <div class="pbody" id="t-data" hidden>
       <p class="note" id="dataNote"></p>
@@ -367,7 +395,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.5.0</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.5.1</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
       <button class="tab" data-s="fc" aria-selected="false">Forecasts</button>
@@ -486,7 +514,7 @@ A4, 125, 180, 18, 60</textarea>
       <div class="row"><label for="tideSym">Tide symbol</label><select id="tideSym"><option value="T6">T6 Translucent arrow, outlined</option><option value="T5">T5 Translucent weighted arrow</option><option value="T1">T1 Dotted arrow</option><option value="T3">T3 Tidal atlas arrow</option></select></div>
       <p class="note">Barbs: the staff points into the wind; half feather 5 kn, full feather 10, pennant 50. Tide arrows point the way the water flows, rate in knots (atlas arrows in tenths).</p>
       <div class="row"><label for="windShow">Wind shown from</label><select id="windShow"></select></div>
-      <div class="row"><label for="speed">Play speed</label><select id="speed"><option value="0.5">30 min a second</option><option value="1" selected>1 hour a second</option><option value="3">3 hours a second</option></select></div>
+      <div class="row"><label for="speed">Play speed</label><select id="speed"><option value="0.5">30 min a second</option><option value="1" selected>1 hour a second</option><option value="3">3 hours a second</option><option value="6">6 hours a second</option></select></div>
     </div>
   </div>
 </div>

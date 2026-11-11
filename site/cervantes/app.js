@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.5.0';
+  var VERSION = 'FirstShift Route v0.5.1';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]] };
@@ -47,7 +47,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); crewInit(); askInit(); bcInit();
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); mfInit(); crewInit(); askInit(); bcInit();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -120,7 +120,11 @@
     if (meta.overview && $('ovChk').checked && !S.ov) ovJob = fetch('pack/' + meta.overview.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { S.ov = b; layersPop(); });
     if (!$('ovChk').checked && S.ov) { S.ov = null; if (S.big) toggleBig(); }
     if (!todo.length) { return ovJob.then(function () { chip(); dataTable(); $('dlNote').textContent = 'Up to date.'; }); }
-    busy('Downloading forecasts…');
+    busy('');
+    var dlN = todo.filter(function (L) { return (S.choice[L.id] || 'off') !== 'off'; }).length, dlDone = 0, dlTot = 0, dlGot = 0;
+    todo.forEach(function (L) { var c = S.choice[L.id]; if (c && c !== 'off' && L[c]) dlTot += L[c].bytes || L[c].size || 0; });
+    var dlShow = function () { prog('Loading forecasts', dlN ? dlDone / dlN : null, dlDone + ' of ' + dlN + ' forecasts' + (dlTot ? ', ' + mb(dlGot) + ' of ' + mb(dlTot) : '')); };
+    if (dlN) dlShow();
     return Promise.all(todo.map(function (L) {
       var c = S.choice[L.id] || 'off';
       if (c === 'off') {
@@ -132,22 +136,22 @@
       var runs = v.runs ? fetch('pack/' + v.runs).then(function (r) { return r.json(); }) : Promise.resolve(null);
       return Promise.all([fetch('pack/' + v.file).then(function (r) { if (!r.ok) throw new Error(L.name + ' did not download'); return r.arrayBuffer(); }), runs]).then(function (two) {
         var buf = two[0], spec = Object.assign({ kind: L.kind, id: L.id, name: L.name }, v); if (two[1]) spec.druns = two[1];
-        FSRouter.addLayer(P, spec, buf); S.loaded[L.id] = c; (S.gotAt = S.gotAt || {})[L.id] = Date.now();
+        FSRouter.addLayer(P, spec, buf); S.loaded[L.id] = c; (S.gotAt = S.gotAt || {})[L.id] = Date.now(); dlDone++; dlGot += buf.byteLength; dlShow();
         return all(function () { var copy = buf.slice(0); return { msg: { type: 'layer', L: spec, buf: copy }, tr: [copy] }; });
       });
     })).then(function () {
       return ovJob;
     }).then(function () {
-      busy(''); dataTable(); modelsList(); selects(); chip(); buildDepth(); draw();
+      busy(''); prog(''); dataTable(); modelsList(); selects(); chip(); buildDepth(); draw();
       $('dlNote').textContent = 'Up to date.';
-    }).catch(function (e) { busy(''); $('dlNote').textContent = e.message; });
+    }).catch(function (e) { busy(''); prog(''); $('dlNote').textContent = e.message; });
   }
   setInterval(function () { if (meta) { chip(); dataTable(); } }, 60000);
   function chip() {
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.5.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    $('dataChip').textContent = 'Route v0.5.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -260,7 +264,7 @@
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
   function layersPop() {
-    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
+    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
       (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
@@ -271,6 +275,9 @@
       (meta.live ? '' : '<label><input type="checkbox" data-l="real"' + (S.show.real ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Real 2026 boats (YB)</label>');
     S.routes.forEach(function (s, i) { var st = s.combined ? ['--route', []] : STYLE[s.id]; h += '<label><input type="checkbox" data-r="' + i + '"' + (s.hidden ? '' : ' checked') + '><span class="sw" style="border-color:var(' + st[0] + ');border-top-width:' + (s.combined ? 4 : 3) + 'px;border-top-style:' + (st[1].length ? 'dashed' : 'solid') + '"></span>' + s.name + ' · ' + fmtH(s.r.finish - S.start.t) + '</label>'; });
     $('layers').innerHTML = h;
+    var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band'];
+    $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
+    $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
     [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) S.show[c.dataset.l] = c.checked; else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
     $('layersX').onclick = closeLayers;
@@ -282,6 +289,21 @@
   function clockH(h) { return clockAbs(T0 + h * 3600); }
   function fmtH(h) { var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0'); }
   function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE' }[id] || id; }
+  /* Progress card. Nielsen Norman Group: waits of 2 to 10 seconds get a looped indicator, longer ones a percent-done bar with a step count
+     and a rough time left (Katie Sherwin, "Progress Indicators Make a Slow System Less Insufferable", 2014). */
+  var PG = { t0: 0, est: 0 };
+  function raceKey() { return (meta && meta.course && (meta.course.raceId || meta.course.name)) || 'x'; }
+  function prog(title, frac, detail, est) {
+    if (!title) { $('prog').hidden = true; PG.title = ''; return; }
+    if (title !== PG.title) { PG.title = title; PG.t0 = Date.now(); PG.est = est || 0; }
+    $('prog').hidden = false; $('pgT').textContent = title;
+    $('prog').classList.toggle('ind', frac == null);
+    $('pgBar').style.width = frac == null ? '' : Math.round(Math.max(0.03, Math.min(1, frac)) * 100) + '%';
+    $('pgP').textContent = frac == null ? '' : Math.round(Math.min(1, frac) * 100) + '%';
+    var left = '';
+    if (PG.est) { var el = (Date.now() - PG.t0) / 1000, rem = PG.est - el; left = rem > 2 ? ' · about ' + Math.ceil(rem) + ' s left' : ' · nearly done'; }
+    $('pgD').textContent = (detail || '') + left;
+  }
   function busy(t) { $('busy').hidden = !t; $('busy').textContent = t; $('busy').classList.toggle('spin', /…$/.test(t || '')); }
 
   /* ---------- routing ---------- */
@@ -356,6 +378,7 @@
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
     if (f && f.lat0 != null) { var la1 = f.lat0 + f.dlat * (f.ny - 1), lo1 = f.lon0 + f.dlon * (f.nx - 1); dataBox = { s: Math.min(f.lat0, la1), n: Math.max(f.lat0, la1), w: Math.min(f.lon0, lo1), e: Math.max(f.lon0, lo1) }; }
+    $('cbanner').addEventListener('click', function (e) { if (e.target.id !== 'cbannerX') this.classList.toggle('open'); });
     $('cbannerX').onclick = function () { $('cbanner').hidden = true; var r = meta.course.race; if (r) { S.bannerHidden = S.bannerHidden || {}; S.bannerHidden[r.id] = true; } };
     fetch('../courses/rorc.json', { cache: 'no-store' }).then(function (x) { return x.json(); }).then(function (j) {
       RACES = j.races; $('raceSel').innerHTML = RACES.map(function (r) { return '<option value="' + r.id + '">' + r.name + (r.date2027 ? ' · ' + r.date2027.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+r.date2027.slice(5, 7) - 1] : '') + (courseIssue(r) ? ' (wider area needed)' : '') + '</option>'; }).join('');
@@ -473,12 +496,18 @@
     if (fresh.length && $('cpaSound').checked && (!AIS.lastBeep || Date.now() - AIS.lastBeep > 4000)) { beep(); AIS.lastBeep = Date.now(); }
     AIS.warned = danger; AIS.list = list; AIS.own = own;
     list.sort(function (a, b) { return (b.danger - a.danger) || ((a.c ? a.c.range : 99) - (b.c ? b.c.range : 99)); });
-    var myT = +$('tcc').value || 1, rest = S.sel ? Math.max(0, S.sel.r.finish - S.t) : 0, ent = {}; (meta.fleet || []).forEach(function (e) { if (e.tcc) ent[e.name.toUpperCase()] = e; });
-    var og = function (x) { var e = x.name && ent[x.name.toUpperCase()]; if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
+    var myT = +$('tcc').value || 1, rest = S.sel ? Math.max(0, S.sel.r.finish - S.t) : 0, ent = {}, byM = {}; (meta.fleet || []).forEach(function (e) { if (e.tcc) ent[e.name.toUpperCase()] = e; }); myFleet().forEach(function (e) { ent[e.name.toUpperCase()] = e; if (e.mmsi) byM[e.mmsi] = e; });
+    list.forEach(function (x) { x.race = !!(byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()])); });
+    var dz = list.filter(function (x) { return x.danger; })[0];
+    $('cpaWarn').hidden = !dz; if (dz) $('cpaWarn').textContent = 'Close quarters: ' + (dz.name || dz.mmsi) + ' passes ' + dz.c.cpa.toFixed(2) + ' nm away in ' + Math.round(dz.c.tcpa) + ' min';
+    var og = function (x) { var e = byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()]); if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
     var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + list.slice(0, 30).map(function (x) {
-      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span>' + (og(x) ? '<br>' + og(x) : '') + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
+      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
     $('aisTable').innerHTML = h; $('aisBox').hidden = false;
     $('aisNote').textContent = list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'live from the shore network, updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
+    [].forEach.call($('aisTable').querySelectorAll('[data-rb]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var box = $('rb' + b.dataset.rb); box.hidden = false; b.hidden = true; var x = AIS.tg.t[b.dataset.rb], k = x && x.name && (meta.fleet || []).filter(function (f) { return f.name.toUpperCase() === x.name.toUpperCase(); })[0]; if (k) box.querySelector('input').value = k.tcc; box.querySelector('input').focus(); AIS.hold = Date.now(); }; });
+    [].forEach.call($('aisTable').querySelectorAll('[data-rbok]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var x = AIS.tg.t[b.dataset.rbok], v = b.previousSibling.value; if (!mfAdd(x ? x.name || String(x.mmsi) : b.dataset.rbok, v, +b.dataset.rbok)) { busy('Enter the TCC, for example 1.021.'); setTimeout(function () { busy(''); }, 2000); } }; });
+    [].forEach.call($('aisTable').querySelectorAll('.aistcc input'), function (i) { i.onclick = function (e) { e.stopPropagation(); }; });
     [].forEach.call($('aisTable').querySelectorAll('tr[data-mmsi]'), function (tr) { tr.onclick = function () { var x = AIS.tg.t[tr.dataset.mmsi]; if (x) { view.la = x.lat; view.lo = x.lon; draw(); } }; });
   }
   function aisDraw() {
@@ -486,12 +515,13 @@
     ctx.save(); ctx.font = '600 10px Inter, sans-serif';
     AIS.list.forEach(function (x) {
       var px = X(x.lon), py = Y(x.lat); if (px < -20 || py < -20 || px > W + 20 || py > H + 20) return;
-      var kind = FSAIS.shipKind(x), col = x.danger ? (flash ? '#ff3b30' : '#ffffff') : kind === 'yacht' ? css['--ghost'] : '#F2994A';
+      var kind = FSAIS.shipKind(x), col = x.danger ? (flash ? '#ff3b30' : css['--ink']) : x.race ? css['--brand'] : kind === 'yacht' ? css['--ghost'] : css['--m3'];
       var h = x.hdg != null ? x.hdg : (x.cog || 0), sz = kind === 'yacht' ? 6 : 8;
       if (x.track.length > 1) { ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath(); x.track.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.lineTo(px, py); ctx.stroke(); ctx.globalAlpha = 1; }
       if (x.sog > 0.5 && x.cog != null) { var d = x.sog / 10; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(X(x.lon + Math.sin(x.cog * R) * d / 60 / Math.cos(x.lat * R)), Y(x.lat + Math.cos(x.cog * R) * d / 60)); ctx.stroke(); ctx.setLineDash([]); }
-      triMark(px, py, h, sz, kind === 'yacht' ? null : col, col, 1.6);
-      if (view.s > 600 || x.danger) { ctx.fillStyle = col; ctx.fillText(x.name || String(x.mmsi), px + 9, py - 7); }
+      if (x.danger) { ctx.beginPath(); ctx.arc(px, py, 14, 0, 7); ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 2; ctx.stroke(); }
+      triMark(px, py, h, sz, kind === 'yacht' && !x.race ? null : col, col, x.race ? 2.2 : 1.6);
+      if (view.s > 600 || x.danger || x.race) { ctx.fillStyle = col; ctx.fillText(x.name || String(x.mmsi), px + 9, py - 7); }
     });
     ctx.restore();
   }
@@ -514,8 +544,15 @@
     setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
   }
   /* replay speed: the button beside Play steps through the speeds in Settings, Display */
-  function spdLabel() { var v = +$('speed').value; $('spdBtn').textContent = v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'; }
-  function spdInit() { var o = [].map.call($('speed').options, function (x) { return x.value; }); $('spdBtn').onclick = function () { var i = o.indexOf($('speed').value); $('speed').value = o[(i + 1) % o.length]; $('speed').dispatchEvent(new Event('change', { bubbles: true })); spdLabel(); }; $('speed').addEventListener('change', spdLabel); spdLabel(); $('followBtn').onclick = function () { followSet(!follow); }; followSet(follow); }
+  function spdLabel() { var v = +$('speed').value; $('spdBtn').innerHTML = '<span class="spl">speed</span>' + (v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'); $('spdBtn').title = 'Replay speed: ' + $('speed').options[$('speed').selectedIndex].textContent + '. Tap to change.'; }
+  function spdInit() { var o = [].map.call($('speed').options, function (x) { return x.value; }); $('spdBtn').onclick = function (e) {
+      e.stopPropagation(); var m = $('spdMenu');
+      if (!m.hidden) { m.hidden = true; return; }
+      m.innerHTML = '<div class="note" style="padding:4px 8px">Replay speed: race time per second</div>' + [].map.call($('speed').options, function (x) { return '<button data-v="' + x.value + '"' + (x.value === $('speed').value ? ' aria-checked="true"' : '') + '>' + x.textContent + '</button>'; }).join('');
+      var r = $('spdBtn').getBoundingClientRect(); m.style.left = Math.max(8, Math.min(innerWidth - 200, r.left)) + 'px'; m.style.top = ''; m.style.bottom = (innerHeight - r.top + 6) + 'px'; m.hidden = false;
+      [].forEach.call(m.querySelectorAll('button'), function (b) { b.onclick = function () { $('speed').value = b.dataset.v; $('speed').dispatchEvent(new Event('change', { bubbles: true })); m.hidden = true; }; });
+    };
+    document.addEventListener('click', function (e) { if (!$('spdMenu').hidden && !$('spdMenu').contains(e.target)) $('spdMenu').hidden = true; }); $('speed').addEventListener('change', spdLabel); spdLabel(); $('followBtn').onclick = function () { followSet(!follow); }; followSet(follow); }
   /* ---------- send to the crew: a summary and a link that opens the same course and start in Route ---------- */
   function crewLink() {
     var c = meta.course, base = location.origin + location.pathname, st = $('startSel').value;
@@ -535,6 +572,7 @@
     return lines.join('\n');
   }
   function crewInit() {
+    $('crewPre').parentElement.addEventListener('toggle', function () { if (this.open) $('crewPre').textContent = S.sel ? crewText() : 'Route first, then the message shows here.'; });
     $('xCrew').onclick = function () {
       var t = crewText();
       if (navigator.share) { navigator.share({ title: 'FirstShift Route: ' + meta.course.name, text: t }).catch(function () {}); return; }
@@ -562,7 +600,7 @@
   }
   function askInit() {
     [].forEach.call($('askRow').querySelectorAll('[data-q]'), function (b) { b.onclick = function () { $('askTxt').textContent = ask(b.dataset.q); $('askAns').hidden = false; }; });
-    $('askSay').onclick = function () { try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance($('askTxt').textContent.replace(/°/g, ' degrees').replace(/UTC/g, 'U T C')); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; speechSynthesis.speak(u); } catch (e) {} };
+    $('askSay').onclick = function () { try { if (speechSynthesis.speaking) { speechSynthesis.cancel(); $('askSay').textContent = 'Read it out'; return; } var u = new SpeechSynthesisUtterance($('askTxt').textContent.replace(/°/g, ' degrees').replace(/UTC/g, 'U T C')); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; u.onend = u.onerror = function () { $('askSay').textContent = 'Read it out'; }; speechSynthesis.speak(u); $('askSay').textContent = 'Stop reading'; } catch (e) {} };
   }
   /* ---------- boat code: one code keeps boat settings and My races the same on every crew device (/api/boat/<code>) ---------- */
   var BC = { code: store('fs-boatcode') || '', at: +(store('fs-boatcode-at') || 0), msg: '' };
@@ -742,10 +780,19 @@
         (mid ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '<span></span>') + '</div></div>';
       if (i < p.length - 1) h += '<button class="btn edadd" data-add="' + (i + 1) + '">+ Add a mark here</button>';
     });
-    var opts = [].map.call($('startSel').options, function (o) { return '<option value="' + o.value + '"' + (o.value === $('startSel').value ? ' selected' : '') + '>' + o.textContent + '</option>'; }).join('');
-    h += '<div class="row"><label for="edStart">Start</label><select id="edStart">' + opts + '</select></div><p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
+    /* when is the start: a day and a time, asked first so a new course always routes from the right start */
+    var days = {}, dayOrder = [], cur = $('startSel').value;
+    [].forEach.call($('startSel').options, function (o) { var d = new Date(+o.value * 1000), k = d.toUTCString().slice(0, 11); if (!days[k]) { days[k] = []; dayOrder.push(k); } days[k].push({ v: o.value, t: d.toUTCString().slice(17, 22) }); });
+    var curDay = dayOrder.filter(function (k) { return days[k].some(function (x) { return x.v === cur; }); })[0] || dayOrder[0];
+    var when = '<div class="edwhen"><b>When is the start?</b><div class="row" style="margin-top:6px"><select id="edDay" aria-label="Start day">' + dayOrder.map(function (k) { return '<option' + (k === curDay ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select><select id="edTime" aria-label="Start time, UTC"></select></div><p class="note" style="margin:6px 0 0">Times in UTC: UK time in winter, one hour behind UK summer time. Then Save and route.</p><input type="hidden" id="edStart" value="' + cur + '"></div>';
+    h = when + h;
+    var opts = '';
+    h += '<p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
     h += '<p class="note" id="edNm">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edMap">Edit on the chart</button><button class="btn" id="edCancel2">Cancel</button></div>';
     $('raceList').innerHTML = '<h3>Course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
+    var fillT = function () { var k = $('edDay').value, list = days[k] || []; $('edTime').innerHTML = list.map(function (x) { return '<option value="' + x.v + '"' + (x.v === $('edStart').value ? ' selected' : '') + '>' + x.t + ' UTC</option>'; }).join(''); $('edStart').value = $('edTime').value; };
+    if ($('edDay')) { $('edDay').onchange = fillT; $('edTime').onchange = function () { $('edStart').value = this.value; }; fillT(); }
+    $('raceList').scrollTop = 0;
     p.forEach(function (q, i) { if ($('edS' + i)) $('edS' + i).value = q.side || 'port'; });
     var redo = function (fn) { if (!editRead()) { busy('Check the positions marked in red.'); setTimeout(function () { busy(''); }, 2000); return; } fn(); editForm(); draw(); };
     [].forEach.call($('raceList').querySelectorAll('[data-rm]'), function (b) { b.onclick = function () { redo(function () { p.splice(+b.dataset.rm, 1); }); }; });
@@ -802,23 +849,25 @@
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     var hit = preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; }, function () { S.running = false; }); return; }
-    S.running = true; busy('Quick route…'); S.key = null;
-    var tq = Date.now();
-    pass(true).then(function () { return pass(false); }).then(function () { S.running = false; $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { S.running = false; busy(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
+    S.running = true; busy(''); S.key = null;
+    var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
+    pass(true).then(function () { return pass(false); }).then(function () { S.running = false; prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
+    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
       if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180 });   /* quick first pass: about a sixth of the work */
       var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
-      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }) }).then(function (r) { s.r = r; return s; }, function (e) { s.err = e.message; return s; }); })).then(function (res) {
+      var jobs = sets.length * 2 + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
+      var tick = function () { done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
+      prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
+      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }) }).then(function (r) { tick(); s.r = r; return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
         S.routes = res.filter(function (s) { return s.r; });
         var errs = res.filter(function (s) { return s.err; });
         if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
-        busy(quick ? 'Quick route ready, refining…' : 'Refining: sailing each route through every model…');
-        var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }), paths: [s.r.path] }); });
-        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }); }).concat(selfJobs)).then(function (allr) {
+        var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }), paths: [s.r.path] }).then(function (x) { tick(); return x; }); });
+        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }).then(function (x) { tick(); return x; }); }).concat(selfJobs)).then(function (allr) {
           var cols = allr.slice(0, ms.length), self = allr.slice(ms.length).map(function (x) { return x[0]; });
           S.routes.forEach(function (s, i) { var k = (s.r.finish - start.t) / Math.max(0.1, self[i] - start.t); cols.forEach(function (c) { c[i] = start.t + (c[i] - start.t) * k; }); });
           S.matrix = { models: ms, cols: cols, start: start.t };
@@ -831,14 +880,38 @@
         });
       }).then(function () {
         show(); if (!quick && !S.from) S.key = fullKey(Object.assign({}, base, { models: ms }), start);
-      }).then(function () { if (quick) S.quickS = ((Date.now() - tq) / 1000).toFixed(1); });
+      }).then(function () { if (quick) { S.quickS = ((Date.now() - tq) / 1000).toFixed(1); store('fs-estQ-' + raceKey(), String(Math.round(+S.quickS))); } });
     }
   }
   var TS = typeof WeakMap === 'function' ? new WeakMap() : null;
   function tsOf(path) { if (!TS) return path.map(function (q) { return q.t; }); var a = TS.get(path); if (!a) { a = path.map(function (q) { return q.t; }); TS.set(path, a); } return a; }   /* one times array per route, not one per frame */
+  /* boats you are racing, added by hand, pasted from an entry list or picked from AIS; kept on this device for each race */
+  function mfKey() { return 'fs-fleet-' + raceKey(); }
+  function myFleet() { try { return JSON.parse(store(mfKey()) || '[]') || []; } catch (e) { return []; } }
+  function setMyFleet(a) { store(mfKey(), JSON.stringify(a)); mfShow(); ghosts().then(function () { fleetTable(); draw(); }); if (AIS.src !== 'off') aisUpdate(); }
+  function mfAdd(name, tcc, mmsi) {
+    name = String(name || '').trim(); tcc = +tcc; if (!name || !(tcc > 0.5 && tcc < 2)) return false;
+    var a = myFleet().filter(function (f) { return f.name.toUpperCase() !== name.toUpperCase() && (!mmsi || f.mmsi !== mmsi); }); a.push({ name: name, tcc: tcc, mmsi: mmsi || null }); setMyFleet(a); return true;
+  }
+  function mfShow() {
+    var a = myFleet(), esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    $('mfList').innerHTML = a.length ? a.map(function (f, i) { return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>TCC ' + f.tcc.toFixed(3) + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>'; }).join('') : '<p class="note">None added yet.</p>';
+    [].forEach.call($('mfList').querySelectorAll('button'), function (b) { b.onclick = function () { var x = myFleet(); x.splice(+b.dataset.i, 1); setMyFleet(x); }; });
+  }
+  function mfInit() {
+    $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCC between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
+    $('mfPasteGo').onclick = function () {
+      var a = myFleet(), n = 0;
+      $('mfPaste').value.split(/\r?\n/).forEach(function (l) { var m = /^(.*?)[\s,;\t]+([01]\.\d{2,4})\s*$/.exec(l.trim()); if (!m) return; var nm = m[1].replace(/[,;\t]+$/, '').trim(); a = a.filter(function (f) { return f.name.toUpperCase() !== nm.toUpperCase(); }); a.push({ name: nm, tcc: +m[2], mmsi: null }); n++; });
+      setMyFleet(a); $('mfPaste').value = ''; busy(n + ' boats added.'); setTimeout(function () { busy(''); }, 2000);
+    };
+    mfShow();
+  }
   function ghosts() {
     if (!S.sel) return Promise.resolve();
     var boats = meta.fleet.filter(function (f) { return f.irc && f.start; }).map(function (f) { return { name: f.name, tcc: f.tcc, start: meta.live ? S.start.t : Math.max((f.start - T0) / 3600, S.from ? S.start.t : -1), f: f }; });
+    var have = {}; boats.forEach(function (b) { have[b.name.toUpperCase()] = 1; });
+    myFleet().forEach(function (m) { if (!have[m.name.toUpperCase()]) boats.push({ name: m.name, tcc: m.tcc, start: S.start.t, f: { name: m.name, tcc: m.tcc, mine: true, mmsi: m.mmsi } }); });
     return pool({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: S.sel.r.path, boats: boats.map(function (b) { return { tcc: b.tcc, start: b.start }; }) }).then(function (ts) {
       S.ghosts = boats.map(function (b, i) { return { name: b.name, tcc: b.tcc, f: b.f, ts: ts[i] }; });
     });
@@ -999,7 +1072,7 @@
     var rows = S.ghosts.map(function (g) { var fin = g.ts[g.ts.length - 1], pos = posAt(g.ts, path, S.t); return { g: g, fin: fin, cor: (fin - g.ts[0]) * g.tcc, gap: me && pos ? FSRouter.dist(me.la, me.lo, pos.la, pos.lo) * (pos.k > me.k ? 1 : -1) : null }; }).sort(function (a, b) { return a.cor - b.cor; });
     var h = '<tr><th>Boat</th><th>TCC</th><th>Now</th><th>Corrected</th><th>vs you</th></tr>';
     rows.forEach(function (r) { var d = (r.cor - myCor) * 60; h += '<tr><td style="font-family:var(--f-body)">' + r.g.name + '</td><td>' + r.g.tcc.toFixed(3) + '</td><td>' + (r.gap == null ? '-' : (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ' nm') + '</td><td>' + fmtH(r.cor) + '</td><td>' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' min</td></tr>'; });
-    $('fleet').innerHTML = h;
+    $('fleet').innerHTML = rows.length ? h : ''; $('fleetEmpty').hidden = !!rows.length;
   }
 
   /* ---------- chart ---------- */
