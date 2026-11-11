@@ -39,7 +39,7 @@ jobs:
         run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
       - name: Fetch forecasts and build packs
         if: steps.fresh.outputs.skip != '1'
-        run: python3 scripts/build.py cervantes
+        run: python3 scripts/build.py cervantes fastnet
       - name: Publish to the site branch
         if: steps.fresh.outputs.skip != '1'
         run: |

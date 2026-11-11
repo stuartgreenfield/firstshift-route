@@ -6,6 +6,7 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 12:05 | Route immediately with the latest forecast; when new data arrives, a button 'New data: update routing' | Built: checks every 5 minutes |
 | 12:03 | Sunrise: TCC 1.098 confirmed; fully crewed, 450 kg crew | Logged; crew weight as a boat setting later |
 | 11:28 | Fastnet demo starting now: Sunrise at 95% polars; play and speed up showing conditions on the chosen route; finish time box for every route and the combined route | Built (Fastnet live race, finish boxes) |
 | 11:22 | Show when each forecast reached the server and its age on the device | Built |
