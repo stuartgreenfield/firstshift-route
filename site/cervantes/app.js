@@ -35,6 +35,10 @@
   var n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
   for (var i = 0; i < n; i++) { try { var w = new Worker('worker.js'); w.onmessage = function (e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }; workers.push(w); } catch (e) { break; } }
 
+  /* ---------- offline: keep the app, forecasts and routes on the device (sw.js) ---------- */
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
+  window.addEventListener('online', function () { if (meta) chip(); }); window.addEventListener('offline', function () { if (meta) chip(); });
+
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
     meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); if (W) { fit(); fitted = true; }
@@ -132,7 +136,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.5.0 · ' + (meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
+    $('dataChip').textContent = 'Route v0.5.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes);
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -256,7 +260,7 @@
   function clockH(h) { return clockAbs(T0 + h * 3600); }
   function fmtH(h) { var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0'); }
   function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global' }[id] || id; }
-  function busy(t) { $('busy').hidden = !t; $('busy').textContent = t; }
+  function busy(t) { $('busy').hidden = !t; $('busy').textContent = t; $('busy').classList.toggle('spin', /…$/.test(t || '')); }
 
   /* ---------- routing ---------- */
   function opts(models) {

@@ -72,7 +72,10 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 .tip .r span:first-child{color:var(--muted)}
 .tip .x{position:absolute;right:6px;top:4px;border:0;background:none;font-size:18px;cursor:pointer;color:var(--muted);display:none}
 .tip.docked .x{display:block}
-.busy{position:absolute;left:50%;transform:translateX(-50%);top:64px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font:12px var(--f-data);z-index:5}
+.busy{position:absolute;left:50%;transform:translateX(-50%);top:64px;background:none;border:0;padding:4px 8px;font:12px var(--f-data);color:var(--ink);text-shadow:0 0 4px var(--bg),0 0 8px var(--bg);z-index:5;pointer-events:none;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.busy[hidden]{display:none!important}
+.busy.spin::before{content:"";width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);border-top-color:var(--route);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* results panel: drawer on wide screens, bottom sheet on phones */
 .panel{grid-row:1;grid-column:2;width:400px;min-width:0;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;z-index:3}
