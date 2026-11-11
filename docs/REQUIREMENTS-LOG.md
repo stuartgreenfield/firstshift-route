@@ -116,4 +116,4 @@ Status: Built · Partly built · To build · Researching · Later.
   - Item 13: ICON-EU is live; old page cached on the phone.
   - Item 14: Layers: Show all and Just the route. Done.
   - Item 15: Fleet tab was empty (no 2027 entry lists); added Boats you are racing, add by hand or paste a list. Done.
-- Found: GitHub skipped the 13:17 and 19:17 scheduled forecast builds; a build was started by hand at 19:00. Needs a more reliable trigger.
+- Found: GitHub skipped the 13:17 scheduled forecast build (and its 13:47 back-up); a build was started by hand at 19:00. Needs a more reliable trigger.
