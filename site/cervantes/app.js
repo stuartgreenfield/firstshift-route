@@ -572,6 +572,8 @@
       }).then(function () { if (quick) S.quickS = ((Date.now() - tq) / 1000).toFixed(1); });
     }
   }
+  var TS = typeof WeakMap === 'function' ? new WeakMap() : null;
+  function tsOf(path) { if (!TS) return path.map(function (q) { return q.t; }); var a = TS.get(path); if (!a) { a = path.map(function (q) { return q.t; }); TS.set(path, a); } return a; }   /* one times array per route, not one per frame */
   function ghosts() {
     if (!S.sel) return Promise.resolve();
     var boats = meta.fleet.filter(function (f) { return f.irc && f.start; }).map(function (f) { return { name: f.name, tcc: f.tcc, start: meta.live ? S.start.t : Math.max((f.start - T0) / 3600, S.from ? S.start.t : -1), f: f }; });
@@ -694,7 +696,7 @@
   }
   function fleetTable() {
     if (!S.ghosts || !S.sel) return;
-    var myCor = (S.sel.r.finish - S.start.t) * (+$('tcc').value || 1), path = S.sel.r.path, me = posAt(path.map(function (p) { return p.t; }), path, S.t);
+    var myCor = (S.sel.r.finish - S.start.t) * (+$('tcc').value || 1), path = S.sel.r.path, me = posAt(tsOf(path), path, S.t);
     var rows = S.ghosts.map(function (g) { var fin = g.ts[g.ts.length - 1], pos = posAt(g.ts, path, S.t); return { g: g, fin: fin, cor: (fin - g.ts[0]) * g.tcc, gap: me && pos ? FSRouter.dist(me.la, me.lo, pos.la, pos.lo) * (pos.k > me.k ? 1 : -1) : null }; }).sort(function (a, b) { return a.cor - b.cor; });
     var h = '<tr><th>Boat</th><th>TCC</th><th>Now</th><th>Corrected</th><th>vs you</th></tr>';
     rows.forEach(function (r) { var d = (r.cor - myCor) * 60; h += '<tr><td style="font-family:var(--f-body)">' + r.g.name + '</td><td>' + r.g.tcc.toFixed(3) + '</td><td>' + (r.gap == null ? '-' : (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ' nm') + '</td><td>' + fmtH(r.cor) + '</td><td>' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' min</td></tr>'; });
@@ -764,7 +766,7 @@
     if (S.mob) mobDraw();
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
-    S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(s.r.path.map(function (q) { return q.t; }), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
+    S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(tsOf(s.r.path), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
     if (S.from) { ctx.strokeStyle = css['--ink']; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(S.from.lon), Y(S.from.lat), 10, 0, 7); ctx.stroke(); }
     scale();
   }
@@ -1008,7 +1010,7 @@
     $('clock').innerHTML = clockH(S.t) + '<small>' + (S.start ? (S.t >= S.start.t ? fmtH(S.t - S.start.t) + ' since start' : 'before start') : 'UTC') + '</small>';
     var s = S.sel, h = '';
     if (s) {
-      var p = s.r.path, pos = posAt(p.map(function (q) { return q.t; }), p, S.t);
+      var p = s.r.path, pos = posAt(tsOf(p), p, S.t);
       if (pos && !pos.done && pos.i != null) {
         var q = p[pos.i + 1] || p[pos.i], lg = S.legs[Math.min(q.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a;
         var vmc = q.bsp * Math.cos((q.hdg - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
