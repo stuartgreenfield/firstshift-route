@@ -98,3 +98,22 @@ Status: Built · Partly built · To build · Researching · Later.
 - 40. "make it easy to manually add the sail log wind speeds from - to angles for downwind sails and wind speeds etc research it first". Researched PredictWind sail crossover charts (separate mainsail and headsail charts, templates as a starting point), SailGrib SailChart (TWA by TWS grid, tab-separated .sail file) and UK Sailmakers' crossover guide. Built: Settings, Sails table (name, TWA from and to, TWS from and to), typical inventories, crossover chart with the route's winds as dots and gaps in grey, tap to read, paste a grid. Saved on the device and with a saved boat. Done.
 - 41. "also reefs when they go in 1 2 and 3 etc". Reef 1 to 3 by true wind speed, upwind and downwind. Defaults from John Jourdane, "Sailing Under Control as the Wind Increases", Pacific Cup knowledge base: "Reefing begins sooner upwind than downwind because the apparent wind is greater sailing a beat or close reach." Done.
 - 42. "can the map move when you move the sider so boats stay in middle of screen and also on auto play - maybe this toggles". Follow the boat button. Done.
+
+## 11 Nov 2026, 18:00 to 19:45
+- 43. Polar Live on Google Play: Play-ready bundle built (targets Android 16, edge to edge fixed), store pack on the Mac. Closed test of 12 testers for 14 days needed before production. In progress.
+- To-do 7 boat code: Cloudflare KV created and bound as ROUTE_KV, live round trip tested. Done.
+- Live AIS: aisstream key added by Stuart as a Cloudflare secret; relay fixed to read aisstream's binary messages; real ships returned. Done.
+- Test card round 2 (v0.5.1):
+  - Item 1: progress card for loading and routing, with steps, percentage and time left (NN/g guidance). Done.
+  - Item 2: OFFLINE tag was under the iPhone notch; now beside the race name. Done.
+  - Item 4: new course asks the start day and time first, then Save and route. Done.
+  - Item 5: Forecast changed bar moved to the top of the chart. Done.
+  - Item 7: numbered steps for Send to crew (with message preview) and for the plotter. Done.
+  - Item 8: SPEED button opens a speed menu (adds 6 h a second). Done.
+  - Item 9: race boats from AIS with TCC, red ring and Close quarters banner, colours work in light and dark. Done. Sailgate entry list download not done: paste the entry list for now.
+  - Item 10: Read it out becomes Stop reading. Done.
+  - Item 11: Myth of Malham is listed and routes; explained.
+  - Item 13: ICON-EU is live; old page cached on the phone.
+  - Item 14: Layers: Show all and Just the route. Done.
+  - Item 15: Fleet tab was empty (no 2027 entry lists); added Boats you are racing, add by hand or paste a list. Done.
+- Found: GitHub skipped the 13:17 and 19:17 scheduled forecast builds; a build was started by hand at 19:00. Needs a more reliable trigger.
