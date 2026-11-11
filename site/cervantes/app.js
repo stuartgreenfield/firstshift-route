@@ -342,7 +342,7 @@
   function prog(title, frac, detail, est) {
     if (!title) { $('prog').hidden = true; PG.title = ''; return; }
     if (title !== PG.title) { PG.title = title; PG.t0 = Date.now(); PG.est = est || 0; }
-    $('prog').hidden = false; $('pgT').textContent = title;
+    $('prog').hidden = false; $('pgT').textContent = title; $('prog').classList.toggle('mini', /^Step 2/.test(title));   /* first routes are on screen: the refining card steps aside */
     $('prog').classList.toggle('ind', frac == null);
     $('pgBar').style.width = frac == null ? '' : Math.round(Math.max(0.03, Math.min(1, frac)) * 100) + '%';
     $('pgP').textContent = frac == null ? '' : Math.round(Math.min(1, frac) * 100) + '%';
