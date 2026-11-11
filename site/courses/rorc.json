@@ -102,9 +102,9 @@
    "courseYear": 2026,
    "courseStatus": "last-year",
    "start": {
-    "name": "Start, off Royal Harwich YC",
-    "lat": 51.947,
-    "lon": 1.29
+    "name": "Start, off Harwich (approximate: check the sailing instructions)",
+    "lat": 51.93,
+    "lon": 1.4
    },
    "marks": [],
    "finish": {
@@ -457,9 +457,9 @@
    },
    "hours": 54,
    "start": {
-    "name": "Start, off Royal Harwich YC",
-    "lat": 51.947,
-    "lon": 1.29
+    "name": "Start, off Harwich",
+    "lat": 51.93,
+    "lon": 1.4
    },
    "marks": [],
    "finish": {

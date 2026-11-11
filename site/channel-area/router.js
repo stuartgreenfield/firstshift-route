@@ -84,6 +84,9 @@
       var u = 0, v = 0, n = 0, use = fs.filter(function (f) { return live(f, t); });
       if (!use.length) use = all.filter(function (f) { return live(f, t); });   /* hand-over: past a model's last hour, the other models carry on */
       for (var i = 0; i < use.length; i++) { var a = use[i].sample('u', la, lo, t), b = use[i].sample('v', la, lo, t); if (a === a && b === b) { u += a; v += b; n++; } }
+      if (!n) {   /* outside this model's area (UKV, AROME): the other models carry on there too */
+        for (var j = 0; j < all.length; j++) { if (!live(all[j], t)) continue; var a2 = all[j].sample('u', la, lo, t), b2 = all[j].sample('v', la, lo, t); if (a2 === a2 && b2 === b2) { u += a2; v += b2; n++; } }
+      }
       if (!n) return [0, 0];
       u /= n; v /= n;
       return [Math.sqrt(u * u + v * v) / KN, (Math.atan2(-u, -v) / R + 360) % 360];

@@ -22,7 +22,7 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
     const p = await b.newPage(); p.on('pageerror', (e) => console.log(race, 'page error', e.message));
     await p.goto(`http://localhost:${port}/${race}/`);
     const note = () => p.evaluate(() => document.getElementById('runNote').textContent);
-    const waitDone = () => p.waitForFunction(() => /First answer|No route|Cannot|outside|No way/.test(document.getElementById('runNote').textContent), null, { timeout: 900000 });
+    const waitDone = () => p.waitForFunction(() => { const t = document.getElementById('runNote').textContent; return /First answer/.test(t) || (!/Quick route|Refining/.test(t) && /No route|Cannot|outside|No way/.test(t)); }, null, { timeout: 900000 });
     try {
       await waitDone();   // the page routes the first start time by itself once the forecasts are in
       for (let h = 0; h < HOURS; h++) {
