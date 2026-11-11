@@ -146,6 +146,8 @@ textarea{width:100%;min-height:100px;font-size:12px}
 .chk{display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer}
 .chk input{width:20px;height:20px;accent-color:var(--route)}
 .note{font-size:12px;color:var(--muted);margin:0}
+.xrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px}
+.xhelp h4{margin:12px 0 4px;font-size:13px}.xhelp ol{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
 .btn{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;min-height:40px}
 .btn.primary{background:var(--route);border-color:var(--route);color:var(--onroute)}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -206,7 +208,17 @@ tr.click{cursor:pointer}
       <div class="tw"><table id="matrix"></table></div>
       <p class="note" id="runNote"></p>
     </div>
-    <div class="pbody" id="t-plan" hidden><div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p></div>
+    <div class="pbody" id="t-plan" hidden><div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
+      <div class="xrow"><button class="btn" id="xGpx">Save GPX</button><button class="btn" id="xKml">Save KML</button><button class="btn" id="xShare" hidden>Open in chart app…</button><button class="btn" id="xHelpBtn" aria-expanded="false">How to load it</button></div>
+      <p class="note" id="xNote"></p>
+      <div id="xHelp" class="xhelp" hidden>
+        <p class="note"><b>The file is a planning aid, not for navigation.</b> GPX carries the route as waypoints at each turn plus the marks; KML shows the whole track in Google Earth and most chart apps.</p>
+        <h4>B&amp;G Zeus SR, Zeus S, Simrad NSS 4, NSX</h4><ol><li>Copy the GPX to a microSD card or USB stick.</li><li>Put it in the plotter, open the Waypoints &amp; Routes app and choose Import routes.</li><li>Follow the prompts and pick the file. Older Zeus 3 and 3S: Files, then pick the card and the file, then Import.</li></ol>
+        <h4>Raymarine Axiom (LightHouse)</h4><ol><li>Copy the GPX to a microSD card.</li><li>Homescreen, My data, Import/export, Import from card.</li><li>Pick the card slot and the .gpx file, then OK.</li></ol>
+        <h4>Garmin</h4><ol><li>Copy the GPX to a memory card and put it in.</li><li>Where To, Menu, Manage User Data, Data Transfer, File Type: GPX.</li><li>Then Import from the same Data Transfer menu.</li></ol>
+        <h4>GeoGarage, C-MAP, Navionics and other phone and tablet apps</h4><ol><li>On a phone or tablet, tap Open in chart app and choose the app from the share sheet, or save the file to Files first.</li><li>In the app, use its import or open file option if the share sheet does not offer it.</li><li>If the app will not take GPX, try the KML.</li></ol>
+        <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
+      </div></div>
     <div class="pbody" id="t-fleet" hidden>
       <p class="note">Every IRC entry sailing your chosen route at its own TCC from its own class start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
       <div class="tw"><table id="fleet"></table></div>

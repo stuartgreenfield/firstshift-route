@@ -31,7 +31,7 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); if (W) { fit(); fitted = true; }
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return download();
@@ -373,6 +373,47 @@
     });
     s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="6" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
     $('plan').innerHTML = h;
+  }
+  /* ---------- route export: GPX and KML (planning aid, not for navigation) ---------- */
+  function xEsc(t) { return String(t).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
+  function iso(h) { return new Date((T0 + h * 3600) * 1000).toISOString().replace(/\.\d+Z$/, 'Z'); }
+  function turns(p) {   // waypoints where the heading changes by 15 degrees or more, a leg ends, or 3 hours pass
+    var out = [p[0]], last = p[1] || p[0];
+    for (var i = 1; i < p.length - 1; i++) {
+      var q = p[i], d = Math.abs(((q.hdg - last.hdg + 540) % 360) - 180);
+      if (d >= 15 || q.leg !== last.leg || q.tack || q.t - last.t >= 3) { out.push(q); last = q; }
+    }
+    out.push(p[p.length - 1]); return out;
+  }
+  function xName() { var s = S.sel; return (meta.course.name || 'Route') + ' ' + (s.combined ? 'Combined' : short(s.id)) + ' ' + clockH(S.start.t); }
+  function xFile(kind) {
+    var s = S.sel, p = s.r.path, nm = xName(), f = nm.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (kind === 'gpx') {
+      var w = turns(p), g = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="FirstShift Route" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + xEsc(nm) + '</name><desc>Planning aid, not for navigation</desc><time>' + iso(S.start.t) + '</time></metadata>\n';
+      S.legs.forEach(function (l, i) { if (l.at) g += '<wpt lat="' + l.at[0].toFixed(5) + '" lon="' + l.at[1].toFixed(5) + '"><name>' + xEsc(l.name) + '</name><type>Mark</type></wpt>\n'; });
+      g += '<rte><name>' + xEsc(nm) + '</name>\n';
+      w.forEach(function (q, i) { g += '<rtept lat="' + q.la.toFixed(5) + '" lon="' + q.lo.toFixed(5) + '"><time>' + iso(q.t) + '</time><name>FS' + String(i + 1).padStart(3, '0') + '</name>' + (isFinite(q.hdg) ? '<desc>' + Math.round(q.hdg) + 'T, TWS ' + (q.tws || 0).toFixed(0) + ' kn, BSP ' + (q.bsp || 0).toFixed(1) + ' kn</desc>' : '') + '</rtept>\n'; });
+      g += '</rte>\n<trk><name>' + xEsc(nm) + ' track</name><trkseg>\n';
+      p.forEach(function (q) { g += '<trkpt lat="' + q.la.toFixed(5) + '" lon="' + q.lo.toFixed(5) + '"><time>' + iso(q.t) + '</time></trkpt>\n'; });
+      return { name: f + '.gpx', type: 'application/gpx+xml', text: g + '</trkseg></trk>\n</gpx>\n', n: w.length };
+    }
+    var k = '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + xEsc(nm) + '</name><description>Planning aid, not for navigation</description>\n<Style id="r"><LineStyle><color>ff2b8cff</color><width>3</width></LineStyle></Style>\n<Placemark><name>' + xEsc(nm) + '</name><styleUrl>#r</styleUrl><LineString><tessellate>1</tessellate><coordinates>' + p.map(function (q) { return q.lo.toFixed(5) + ',' + q.la.toFixed(5) + ',0'; }).join(' ') + '</coordinates></LineString></Placemark>\n';
+    S.legs.forEach(function (l) { if (l.at) k += '<Placemark><name>' + xEsc(l.name) + '</name><Point><coordinates>' + l.at[1].toFixed(5) + ',' + l.at[0].toFixed(5) + ',0</coordinates></Point></Placemark>\n'; });
+    return { name: f + '.kml', type: 'application/vnd.google-earth.kml+xml', text: k + '</Document></kml>\n' };
+  }
+  function xSave(kind) {
+    if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Decision.'; return; }
+    var x = xFile(kind), a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([x.text], { type: x.type })); a.download = x.name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    $('xNote').textContent = 'Saved ' + x.name + (x.n ? ' (' + x.n + ' waypoints)' : '') + '.';
+  }
+  function xInit() {
+    $('xGpx').onclick = function () { xSave('gpx'); }; $('xKml').onclick = function () { xSave('kml'); };
+    $('xHelpBtn').onclick = function () { var h = $('xHelp'); h.hidden = !h.hidden; this.setAttribute('aria-expanded', String(!h.hidden)); };
+    try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.gpx', { type: 'application/gpx+xml' })] })) $('xShare').hidden = false; } catch (e) {}
+    $('xShare').onclick = function () {
+      if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Decision.'; return; }
+      var x = xFile('gpx'); navigator.share({ files: [new File([x.text], x.name, { type: x.type })], title: xName() }).catch(function (e) { if (e && e.name !== 'AbortError') $('xNote').textContent = 'Sharing did not work here: use Save GPX.'; });
+    };
   }
   function fleetTable() {
     if (!S.ghosts || !S.sel) return;
