@@ -6,6 +6,12 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 10:16 | Boat code for several devices at once (no login) | Approved; to build |
+| 10:16 | Connect to NMEA over the boat's wifi if it has one, otherwise mobile or Starlink; no new equipment to buy | Agreed; NMEA over wifi needs the free FirstShift app wrapper |
+| 10:16 | Logins later (paid version) | Later |
+| 10:16 | Routes made on one device visible on the others, plus a local route on each | To build with the boat code |
+| 10:08 | Regular demo of each version, a to-do list, and competitor-inspired ideas; feedback saved per item | Built: test card (claude.ai/artifact/YFzQi6rjdcpdww3Nrg31sw) with video, checklist, to-do, ideas |
+| 10:11 | Work out use on phone, Mac, PC and tablet at the same time without a login | Answered: boat code |
 | 10:01 | Morning After: AIS transponder on NMEA 2000, broadcast across the boat network | Noted: needs a NMEA 2000 wifi gateway or Signal K to reach Route; gateway make to confirm |
 | 10:01 | Online AIS: prefer a free service rather than a FirstShift receiver | Agreed direction: aisstream.io through a FirstShift relay; AISHub receiver later if coverage is thin |
 | 10:01 | UKHO tidal stream enquiry | Stuart sending it |
