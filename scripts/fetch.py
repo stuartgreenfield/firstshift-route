@@ -126,6 +126,51 @@ def icon_eu():
     return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
 
 
+# ---------- Meteo-France AROME (France, 2.5 km, to 48 h) and ARPEGE (Europe, 0.1 deg, to 102 h): open data, no login ----------
+MF = 'https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt'
+def meteofrance(model):
+    import eccodes, tempfile
+    d, r = RUN; iso = f'{d[:4]}-{d[4:6]}-{d[6:]}T{r}:00:00Z'
+    if model == 'arome': groups = [(0, 6)] + [(a, a + 5) for a in range(7, 48, 6)]; name = lambda a, b: f'arome/0025/SP1/arome__0025__SP1__{a:02d}H{b:02d}H__{iso}.grib2'
+    else: groups = [(0, 12)] + [(a, min(a + 11, 102)) for a in range(13, 103, 12)]; name = lambda a, b: f'arpege/01/SP1/arpege__01__SP1__{a:03d}H{b:03d}H__{iso}.grib2'
+    want = set(h for h in HOURS)
+    got = {}
+    for a, b in groups:
+        if a > max(HOURS): break
+        tag = f'{model}_{d}{r}_{a:03d}'
+        done = os.path.join(SHARED, tag + '.done')
+        if not os.path.exists(done):
+            buf = get(f'{MF}/{iso}/{name(a, b)}', tries=3)
+            with tempfile.NamedTemporaryFile(suffix='.grib2') as tf:
+                tf.write(buf); tf.flush()
+                with open(tf.name, 'rb') as fh:
+                    while True:
+                        h = eccodes.codes_grib_new_from_file(fh)
+                        if h is None: break
+                        try:
+                            sn = eccodes.codes_get(h, 'shortName'); st = int(eccodes.codes_get(h, 'endStep'))
+                            if sn in ('10u', '10v'):
+                                msg = eccodes.codes_get_message(h)
+                                global BOX
+                                keep = BOX; BOX = AREA
+                                try: arr, la, lo = grib_crop(msg)
+                                finally: BOX = keep
+                                np.savez(os.path.join(SHARED, f'{model}_{d}{r}_h{st:03d}_{sn}.npz'), a=arr, la=la, lo=lo)
+                        finally: eccodes.codes_release(h)
+            open(done, 'w').write('ok')
+        print(model, f'{a}-{b}', end=' | ', flush=True)
+    U = []; V = []; hrs = []; lat = lon = None
+    for hh in sorted(want):
+        pu = os.path.join(SHARED, f'{model}_{d}{r}_h{hh:03d}_10u.npz'); pv = pu.replace('_10u', '_10v')
+        if not (os.path.exists(pu) and os.path.exists(pv)): continue
+        zu, zv = np.load(pu), np.load(pv); la, lo = zu['la'], zu['lo']
+        iy = np.where((la >= BOX['s'] - .3) & (la <= BOX['n'] + .3))[0]; ix = np.where((lo >= BOX['w'] - .3) & (lo <= BOX['e'] + .3))[0]
+        if not len(iy) or not len(ix): continue
+        U.append(zu['a'][np.ix_(iy, ix)]); V.append(zv['a'][np.ix_(iy, ix)]); hrs.append(hh); lat, lon = la[iy], lo[ix]
+    if not hrs: raise SystemExit(f'{model}: nothing for this box')
+    return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
+
+
 # ---------- Met Office NetCDF on AWS ----------
 def metoffice(model):
     import netCDF4
@@ -244,6 +289,8 @@ if __name__ == '__main__':
         elif s == 'ecwav':
             o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)
+        elif s in ('arome', 'arpege'):
+            o, h, la, lo = meteofrance(s); save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
         elif s == 'icon':
             o, h, la, lo = icon_eu(); save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
         elif s == 'gfs':
