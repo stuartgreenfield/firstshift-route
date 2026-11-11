@@ -40,6 +40,14 @@ jobs:
       - name: Fetch forecasts and build packs
         if: steps.fresh.outputs.skip != '1'
         run: python3 scripts/build.py cervantes fastnet
+      - name: Pre-route each race for the standard settings
+        if: steps.fresh.outputs.skip != '1'
+        continue-on-error: true
+        timeout-minutes: 40
+        run: |
+          npm i --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+          PRE_HOURS=6 node scripts/preroute.js site cervantes fastnet
       - name: Publish to the site branch
         if: steps.fresh.outputs.skip != '1'
         run: |

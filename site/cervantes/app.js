@@ -34,7 +34,7 @@
     meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
-    return download();
+    return loadPre().then(function () { earlyPre(); return download(); });
   }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; });
 
   /* ---------- new forecasts: check every 5 minutes; a button downloads them and routes again ---------- */
@@ -56,7 +56,7 @@
       meta = m; T0 = m.t0; meta.course0 = m.course; S.loaded = {}; S.gotAt = {}; S.ov = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = [];
       if (raceId) applyRace(raceId);
       var st = (+$('startSel').value - T0) / 3600; S.tmin = Math.min(st, S.tmin - 0); S.tmax = Math.min(HMAX(), S.tmax);
-      download().then(function () { chip(); dataTable(); run(); }).catch(function (e) { busy(''); $('dlNote').textContent = e.message; });
+      loadPre().then(function () { earlyPre(); return download(); }).then(function () { chip(); dataTable(); run(); }).catch(function (e) { busy(''); $('dlNote').textContent = e.message; });
     };
   }
 
@@ -296,12 +296,42 @@
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
   }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
+  /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
+  function loadPre() {
+    S.pre = null;
+    return fetch('pre/routes.json?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.built === (meta.built || meta.t0)) S.pre = j; }).catch(function () {});
+  }
+  function startPt() { return S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 }; }
+  function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return m.side || ''; }), base.tackS, base.gybeS, base.safety, base.sea.up, base.sea.reach, base.sea.surf]); }
+  function fullKey(base, st) { return JSON.stringify([liteKey(base, st), base.models.slice().sort(), base.tide, base.wave, base.nogo.length]); }
+  function preEntry(full) {
+    if (!S.pre || S.from) return null;
+    var base = opts(full ? selectedModels() : []), st = startPt(), e = null;
+    if (full) e = S.pre.r[fullKey(base, st)];
+    else { var lk = liteKey(base, st); Object.keys(S.pre.r).some(function (k) { if (JSON.parse(k)[0] === lk) { e = S.pre.r[k]; return true; } return false; }); }
+    return e ? { e: e, base: base, st: st } : null;
+  }
+  function usePre(h, early) {
+    S.routes = h.e.routes; S.matrix = h.e.matrix; S.sel = S.routes.filter(function (s) { return s.best; })[0] || S.routes[0];
+    S.base = Object.assign({}, h.base, { models: S.sel.models }); S.legs = legsFor(null); S.start = h.st; S.ghosts = [];
+    $('runNote').textContent = 'Routed on the server ' + clockAbs(S.pre.at) + (early ? '; forecasts still loading for the replay.' : '. Change any setting and Route works it out on your device.');
+    return (early ? Promise.resolve() : ghosts()).then(show);
+  }
+  function earlyPre() { var h = preEntry(false); if (h && !S.routes.length) { try { usePre(h, true); } catch (e) {} } }
+  function show() {
+    busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
+    var maxT = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
+    S.tmin = Math.min(S.start.t, (starts[0] - T0) / 3600); S.tmax = Math.min(HMAX(), maxT + 1);
+    try { setTime(S.from ? S.from.t : S.start.t); } catch (e) { draw(); }
+  }
+  window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
     if (S.running) return;
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
-    S.running = true; busy('Quick route…');
+    var hit = preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; }, function () { S.running = false; }); return; }
+    S.running = true; busy('Quick route…'); S.key = null;
     var tq = Date.now();
     pass(true).then(function () { return pass(false); }).then(function () { S.running = false; $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
     .catch(function (e) { S.running = false; busy(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
@@ -329,10 +359,7 @@
           return ghosts();
         });
       }).then(function () {
-        busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
-        var maxT = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
-        S.tmin = Math.min(S.start.t, (starts[0] - T0) / 3600); S.tmax = Math.min(HMAX(), maxT + 1);
-        setTime(S.from ? S.from.t : S.start.t);
+        show(); if (!quick && !S.from) S.key = fullKey(Object.assign({}, base, { models: ms }), start);
       }).then(function () { if (quick) S.quickS = ((Date.now() - tq) / 1000).toFixed(1); });
     }
   }

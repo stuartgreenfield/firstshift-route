@@ -4,3 +4,5 @@ site/status.json
 __pycache__/
 site/fastnet/*.html
 site/fastnet/*.js
+site/*/pre/
+node_modules/
