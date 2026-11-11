@@ -184,6 +184,9 @@
         var la = g.coords.latitude, lo = g.coords.longitude, t = (Date.now() / 1000 - T0) / 3600;
         if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) return tap('Your position is outside the routing area.');
         if (t < 0 || t > HMAX() - 1) return tap('Now is outside the forecast window.');
+        var gz = P.depth ? P.depth.nearest('z', la, lo) : NaN;
+        if (!inData({ lat: la, lon: lo })) return tap('You are outside this page\'s forecast area.');
+        if (!(gz <= -(+$('depth').value))) return tap('You look to be ashore or in shallow water.');   /* at home or on the dock: route from where the boat will be instead */
         S.from = { lat: la, lon: lo, t: t, gps: true }; $('fromHere').setAttribute('aria-pressed', 'false'); busy(''); run();
       }, function () { tap('No GPS fix.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
     };
@@ -986,7 +989,7 @@
     S.running = true; busy(''); S.key = null;
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
     pass(true).then(function () { return pass(false); }).then(function () { S.running = false; prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
+    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
@@ -1022,7 +1025,7 @@
   /* boats you are racing, added by hand, pasted from an entry list or picked from AIS; kept on this device for each race */
   function mfKey() { return 'fs-fleet-' + raceKey(); }
   function myFleet() { try { return JSON.parse(store(mfKey()) || '[]') || []; } catch (e) { return []; } }
-  function setMyFleet(a) { store(mfKey(), JSON.stringify(a)); mfShow(); ghosts().then(function () { fleetTable(); draw(); }); if (AIS.src !== 'off') aisUpdate(); }
+  function setMyFleet(a) { store(mfKey(), JSON.stringify(a)); mfShow(); ghosts().then(function () { fleetTable(); draw(); }, function (e) { console.error('fleet', e && e.message); }); if (AIS.src !== 'off') aisUpdate(); }
   function mfAdd(name, tcc, mmsi) {
     name = String(name || '').trim(); tcc = +tcc; if (!name || !(tcc > 0.5 && tcc < 2)) return false;
     var a = myFleet().filter(function (f) { return f.name.toUpperCase() !== name.toUpperCase() && (!mmsi || f.mmsi !== mmsi); }); a.push({ name: name, tcc: tcc, mmsi: mmsi || null }); setMyFleet(a); return true;
