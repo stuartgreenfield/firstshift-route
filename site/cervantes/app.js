@@ -45,7 +45,8 @@
 
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); if (W) { fit(); fitted = true; }
+    meta = m; T0 = m.t0; setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit();
+    ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return loadPre().then(function () { earlyPre(); return download(); });
@@ -578,8 +579,8 @@
     if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = view.s < 900; ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     grid();
     if (S.show.band) bandEdge();
-    if (S.show.tide) arrows('tide');
-    if (S.show.wind && $('windShow').value) arrows('wind');
+    if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
+    if (S.show.wind && $('windShow').value) { ctx.save(); ctx.globalAlpha = (+$('windDim').value || 0) / 100; arrows('wind'); ctx.restore(); }
     zonesDraw(); lightsDraw();
     marks();
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
@@ -677,6 +678,7 @@
     ctx.stroke();
   }
   function arrows(kind) {
+    var A0 = ctx.globalAlpha;   /* the brightness slider; symbols' own transparency multiplies it */
     var f = kind === 'wind' ? P.wind[$('windShow').value] : P.tide[$('tideSel').value]; if (!f) return;
     var sym = kind === 'wind' ? $('windSym').value : $('tideSym').value;
     var sp = kind === 'wind' ? (sym === 'W5' ? 30 : 60) : ({ T5: 46, T6: 46, T1: 38, T3: 42 }[sym] || 40);
@@ -696,18 +698,18 @@
       else if (sym === 'W5') {
         ctx.lineWidth = 1.3;
         for (var k = 0; k < 2; k++) { var ph = ((now * 0.00009 * s + k / 2 + ((la * 97 + lo * 31) % 1 + 1) % 1) % 1), L2 = 5 + s * 0.9, cx = x + dx * (ph - 0.5) * 26 + (k - 0.5) * dy * 10, cy = y + dy * (ph - 0.5) * 26 - (k - 0.5) * dx * 10;
-          ctx.globalAlpha = 0.6 * Math.sin(ph * Math.PI); ctx.beginPath(); ctx.moveTo(cx - dx * L2 / 2, cy - dy * L2 / 2); ctx.lineTo(cx + dx * L2 / 2, cy + dy * L2 / 2); ctx.stroke(); }
-        ctx.globalAlpha = 1;
+          ctx.globalAlpha = A0 * 0.6 * Math.sin(ph * Math.PI); ctx.beginPath(); ctx.moveTo(cx - dx * L2 / 2, cy - dy * L2 / 2); ctx.lineTo(cx + dx * L2 / 2, cy + dy * L2 / 2); ctx.stroke(); }
+        ctx.globalAlpha = A0 * 1;
         if ((Math.round(x / sp) + Math.round(y / sp)) % 2 === 0) { ctx.font = '600 10px "JetBrains Mono", monospace'; ctx.fillText(s.toFixed(0), x - 4, y + 4); ctx.font = '10px "JetBrains Mono", monospace'; }
       }
       else if (sym === 'T5' || sym === 'T6') {
         var L3 = 12 + s * 9, w3 = 2 + s * 3.2, hw = w3 * 1.9, hl = 5 + s * 3, bx = x - dx * L3 / 2, by = y - dy * L3 / 2, tx = x + dx * L3 / 2, ty = y + dy * L3 / 2, nx = x + dx * (L3 / 2 - hl), ny = y + dy * (L3 / 2 - hl);
         ctx.beginPath(); ctx.moveTo(bx - dy * w3 / 2, by + dx * w3 / 2); ctx.lineTo(nx - dy * w3 / 2, ny + dx * w3 / 2); ctx.lineTo(nx - dy * hw / 2, ny + dx * hw / 2); ctx.lineTo(tx, ty); ctx.lineTo(nx + dy * hw / 2, ny - dx * hw / 2); ctx.lineTo(nx + dy * w3 / 2, ny - dx * w3 / 2); ctx.lineTo(bx + dy * w3 / 2, by - dx * w3 / 2); ctx.closePath();
-        ctx.globalAlpha = 0.32; ctx.fill(); ctx.globalAlpha = 1; if (sym === 'T6') { ctx.lineWidth = 0.9; ctx.globalAlpha = 0.85; ctx.stroke(); ctx.globalAlpha = 1; }
-        if (s >= 0.6 && lbl) { ctx.globalAlpha = 0.8; ctx.fillText(s.toFixed(1), x + 6, y - 6); ctx.globalAlpha = 1; }
+        ctx.globalAlpha = A0 * 0.32; ctx.fill(); ctx.globalAlpha = A0 * 1; if (sym === 'T6') { ctx.lineWidth = 0.9; ctx.globalAlpha = A0 * 0.85; ctx.stroke(); ctx.globalAlpha = A0 * 1; }
+        if (s >= 0.6 && lbl) { ctx.globalAlpha = A0 * 0.8; ctx.fillText(s.toFixed(1), x + 6, y - 6); ctx.globalAlpha = A0 * 1; }
       }
-      else if (sym === 'T1') { var L4 = 8 + s * 7; for (var q = 0; q <= 4; q++) { var fq = q / 4 - 0.5; ctx.beginPath(); ctx.arc(x + dx * L4 * fq, y + dy * L4 * fq, 1.4, 0, 7); ctx.fill(); } head(x + dx * (L4 / 2 + 5), y + dy * (L4 / 2 + 5), dx, dy, 5, 2.8); if (s >= 0.5 && lbl) { ctx.globalAlpha = 0.8; ctx.fillText(s.toFixed(1), x + 5, y + 11); ctx.globalAlpha = 1; } }
-      else if (sym === 'T3') { var L5 = 10 + s * 7, w5 = 0.8 + s * 1.6; ctx.lineWidth = w5; ctx.beginPath(); ctx.moveTo(x - dx * L5 / 2, y - dy * L5 / 2); ctx.lineTo(x + dx * (L5 / 2 - 4), y + dy * (L5 / 2 - 4)); ctx.stroke(); head(x + dx * L5 / 2, y + dy * L5 / 2, dx, dy, 4 + w5, 1.8 + w5); if (s >= 0.5 && lbl) { ctx.globalAlpha = 0.8; ctx.fillText(Math.round(s * 10), x + 5, y - 5); ctx.globalAlpha = 1; } }
+      else if (sym === 'T1') { var L4 = 8 + s * 7; for (var q = 0; q <= 4; q++) { var fq = q / 4 - 0.5; ctx.beginPath(); ctx.arc(x + dx * L4 * fq, y + dy * L4 * fq, 1.4, 0, 7); ctx.fill(); } head(x + dx * (L4 / 2 + 5), y + dy * (L4 / 2 + 5), dx, dy, 5, 2.8); if (s >= 0.5 && lbl) { ctx.globalAlpha = A0 * 0.8; ctx.fillText(s.toFixed(1), x + 5, y + 11); ctx.globalAlpha = A0 * 1; } }
+      else if (sym === 'T3') { var L5 = 10 + s * 7, w5 = 0.8 + s * 1.6; ctx.lineWidth = w5; ctx.beginPath(); ctx.moveTo(x - dx * L5 / 2, y - dy * L5 / 2); ctx.lineTo(x + dx * (L5 / 2 - 4), y + dy * (L5 / 2 - 4)); ctx.stroke(); head(x + dx * L5 / 2, y + dy * L5 / 2, dx, dy, 4 + w5, 1.8 + w5); if (s >= 0.5 && lbl) { ctx.globalAlpha = A0 * 0.8; ctx.fillText(Math.round(s * 10), x + 5, y - 5); ctx.globalAlpha = A0 * 1; } }
     }
     ctx.lineCap = 'butt';
   }

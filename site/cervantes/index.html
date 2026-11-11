@@ -368,6 +368,8 @@ J3 reaching, 100, 125, 20, 60</textarea>
       <h3>Screen</h3>
       <div class="seg" id="modeSeg" role="group" aria-label="Screen"><button data-mode="auto">Auto</button><button data-mode="light">Light</button><button data-mode="dark">Dark</button><button data-mode="night">Night red</button></div>
       <p class="note">Auto follows the phone or computer. Light for bright sun, Dark for dusk and the nav table, Night red keeps every colour at the red end, at low brightness, to protect night vision on deck; turn the screen brightness down too. The Night button on the chart switches between Night red and your day setting.</p>
+      <div class="row tune"><label for="windDim">Wind symbols</label><input type="range" id="windDim" min="15" max="100" step="5" value="55"><b id="windDimV"></b></div>
+      <div class="row tune"><label for="tideDim">Tide arrows</label><input type="range" id="tideDim" min="15" max="100" step="5" value="50"><b id="tideDimV"></b></div>
       <div class="row"><label for="windSym">Wind symbol</label><select id="windSym"><option value="W6">W6 Barb with number</option><option value="W2">W2 Wind barb</option><option value="W5">W5 Slow streaks with numbers (moving)</option><option value="W7">W7 FirstShift triangle</option></select></div>
       <div class="row"><label for="tideSym">Tide symbol</label><select id="tideSym"><option value="T6">T6 Translucent arrow, outlined</option><option value="T5">T5 Translucent weighted arrow</option><option value="T1">T1 Dotted arrow</option><option value="T3">T3 Tidal atlas arrow</option></select></div>
       <p class="note">Barbs: the staff points into the wind; half feather 5 kn, full feather 10, pennant 50. Tide arrows point the way the water flows, rate in knots (atlas arrows in tenths).</p>
