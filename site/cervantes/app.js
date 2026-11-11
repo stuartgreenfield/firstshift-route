@@ -173,6 +173,8 @@
     initBoat();
     $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
     $('run').onclick = function () { S.from = null; run(); };
+    /* From here: with no position on this device (a Mac without location, or location turned off), it says so and you tap the chart where the boat is */
+    try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) { var f = function () { var no = st.state === 'denied' || !navigator.geolocation; $('fromHere').classList.toggle('nogps', no); $('fromHere').title = no ? 'From here: no position on this device, so tap the chart where the boat is' : 'From here: route from where you are now (GPS), or tap the chart'; }; f(); st.onchange = f; }).catch(function () {}); } catch (e) {}
     $('fromHere').onclick = function () {   /* reroute from where the boat is now: the device's GPS first, else tap the chart */
       var on = $('fromHere').getAttribute('aria-pressed') !== 'true'; $('fromHere').setAttribute('aria-pressed', on);
       if (!on) { busy(''); return; }
@@ -378,6 +380,7 @@
     r.marks.forEach(function (m, i) { $('side' + i).value = m.side || 'port'; $('side' + i).onchange = function () { meta.course.marks[i].side = this.value; meta.course.marks[i].sideAssumed = false; S.legs = null; draw(); }; });
     var issue = courseIssue(meta.course);
     $('courseNote').innerHTML = (r.custom ? 'Your own course' + (r.nm ? ', about ' + r.nm + ' nm' : '') + '. ' : (r.nm ? 'About ' + r.nm + ' nm. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>') + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
+    try { history.replaceState(null, '', location.pathname + (!r.custom && r.id !== HERE && r.page ? '?race=' + encodeURIComponent(r.id) : '')); } catch (e) {}   /* the address always matches what is on screen, so a reload reopens it */
     if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W) fit(); draw();
   }
   function loadRaces() {
@@ -391,11 +394,11 @@
       var hop = function (id) { var pg = pageOf(id); if (pg === HERE) return false; location.replace('../' + pg + '/' + (pg !== id ? '?race=' + encodeURIComponent(id) : '')); return true; };   /* a race only routes on the page that holds its forecasts */
       $('raceSel').onchange = function () { if (!hop($('raceSel').value)) applyRace($('raceSel').value); };
       var home = meta.course0 ? meta.course0.raceId : meta.course.raceId; home = home || 'cervantes'; var want = home === 'cervantes' ? (store('fs-race') || home) : home; if (!RACES.some(function (r) { return r.id === want; })) want = home;
-      var qr = new URLSearchParams(location.search).get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
+      var qr = QS0.get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
       if (want !== home && hop(want)) return;
       var lastBoot = LAST0; $('raceSel').value = want; applyRace(want);
       if (!RACES.some(function (r) { return r.id === want; })) { var c0 = meta.course; $('raceTitle').textContent = c0.name + ' · ' + c0.start.name.replace(/^Start,\s*/, '') + ' to ' + c0.finish.name.replace(/^Finish,\s*/, ''); setShort(c0.name.replace(/^English /, '').replace(/^Southern /, '')); }
-      var qs = new URLSearchParams(location.search), my = qs.get('my'), last = lastBoot;
+      var qs = QS0, my = qs.get('my'), last = lastBoot;
       if (!my && !qr && !qs.get('course') && !S.pendingCourse && last) {
         if (last.my && myRaces().some(function (x) { return x.id === last.my && (!x.page || x.page === HERE); })) my = last.my;
         else if (last.race && last.race !== want && RACES.some(function (r) { return r.id === last.race && (r.page || r.id) === HERE; })) { $('raceSel').value = last.race; applyRace(last.race); }
@@ -598,7 +601,7 @@
       window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
     };
     $('xCopy').onclick = function () { var t = crewText(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('xNote').textContent = 'Copied: paste it into WhatsApp, a message or an email.'; }, function () { $('xNote').textContent = t; }); };
-    var q = new URLSearchParams(location.search), cs = q.get('course'), st = q.get('start');
+    var q = QS0, cs = q.get('course'), st = q.get('start');
     if (cs) { try { var cc = JSON.parse(decodeURIComponent(escape(atob(cs)))), P0 = cc.p.map(function (a) { return { lat: a[0], lon: a[1], name: a[2], side: a[3] === 's' ? 'starboard' : 'port' }; });
       S.pendingCourse = { name: cc.n, start: P0[0], marks: P0.slice(1, -1), finish: P0[P0.length - 1] }; } catch (e) {} }
     if (st) S.pendingStart = st;
@@ -656,7 +659,7 @@
     if ($('bcShare')) $('bcShare').onclick = function () { var link = location.origin + location.pathname + '?boat=' + BC.code, t = 'FirstShift Route boat code ' + BC.code + ': open ' + link + ' to share our boat settings and races.'; if (navigator.share) navigator.share({ title: 'FirstShift Route boat code', text: t }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener'); };
   }
   function bcInit() {
-    var q = new URLSearchParams(location.search).get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q)) { BC.code = q.toUpperCase(); BC.at = 0; store('fs-boatcode', BC.code); }
+    var q = QS0.get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q)) { BC.code = q.toUpperCase(); BC.at = 0; store('fs-boatcode', BC.code); }
     if (BC.code) setTimeout(function () { bcPull(false); }, 1500);
     var push = function () { if (BC.code) setTimeout(bcPush, 300); };
     var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
@@ -683,6 +686,7 @@
   }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
+  var QS0 = new URLSearchParams(location.search);   /* the address as opened, before Route rewrites it */
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop(), LAST0 = (function () { try { return JSON.parse(localStorage.getItem('fs-last-' + location.pathname.replace(/\/+$/, '').split('/').pop()) || 'null'); } catch (e) { return null; } })();
   function myRaces() { try { return JSON.parse(store('fs-myraces') || '[]'); } catch (e) { return []; } }
   function setMyRaces(a) { store('fs-myraces', JSON.stringify(a)); }
@@ -754,7 +758,7 @@
     var h = '<div class="wizstep">', B = $('wizBody');
     if (n === 1) {
       var bl = Object.keys(boats()).sort();
-      h += '<h3>Your boat</h3><p class="lead">Done once: Route keeps it on this device, and a boat code shares it with the crew.</p>' +
+      h += '<h3>Your boat</h3><p class="wlead">Done once: Route keeps it on this device, and a boat code shares it with the crew.</p>' +
         (bl.length ? '<div class="row"><label for="wzMy">Saved boats</label><select id="wzMy"><option value="">Choose…</option>' + bl.map(function (x) { return '<option>' + wizEsc(x) + '</option>'; }).join('') + '</select></div>' : '') +
         '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc($('boatName').value) + '" placeholder="For example Morning After" autocomplete="off"></div>' +
         '<div class="row"><label for="wzType">Boat type</label><select id="wzType">' + $('boatType').innerHTML + '</select></div>' +
@@ -770,7 +774,7 @@
       var days = {}, order = [], cur = $('startSel').value;
       [].forEach.call($('startSel').options, function (o) { var d = new Date(+o.value * 1000), k = d.toUTCString().slice(0, 11); if (!days[k]) { days[k] = []; order.push(k); } days[k].push({ v: o.value, t: d.toUTCString().slice(17, 22) }); });
       var cd = order.filter(function (k) { return days[k].some(function (x) { return x.v === cur; }); })[0] || order[0];
-      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="lead">When does your class start? Times in UTC: UK time in winter, one hour behind UK summer time.</p>' +
+      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Times in UTC: UK time in winter, one hour behind UK summer time.</p>' +
         '<div class="row"><label for="wzDay">Day</label><select id="wzDay">' + order.map(function (k) { return '<option' + (k === cd ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>' +
         '<div class="row"><label for="wzTime">Time</label><select id="wzTime"></select></div>' +
         '<p class="note">Starts run as far as the forecasts allow the whole race to be routed. For a race further ahead, set it up now and choose the start nearer the day.</p>';
@@ -780,7 +784,7 @@
       if (!order.length) { $('wizHint').textContent = 'No start times: the forecast has not loaded yet.'; }
     } else if (n === 4) {
       var mf = myFleet(), ent = (meta.fleet || []).filter(function (f) { return f.irc && f.start; });
-      h += '<h3>Boats you are racing</h3><p class="lead">Optional. Route sails each one along your route at its own TCC, so you can see who should be ahead on the water and on corrected time.</p>' +
+      h += '<h3>Boats you are racing</h3><p class="wlead">Optional. Route sails each one along your route at its own TCC, so you can see who should be ahead on the water and on corrected time.</p>' +
         (ent.length ? '<p class="note">' + ent.length + ' boats from the entry list are already in.</p>' : '') +
         '<p class="note" id="wzMfN">' + (mf.length ? mf.length + ' added by you: ' + mf.map(function (f) { return wizEsc(f.name); }).join(', ') : 'None added yet.') + '</p>' +
         '<div class="mfadd"><input id="wzMfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="wzMfTcc" type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="btn" id="wzMfAdd">Add</button></div>' +
@@ -793,7 +797,7 @@
       var ms = selectedModels().map(function (m) { return short(m); }), fl = myFleet().length + (meta.fleet || []).filter(function (f) { return f.irc && f.start; }).length;
       var pct = Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3), tide = $('tideSel').options[$('tideSel').selectedIndex];
       var row = function (k, v, step, warn) { return '<div><b>' + k + '</b><span' + (warn ? ' class="warn"' : '') + '>' + v + '</span><button class="btn" data-go="' + step + '">Change</button></div>'; };
-      h += '<h3>Check before routing</h3><p class="lead">Everything Route will use. Change anything, or Route it.</p><div class="wcheck">' +
+      h += '<h3>Check before routing</h3><p class="wlead">Everything Route will use. Change anything, or Route it.</p><div class="wcheck">' +
         row('Boat', bs ? wizEsc($('boatName').value || 'Your boat') + ', TCC ' + (+$('tcc').value).toFixed(3) + ', ' + pct + '% of the polar' : 'Generic boat: TCC ' + (+$('tcc').value).toFixed(3) + '. Set up your boat for a true answer.', 1, !bs) +
         row('Sails', sl.sails + ' sails' + (sl.reef ? ', reef points on' : ''), 1) +
         row('Race', wizEsc(c.name) + ', ' + courseNm(c) + ' nm' + (issue ? '. ' + wizEsc(issue) : ''), 2, !!issue) +
@@ -1263,7 +1267,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (S.big) { drawBig(); return; }
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
-    if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = view.s < 900; ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
+    if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     grid();
     if (S.show.band) bandEdge();
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }

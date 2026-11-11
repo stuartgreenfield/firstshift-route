@@ -36,7 +36,7 @@
   for (var i = 0; i < n; i++) { try { var w = new Worker('worker.js'); w.onmessage = function (e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }; workers.push(w); } catch (e) { break; } }
 
   /* phones: From here sits beside Play in the bottom bar */
-  (function () { var mq = matchMedia('(max-width:899px)'), fh = $('fromHere'), home = fh.parentNode, next = fh.nextSibling;
+  (function () { var mq = matchMedia('(max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px)'), fh = $('fromHere'), home = fh.parentNode, next = fh.nextSibling;
     function place() { var bar = document.querySelector('.bar'); if (mq.matches) { bar.insertBefore(fh, $('time')); bar.classList.add('fh'); } else if (fh.parentNode !== home) { home.insertBefore(fh, next); bar.classList.remove('fh'); } }
     place(); if (mq.addEventListener) mq.addEventListener('change', place); })();
   /* ---------- offline: keep the app, forecasts and routes on the device (sw.js) ---------- */
@@ -173,6 +173,8 @@
     initBoat();
     $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
     $('run').onclick = function () { S.from = null; run(); };
+    /* From here: with no position on this device (a Mac without location, or location turned off), it says so and you tap the chart where the boat is */
+    try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) { var f = function () { var no = st.state === 'denied' || !navigator.geolocation; $('fromHere').classList.toggle('nogps', no); $('fromHere').title = no ? 'From here: no position on this device, so tap the chart where the boat is' : 'From here: route from where you are now (GPS), or tap the chart'; }; f(); st.onchange = f; }).catch(function () {}); } catch (e) {}
     $('fromHere').onclick = function () {   /* reroute from where the boat is now: the device's GPS first, else tap the chart */
       var on = $('fromHere').getAttribute('aria-pressed') !== 'true'; $('fromHere').setAttribute('aria-pressed', on);
       if (!on) { busy(''); return; }
@@ -184,6 +186,9 @@
         var la = g.coords.latitude, lo = g.coords.longitude, t = (Date.now() / 1000 - T0) / 3600;
         if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) return tap('Your position is outside the routing area.');
         if (t < 0 || t > HMAX() - 1) return tap('Now is outside the forecast window.');
+        var gz = P.depth ? P.depth.nearest('z', la, lo) : NaN;
+        if (!inData({ lat: la, lon: lo })) return tap('You are outside this page\'s forecast area.');
+        if (!(gz <= -(+$('depth').value))) return tap('You look to be ashore or in shallow water.');   /* at home or on the dock: route from where the boat will be instead */
         S.from = { lat: la, lon: lo, t: t, gps: true }; $('fromHere').setAttribute('aria-pressed', 'false'); busy(''); run();
       }, function () { tap('No GPS fix.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
     };
@@ -209,8 +214,8 @@
     $('sheet').onclick = function (e) { if (e.target === $('sheet')) $('sheetX').onclick(); };
     [].forEach.call(document.querySelectorAll('.stabs .tab'), function (b) { b.onclick = function () { [].forEach.call(document.querySelectorAll('.stabs .tab'), function (x) { x.setAttribute('aria-selected', x === b); $('s-' + x.dataset.s).hidden = x !== b; }); }; });
     [].forEach.call(document.querySelectorAll('.tabs .tab'), function (b) { b.onclick = function () { openTab(b.dataset.tab, true); }; });
-    $('panelBtn').onclick = function () { var p = $('panel'); if (wide()) { p.hidden = !p.hidden; } else { p.hidden = false; p.classList.toggle('collapsed'); } $('panelBtn').setAttribute('aria-expanded', !p.hidden && !p.classList.contains('collapsed')); setTimeout(resizeDraw, 0); };
-    $('panelX').onclick = closePanel;
+    $('panelBtn').onclick = function () { var p = $('panel'); if (wide()) { p.hidden = !p.hidden; store('fs-panel', p.hidden ? 'closed' : 'open'); } else { p.hidden = false; p.classList.toggle('collapsed'); } $('panelBtn').setAttribute('aria-expanded', !p.hidden && !p.classList.contains('collapsed')); setTimeout(resizeDraw, 0); };
+    $('panelX').onclick = function () { if (wide()) store('fs-panel', 'closed'); closePanel(); };
     // Esc closes whatever is on top: settings, then layers, then the info card, then results
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
@@ -230,6 +235,8 @@
     if (window.FSSails) FSSails.init({ pts: function () { return S.sel && S.sel.r ? S.sel.r.path : []; }, onChange: function () { plan(); compareTable(); update(); } });
     ['sails', 'mains'].forEach(function (id) { $(id).addEventListener('input', function () { plan(); update(); }); });
     if (!wide()) $('panel').hidden = false;
+    else if (store('fs-panel') !== 'closed') { $('panel').hidden = false; $('panel').classList.remove('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'true'); }   /* on a computer the results open beside the chart unless you closed them */
+    window.addEventListener('scroll', function () { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });   /* the app fills the window; never let the page itself scroll and hide the top bar */
     dayMode = ['auto', 'light', 'dark'].indexOf(store('fs-theme')) >= 0 ? store('fs-theme') : 'dark'; setMode(store('fs-night') === '1' ? 'night' : dayMode);
     var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readCss(); buildDepth(); draw(); });
     new MutationObserver(function () { readCss(); buildDepth(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -240,7 +247,7 @@
   function syncSym() { var a = document.getElementById('lWind'), b = document.getElementById('lTide'); if (a) a.value = $('windSym').value; if (b) b.value = $('tideSym').value; }
   function closeLayers() { $('layers').hidden = true; $('layersBtn').setAttribute('aria-expanded', 'false'); }
   function closePanel() { var p = $('panel'); if (wide()) p.hidden = true; else p.classList.add('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'false'); setTimeout(resizeDraw, 0); }
-  function wide() { return matchMedia('(min-width: 900px)').matches; }
+  function wide() { return matchMedia('(min-width:900px), (orientation:landscape) and (max-height:500px)').matches; }   /* a phone on its side gets the computer layout: a short screen needs the chart beside the results */
   function openTab(t, fromTab) {
     var p = $('panel'); p.hidden = false;
     var cur = document.querySelector('.tabs .tab[aria-selected="true"]');
@@ -373,6 +380,7 @@
     r.marks.forEach(function (m, i) { $('side' + i).value = m.side || 'port'; $('side' + i).onchange = function () { meta.course.marks[i].side = this.value; meta.course.marks[i].sideAssumed = false; S.legs = null; draw(); }; });
     var issue = courseIssue(meta.course);
     $('courseNote').innerHTML = (r.custom ? 'Your own course' + (r.nm ? ', about ' + r.nm + ' nm' : '') + '. ' : (r.nm ? 'About ' + r.nm + ' nm. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>') + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
+    try { history.replaceState(null, '', location.pathname + (!r.custom && r.id !== HERE && r.page ? '?race=' + encodeURIComponent(r.id) : '')); } catch (e) {}   /* the address always matches what is on screen, so a reload reopens it */
     if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W) fit(); draw();
   }
   function loadRaces() {
@@ -386,11 +394,11 @@
       var hop = function (id) { var pg = pageOf(id); if (pg === HERE) return false; location.replace('../' + pg + '/' + (pg !== id ? '?race=' + encodeURIComponent(id) : '')); return true; };   /* a race only routes on the page that holds its forecasts */
       $('raceSel').onchange = function () { if (!hop($('raceSel').value)) applyRace($('raceSel').value); };
       var home = meta.course0 ? meta.course0.raceId : meta.course.raceId; home = home || 'cervantes'; var want = home === 'cervantes' ? (store('fs-race') || home) : home; if (!RACES.some(function (r) { return r.id === want; })) want = home;
-      var qr = new URLSearchParams(location.search).get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
+      var qr = QS0.get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
       if (want !== home && hop(want)) return;
       var lastBoot = LAST0; $('raceSel').value = want; applyRace(want);
       if (!RACES.some(function (r) { return r.id === want; })) { var c0 = meta.course; $('raceTitle').textContent = c0.name + ' · ' + c0.start.name.replace(/^Start,\s*/, '') + ' to ' + c0.finish.name.replace(/^Finish,\s*/, ''); setShort(c0.name.replace(/^English /, '').replace(/^Southern /, '')); }
-      var qs = new URLSearchParams(location.search), my = qs.get('my'), last = lastBoot;
+      var qs = QS0, my = qs.get('my'), last = lastBoot;
       if (!my && !qr && !qs.get('course') && !S.pendingCourse && last) {
         if (last.my && myRaces().some(function (x) { return x.id === last.my && (!x.page || x.page === HERE); })) my = last.my;
         else if (last.race && last.race !== want && RACES.some(function (r) { return r.id === last.race && (r.page || r.id) === HERE; })) { $('raceSel').value = last.race; applyRace(last.race); }
@@ -593,7 +601,7 @@
       window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
     };
     $('xCopy').onclick = function () { var t = crewText(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('xNote').textContent = 'Copied: paste it into WhatsApp, a message or an email.'; }, function () { $('xNote').textContent = t; }); };
-    var q = new URLSearchParams(location.search), cs = q.get('course'), st = q.get('start');
+    var q = QS0, cs = q.get('course'), st = q.get('start');
     if (cs) { try { var cc = JSON.parse(decodeURIComponent(escape(atob(cs)))), P0 = cc.p.map(function (a) { return { lat: a[0], lon: a[1], name: a[2], side: a[3] === 's' ? 'starboard' : 'port' }; });
       S.pendingCourse = { name: cc.n, start: P0[0], marks: P0.slice(1, -1), finish: P0[P0.length - 1] }; } catch (e) {} }
     if (st) S.pendingStart = st;
@@ -651,7 +659,7 @@
     if ($('bcShare')) $('bcShare').onclick = function () { var link = location.origin + location.pathname + '?boat=' + BC.code, t = 'FirstShift Route boat code ' + BC.code + ': open ' + link + ' to share our boat settings and races.'; if (navigator.share) navigator.share({ title: 'FirstShift Route boat code', text: t }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener'); };
   }
   function bcInit() {
-    var q = new URLSearchParams(location.search).get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q)) { BC.code = q.toUpperCase(); BC.at = 0; store('fs-boatcode', BC.code); }
+    var q = QS0.get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q)) { BC.code = q.toUpperCase(); BC.at = 0; store('fs-boatcode', BC.code); }
     if (BC.code) setTimeout(function () { bcPull(false); }, 1500);
     var push = function () { if (BC.code) setTimeout(bcPush, 300); };
     var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
@@ -678,6 +686,7 @@
   }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
   var READY = {};   // races with forecasts on the server: their own page
+  var QS0 = new URLSearchParams(location.search);   /* the address as opened, before Route rewrites it */
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop(), LAST0 = (function () { try { return JSON.parse(localStorage.getItem('fs-last-' + location.pathname.replace(/\/+$/, '').split('/').pop()) || 'null'); } catch (e) { return null; } })();
   function myRaces() { try { return JSON.parse(store('fs-myraces') || '[]'); } catch (e) { return []; } }
   function setMyRaces(a) { store('fs-myraces', JSON.stringify(a)); }
@@ -749,7 +758,7 @@
     var h = '<div class="wizstep">', B = $('wizBody');
     if (n === 1) {
       var bl = Object.keys(boats()).sort();
-      h += '<h3>Your boat</h3><p class="lead">Done once: Route keeps it on this device, and a boat code shares it with the crew.</p>' +
+      h += '<h3>Your boat</h3><p class="wlead">Done once: Route keeps it on this device, and a boat code shares it with the crew.</p>' +
         (bl.length ? '<div class="row"><label for="wzMy">Saved boats</label><select id="wzMy"><option value="">Choose…</option>' + bl.map(function (x) { return '<option>' + wizEsc(x) + '</option>'; }).join('') + '</select></div>' : '') +
         '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc($('boatName').value) + '" placeholder="For example Morning After" autocomplete="off"></div>' +
         '<div class="row"><label for="wzType">Boat type</label><select id="wzType">' + $('boatType').innerHTML + '</select></div>' +
@@ -765,7 +774,7 @@
       var days = {}, order = [], cur = $('startSel').value;
       [].forEach.call($('startSel').options, function (o) { var d = new Date(+o.value * 1000), k = d.toUTCString().slice(0, 11); if (!days[k]) { days[k] = []; order.push(k); } days[k].push({ v: o.value, t: d.toUTCString().slice(17, 22) }); });
       var cd = order.filter(function (k) { return days[k].some(function (x) { return x.v === cur; }); })[0] || order[0];
-      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="lead">When does your class start? Times in UTC: UK time in winter, one hour behind UK summer time.</p>' +
+      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Times in UTC: UK time in winter, one hour behind UK summer time.</p>' +
         '<div class="row"><label for="wzDay">Day</label><select id="wzDay">' + order.map(function (k) { return '<option' + (k === cd ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select></div>' +
         '<div class="row"><label for="wzTime">Time</label><select id="wzTime"></select></div>' +
         '<p class="note">Starts run as far as the forecasts allow the whole race to be routed. For a race further ahead, set it up now and choose the start nearer the day.</p>';
@@ -775,7 +784,7 @@
       if (!order.length) { $('wizHint').textContent = 'No start times: the forecast has not loaded yet.'; }
     } else if (n === 4) {
       var mf = myFleet(), ent = (meta.fleet || []).filter(function (f) { return f.irc && f.start; });
-      h += '<h3>Boats you are racing</h3><p class="lead">Optional. Route sails each one along your route at its own TCC, so you can see who should be ahead on the water and on corrected time.</p>' +
+      h += '<h3>Boats you are racing</h3><p class="wlead">Optional. Route sails each one along your route at its own TCC, so you can see who should be ahead on the water and on corrected time.</p>' +
         (ent.length ? '<p class="note">' + ent.length + ' boats from the entry list are already in.</p>' : '') +
         '<p class="note" id="wzMfN">' + (mf.length ? mf.length + ' added by you: ' + mf.map(function (f) { return wizEsc(f.name); }).join(', ') : 'None added yet.') + '</p>' +
         '<div class="mfadd"><input id="wzMfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="wzMfTcc" type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="btn" id="wzMfAdd">Add</button></div>' +
@@ -788,7 +797,7 @@
       var ms = selectedModels().map(function (m) { return short(m); }), fl = myFleet().length + (meta.fleet || []).filter(function (f) { return f.irc && f.start; }).length;
       var pct = Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3), tide = $('tideSel').options[$('tideSel').selectedIndex];
       var row = function (k, v, step, warn) { return '<div><b>' + k + '</b><span' + (warn ? ' class="warn"' : '') + '>' + v + '</span><button class="btn" data-go="' + step + '">Change</button></div>'; };
-      h += '<h3>Check before routing</h3><p class="lead">Everything Route will use. Change anything, or Route it.</p><div class="wcheck">' +
+      h += '<h3>Check before routing</h3><p class="wlead">Everything Route will use. Change anything, or Route it.</p><div class="wcheck">' +
         row('Boat', bs ? wizEsc($('boatName').value || 'Your boat') + ', TCC ' + (+$('tcc').value).toFixed(3) + ', ' + pct + '% of the polar' : 'Generic boat: TCC ' + (+$('tcc').value).toFixed(3) + '. Set up your boat for a true answer.', 1, !bs) +
         row('Sails', sl.sails + ' sails' + (sl.reef ? ', reef points on' : ''), 1) +
         row('Race', wizEsc(c.name) + ', ' + courseNm(c) + ' nm' + (issue ? '. ' + wizEsc(issue) : ''), 2, !!issue) +
@@ -986,7 +995,7 @@
     S.running = true; busy(''); S.key = null;
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
     pass(true).then(function () { return pass(false); }).then(function () { S.running = false; prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); $('runNote').textContent = e.message; draw(); });
+    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now();
@@ -1022,7 +1031,7 @@
   /* boats you are racing, added by hand, pasted from an entry list or picked from AIS; kept on this device for each race */
   function mfKey() { return 'fs-fleet-' + raceKey(); }
   function myFleet() { try { return JSON.parse(store(mfKey()) || '[]') || []; } catch (e) { return []; } }
-  function setMyFleet(a) { store(mfKey(), JSON.stringify(a)); mfShow(); ghosts().then(function () { fleetTable(); draw(); }); if (AIS.src !== 'off') aisUpdate(); }
+  function setMyFleet(a) { store(mfKey(), JSON.stringify(a)); mfShow(); ghosts().then(function () { fleetTable(); draw(); }, function (e) { console.error('fleet', e && e.message); }); if (AIS.src !== 'off') aisUpdate(); }
   function mfAdd(name, tcc, mmsi) {
     name = String(name || '').trim(); tcc = +tcc; if (!name || !(tcc > 0.5 && tcc < 2)) return false;
     var a = myFleet().filter(function (f) { return f.name.toUpperCase() !== name.toUpperCase() && (!mmsi || f.mmsi !== mmsi); }); a.push({ name: name, tcc: tcc, mmsi: mmsi || null }); setMyFleet(a); return true;
@@ -1258,7 +1267,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (S.big) { drawBig(); return; }
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
-    if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = view.s < 900; ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
+    if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     grid();
     if (S.show.band) bandEdge();
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
