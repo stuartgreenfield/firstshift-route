@@ -4,6 +4,8 @@ name: Forecasts
 on:
   schedule:
     - cron: '17 1,7,13,19 * * *'
+    # back-up: GitHub sometimes skips a scheduled run; these rebuild only if nothing was published for 5 hours
+    - cron: '47 1,7,13,19 * * *'
   workflow_dispatch:
 
 permissions:
@@ -18,15 +20,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Skip a back-up run if the last publish is recent
+        id: fresh
+        run: |
+          if [ "${{ github.event.schedule }}" = "47 1,7,13,19 * * *" ]; then
+            built=$(curl -fsS https://firstshift-route.pages.dev/status.json | python3 -c "import json,sys,calendar,time;print(calendar.timegm(time.strptime(json.load(sys.stdin)['built'],'%Y-%m-%dT%H:%MZ')))" || echo 0)
+            age=$(( $(date -u +%s) - built ))
+            if [ "$age" -lt 18000 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
+          fi
       - uses: actions/checkout@v4
+        if: steps.fresh.outputs.skip != '1'
       - uses: actions/setup-python@v5
+        if: steps.fresh.outputs.skip != '1'
         with:
           python-version: '3.12'
       - name: Install
+        if: steps.fresh.outputs.skip != '1'
         run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
       - name: Fetch forecasts and build packs
+        if: steps.fresh.outputs.skip != '1'
         run: python3 scripts/build.py cervantes
       - name: Publish to the site branch
+        if: steps.fresh.outputs.skip != '1'
         run: |
           cp _headers site/_headers
           cd site

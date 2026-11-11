@@ -1,0 +1,46 @@
+# FirstShift Route: requirements log
+
+Every requirement Stuart has asked for, newest first, with its status. Kept in the repository (docs/), on Stuart's Mac (FirstShift tools site/routing/) and summarised in the routing doc ("Requirements: running list").
+Status: Built · Partly built · To build · Researching · Later.
+
+## 11 November 2026
+| Time | Requirement | Status |
+| --- | --- | --- |
+| 09:51 | Traffic separation schemes in the tool, switchable, usable as no-go zones | To build (sources found: SHOM TSS open licence; OpenStreetMap seamarks; UKHO routeing measures OGL) |
+| 09:51 | Main buoys and lighthouses in RORC race areas as a simple list, shown on the basic chart; not for navigation | To build |
+| 09:51 | Constant list of requirement changes, Mac kept up to date, regular progress report, better communication | Started: this log, progress report doc |
+| 09:48 | Screen settings Light, Dark and Night | Built (Auto, Light, Dark, Night red) |
+| 09:47 | CPA alarm with sound for close proximity and flashing boats, following the norm | Researched (IMO SN.1/Circ.243); to build with the targets overlay |
+| 09:46 | Target tools: tracks, COG and SOG vectors, CPA, laylines from wind direction, managed and changed at will | To build |
+| 09:41 | AIS input: race boats and ships live, online over wifi or mobile, from the boat's system when signal is lost | Researched; build order agreed in the routing doc |
+| 09:41 | Identify race boats, assign TCC, show owe or get time and distance for each | To build |
+| 09:41 | Man overboard button: locked position, distance, bearing and time, from the boat's or phone's position | To build |
+| 09:23 | Icons for Decision, Plan, Fleet and Data tabs; neat and finely rendered | Built (option 1 of each) |
+| 09:21 | Boat set three ways: standard list of yachts, TCC or rating, full polar or ORC VPP input screen | Built (generic types; own polar upload; no ORC licence approach) |
+| 09:21 | Tune the polar for conditions: upwind, reaching and downwind targets | Built (three sliders) |
+| 09:21 | See every route from every wind and tide source before choosing; excellent UI | Partly built (wind routes and decision table); comparison screen to build |
+| 09:21 | All RORC races preloaded; previous year's course with a warning when the new one is not published | Built (9 races); routes outside the Cervantes strip need the full-area forecasts |
+
+## 10 November 2026
+| Requirement | Status |
+| --- | --- |
+| Free product for UK, France, Ireland and North Sea; worldwide later as a paid version | Agreed |
+| Active area 35.5 to 61.5 N, 15 W to 12 E with a border on the chart; marks outside give "Cannot route" | To build |
+| Fetch every free tide source; tide drop-down, all on by default, finest source used where it covers | To build |
+| Higher-resolution tides; check free sources, price a licence | Researching (UKHO enquiry drafted) |
+| ICON, ARPEGE and AROME models | To build |
+| Manual race course entry | To build |
+| Many more free gribs; worldwide coverage later; number of simultaneous users | Answered; tiles plan agreed |
+| Name FirstShift Route with version numbers | Built (v0.4.1) |
+| Server running the forecasts every six hours (option 2) | Built |
+| Several weather models with a drop-down, a combined route | Built |
+| Several tide models; sea-state gribs adjusting the polar | Built |
+| Depth contour slider | Built |
+| Interactive chart readout; boat figures only on a route | Built |
+| TCC or full polar | Built |
+| Fleet at its published TCC around you | Built |
+| Re-route from a point with new weather | Built |
+| Sail crossover plan | Built |
+| Phone, pad and PC layout; fixed time bar; settings sheet; tabs; Night red; x to close | Built |
+| Grib resolution and bandwidth choice on screen; grib area cut to the race | Built |
+| Wind and tide symbol choice (W2, W5, W6, W7; T1, T3, T5, T6); FirstShift triangles | Built |
