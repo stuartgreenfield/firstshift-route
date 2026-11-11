@@ -93,3 +93,8 @@ Status: Built · Partly built · To build · Researching · Later.
 | Phone, pad and PC layout; fixed time bar; settings sheet; tabs; Night red; x to close | Built |
 | Grib resolution and bandwidth choice on screen; grib area cut to the race | Built |
 | Wind and tide symbol choice (W2, W5, W6, W7; T1, T3, T5, T6); FirstShift triangles | Built |
+
+## 11 Nov 2026, 17:20 to 17:55
+- 40. "make it easy to manually add the sail log wind speeds from - to angles for downwind sails and wind speeds etc research it first". Researched PredictWind sail crossover charts (separate mainsail and headsail charts, templates as a starting point), SailGrib SailChart (TWA by TWS grid, tab-separated .sail file) and UK Sailmakers' crossover guide. Built: Settings, Sails table (name, TWA from and to, TWS from and to), typical inventories, crossover chart with the route's winds as dots and gaps in grey, tap to read, paste a grid. Saved on the device and with a saved boat. Done.
+- 41. "also reefs when they go in 1 2 and 3 etc". Reef 1 to 3 by true wind speed, upwind and downwind. Defaults from John Jourdane, "Sailing Under Control as the Wind Increases", Pacific Cup knowledge base: "Reefing begins sooner upwind than downwind because the apparent wind is greater sailing a beat or close reach." Done.
+- 42. "can the map move when you move the sider so boats stay in middle of screen and also on auto play - maybe this toggles". Follow the boat button. Done.
