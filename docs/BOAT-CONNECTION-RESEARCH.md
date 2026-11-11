@@ -22,6 +22,10 @@ A web page in a phone's browser cannot open a raw TCP or UDP connection at all. 
 | **Vesper** Cortex (AIS and VHF) | Has its own Wi-Fi and serves NMEA to apps (port in its manual) | TCP to the Cortex | *to confirm* port and sentence set |
 | **Victron** Cerbo GX (if fitted) | Runs a Signal K server | WebSocket via the app | Common on newer cruiser-racers |
 
+## Morning After: B&G Zeus 3 (confirmed by Stuart, 11 Nov 2026)
+
+Same Navico family as the Zeus 3S. On the plotter: turn on its Wi-Fi hotspot and enable NMEA 0183 over TCP in the network settings. A third-party autopilot guide gives the plotter's usual address on its own hotspot as **192.168.76.1**, port **10110**. Dock test from a Mac joined to the Zeus hotspot, in Terminal: `nc 192.168.76.1 10110` should scroll NMEA sentences; lines starting `!AIVDM` mean AIS is in the stream. Source: [PCNautic Autopilot guide, B&G, Simrad and Navico](https://pcnautic.gitbook.io/autopilot/navigation-and-data-connections/b-and-g-simrad-navico.md).
+
 ## Gateways the owner may already have
 
 If any of these is aboard, Route connects to it rather than the plotter. All carry AIS.
