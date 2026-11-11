@@ -10,12 +10,17 @@
 
   /* ---------- colours ---------- */
   function readCss() { var cs = getComputedStyle(document.documentElement); ['--sea', '--sea2', '--land', '--landedge', '--shoal', '--shoaledge', '--route', '--wind', '--tide', '--ink', '--muted', '--panel', '--ghost', '--out', '--m1', '--m2', '--m3', '--m4', '--m5'].forEach(function (k) { css[k] = cs.getPropertyValue(k).trim(); }); }
-  function setNight(on) {
-    if (on) document.documentElement.setAttribute('data-night', ''); else document.documentElement.removeAttribute('data-night');
-    $('nightBtn').setAttribute('aria-pressed', on); store('fs-night', on ? '1' : '0');
-    [].forEach.call($('modeSeg').children, function (b) { b.setAttribute('aria-pressed', (b.dataset.mode === 'night') === on); });
-    readCss(); buildDepth(); draw();
+  /* screen: follow the device, light, dark, or night red; the Night button flips between night and the last day setting */
+  var dayMode = 'auto';
+  function setMode(mode) {
+    var r = document.documentElement;
+    if (mode === 'night') r.setAttribute('data-night', ''); else { r.removeAttribute('data-night'); dayMode = mode; store('fs-day', mode); }
+    if (mode === 'light' || mode === 'dark') r.setAttribute('data-theme', mode); else if (mode === 'auto') r.removeAttribute('data-theme');
+    $('nightBtn').setAttribute('aria-pressed', mode === 'night'); store('fs-night', mode === 'night' ? '1' : '0');
+    [].forEach.call($('modeSeg').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
+    readCss(); buildDepth(); draw(); if (!$('sheet').hidden) plotPolar();
   }
+  function setNight(on) { setMode(on ? 'night' : dayMode); }
 
   /* ---------- workers ---------- */
   function call(w, msg, tr) { return new Promise(function (ok, no) { msg.id = ++jid; jobs[jid] = { ok: ok, no: no }; w.postMessage(msg, tr || []); }); }
@@ -115,7 +120,8 @@
     $('time').oninput = function () { S.t = tFromSlider(); update(); };
     $('play').onclick = togglePlay;
     $('nightBtn').onclick = function () { setNight(!document.documentElement.hasAttribute('data-night')); };
-    [].forEach.call($('modeSeg').children, function (b) { b.onclick = function () { setNight(b.dataset.mode === 'night'); }; });
+    [].forEach.call($('modeSeg').children, function (b) { b.onclick = function () { setMode(b.dataset.mode); }; });
+    if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'), ch = function () { if (dayMode === 'auto' && !document.documentElement.hasAttribute('data-night')) { readCss(); buildDepth(); draw(); } }; if (mq.addEventListener) mq.addEventListener('change', ch); else if (mq.addListener) mq.addListener(ch); }
     $('setBtn').onclick = function () { $('sheet').hidden = false; plotPolar(); };
     $('sheetX').onclick = function () { $('sheet').hidden = true; };
     $('sheet').onclick = function (e) { if (e.target === $('sheet')) $('sheet').hidden = true; };
@@ -141,7 +147,7 @@
     ['windSym', 'tideSym'].forEach(function (id) { var v = store('fs-' + id); if (v && $(id).querySelector('option[value="' + v + '"]')) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); syncSym(); draw(); animate(); }; });
     $('sails').oninput = function () { plan(); update(); };
     if (!wide()) $('panel').hidden = false;
-    setNight(store('fs-night') === '1');
+    dayMode = ['auto', 'light', 'dark'].indexOf(store('fs-day')) >= 0 ? store('fs-day') : 'auto'; setMode(store('fs-night') === '1' ? 'night' : dayMode);
     var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readCss(); buildDepth(); draw(); });
     new MutationObserver(function () { readCss(); buildDepth(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (window.ResizeObserver) new ResizeObserver(resizeDraw).observe(document.querySelector('.chart')); else window.addEventListener('resize', resizeDraw);
