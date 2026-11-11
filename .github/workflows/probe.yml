@@ -1,0 +1,14 @@
+name: Probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: List Meteo-France open data
+        run: |
+          B=https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net
+          R=$(date -u -d '-9 hours' +%Y-%m-%dT%H:00:00Z | sed -E 's/T(0[0-5]|1[2-7])/T\1/'); echo run guess $R
+          for run in $(for h in 6 12 18 24; do d=$(date -u -d "-$h hours" +%Y-%m-%dT); hh=$(date -u -d "-$h hours" +%H); hh=$(( (10#$hh/6)*6 )); printf '%s%02d:00:00Z\n' $d $hh; done | sort -u); do
+            echo "== $run"; curl -s "$B/?prefix=pnt/$run/&max-keys=200" | grep -oE "<Key>[^<]*" | sed 's/<Key>//' | grep -E "SP1|arpege" | head -60
+          done
