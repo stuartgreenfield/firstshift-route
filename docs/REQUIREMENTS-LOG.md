@@ -6,9 +6,10 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
-| 09:51 | Traffic separation schemes in the tool, switchable, usable as no-go zones | To build (sources found: SHOM TSS open licence; OpenStreetMap seamarks; UKHO routeing measures OGL) |
-| 09:51 | Main buoys and lighthouses in RORC race areas as a simple list, shown on the basic chart; not for navigation | To build |
-| 09:51 | Constant list of requirement changes, Mac kept up to date, regular progress report, better communication | Started: this log, progress report doc |
+| 09:51 | Traffic separation schemes in the tool, switchable, usable as no-go zones | Built: layer plus "keep out" switch; data from OpenStreetMap and Shom, refreshed weekly. Race keep-out boxes from sailing instructions (Fastnet 2025 entered) |
+| 09:51 | Main buoys and lighthouses in RORC race areas as a simple list, shown on the basic chart; not for navigation | Built: lighthouses, cardinal, safe water, isolated danger and named special buoys from OpenStreetMap |
+| 09:51 | Constant list of requirement changes, Mac kept up to date, regular progress report, better communication | Running: this log, progress report doc (claude.ai/artifact/FQpEkDnC8W41DzVSeAS743), Mac copies |
+| 09:52 | Check the weather downloads are working and complete | Answered: all 9 sources from 00Z; back-up run added |
 | 09:48 | Screen settings Light, Dark and Night | Built (Auto, Light, Dark, Night red) |
 | 09:47 | CPA alarm with sound for close proximity and flashing boats, following the norm | Researched (IMO SN.1/Circ.243); to build with the targets overlay |
 | 09:46 | Target tools: tracks, COG and SOG vectors, CPA, laylines from wind direction, managed and changed at will | To build |
