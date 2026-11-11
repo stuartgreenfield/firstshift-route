@@ -30,7 +30,9 @@ def get(u, rng=None, tries=8):
             if rng: rq.add_header('Range', f'bytes={rng[0]}-{rng[1]}')
             return urllib.request.urlopen(rq, timeout=120).read()
         except Exception as e:
-            err = e; time.sleep(2 * (k + 1) + random.random() * 3)
+            err = e
+            if getattr(e, 'code', None) == 404: break   # not published (yet): no point retrying
+            time.sleep(2 * (k + 1) + random.random() * 3)
     raise err
 
 
@@ -83,7 +85,7 @@ def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1):
 def gfs():
     d, r = RUN; base = 'https://noaa-gfs-bdp-pds.s3.amazonaws.com'
     U = []; V = []; hrs = []; lat = lon = None
-    for hh in HOURS:
+    for hh in [h for h in HOURS if h <= 48 or h % 3 == 0]:   # hourly for two days, then 3-hourly (GFS is hourly only to 120 h)
         f = f'{base}/gfs.{d}/{r}/atmos/gfs.t{r}z.pgrb2.0p25.f{hh:03d}'
         lines = get(f + '.idx', tries=3).decode().splitlines()
         got = {}
@@ -123,7 +125,9 @@ def metoffice(model):
         try:
             a, ys, xs, crs = one('wind_speed_at_10m')(); b, _, _, _ = one('wind_direction_at_10m')()
         except Exception as e:
-            print('miss', hh, e); continue
+            print('miss', hh, e)
+            if hrs and hh > hrs[-1] + 6: break   # past the end of this model's forecast
+            continue
         if grid is None: grid = (ys, xs, crs)
         S.append(a); D.append(b); hrs.append(hh); print(model[:6], hh, end=' | ', flush=True)
     return np.array(S), np.array(D), np.array(hrs), grid
