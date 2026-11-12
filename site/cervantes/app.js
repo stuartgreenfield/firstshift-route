@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.8.0';
+  var VERSION = 'FirstShift Route v0.8.1';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.8.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.8.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1683,7 +1683,8 @@
     if (!navigator.geolocation) { busy('This device has no GPS that Route can use.'); setTimeout(function () { busy(''); }, 3000); return; }
     LIVE.on = true; $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBox').hidden = false; $('liveBox').innerHTML = '<div class="lvl">Finding the boat by GPS…</div>'; liveWake();
     try { if (!LIVE.ac && (window.AudioContext || window.webkitAudioContext)) LIVE.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}   /* made on the tap, so the alert can sound later */
-    var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; $('liveBox').innerHTML = '<div class="lvl lvwarn">No GPS fix' + (e && e.code === 1 ? ': location is not allowed for this site. Allow it in the phone settings.' : '. Trying again.') + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
+    var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; var msg = e && e.code === 1 ? 'Location is not allowed for Route. Allow it for this site in the browser or phone settings, then tap GPS again.' : LIVE.fix ? 'GPS fix lost. Trying again.' : (/Mobi|Android|iPhone|iPad/.test(navigator.userAgent) ? 'No GPS fix yet. Offshore the first fix can take a minute or two. Trying again.' : 'This computer cannot find its position. A computer without GPS works out where it is from nearby Wi-Fi, which is not there at sea. Use Live GPS on a phone or tablet with GPS.');
+      $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
     if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
     else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
   }
@@ -1697,6 +1698,7 @@
     if (pv && (f.sog == null || f.cog == null)) { var r = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dtH = (f.at - pv.at) / 3600000; if (dtH > 2 / 3600 && r.nm > 0.005 && r.nm / dtH < 40) { if (f.sog == null) f.sog = r.nm / dtH; if (f.cog == null) f.cog = r.brg; } }   /* a GPS jump is not boat speed */
     if (f.sog != null && f.sog > 40) f.sog = null;
     LIVE.fix = f;
+    if (f.acc > 150) { LIVE.calc = null; liveShow(); draw(); return; }   /* rough network position: no tail, no plan sums */
     /* the long tail: a point every 10 s (or 50 m), about 8 hours, kept on the phone so it survives closing Route */
     var lt = LIVE.trail[LIVE.trail.length - 1];
     if (!lt || f.at - lt[2] >= 10000 || rhumb({ lat: lt[0], lon: lt[1] }, { lat: f.la, lon: f.lo }).nm > 0.027) { LIVE.trail.push([+f.la.toFixed(5), +f.lo.toFixed(5), f.at, f.sog != null ? +f.sog.toFixed(1) : null, f.cog != null ? Math.round(f.cog) : null]); if (LIVE.trail.length > 3000) LIVE.trail.shift();
@@ -1739,8 +1741,13 @@
     try { if (!$('liveSound').checked || !LIVE.ac) return; var ac = LIVE.ac; if (ac.state === 'suspended') ac.resume(); [0, 0.35].forEach(function (d) { var o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; g.gain.value = 0.25; o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.22); }); } catch (e) {}
   }
   function liveShow() {
-    var c = LIVE.calc, f = LIVE.fix; if (!c || !f) return;
+    var c = LIVE.calc, f = LIVE.fix; if (!f) return;
     var n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return ('00' + Math.round((x + 360) % 360) % 360).slice(-3) + '°T'; }, mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h ' + ('0' + a % 60).slice(-2) : a + ' min'; };
+    if (f.acc > 150) {   /* not a GPS fix: a computer (or a phone indoors) placing itself by Wi-Fi or the network. Do not race on it. */
+      $('liveBox').classList.remove('alarm'); $('liveBig').hidden = true; LIVE.big = false;
+      $('liveBox').innerHTML = '<div class="lvl lvwarn"><b>Not a GPS position.</b> This device puts itself within about ' + (f.acc >= 1852 ? n1(f.acc / 1852) + ' nm' : Math.round(f.acc) + ' m') + ', which is how a computer without GPS, or a phone indoors, finds itself from Wi-Fi or the mobile network. Too rough to compare with the plan, so Route shows only the rough position. On the boat use a phone or tablet with GPS, out in the open.</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>';
+      $('lvStop').onclick = function () { liveStop(); }; return; }
+    if (!c) return;
     var sog = f.sog != null ? n1(f.sog) + ' kn' : '--', cog = f.cog != null && f.sog > 0.5 ? p3(f.cog) : '--';
     var xl = +$('xteLim').value || 0, bl = +$('behLim').value || 0, xte = c.xte, offX = xte && xl > 0 && xte.d > xl, offB = c.xte && bl > 0 && c.ahead < -bl, alarm = offX || offB;
     if (alarm && !LIVE.alarm) liveBeep(); LIVE.alarm = alarm;
