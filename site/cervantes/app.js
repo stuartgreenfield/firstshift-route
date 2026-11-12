@@ -872,7 +872,7 @@
   function setMyRaces(a) { store('fs-myraces', JSON.stringify(a)); }
   function snapSettings() { var o = {}; [].forEach.call(document.querySelectorAll('#sheet input[id], #sheet select[id], #sheet textarea[id]'), function (el) { if (/^side\d|^adjNote|^raceSel$|^ed[A-Z]/.test(el.id)) return; o[el.id] = el.type === 'checkbox' ? el.checked : el.value; }); return o; }
   function putSettings(o) {
-    Object.keys(o || {}).forEach(function (id) { if (id === 'raceSel') return;   /* the course comes with the saved race, never from its settings */ var el = $(id); if (!el) return; if (el.type === 'checkbox') el.checked = o[id]; else el.value = o[id]; ['input', 'change'].forEach(function (t) { el.dispatchEvent(new Event(t, { bubbles: true })); }); });
+    Object.keys(o || {}).forEach(function (id) { if (id === 'raceSel') return;   /* the course comes with the saved race, never from its settings */ var el = $(id); if (!el) return; if (el.tagName === 'SELECT' && ![].some.call(el.options, function (x) { return x.value === String(o[id]); })) return;   /* a saved choice that no longer exists (a start that has passed) would blank the list: keep the current one */ if (el.type === 'checkbox') el.checked = o[id]; else el.value = o[id]; ['input', 'change'].forEach(function (t) { el.dispatchEvent(new Event(t, { bubbles: true })); }); });
     var src = o.__src; if (src) { var b = document.querySelector('#srcSeg [data-src="' + src + '"]'); if (b) b.click(); }
   }
   function courseCopy() { var c = meta.course; return { name: c.name, start: Object.assign({}, c.start), marks: c.marks.map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: Object.assign({}, c.finish) }; }
@@ -1193,6 +1193,7 @@
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
     if (S.running || S.wizHold) return;
+    if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
