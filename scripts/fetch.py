@@ -287,6 +287,13 @@ if __name__ == '__main__':
         if s in ('ecmwf', 'aifs'):
             o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6)
             save(s, u=o['10u'], v=o['10v'], hours=h, lat=la, lon=lo)
+        elif s == 'ecmet':   # ECMWF weather beyond the wind: gusts, pressure, rain, thunderstorm energy, cloud, air temperature
+            o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3)
+            tp = o['tp']; rain = np.zeros_like(tp)
+            if len(h) > 1:
+                dh = np.diff(h).astype(float).reshape(-1, 1, 1); rain[1:] = np.maximum(0, np.diff(tp, axis=0)) * 1000 / dh   # accumulated metres to mm an hour
+                rain[0] = rain[1]
+            save(s, gust=o['10fg'], msl=o['msl'] / 100, rain=rain, cape=o['mucape'], cloud=o['tcc'] * 100, temp=o['2t'] - 273.15, hours=h, lat=la, lon=lo)
         elif s == 'ecwav':
             o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)

@@ -45,9 +45,10 @@
   window.addEventListener('online', function () { offBadge(); if (meta) chip(); }); window.addEventListener('offline', function () { offBadge(); if (meta) chip(); });
   setTimeout(offBadge, 0);
 
-  /* ---------- landing page: shows while Route starts, at least 1.6 s, at most 6 s; tap to skip ---------- */
+  /* ---------- landing page: shows while Route starts, at least 5 s before launch (Stuart 12 Nov), at most 12 s; tap to skip ---------- */
+  var SPLASH_MIN = 5000;   /* pre-launch: long enough to read; shorten for launch */
   (function () { var sp = $('splash'); if (!sp) return; var t0 = Date.now(), gone = false; function hide() { if (gone) return; gone = true; sp.classList.add('out'); setTimeout(function () { sp.hidden = true; }, 550); }
-    S.splashDone = function () { setTimeout(hide, Math.max(0, 1600 - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 6000); })();
+    S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
     meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); mfInit(); wizInit(); crewInit(); askInit(); bcInit();
