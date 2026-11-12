@@ -494,6 +494,30 @@
     "radius_nm": 0.4
    },
    "note": "Forecasts for the whole Irish Sea from St George's Channel to the North Channel. The example course is Pwllheli to Dun Laoghaire; any course of your own inside the box routes here."
+  },
+  {
+   "id": "biscay-area",
+   "name": "Bay of Biscay",
+   "region": {
+    "s": 43.2,
+    "n": 48.6,
+    "w": -10.0,
+    "e": -1.0
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, off Les Pierres Noires light",
+    "lat": 48.3112,
+    "lon": -4.9145
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Torre de Hercules, A Coruna",
+    "lat": 43.3859,
+    "lon": -8.4065,
+    "radius_nm": 1.0
+   },
+   "note": "Forecasts for the Bay of Biscay from Ushant to Cape Finisterre and the French coast to the Gironde. The example course is Brest to A Coruna; any course of your own inside the box routes here."
   }
  ]
 }
