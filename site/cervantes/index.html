@@ -77,6 +77,18 @@ body.editing #prog{display:none!important}
 .cvb{position:relative;height:10px;border-radius:5px;background:var(--line);overflow:visible}.cvf{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
 .cvf.all{background:#4CC38A}.cvf.part{background:var(--warn)}.cvt{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}
 .cvold{color:var(--warn)}.cvnew svg{width:12px;height:12px;vertical-align:-1px;fill:none;stroke:#4CC38A;stroke-width:2}
+.livebtn{font-weight:700;letter-spacing:.04em}.livebtn[aria-pressed="true"]{background:#4CC38A!important;color:#0E1C2D!important;border-color:#4CC38A!important}
+.livebox{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,560px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.livebox.alarm,.livebig.alarm{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn)}
+.lvg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px 8px}.lvg div{display:flex;flex-direction:column;min-width:0}
+.lvg small{font:600 10px var(--f-body);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}.lvg b{font:600 16px var(--f-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl{font-size:12.5px;color:var(--muted);line-height:1.35}.lvl b{color:var(--ink);font-family:var(--f-data)}.lvwarn{color:var(--warn)!important}
+.lvx{display:flex;gap:6px;flex-wrap:wrap}.lvx .btn{min-height:32px;padding:0 10px;font-size:13px}.livebox{gap:4px;padding:6px 10px}
+.livebig{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));overflow:auto}
+.lbg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;flex:1}.lbg div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.lbg small{font:700 12px var(--f-body);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}.lbg b{font:600 clamp(34px,11vw,72px)/1.05 var(--f-data);white-space:nowrap;overflow:hidden}.lbg span{font-size:13px;color:var(--muted)}
+.lbg .wide{grid-column:1/-1}.lbg .warnc{border-color:var(--warn)}.lbg .warnc b{color:var(--warn)}
+@media (orientation:landscape) and (max-height:600px){.lbg{grid-template-columns:repeat(3,minmax(0,1fr))}.lbg .wide{grid-column:auto}}
 .markpop{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(92vw,380px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;z-index:31;display:grid;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .markpop input,.markpop select{width:100%;min-width:0;box-sizing:border-box;height:42px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit}
 .mphd{display:flex;justify-content:space-between;align-items:center}.mpll{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -310,6 +322,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.bar .clock{overflow:hidden}.clock{min-width:0;font-size:13px;line-height:1.2}.clock .ckd{display:block;font-size:11px;color:var(--muted)}.clock .ckt{font-size:16px}.clock small{font-size:10.5px}.clock .ckl{display:none}.clock .cks{display:inline}
   .now{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 6px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:8.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden}}
 @media (max-width:360px){.bar{gap:6px 6px}.pgrp{gap:3px}.mobbtn{padding:0 8px}}
+@media (max-width:380px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:0}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
 
 /* phone on its side: a short screen, so everything compact and the chart as big as possible */
 @media (orientation:landscape) and (max-height:500px){
@@ -431,6 +444,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="modemenu" id="modeMenu" hidden role="menu" aria-label="Screen"><button data-m="dark">Dark</button><button data-m="night">Night red</button><button data-m="light">Light</button><button data-m="auto">Follow this device</button></div>
     <div class="adjpill" id="adjPill" hidden><span id="adjPillTxt"></span><button class="btn" id="adjPillX">Back to the forecast</button></div>
     <div class="markpop" id="markPop" hidden></div>
+    <div class="livebox" id="liveBox" hidden></div>
+    <div class="livebig" id="liveBig" hidden></div>
     <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn amberb" id="edGo" hidden>Re-route</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
 
     <div class="top">
@@ -529,7 +544,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 
   <div class="bar">
     <button class="mobbtn" id="mobBtn" aria-label="Man overboard: press and hold" title="Man overboard: press and hold for one second">MOB</button>
-    <div class="pgrp"><button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button><button class="spd" id="spdBtn" aria-label="Replay speed" title="Replay speed: tap to change">3h/s</button><button class="spd fol" id="followBtn" aria-label="Follow the boat" aria-pressed="true" title="Follow the boat"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M12 7l3.5 9-3.5-2-3.5 2z" fill="currentColor"/></svg></button></div>
+    <div class="pgrp"><button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button><button class="spd" id="spdBtn" aria-label="Replay speed" title="Replay speed: tap to change">3h/s</button><button class="spd livebtn" id="liveBtn" aria-label="Live GPS" aria-pressed="false" title="Live GPS: the boat from this phone's GPS against the plan">GPS</button><button class="spd fol" id="followBtn" aria-label="Follow the boat" aria-pressed="true" title="Follow the boat"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M12 7l3.5 9-3.5-2-3.5 2z" fill="currentColor"/></svg></button></div>
     <input type="range" id="time" min="0" max="1000" value="0" aria-label="Race time">
     <div class="clock" id="clock">--</div>
     <div class="now" id="now"></div>
@@ -585,7 +600,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.7.5</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.8.0</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -657,6 +672,11 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="row"><label for="depth">Safety depth</label><input type="range" id="depth" min="0" max="20" step="0.5" value="3" style="width:180px"><b id="depthV" style="font-family:var(--f-data)">3.0 m</b></div>
       <p class="note" data-i>The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
       <h3>While racing</h3>
+      <div class="row"><label for="gpsMode">Live GPS</label><select id="gpsMode"><option value="screen">Keep screen on, every second</option><option value="battery">Save battery, every 20 seconds</option></select></div>
+      <div class="row"><label for="xteLim">Alert off track by (nm)</label><input type="number" id="xteLim" min="0" max="50" step="0.1" value="1.0"></div>
+      <div class="row"><label for="behLim">Alert behind plan by (min)</label><input type="number" id="behLim" min="0" max="600" step="1" value="15"></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="liveSound" checked> Sound an alert</label></div>
+      <p class="note" data-i>Live GPS (the GPS button by the timeline) shows the boat on the chart from this phone's own GPS and compares it with the chosen route: off track left or right, ahead or behind the plan, the course and distance to where the plan says you should be now, and the fastest way back. It needs no boat wifi, but the page must stay open with the screen on. Heading is the GPS course over the ground. Alerts are 0 to turn off. Not for navigation.</p>
       <div class="row"><label for="autoFrom">Reroute from GPS</label><select id="autoFrom"><option value="0">Only when I press From here</option><option value="10">Every 10 minutes</option><option value="20">Every 20 minutes</option><option value="30">Every 30 minutes</option></select></div>
       <p class="note" data-i>After From here has found the boat by GPS, Route routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
       <div class="row"><label class="chk"><input type="checkbox" id="shareTrack"> Let family and friends follow the boat</label></div>

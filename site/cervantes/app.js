@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.7.5';
+  var VERSION = 'FirstShift Route v0.8.0';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.7.5 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.8.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1338,6 +1338,7 @@
     $('sheetX').addEventListener('click', function () { if (WIZ.on && WIZ.back) { var b = WIZ.back; WIZ.back = 0; setTimeout(function () { wizShow(b); }, 0); } });
     $('racesX').addEventListener('click', function () { if (WIZ.on && WIZ.step === 2) wizClose(false); });
     boatWarn();
+    try { liveSet(); $('liveBtn').onclick = function () { if (LIVE.on) liveStop(); else liveStart(); }; } catch (e) {}
   }
   /* after the race list loads: resume a set-up that moved to another forecast page, or start one for a first-time user */
   function wizBoot(qs) {
@@ -1511,6 +1512,7 @@
   window.__fsRoutes = function () { return (S.routes || []).map(function (r) { var p = r.r.path, w = 180, iw = 0; p.forEach(function (q, i) { if (q.lo < w) { w = q.lo; iw = i; } }); return { id: r.id, name: r.name, n: p.length, end: [p[p.length - 1].la, p[p.length - 1].lo], west: [p[iw].la, w, iw, p[iw].leg], legs: S.legs && S.legs.map(function (l) { return l.name; }) }; }); };
   window.__fsNear = function (la, lo, r) { var s = S.routes && S.routes[0]; if (!s) return null; return s.r.path.map(function (q, i) { return [i, +q.la.toFixed(3), +q.lo.toFixed(3), q.leg, q.t ? new Date(q.t * 1000).toISOString().slice(5, 16) : '']; }).filter(function (q) { return Math.abs(q[1] - la) < r && Math.abs(q[2] - lo) < r * 1.6; }); };
   window.__fsXY = function (la, lo) { var r = $('map').getBoundingClientRect(); return [r.left + X(lo), r.top + Y(la)]; };   /* for the automatic tests */
+  window.__fsLive = function () { return LIVE.calc ? { plan: LIVE.calc.plan, xte: LIVE.calc.xte, ahead: LIVE.calc.ahead, rejoin: LIVE.calc.rejoin } : null; };   /* for the automatic tests */
   window.__fsEditPts = function () { var r = $('map').getBoundingClientRect(); return S.edit ? S.edit.pts.map(function (q) { return [r.left + X(q.lon), r.top + Y(q.lat), q.name || '']; }) : null; };   /* for the automatic tests */
   function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
@@ -1671,6 +1673,122 @@
   /* the set-up card and coverage bars: before the forecasts finish downloading the tick list is empty, so use the standard set (Stuart 12 Nov) */
   function cardModels() { if ($('models') && $('models').children.length) return selectedModels(); return (meta.layers || []).filter(function (l) { return l.kind === 'wind' && l.id !== 'mog' && l.id !== 'arpege'; }).map(function (l) { return l.id; }); }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
+
+  /* ---------- Live GPS (Stuart 12 Nov): the boat from this phone's GPS against the chosen route; how far off, ahead or behind, the way back ---------- */
+  var LIVE = { on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 24 * 3600000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
+  function liveSet() { ['gpsMode', 'xteLim', 'behLim'].forEach(function (id) { var v = store('fs-' + id); if (v != null && $(id)) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); if (id === 'gpsMode' && LIVE.on) { liveStop(true); liveStart(); } }; }); var ls = store('fs-liveSound'); if (ls != null) $('liveSound').checked = ls === '1'; $('liveSound').onchange = function () { store('fs-liveSound', this.checked ? '1' : '0'); }; }
+  function liveWake() { try { if (LIVE.on && $('gpsMode').value === 'screen' && navigator.wakeLock && !LIVE.wake) navigator.wakeLock.request('screen').then(function (w) { LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () {}); } catch (e) {} }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) liveWake(); });
+  function liveStart() {
+    if (!navigator.geolocation) { busy('This device has no GPS that Route can use.'); setTimeout(function () { busy(''); }, 3000); return; }
+    LIVE.on = true; $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBox').hidden = false; $('liveBox').innerHTML = '<div class="lvl">Finding the boat by GPS…</div>'; liveWake();
+    try { if (!LIVE.ac && (window.AudioContext || window.webkitAudioContext)) LIVE.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}   /* made on the tap, so the alert can sound later */
+    var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; $('liveBox').innerHTML = '<div class="lvl lvwarn">No GPS fix' + (e && e.code === 1 ? ': location is not allowed for this site. Allow it in the phone settings.' : '. Trying again.') + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
+    if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
+    else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  }
+  function liveStop(keep) {
+    if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null;
+    if (LIVE.wake) { try { LIVE.wake.release(); } catch (e) {} LIVE.wake = null; }
+    if (keep) return; LIVE.on = false; LIVE.fix = null; LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; draw();
+  }
+  function liveFix(g) {
+    var c = g.coords, f = { la: c.latitude, lo: c.longitude, acc: c.accuracy, at: Date.now(), sog: c.speed != null && c.speed >= 0 ? c.speed * 1.94384 : null, cog: c.heading != null && c.heading === c.heading ? c.heading : null }, pv = LIVE.fix;
+    if (pv && (f.sog == null || f.cog == null)) { var r = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dtH = (f.at - pv.at) / 3600000; if (dtH > 2 / 3600 && r.nm > 0.005 && r.nm / dtH < 40) { if (f.sog == null) f.sog = r.nm / dtH; if (f.cog == null) f.cog = r.brg; } }   /* a GPS jump is not boat speed */
+    if (f.sog != null && f.sog > 40) f.sog = null;
+    LIVE.fix = f;
+    /* the long tail: a point every 10 s (or 50 m), about 8 hours, kept on the phone so it survives closing Route */
+    var lt = LIVE.trail[LIVE.trail.length - 1];
+    if (!lt || f.at - lt[2] >= 10000 || rhumb({ lat: lt[0], lon: lt[1] }, { lat: f.la, lon: f.lo }).nm > 0.027) { LIVE.trail.push([+f.la.toFixed(5), +f.lo.toFixed(5), f.at, f.sog != null ? +f.sog.toFixed(1) : null, f.cog != null ? Math.round(f.cog) : null]); if (LIVE.trail.length > 3000) LIVE.trail.shift();
+      if (!LIVE.saved || f.at - LIVE.saved > 60000) { LIVE.saved = f.at; store('fs-livetrail', JSON.stringify(LIVE.trail)); } }
+    try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();
+  }
+  /* the heading that makes good bearing B through the water and tide, and the speed over the ground it gives; on a beat or a run, the best VMG */
+  function liveSteer(B, tws, twd, cu, cv, spd) {
+    var best = null, vmg = null;
+    for (var h = 0; h < 360; h += 2) { var twa = ((h - twd + 540) % 360) - 180, bs = spd(tws, twa); if (!(bs > 0)) continue; var vx = bs * Math.sin(h * R) + cu, vy = bs * Math.cos(h * R) + cv, al = vx * Math.sin(B * R) + vy * Math.cos(B * R), cr = vx * Math.cos(B * R) - vy * Math.sin(B * R);
+      if (Math.abs(cr) < 0.3 && al > 0 && (!best || al > best.sog)) best = { hdg: h, sog: al, twa: twa }; if (!vmg || al > vmg.sog) vmg = { hdg: h, sog: al, twa: twa, tack: true }; }
+    return best || (vmg && vmg.sog > 0.2 ? vmg : null);
+  }
+  function liveCalc(f) {
+    var o = { fix: f }, nowH = (Date.now() / 1000 - T0) / 3600, s = S.sel; o.nowH = nowH;
+    if (!s || !s.r || !s.r.path) return o;
+    var p = s.r.path, ts = tsOf(p), kx = Math.cos(f.la * R) * 60, best = null;
+    for (var i = 0; i < p.length - 1; i++) { var ax = (p[i].lo - f.lo) * kx, ay = (p[i].la - f.la) * 60, bx = (p[i + 1].lo - f.lo) * kx, by = (p[i + 1].la - f.la) * 60, dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)), qx = ax + u * dx, qy = ay + u * dy, d = Math.hypot(qx, qy);
+      if (!best || d < best.d) best = { d: d, i: i, u: u, side: (dx * (-ay - u * dy) - dy * (-ax - u * dx)) > 0 ? 'L' : 'R', t: ts[i] + u * (ts[i + 1] - ts[i]), la: f.la + qy / 60, lo: f.lo + qx / kx }; }
+    o.xte = best; o.ahead = (best.t - nowH) * 60;   /* minutes: the plan reaches the boat's nearest point at best.t */
+    var pn = posAt(ts, p, nowH); if (pn) { o.plan = pn; o.toPlan = rhumb({ lat: f.la, lon: f.lo }, { lat: pn.la, lon: pn.lo }); }
+    /* fastest rejoin: the point ahead on the plan that the boat reaches for the least time lost, sailing straight there now */
+    var W = FSRouter.windSampler(P, s.models)(f.la, f.lo, nowH), tid = $('tideSel').value ? FSRouter.tideSampler(P, $('tideSel').value)(f.la, f.lo, nowH) : [0, 0], spd = speedFn(opts(s.models)), safe = +$('depth').value;
+    if (W && W[0] > 0.5) {
+      o.wind = W; var cand = null;
+      for (var j = best.i + 1; j < p.length; j++) { if (ts[j] > Math.max(nowH, best.t) + 1.5 || (p[j].leg || 0) !== (p[best.i + 1].leg || 0)) break;   /* rejoin on this leg, within the next 90 minutes of the plan: no cutting marks or corners on today's wind */ var r = rhumb({ lat: f.la, lon: f.lo }, { lat: p[j].la, lon: p[j].lo }); if (r.nm < 0.05) continue;
+        var st = liveSteer(r.brg, W[0], W[1], tid[0] || 0, tid[1] || 0, spd); if (!st) continue;
+        var ta = nowH + r.nm / st.sog / (st.tack ? 1 : 1), lost = ta - ts[j];
+        var wet = true; if (P.depth) for (var k = 1; k < 8; k++) { var la = f.la + (p[j].la - f.la) * k / 8, lo = f.lo + (p[j].lo - f.lo) * k / 8, z = P.depth.nearest('z', la, lo); if (z === z && z > -safe) { wet = false; break; } }
+        if (!wet) continue; (o.cands = o.cands || []).push({ j: j, la: p[j].la, lo: p[j].lo, brg: r.brg, nm: r.nm, steer: st.hdg, sog: st.sog, tack: !!st.tack, ta: ta, lost: lost }); }
+      /* back on the plan soonest: of the ways back that lose no more than 2 minutes more than the best, the one that gets there first */
+      /* regain the routing position soonest (Stuart 12 Nov): catch the plan, the earliest point reached no later than the plan; failing that, back on the planned track soonest */
+      if (o.cands && (best.d > 0.1 || o.ahead < -1)) { var byT = o.cands.slice().sort(function (a, b) { return a.ta - b.ta; }), cat = byT.filter(function (q) { return q.lost <= 0; })[0]; o.rejoin = cat ? Object.assign(cat, { kind: 'catch' }) : Object.assign(byT[0], { kind: 'track' }); }
+      delete o.cands;
+    }
+    return o;
+  }
+  function liveBeep() {
+    try { if (navigator.vibrate) navigator.vibrate([300, 120, 300]); } catch (e) {}
+    try { if (!$('liveSound').checked || !LIVE.ac) return; var ac = LIVE.ac; if (ac.state === 'suspended') ac.resume(); [0, 0.35].forEach(function (d) { var o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; g.gain.value = 0.25; o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.22); }); } catch (e) {}
+  }
+  function liveShow() {
+    var c = LIVE.calc, f = LIVE.fix; if (!c || !f) return;
+    var n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return ('00' + Math.round((x + 360) % 360) % 360).slice(-3) + '°T'; }, mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h ' + ('0' + a % 60).slice(-2) : a + ' min'; };
+    var sog = f.sog != null ? n1(f.sog) + ' kn' : '--', cog = f.cog != null && f.sog > 0.5 ? p3(f.cog) : '--';
+    var xl = +$('xteLim').value || 0, bl = +$('behLim').value || 0, xte = c.xte, offX = xte && xl > 0 && xte.d > xl, offB = c.xte && bl > 0 && c.ahead < -bl, alarm = offX || offB;
+    if (alarm && !LIVE.alarm) liveBeep(); LIVE.alarm = alarm;
+    var xt = xte ? n1(xte.d) + ' nm ' + (xte.d < 0.02 ? '' : xte.side === 'L' ? 'left' : 'right') : '--', ab = xte ? (Math.abs(c.ahead) < 1 ? 'On plan' : mm(c.ahead) + (c.ahead > 0 ? ' ahead' : ' behind')) : '--';
+    var tp = c.toPlan ? p3(c.toPlan.brg) + ' ' + n1(c.toPlan.nm) + ' nm' : (S.sel && c.nowH < tsOf(S.sel.r.path)[0] ? 'before the start' : '--');
+    var rj = c.rejoin, rjt = rj ? 'Steer ' + p3(rj.steer) + (rj.tack ? ' (best VMG, beat or run)' : '') + ' to make good ' + p3(rj.brg) + ' at ' + n1(rj.sog) + ' kn: ' + n1(rj.nm) + ' nm, ' + mm(rj.nm / rj.sog * 60) + (rj.kind === 'catch' ? ', level with the plan by ' + clockAbs(T0 + rj.ta * 3600).slice(-5) + ' UTC' : ', back on the planned track ' + clockAbs(T0 + rj.ta * 3600).slice(-5) + ' UTC, ' + mm(rj.lost * 60) + ' behind the plan') : (S.sel ? (c.xte && c.xte.d <= 0.1 && c.ahead >= -1 ? 'On plan.' : 'No straight way back found: re-route from here.') : '');
+    var nor = !S.sel ? '<div class="lvl">No route chosen yet: route the race to compare the boat with the plan.</div>' : '';
+    $('liveBox').classList.toggle('alarm', alarm);
+    var xs = xte ? (xte.d < 0.05 ? '0.0' : n1(xte.d) + ' ' + xte.side) : '--', as = xte ? (Math.abs(c.ahead) < 1 ? '0 min' : (c.ahead > 0 ? '+' : '−') + mm(c.ahead)) : '--';
+    var rjs = rj ? (rj.kind === 'catch' ? 'Catch plan: ' : 'Back on track: ') + '<b>' + p3(rj.steer) + '</b> · ' + n1(rj.sog) + ' kn · ' + n1(rj.nm) + ' nm · ' + mm(rj.nm / rj.sog * 60) + (rj.kind === 'catch' ? '' : ' · ' + mm(rj.lost * 60) + ' behind') + (rj.tack ? ' · beat/run' : '') : (S.sel && xte && xte.d <= 0.1 && c.ahead >= -1 ? 'On plan' : S.sel ? 'No straight way back: re-route' : 'Route the race to compare with a plan');
+    $('liveBox').innerHTML = '<div class="lvg"><div><small>SOG</small><b>' + sog + '</b></div><div><small>COG</small><b>' + cog + '</b></div><div><small>Off track</small><b' + (offX ? ' class="lvwarn"' : '') + '>' + xs + '</b></div><div><small>Plan</small><b' + (offB ? ' class="lvwarn"' : '') + '>' + as + '</b></div></div>' +
+      '<div class="lvl">To plan now: <b>' + tp + '</b> · ' + rjs + '</div>' + (LIVE.cmp ? '<div class="lvl">' + LIVE.cmp + '</div>' : '') +
+      '<div class="lvx"><button class="btn primary" id="lvBig">Big</button>' + (S.sel ? '<button class="btn" id="lvRe">Re-route</button>' : '') + '<button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><span class="lvl" style="align-self:center;margin-left:auto">GPS ±' + Math.round(f.acc || 0) + ' m</span></div>';
+    $('lvBig').onclick = function () { LIVE.big = true; liveShow(); }; $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; if ($('lvRe')) $('lvRe').onclick = liveReroute;
+    $('liveBig').hidden = !LIVE.big; $('liveBig').classList.toggle('alarm', alarm);
+    if (LIVE.big) {
+      var cell = function (k, v, sub, cls) { return '<div class="' + (cls || '') + '"><small>' + k + '</small><b>' + v + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>'; };
+      $('liveBig').innerHTML = '<div class="lbg">' + cell('SOG', sog) + cell('COG', cog) + cell('Off track', xs, xte ? (xte.d < 0.05 ? 'on the planned route' : xte.side === 'L' ? 'left of the planned route' : 'right of the planned route') : '', offX ? 'warnc' : '') + cell('Plan', as, xte ? (Math.abs(c.ahead) < 1 ? 'on plan' : c.ahead > 0 ? 'ahead of the plan' : 'behind the plan') : '', offB ? 'warnc' : '') +
+        cell('To plan position', c.toPlan ? p3(c.toPlan.brg) : '--', c.toPlan ? n1(c.toPlan.nm) + ' nm' : tp) + cell(rj && rj.kind === 'catch' ? 'Catch the plan: steer' : 'Back on track: steer', rj ? p3(rj.steer) : '--', rj ? rjt : (S.sel ? 'On plan' : '')) + '</div>' +
+        '<div class="lvx"><button class="btn primary" id="lbChart">Chart</button>' + (S.sel ? '<button class="btn" id="lbRe">Re-route from here</button>' : '') + '<button class="btn" id="lbStop">Stop GPS</button></div>';
+      $('lbChart').onclick = function () { LIVE.big = false; liveShow(); }; $('lbStop').onclick = function () { liveStop(); }; if ($('lbRe')) $('lbRe').onclick = function () { LIVE.big = false; liveReroute(); };
+    }
+  }
+  function liveReroute() {
+    var f = LIVE.fix; if (!f) return; if (S.running) { LIVE.queue = true; LIVE.cmp = 'Route is still working on the last routes: it will route from the boat as soon as they finish.'; liveShow(); return; } var nowH = (Date.now() / 1000 - T0) / 3600;
+    if (nowH > HMAX() - 1 || !inData({ lat: f.la, lon: f.lo })) { $('runNote').textContent = 'Cannot re-route: the boat or now is outside the forecasts.'; return; }
+    LIVE.planFin = S.sel && S.sel.r ? S.sel.r.finish : null; LIVE.cmp = 'Routing from the boat…';
+    S.from = { lat: f.la, lon: f.lo, t: nowH, gps: true }; run(); liveShow();
+  }
+  function liveAfterRoute() {   /* a fresh route from the boat: its finish against the plan it replaces */
+    if (LIVE.queue && !S.running) { LIVE.queue = false; setTimeout(liveReroute, 50); return; }
+    if (!LIVE.on || LIVE.planFin == null || !S.sel || !S.sel.r) return; var d = (S.sel.r.finish - LIVE.planFin) * 60;
+    LIVE.cmp = 'Fresh route from the boat: finish ' + clockAbs(T0 + S.sel.r.finish * 3600) + ' UTC, ' + (Math.abs(d) < 1 ? 'the same as the plan' : Math.abs(Math.round(d)) + ' min ' + (d < 0 ? 'earlier' : 'later') + ' than the plan') + '. It is now the plan.';
+    LIVE.planFin = null; if (LIVE.fix) { try { LIVE.calc = liveCalc(LIVE.fix); } catch (e) {} liveShow(); }
+  }
+  function liveDraw() {
+    var f = LIVE.fix, c = LIVE.calc || {};
+    if (!LIVE.on && LIVE.trail.length < 2) return;
+    ctx.save();
+    if (LIVE.trail.length > 1) { ctx.strokeStyle = '#4CC38A'; ctx.globalAlpha = 0.8; ctx.lineWidth = 2; ctx.beginPath(); LIVE.trail.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.stroke(); ctx.globalAlpha = 1; }
+    if (!LIVE.on || !f) { ctx.restore(); return; }
+    var x = X(f.lo), y = Y(f.la);
+    if (c.plan) { ctx.strokeStyle = css['--ink']; ctx.setLineDash([3, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.plan.lo), Y(c.plan.la)); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(c.plan.lo), Y(c.plan.la), 7, 0, 7); ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.font = '600 10px Inter, sans-serif'; ctx.fillText('PLAN NOW', X(c.plan.lo) + 10, Y(c.plan.la) + 4); }
+    if (c.rejoin) { ctx.strokeStyle = css['--warn']; ctx.setLineDash([7, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.rejoin.lo), Y(c.rejoin.la)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css['--warn']; ctx.beginPath(); ctx.arc(X(c.rejoin.lo), Y(c.rejoin.la), 4.5, 0, 7); ctx.fill(); }
+    if (f.acc && f.acc > 30) { ctx.globalAlpha = 0.15; ctx.fillStyle = '#4CC38A'; ctx.beginPath(); ctx.arc(x, y, Math.max(6, f.acc / 1852 / 60 * view.s), 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+    triMark(x, y, f.cog != null && f.sog > 0.5 ? f.cog : 0, 12, css['--panel'], '#4CC38A', 3);
+    ctx.restore();
+  }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
   function loadPre() {
     S.pre = null;
@@ -1840,6 +1958,7 @@
     var fastT = Math.min.apply(null, S.routes.filter(function (s) { return !s.r.partial; }).map(function (s) { return s.r.finish; }).concat([Infinity]));
     $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + '</em>') + '</div>'; }).join('');
     try { checksRender(); setupRender(); } catch (e) {}
+    try { liveAfterRoute(); if (LIVE.on && LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}
     $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
   }
   function sailsList() { return FSRouter.parseCrossover($('sails').value); }
@@ -1869,6 +1988,7 @@
     ['Routes', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
+    ['Live GPS while racing', 'Tap GPS by the timeline. Route shows the boat from this phone\'s own GPS, no boat wifi needed, with a long track behind it: tap the track for the time, SOG and COG there. It compares the boat with the chosen route: off track left or right, ahead or behind the plan, and the course and distance to where the plan says you should be now. Catch the plan gives the course to steer, speed and time to be level with the plan again, using the wind, tide and your polar now; if you cannot catch it, Back on the track gives the soonest way back onto the planned track. Re-route works out a fresh route from the boat and says how its finish compares. Big shows large numbers for the cockpit. Set the alerts and the battery mode in Settings, Course, While racing. Keep the screen on: a web page cannot follow the GPS in the background. Heading is the GPS course over the ground. Not for navigation.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
     ['Routing while racing', 'Press From here: Route finds the boat by the phone or tablet GPS and routes from there, from now. If there is no GPS, tap the chart where the boat is. To keep the route fresh, Settings, Course, While racing: choose Every 10, 20 or 30 minutes and Route routes again from the new position on that timer while the screen is on.'],
     ['Route to any point', 'Tap the water anywhere on the chart (click on a computer) and choose Route here from the boat: Route works out the routes from where the boat is at the slider time to that point, in every model. Useful for a waypoint, a tidal gate or a what-if. Route again goes back to the course.'],
@@ -2061,6 +2181,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) { myMarksDraw(); editDraw(); }
     if (S.mob) mobDraw();
+    liveDraw();
     if (S.edit) { ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.setLineDash([6, 5]);   /* every area a drawn course can route in, each named */
       REGIONS.forEach(function (g) { if (!READY[g.id]) return; var rb = g.region; ctx.globalAlpha = g.id === HERE ? 1 : 0.6; ctx.lineWidth = g.id === HERE ? 1.8 : 1.2; ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.fillText(g.name, X(rb.w) + 5, Y(rb.n) + 13); });
       ctx.restore(); }   /* the area a new course must stay inside */
@@ -2348,10 +2469,11 @@
   var follow = store('fs-follow') !== '0';
   function followSet(on) { follow = on; store('fs-follow', on ? '1' : '0'); $('followBtn').setAttribute('aria-pressed', on); $('followBtn').title = on ? 'Following the boat: tap to stop' : 'Follow the boat: keeps it in the middle as the time moves'; if (on) { followBoat(); draw(); } }
   function followBoat() {
-    if (!follow || !S.sel || !W || S.edit) return;   /* editing a course: the chart stays where it is */
-    var p = S.sel.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos) pos = { la: p[0].la, lo: p[0].lo };
+    if (!follow || !W || S.edit) return;   /* editing a course: the chart stays where it is */
+    var pos; if (LIVE.on && LIVE.fix) pos = { la: LIVE.fix.la, lo: LIVE.fix.lo };   /* live GPS: follow the real boat */
+    else { if (!S.sel) return; var p = S.sel.r.path; pos = posAt(tsOf(p), p, S.t); if (!pos) pos = { la: p[0].la, lo: p[0].lo }; }
     var top = 70, bot = H, bar = document.querySelector('.bar'), pn = $('panel'), cr = cv.getBoundingClientRect();
-    [bar, !wide() && pn && !pn.hidden && !pn.classList.contains('collapsed') ? pn : null].forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (r.height && r.top > cr.top + top && r.left < cr.left + W / 2 && r.right > cr.left + W / 2) bot = Math.min(bot, r.top - cr.top); });
+    [bar, !wide() && pn && !pn.hidden && !pn.classList.contains('collapsed') ? pn : null, LIVE.on && !$('liveBox').hidden ? $('liveBox') : null].forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (r.height && r.top > cr.top + top && r.left < cr.left + W / 2 && r.right > cr.left + W / 2) bot = Math.min(bot, r.top - cr.top); });
     var left = 0, right = W; if (wide() && pn && !pn.hidden) { var r2 = pn.getBoundingClientRect(); if (r2.left - cr.left > W / 2) right = r2.left - cr.left; else if (r2.right - cr.left < W / 2) left = r2.right - cr.left; }
     var cx = (left + right) / 2, cy = (top + bot) / 2;
     view.lo = pos.lo - (cx - W / 2) / (K * view.s); view.la = pos.la + (cy - H / 2) / view.s;
@@ -2416,6 +2538,9 @@
   function hover(x, y, docked, tapped) {
     if (!meta) return;
     if (S.edit) { $('tip').hidden = true; return; }   /* editing a course: no info boxes over the marks */
+    if (LIVE.trail.length) { var bt = null, bd = 12; LIVE.trail.forEach(function (q) { var d = Math.hypot(X(q[1]) - x, Y(q[0]) - y); if (d < bd) { bd = d; bt = q; } });   /* the boat's own track: time, SOG, COG at that point (Stuart 12 Nov) */
+      if (bt) { var tq = new Date(bt[2]); $('tipBody').innerHTML = '<b>Your boat, ' + ('0' + tq.getUTCHours()).slice(-2) + ':' + ('0' + tq.getUTCMinutes()).slice(-2) + ':' + ('0' + tq.getUTCSeconds()).slice(-2) + ' UTC</b>' + r2('Position', dm(bt[0], 'NS') + ' ' + dm(bt[1], 'EW')) + r2('SOG', bt[3] != null ? bt[3].toFixed(1) + ' kn' : '--') + r2('COG', bt[4] != null && bt[3] > 0.5 ? ('00' + bt[4]).slice(-3) + '°T' : '--') + r2('Heading', 'GPS gives course over the ground, not heading');
+        $('tip').hidden = false; $('tip').classList.toggle('docked', !!docked); if (!docked) { $('tip').style.left = Math.min(W - 230, x + 14) + 'px'; $('tip').style.top = Math.max(64, y + 14) + 'px'; } return; } }
     if (S.big) { var O = meta.overview, gy = Math.round((LA(y) - O.lat0) / O.dlat), gx = Math.round((LO(x) - O.lon0) / O.dlon); if (gy < 0 || gx < 0 || gy >= O.ny || gx >= O.nx) return;
       var pu = ovField('u')(gy, gx), pv = ovField('v')(gy, gx); $('tipBody').innerHTML = '<b>' + dm(LA(y), 'NS') + ' ' + dm(LO(x), 'EW') + '</b>' + r2('Pressure', ovField('msl')(gy, gx).toFixed(0) + ' hPa') + r2('Wind', (Math.hypot(pu, pv) / KN).toFixed(0) + ' kn from ' + pad(Math.atan2(-pu, -pv) / R) + '°');
       $('tip').hidden = false; $('tip').classList.toggle('docked', !!docked); if (!docked) { $('tip').style.left = Math.min(W - 230, x + 14) + 'px'; $('tip').style.top = Math.max(64, y + 14) + 'px'; } return; }
