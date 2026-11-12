@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.9.3';
+  var VERSION = 'FirstShift Route v0.9.4';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.9.3 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.4 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -384,7 +384,7 @@
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
   function layersPop() {
-    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
+    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div>' + '<div class="lgrp">Charts (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
       '<label><input type="checkbox" data-l="legs"' + (S.show.legs ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Leg courses and distances</label>' +
@@ -401,7 +401,7 @@
     var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band', 'legs'];
     $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
     $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.show.legs = true;   /* just the route still shows course and distance on each leg (Stuart 12 Nov) */ S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
-    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (c.dataset.l === 'iso' && c.checked) isoFetch(); } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
+    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (CHARTS[c.dataset.l]) { chartSave(); chartCredit(); } if (c.dataset.l === 'iso' && c.checked) isoFetch(); } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
     $('layersX').onclick = closeLayers;
     $('lWind').onchange = function () { $('windSym').value = $('lWind').value; $('windSym').onchange(); };
@@ -2100,6 +2100,7 @@
     ['Routes', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
+    ['Real charts', 'Layers, then Charts, adds two free layers under the routes: depth shading from EMODnet Bathymetry (the EU sea-bed survey, licensed CC BY 4.0) and buoys, beacons and lights from OpenSeaMap (OpenStreetMap contributors, licensed CC BY-SA). They load from the internet as you pan and zoom, so they need a signal; buoys show once you zoom in to a few miles across. Neither is an official chart and neither is for navigation: use your official paper or electronic charts for that. Licensed GeoGarage (UKHO) and C-MAP charts are being looked into as an option for people who already subscribe.'],
     ['Chart orientation', 'The round compass above the edit button turns the chart. Tap it for North up (the normal chart), Course up (the GPS course over the ground is up, like a car satnav: needs Live GPS on and the boat moving over 1.5 knots, otherwise the chart stays north up and the compass dims) and Route up (the course to the next mark is up; steady through tacks, and it works without GPS). The red tip of the compass always points north. Text stays upright; the scale bar stays square to the screen.'],
     ['Live GPS while racing', 'Tap GPS by the timeline. Route shows the boat from this phone\'s own GPS, no boat wifi needed, with a long track behind it: tap the track for the time, SOG and COG there. It compares the boat with the chosen route: off track left or right, ahead or behind the plan, and the course and distance to where the plan says you should be now. Catch the plan gives the course to steer, speed and time to be level with the plan again, using the wind, tide and your polar now; if you cannot catch it, Back on the track gives the soonest way back onto the planned track. Re-route works out a fresh route from the boat and says how its finish compares. Big shows large numbers for the cockpit; Chart comes back. MIN shrinks the window to a small GPS live pill, green within your alert limits and orange past one, with off track and the minutes; tap the pill to open the window again. The round i on the window explains every figure and button. Set the alerts and the battery mode in Settings, Course, While racing. Keep the screen on: a web page cannot follow the GPS in the background. Heading is the GPS course over the ground. Not for navigation.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
@@ -2279,6 +2280,58 @@
     depthLines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null };
   }
   var depthLines = null;
+  /* Real chart layers (Stuart 12 Nov): free tiles now, licensed GeoGarage or C-MAP tiles slot into CHARTS later.
+     Tiles are web Mercator; this chart is equirectangular, so each tile is stretched between its own edge latitudes, which is exact at the corners and well under a pixel off inside a tile at the zooms used. */
+  var CHARTS = {
+    cdepth: { name: 'Depth shading (EMODnet)', url: 'https://tiles.emodnet-bathymetry.eu/latest/mean_atlas_land/web_mercator/{z}/{x}/{y}.png', zmin: 3, zmax: 12, alpha: 0.85, credit: 'Depth \u00a9 EMODnet' },
+    cmarks: { name: 'Buoys, beacons and lights (OpenSeaMap)', url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', zmin: 9, zmax: 18, alpha: 1, credit: 'Seamarks © OpenSeaMap' }
+  };
+  var TILES = {}, tileN = 0, tileRaf = 0, chartLog = { asked: 0, loaded: 0, failed: 0 };
+  (function () { try { var c = JSON.parse(localStorage.getItem('fs-charts') || '{}'); S.show.cdepth = !!c.cdepth; S.show.cmarks = !!c.cmarks; } catch (e) {} })();
+  function chartSave() { try { localStorage.setItem('fs-charts', JSON.stringify({ cdepth: !!S.show.cdepth, cmarks: !!S.show.cmarks })); } catch (e) {} }
+  function tileZoom(c) { var z = Math.round(Math.log(360 * K * view.s * Math.min(dpr || 1, 2) / 256) / Math.LN2); return Math.max(c.zmin, Math.min(c.zmax, z)); }
+  function tLon(x, z) { return x / Math.pow(2, z) * 360 - 180; }
+  function tLat(y, z) { var n = Math.PI * (1 - 2 * y / Math.pow(2, z)); return Math.atan(Math.sinh(n)) * 180 / Math.PI; }
+  function mkImg(t, plain) { var im = new Image(); im.decoding = 'async'; if (!plain) im.crossOrigin = 'anonymous'; im.onload = function () { t.ok = true; chartLog.loaded++; if (!tileRaf) tileRaf = requestAnimationFrame(function () { tileRaf = 0; draw(); }); }; im.onerror = function () { t.bad = true; chartLog.failed++; }; return im; }
+  function tileGet(id, c, z, x, y) {
+    var k = id + '/' + z + '/' + x + '/' + y, t = TILES[k];
+    if (t) { t.used = ++tileN; return t; }
+    t = TILES[k] = { img: new Image(), ok: false, bad: false, used: ++tileN };
+    t.img.decoding = 'async';
+    t.img.onload = function () { t.ok = true; chartLog.loaded++; if (!tileRaf) tileRaf = requestAnimationFrame(function () { tileRaf = 0; draw(); }); };
+    var src = c.url.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+    if (c.noCors) { t.img = mkImg(t, true); t.retry = 1; t.img.src = src; chartLog.asked++; return t; }
+    t.img.crossOrigin = 'anonymous';   /* keeps the chart canvas readable; a server without CORS gets one plain retry */
+    t.img.onerror = function () { if (t.img.crossOrigin && !c.noCors) { c.noCors = true; } if (!t.retry) { t.retry = 1; t.img = mkImg(t, c.noCors); t.img.src = src; return; } t.bad = true; chartLog.failed++; };
+    chartLog.asked++; t.img.src = src;
+    var ks = Object.keys(TILES); if (ks.length > 600) { ks.sort(function (a, b) { return TILES[a].used - TILES[b].used; }); ks.slice(0, 200).forEach(function (q) { var o = TILES[q]; o.img.onload = o.img.onerror = null; o.img.src = ''; delete TILES[q]; }); }   /* keep memory bounded on phones */
+    return t;
+  }
+  function chartDraw(id) {
+    var c = CHARTS[id]; if (!c || !S.show[id]) return;
+    var b = viewBox(), z = tileZoom(c), n = Math.pow(2, z);
+    var x0 = Math.floor((b.w + 180) / 360 * n), x1 = Math.floor((b.e + 180) / 360 * n);
+    var my = function (la) { la = Math.max(-85, Math.min(85, la)) * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n); };
+    var y0 = my(b.n), y1 = my(b.s);
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 120) return;   /* too far out for this layer: nothing sensible to show */
+    ctx.save(); ctx.globalAlpha = c.alpha; ctx.imageSmoothingEnabled = true;
+    for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
+      var lw = tLon(x, z), le = tLon(x + 1, z), ln = tLat(y, z), ls = tLat(y + 1, z), px = X(lw), py = Y(ln), pw = X(le) - px, ph = Y(ls) - py;
+      var t = tileGet(id, c, z, ((x % n) + n) % n, y);
+      if (t.ok) { ctx.drawImage(t.img, px, py, pw + 0.5, ph + 0.5); continue; }
+      for (var u = 1; u <= 3 && z - u >= c.zmin; u++) {   /* while a tile loads, stretch its parent so the chart never flashes empty */
+        var pz = z - u, f = Math.pow(2, u), pt = TILES[id + '/' + pz + '/' + Math.floor(x / f) + '/' + Math.floor(y / f)];
+        if (pt && pt.ok) { var sx = (x % f) * 256 / f, sy = (y % f) * 256 / f; ctx.drawImage(pt.img, sx, sy, 256 / f, 256 / f, px, py, pw + 0.5, ph + 0.5); break; }
+      }
+    }
+    ctx.restore();
+  }
+  function chartCredit() {
+    var on = Object.keys(CHARTS).filter(function (k) { return S.show[k]; }); var el = $('chartCredit'); if (!el) return;
+    el.hidden = !on.length; if (on.length) el.textContent = on.map(function (k) { return CHARTS[k].credit; }).join(' · ') + ' · Not for navigation';
+  }
+  chartCredit();
+  window.__fsCharts = function () { return { log: chartLog, tiles: Object.keys(TILES).length, z: Object.keys(CHARTS).map(function (k) { return k + ':' + tileZoom(CHARTS[k]); }) }; };
   function drawDepthLines() {
     if (!depthLines) return; var lo0 = LO(0), lo1 = LO(W), la1 = LA(0), la0 = LA(H), kx = K * view.s, ox = W / 2 - view.lo * kx, sy = view.s, oy = H / 2 + view.la * sy;
     function strokeSegs(a, colour, w) { if (!a) return; ctx.beginPath(); for (var i = 0; i < a.length; i += 4) { var x1 = a[i], y1 = a[i + 1], x2 = a[i + 2], y2 = a[i + 3]; if ((x1 < lo0 && x2 < lo0) || (x1 > lo1 && x2 > lo1) || (y1 < la0 && y2 < la0) || (y1 > la1 && y2 > la1)) continue; ctx.moveTo(x1 * kx + ox, oy - y1 * sy); ctx.lineTo(x2 * kx + ox, oy - y2 * sy); } ctx.strokeStyle = colour; ctx.lineWidth = w; ctx.stroke(); }
@@ -2306,10 +2359,12 @@
     baseLand();
     if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     try { drawDepthLines(); } catch (e) {}
+    try { chartDraw('cdepth'); } catch (e) {}
     grid();
     if (S.show.band) bandEdge();
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
     if (S.show.wind && $('windShow').value) { ctx.save(); ctx.globalAlpha = (+$('windDim').value || 0) / 100; arrows('wind'); ctx.restore(); }
+    try { chartDraw('cmarks'); } catch (e) {}
     zonesDraw(); lightsDraw();
     document.body.classList.toggle('editing', !!S.edit);
     if (!S.edit) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */

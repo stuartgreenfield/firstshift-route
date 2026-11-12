@@ -446,6 +446,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .tzrow{width:100%;contain:inline-size}.tzrow em{font-style:normal}
 @media (max-width:520px){.tzrow{font-size:11.5px;gap:4px}.tzw{display:none}.tzb{width:32px;height:32px}.tzl{gap:4px}}
 @media (max-width:380px){.tzrow{font-size:10.5px}.tzb{width:30px;height:30px}}
+.chartcredit{position:absolute;left:8px;bottom:2px;z-index:2;max-width:calc(100% - 2*var(--gut,12px) - 60px);font:500 10.5px var(--f-body);color:var(--muted);background:var(--glass);padding:2px 7px;border-radius:6px;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
@@ -456,6 +457,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
+    <div class="chartcredit" id="chartCredit" hidden></div>
     <button class="fabhelp fabedit" id="editFab" title="Edit the course on the chart" aria-label="Edit the course on the chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>
     <button class="fabhelp fabori" id="oriBtn" title="Chart orientation: tap for North up, Course up, Route up" aria-label="Chart orientation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 9h-8z" fill="#E5484D" stroke="none"/><path d="M12 21l-4-9h8z" fill="currentColor" stroke="none" opacity=".55"/></svg><span class="orl">N UP</span></button>
     <button class="fabhelp" id="helpBtn" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r=".6"/></svg></button>
@@ -621,7 +623,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.9.3</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.9.4</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
