@@ -1,0 +1,177 @@
+{
+ "built": "2026-11-12T11:03Z",
+ "sources": {
+  "cervantes:ecwav": "2026111200 in 159s",
+  "cervantes:arpege": "2026111200 in 16s",
+  "cervantes:ecmet": "2026111200 in 362s",
+  "cervantes:ecmwf": "2026111200 in 149s",
+  "cervantes:mars": "2026111200 in 33s",
+  "cervantes:arome": "2026111200 in 23s",
+  "cervantes:mog": "2026111200 in 49s",
+  "cervantes:gfs": "2026111200 in 43s",
+  "cervantes:aifs": "2026111200 in 57s",
+  "cervantes:ukv": "2026111200 in 103s",
+  "cervantes:ens": "2026111200 in 105s",
+  "cervantes:ibicur": "2026111200 in 131s",
+  "cervantes:nwscur": "2026111200 in 137s",
+  "cervantes:icon": "2026111200 in 157s",
+  "cervantes:nwswav": "2026111200 in 193s",
+  "cervantes:overview": "2026111200 ok",
+  "fastnet:arome": "2026111200 in 29s",
+  "fastnet:arpege": "2026111200 in 32s",
+  "fastnet:mars": "2026111200 in 52s",
+  "fastnet:mog": "2026111200 in 157s",
+  "fastnet:gfs": "2026111200 in 142s",
+  "fastnet:ukv": "2026111200 in 137s",
+  "fastnet:icon": "2026111200 in 320s",
+  "fastnet:aifs": "2026111200 in 404s",
+  "fastnet:ibicur": "2026111200 in 420s",
+  "fastnet:ens": "2026111200 in 390s",
+  "fastnet:nwscur": "2026111200 in 438s",
+  "fastnet:ecmwf": "2026111200 in 478s",
+  "fastnet:nwswav": "2026111200 in 631s",
+  "fastnet:ecwav": "2026111200 in 714s",
+  "fastnet:ecmet": "2026111200 in 945s",
+  "fastnet:overview": "2026111200 ok",
+  "channel-area:icon": "2026111200 in 322s",
+  "channel-area:arpege": "2026111200 in 32s",
+  "channel-area:arome": "2026111200 in 28s",
+  "channel-area:ens": "2026111200 in 382s",
+  "channel-area:mars": "2026111200 in 53s",
+  "channel-area:mog": "2026111200 in 159s",
+  "channel-area:gfs": "2026111200 in 144s",
+  "channel-area:ukv": "2026111200 in 137s",
+  "channel-area:aifs": "2026111200 in 339s",
+  "channel-area:ibicur": "2026111200 in 413s",
+  "channel-area:nwscur": "2026111200 in 433s",
+  "channel-area:ecmwf": "2026111200 in 522s",
+  "channel-area:ecwav": "2026111200 in 700s",
+  "channel-area:nwswav": "2026111200 in 626s",
+  "channel-area:ecmet": "2026111200 in 857s",
+  "channel-area:overview": "2026111200 ok",
+  "northsea-area:arpege": "2026111200 in 27s",
+  "northsea-area:icon": "2026111200 in 216s",
+  "northsea-area:arome": "2026111200 in 25s",
+  "northsea-area:ens": "2026111200 in 340s",
+  "northsea-area:mog": "2026111200 in 102s",
+  "northsea-area:gfs": "2026111200 in 29s",
+  "northsea-area:ukv": "2026111200 in 85s",
+  "northsea-area:ibicur": "2026111200 in 276s",
+  "northsea-area:nwscur": "2026111200 in 290s",
+  "northsea-area:aifs": "2026111200 in 327s",
+  "northsea-area:nwswav": "2026111200 in 417s",
+  "northsea-area:ecmwf": "2026111200 in 444s",
+  "northsea-area:ecwav": "2026111200 in 664s",
+  "northsea-area:ecmet": "2026111200 in 756s",
+  "northsea-area:overview": "2026111200 ok",
+  "irishsea-area:arpege": "2026111200 in 25s",
+  "irishsea-area:icon": "2026111200 in 204s",
+  "irishsea-area:arome": "2026111200 in 21s",
+  "irishsea-area:ens": "2026111200 in 307s",
+  "irishsea-area:mog": "2026111200 in 100s",
+  "irishsea-area:gfs": "2026111200 in 29s",
+  "irishsea-area:ukv": "2026111200 in 85s",
+  "irishsea-area:aifs": "2026111200 in 314s",
+  "irishsea-area:ecmwf": "2026111200 in 440s",
+  "irishsea-area:ibicur": "2026111200 in 280s",
+  "irishsea-area:nwscur": "2026111200 in 292s",
+  "irishsea-area:ecwav": "2026111200 in 526s",
+  "irishsea-area:nwswav": "2026111200 in 420s",
+  "irishsea-area:ecmet": "2026111200 in 767s",
+  "irishsea-area:overview": "2026111200 ok",
+  "biscay-area:mars": "2026111106 failed: mars: no overlap with this area or time\n",
+  "biscay-area:arpege": "2026111200 in 37s",
+  "biscay-area:icon": "2026111200 in 220s",
+  "biscay-area:arome": "2026111200 in 37s",
+  "biscay-area:ens": "2026111200 in 314s",
+  "biscay-area:mog": "2026111200 in 99s",
+  "biscay-area:gfs": "2026111200 in 18s",
+  "biscay-area:ukv": "2026111200 in 88s",
+  "biscay-area:aifs": "2026111200 in 315s",
+  "biscay-area:ecmwf": "2026111200 in 453s",
+  "biscay-area:ibicur": "2026111200 in 314s",
+  "biscay-area:nwscur": "2026111200 in 329s",
+  "biscay-area:ecwav": "2026111200 in 586s",
+  "biscay-area:nwswav": "2026111200 in 469s",
+  "biscay-area:ecmet": "2026111200 in 780s",
+  "biscay-area:overview": "2026111200 ok",
+  "celtic-area:arome": "2026111200 in 25s",
+  "celtic-area:arpege": "2026111200 in 26s",
+  "celtic-area:mars": "2026111200 in 29s",
+  "celtic-area:gfs": "2026111200 in 33s",
+  "celtic-area:ukv": "2026111200 in 89s",
+  "celtic-area:mog": "2026111200 in 105s",
+  "celtic-area:icon": "2026111200 in 218s",
+  "celtic-area:ibicur": "2026111200 in 282s",
+  "celtic-area:nwscur": "2026111200 in 297s",
+  "celtic-area:aifs": "2026111200 in 298s",
+  "celtic-area:ens": "2026111200 in 334s",
+  "celtic-area:nwswav": "2026111200 in 426s",
+  "celtic-area:ecmwf": "2026111200 in 430s",
+  "celtic-area:ecwav": "2026111200 in 575s",
+  "celtic-area:ecmet": "2026111200 in 736s",
+  "celtic-area:overview": "2026111200 ok"
+ },
+ "received": {
+  "arpege": {
+   "run": "2026111200",
+   "at": 1794480285
+  },
+  "mars": {
+   "run": "2026111200",
+   "at": 1794480306
+  },
+  "arome": {
+   "run": "2026111200",
+   "at": 1794480283
+  },
+  "mog": {
+   "run": "2026111200",
+   "at": 1794480360
+  },
+  "gfs": {
+   "run": "2026111200",
+   "at": 1794480287
+  },
+  "aifs": {
+   "run": "2026111200",
+   "at": 1794480585
+  },
+  "ukv": {
+   "run": "2026111200",
+   "at": 1794480343
+  },
+  "ens": {
+   "run": "2026111200",
+   "at": 1794480599
+  },
+  "ibicur": {
+   "run": "2026111200",
+   "at": 1794480534
+  },
+  "nwscur": {
+   "run": "2026111200",
+   "at": 1794480548
+  },
+  "icon": {
+   "run": "2026111200",
+   "at": 1794480474
+  },
+  "ecmwf": {
+   "run": "2026111200",
+   "at": 1794480702
+  },
+  "nwswav": {
+   "run": "2026111200",
+   "at": 1794480675
+  },
+  "ecwav": {
+   "run": "2026111200",
+   "at": 1794480922
+  },
+  "ecmet": {
+   "run": "2026111200",
+   "at": 1794481015
+  }
+ }
+}
