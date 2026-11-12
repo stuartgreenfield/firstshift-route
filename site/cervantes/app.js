@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.6.2';
+  var VERSION = 'FirstShift Route v0.6.3';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.6.2 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.6.3 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1465,8 +1465,8 @@
     if (!open) { el.innerHTML = '<button class="srow" id="suOpen"><span class="sic">✓</span><span class="stx"><b>Set-up: all 4 ready</b><span>' + wizEsc(rows.map(function (r) { return r.s.split(' · ')[0]; }).join(' · ')) + '</span></span><span class="sgo">Show</span></button>'; $('suOpen').onclick = function () { S.suOpen = true; setupRender(); }; return; }
     el.innerHTML = '<div class="shd"><b>Race set-up</b><span>' + ready + ' of 4 ready' + (all && has ? ' · <a href="#" id="suHide">Hide</a>' : '') + '</span></div>' + rows.map(function (r) { return '<button class="srow' + (r.ok ? '' : ' warn') + '" data-su="' + r.k + '"><span class="sic">' + (r.ok ? '✓' : '!') + '</span><span class="stx"><b>' + r.t + '</b><span>' + wizEsc(r.s) + '</span></span><span class="sgo">' + (r.ok ? 'Change' : 'Set') + '</span></button>'; }).join('') +
       '<button class="sroute" id="suRoute"' + (all ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : 'Route (' + rows.filter(function (r) { return !r.ok; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
-    [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function () { var k = b.dataset.su;
-      if (k === 'course') { $('raceBtn').onclick({ stopPropagation: function () {} }); }
+    [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function (ev) { var k = b.dataset.su;
+      if (k === 'course') { if (ev) ev.stopPropagation(); $('raceMenu').hidden = true; $('raceBtn').onclick({ stopPropagation: function () {} }); }   /* the tap must not reach the page, which closes the menu */
       else if (k === 'boat') cardSettings('boat');
       else if (k === 'start') cardStep(3);
       else cardSettings('fc'); }; });

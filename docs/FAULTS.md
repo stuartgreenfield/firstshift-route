@@ -70,3 +70,6 @@ Stuart's screenshot: routes zig-zagged along 49 00N. At 06:55 I had let drawn co
 
 ## F25 Start day list stopped after 36 hours (12 Nov 07:38) - fixed
 Stuart: the day list should show all dates and say when a day is outside the forecasts. Start choices were capped at 36 hours ahead, a limit from when forecasts ran two days; they now run to six hours before the longest forecast ends (about 9.5 days). After the forecast days the list carries 90 more days under "Later: no forecast yet". A later start shows an amber notice, is kept (even after closing Route), and routes itself once the forecasts reach it.
+
+## F26 Course row on the set-up card did nothing (12 Nov 10:13) - fixed
+The tap opened the race menu, then reached the page, whose "tap elsewhere closes the menu" rule shut it at once. The row now stops the tap there. Tested on a computer and an iPhone screen: the menu opens, RORC races lists 9 races, and choosing the Morgan Cup returns to the card with Course ticked.
