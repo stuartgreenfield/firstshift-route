@@ -73,6 +73,7 @@
     if (S.running) { S.runSince = S.runSince || Date.now(); if (Date.now() - S.runSince > 120000 && !(S.routes && S.routes.length) && $('errBox') && $('errBox').hidden) errShow('Routing is taking far longer than usual. Try again, or choose fewer wind models in Settings, Forecasts.'); }
     else S.runSince = 0;
   }, 5000);
+  try { localStorage.setItem('fs-lastpage', location.pathname); } catch (e) {}   /* so the terms page can always find its way back */
   var TERMS_DAY = (function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); })();
   var TERMS_OK = (function () { try { return localStorage.getItem('fs-terms') === TERMS_DAY; } catch (e) { return false; } })();
   if (TERMS_OK) SPLASH_MIN = Math.min(SPLASH_MIN, 1200);   /* once accepted today, opening again is quick */
@@ -676,6 +677,17 @@
     lines.forEach(function (l) { AIS.tg.add(FSAIS.decodeLine(l), now); });
     AIS.lines = (AIS.lines || 0) + lines.length;
   }
+  var AIS_SHOW = [['all', 'All targets'], ['ships', 'All vessels (no marks)'], ['moving', 'Moving vessels only'], ['race', 'Race boats'], ['sail', 'Sailing and pleasure'], ['commercial', 'Cargo ships and tankers'], ['passenger', 'Passenger and ferries'], ['fishing', 'Fishing'], ['service', 'Tugs, pilots and service'], ['official', 'Military, police and rescue'], ['hsc', 'High-speed craft'], ['aton', 'Navigation marks'], ['sart', 'Emergency beacons'], ['unknown', 'Type not yet known']];
+  function aisShown(x, v) {
+    if (v === 'all') return true; if (v === 'ships') return x.cat !== 'aton'; if (v === 'moving') return x.cat !== 'aton' && x.sog > 0.5;
+    if (v === 'commercial') return x.cat === 'cargo' || x.cat === 'tanker'; return x.cat === v;
+  }
+  function aisShowOpts(cnt, total) {
+    var el = $('aisShow'); if (!el) return; var v = el.dataset.h ? el.value : (store('fs-aisShow') || 'all');
+    var n = function (k) { return k === 'all' ? total : k === 'commercial' ? (cnt.cargo || 0) + (cnt.tanker || 0) : k === 'ships' || k === 'moving' ? null : cnt[k] || 0; };
+    var h = AIS_SHOW.map(function (o) { var c = n(o[0]); return '<option value="' + o[0] + '">' + o[1] + (c != null ? ' (' + c + ')' : '') + '</option>'; }).join('');
+    if (el.dataset.h !== h) { el.innerHTML = h; el.dataset.h = h; el.value = v; }
+  }
   function aisUpdate() {
     if (AIS.src === 'off') { $('aisBox').hidden = true; return; }
     if (AIS.src === 'test') aisEmulate();
@@ -683,20 +695,23 @@
     list.forEach(function (x) { x.c = own ? FSAIS.cpa(own, x) : null; x.danger = !!(x.c && x.c.cpa < lim && x.c.tcpa > 0 && x.c.tcpa < tl); if (x.danger) danger[x.mmsi] = 1; });
     var fresh = Object.keys(danger).filter(function (m) { return !AIS.warned[m]; });
     if (fresh.length && $('cpaSound').checked && (!AIS.lastBeep || Date.now() - AIS.lastBeep > 4000)) { beep(); AIS.lastBeep = Date.now(); }
-    AIS.warned = danger; AIS.list = list; AIS.own = own;
+    AIS.warned = danger; AIS.all = list; AIS.own = own;
     list.sort(function (a, b) { return (b.danger - a.danger) || ((a.c ? a.c.range : 99) - (b.c ? b.c.range : 99)); });
     var myT = +$('tcc').value || 1, rest = S.sel ? Math.max(0, S.sel.r.finish - S.t) : 0, ent = {}, byM = {}; (meta.fleet || []).forEach(function (e) { if (e.tcc) ent[e.name.toUpperCase()] = e; }); myFleet().forEach(function (e) { ent[e.name.toUpperCase()] = e; if (e.mmsi) byM[e.mmsi] = e; });
-    list.forEach(function (x) { x.race = !!(byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()])); });
+    list.forEach(function (x) { x.race = !!(byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()])); x.cat = x.race ? 'race' : FSAIS.shipCat(x); });
+    var cnt = {}; list.forEach(function (x) { cnt[x.cat] = (cnt[x.cat] || 0) + 1; }); aisShowOpts(cnt, list.length);
+    var show = $('aisShow') ? $('aisShow').value : 'all', shown = list.filter(function (x) { return x.danger || aisShown(x, show); });   /* a close-quarters target always shows, whatever is chosen */
+    AIS.list = shown;
     var dz = list.filter(function (x) { return x.danger; })[0];
     $('cpaWarn').hidden = !dz; if (dz) $('cpaWarn').textContent = 'Close quarters: ' + (dz.name || dz.mmsi) + ' passes ' + dz.c.cpa.toFixed(2) + ' nm away in ' + Math.round(dz.c.tcpa) + ' min';
     var og = function (x) { var e = byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()]); if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
-    var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + list.slice(0, 30).map(function (x) {
-      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
+    var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + shown.slice(0, 40).map(function (x) {
+      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + (FSAIS.CATS[x.cat] || '') + (x.at && now - x.at > 150000 ? ', seen ' + Math.round((now - x.at) / 60000) + ' min ago' : '') + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
     var ae = document.activeElement; if (AIS.open && Date.now() - AIS.open.at < 90000 && ae && $('aisTable').contains(ae)) return;   /* someone is typing a TCC: do not redraw the table under them */
     if (AIS.tableAt && Date.now() - AIS.tableAt < 2000 && !AIS.forceTable) return; AIS.tableAt = Date.now(); AIS.forceTable = false;   /* the table redraws at most every 2 s, so a tap on a button lands (it was redrawn on every frame of the replay) */
     $('aisTable').innerHTML = h; $('aisBox').hidden = false;
     if (AIS.open && Date.now() - AIS.open.at < 90000) { var ob = $('rb' + AIS.open.m), obt = $('aisTable').querySelector('[data-rb="' + AIS.open.m + '"]'); if (ob) { ob.hidden = false; if (obt) obt.hidden = true; var oi = ob.querySelector('input'); oi.value = AIS.open.v || ''; oi.oninput = function () { AIS.open.v = this.value; }; } }
-    $('aisNote').textContent = list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'live from the shore network, updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
+    $('aisNote').textContent = (shown.length < list.length ? shown.length + ' of ' : '') + list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'live from the shore network (free volunteer stations, patchy), updated every 30 s, kept 20 min') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
     [].forEach.call($('aisTable').querySelectorAll('[data-rb]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var box = $('rb' + b.dataset.rb); box.hidden = false; b.hidden = true; var x = AIS.tg.t[b.dataset.rb], k = x && x.name && (meta.fleet || []).filter(function (f) { return f.name.toUpperCase() === x.name.toUpperCase(); })[0]; if (k) box.querySelector('input').value = k.tcc; var inp = box.querySelector('input'); AIS.open = { m: b.dataset.rb, v: inp.value, at: Date.now() }; inp.oninput = function () { AIS.open.v = this.value; AIS.open.at = Date.now(); }; inp.focus(); AIS.hold = Date.now(); }; });
     [].forEach.call($('aisTable').querySelectorAll('[data-rbok]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var x = AIS.tg.t[b.dataset.rbok], v = b.previousSibling.value; AIS.open = null; AIS.forceTable = true; if (!mfAdd(x ? x.name || String(x.mmsi) : b.dataset.rbok, v, +b.dataset.rbok)) { busy('Enter the TCC, for example 1.021.'); setTimeout(function () { busy(''); }, 2000); } }; });
     [].forEach.call($('aisTable').querySelectorAll('.aistcc input'), function (i) { i.onclick = function (e) { e.stopPropagation(); }; });
@@ -709,6 +724,7 @@
     AIS.list.forEach(function (x) {
       var px = X(x.lon), py = Y(x.lat); if (px < -20 || py < -20 || px > W + 20 || py > H + 20) return;
       var kind = FSAIS.shipKind(x), col = x.danger ? (flash ? '#ff3b30' : css['--ink']) : x.race ? css['--brand'] : kind === 'yacht' ? css['--ghost'] : css['--m3'];
+      if (x.cat === 'aton' || x.cat === 'sart') { var dc = x.cat === 'sart' ? '#ff3b30' : col; ctx.strokeStyle = dc; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px, py - 6); ctx.lineTo(px + 5, py); ctx.lineTo(px, py + 6); ctx.lineTo(px - 5, py); ctx.closePath(); ctx.stroke(); if (view.s > 600 || x.cat === 'sart') { ctx.fillStyle = dc; ctx.fillText(x.name || String(x.mmsi), px + 8, py - 6); } return; }
       var h = x.hdg != null ? x.hdg : (x.cog || 0), sz = kind === 'yacht' ? 6 : 8;
       if (x.track.length > 1) { ctx.strokeStyle = col; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; ctx.beginPath(); var pq = null; x.track.concat([[x.lat, x.lon]]).forEach(function (q) { var jump = !pq || Math.abs(q[0] - pq[0]) > 0.05 || Math.abs(q[1] - pq[1]) > 0.08; if (jump) ctx.moveTo(X(q[1]), Y(q[0])); else ctx.lineTo(X(q[1]), Y(q[0])); pq = q; }); ctx.stroke(); ctx.globalAlpha = 1; }   /* a gap over about 3 nm (slider moved, or a test ship wrapping round) is not drawn as a track */
       if (x.sog > 0.5 && x.cog != null) { var d = x.sog / 10; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(X(x.lon + Math.sin(x.cog * R) * d / 60 / Math.cos(x.lat * R)), Y(x.lat + Math.cos(x.cog * R) * d / 60)); ctx.stroke(); ctx.setLineDash([]); }
@@ -723,16 +739,19 @@
     if (AIS.src !== 'live' || AIS.busy || Date.now() - (AIS.liveAt || 0) < 30000 || !navigator.onLine) return;
     var la0 = Math.max(35.5, LA(H)), la1 = Math.min(61.5, LA(70)), lo0 = Math.max(-15, LO(0)), lo1 = Math.min(12, LO(W)), cl = (la0 + la1) / 2, co = (lo0 + lo1) / 2;
     la0 = Math.max(la0, cl - 3); la1 = Math.min(la1, cl + 3); lo0 = Math.max(lo0, co - 5); lo1 = Math.min(lo1, co + 5);
+    la0 = Math.floor(la0 * 2) / 2; la1 = Math.ceil(la1 * 2) / 2; lo0 = Math.floor(lo0 * 2) / 2; lo1 = Math.ceil(lo1 * 2) / 2;   /* a steady grid, so the server's memory of an area builds up */
+    if (la1 - la0 > 6) la1 = la0 + 6; if (lo1 - lo0 > 10) lo1 = lo0 + 10;
     AIS.busy = true; AIS.liveAt = Date.now();
     fetch('/api/ais?s=' + la0.toFixed(1) + '&n=' + la1.toFixed(1) + '&w=' + lo0.toFixed(1) + '&e=' + lo1.toFixed(1)).then(function (r) { return r.json(); }).then(function (j) {
       AIS.busy = false; if (j.error) { AIS.err = j.error; aisUpdate(); return; } AIS.err = '';
-      j.targets.forEach(function (x) { AIS.tg.add(x, Date.now()); }); AIS.lines = (AIS.lines || 0) + j.targets.length; aisUpdate(); draw();
+      j.targets.forEach(function (x) { AIS.tg.add(x, Date.now() - (x.age || 0) * 1000); }); AIS.lines = (AIS.lines || 0) + j.targets.length; aisUpdate(); draw();
     }).catch(function () { AIS.busy = false; AIS.err = 'Live AIS server not reachable.'; aisUpdate(); });
   }
   function aisInit() {
     var saved = store('fs-aisSrc'); if (saved && saved !== 'test') $('aisSrc').value = saved;   /* the pretend test fleet is never brought back on its own */
     $('aisSrc').onchange = function () { AIS.src = this.value; store('fs-aisSrc', this.value); AIS.tg = new FSAIS.Targets(); AIS.fleet = null; AIS.lines = 0; AIS.liveAt = 0; AIS.forceTable = true; aisUpdate(); draw(); };
     AIS.src = $('aisSrc').value;
+    if ($('aisShow')) $('aisShow').onchange = function () { store('fs-aisShow', this.value); AIS.forceTable = true; aisUpdate(); draw(); };
     setInterval(aisLive, 5000);
     setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
   }

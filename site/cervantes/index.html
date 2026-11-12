@@ -367,7 +367,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span></h1>
   <p>Free race routing for offshore sailors. Eight forecast models, tidal streams, sea state and your own sail crossovers, worked through on your phone, tablet or computer. The route, the plan and the crew brief, ready before you slip the lines.</p>
   <span class="sp-mail" id="spMail">firstshiftsailing.com<br>stuart@greenfield.co.uk</span><span class="sp-go">Tap to start · planning aid, not for navigation</span>
-  <div class="sp-terms" id="spTerms" hidden role="alertdialog" aria-label="Before you use Route"><b>Before you use Route</b><p>Route is a planning aid, not for navigation. Its forecasts, tidal streams, depths and routes come from computer models and can be wrong, late or incomplete. Check official charts, the sailing instructions and the latest forecasts, and keep a proper lookout. The skipper alone is responsible for the safety of the boat and crew. You use Route at your own risk.</p><div class="sp-tb"><a href="../help/terms.html" target="_blank" rel="noopener">Full terms and data sources</a><button class="btn primary" id="spAgree">I understand</button></div></div></div></div>
+  <div class="sp-terms" id="spTerms" hidden role="alertdialog" aria-label="Before you use Route"><b>Before you use Route</b><p>Route is a planning aid, not for navigation. Its forecasts, tidal streams, depths and routes come from computer models and can be wrong, late or incomplete. Check official charts, the sailing instructions and the latest forecasts, and keep a proper lookout. The skipper alone is responsible for the safety of the boat and crew. You use Route at your own risk.</p><div class="sp-tb"><a href="../help/terms.html">Full terms and data sources</a><button class="btn primary" id="spAgree">I understand</button></div></div></div></div>
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
@@ -448,7 +448,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
         <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
-      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><div class="tw"><table id="aisTable"></table></div></div>
+      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
       <p class="note">Every boat you are racing, sailing your chosen route at its own TCC from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
       <p class="note warnt" id="fleetEmpty" hidden>No entry list for this race yet. Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>

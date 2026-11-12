@@ -24,9 +24,13 @@ a{color:var(--accent)}
 .draft{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin:14px 0}
 dt{font-weight:600;margin-top:12px}
 dd{margin:2px 0 0;color:var(--muted)}
+.top{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0 10px;margin:-8px 0 8px;border-bottom:1px solid var(--line)}
+.top button,.end button{font:600 16px/1 Inter,system-ui,sans-serif;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer}
+.end{margin-top:28px}
 </style>
 </head>
 <body>
+<nav class="top"><button type="button" id="back">← Back to Route</button></nav>
 <main>
 <p class="meta">FirstShift: Yacht Racing Intelligence</p>
 <h1>Route terms of use</h1>
@@ -101,7 +105,17 @@ dd{margin:2px 0 0;color:var(--muted)}
 <dd>Service hydrographique et océanographique de la Marine, French traffic separation and maritime data.</dd>
 </dl>
 
-<p class="meta" style="margin-top:32px">From first shift to first place.</p>
+<div class="end"><button type="button" id="back2">← Back to Route</button></div>
+<p class="meta" style="margin-top:24px">From first shift to first place.</p>
 </main>
+<script>
+function goBack() {
+  if (window.opener && !window.opener.closed) { window.close(); return; }
+  if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) { history.back(); return; }
+  var last = ''; try { last = localStorage.getItem('fs-lastpage') || ''; } catch (e) {}
+  location.href = last || '../channel-area/';
+}
+document.getElementById('back').onclick = goBack; document.getElementById('back2').onclick = goBack;
+</script>
 </body>
 </html>

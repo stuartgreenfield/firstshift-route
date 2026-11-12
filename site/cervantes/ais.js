@@ -125,8 +125,26 @@
     return out;
   }
 
-  function shipKind(t) { var s = t.shiptype || 0; return s === 36 || s === 37 ? 'yacht' : s >= 70 && s <= 89 ? 'ship' : s >= 60 && s <= 69 ? 'passenger' : s === 30 ? 'fishing' : s ? 'other' : (t.cls === 'B' ? 'yacht' : 'ship'); }
+  /* what a target is: from the MMSI first (marks, beacons, aircraft are numbered by type), then the ship type it broadcasts (ITU-R M.1371 table) */
+  var CATS = { race: 'Race boats', sail: 'Sailing and pleasure', cargo: 'Cargo ships', tanker: 'Tankers', passenger: 'Passenger and ferries', fishing: 'Fishing', service: 'Tugs, pilots and service', official: 'Military, police and rescue', hsc: 'High-speed craft', aton: 'Navigation marks', sart: 'Emergency beacons (SART, MOB, EPIRB)', aircraft: 'Rescue aircraft', unknown: 'Type not yet known' };
+  function shipCat(t) {
+    var m = String(t.mmsi || ''), s = t.shiptype || 0;
+    if (t.aton || /^99/.test(m)) return 'aton';
+    if (/^97[024]/.test(m)) return 'sart';
+    if (t.aircraft || /^111/.test(m)) return 'aircraft';
+    if (s === 36 || s === 37) return 'sail';
+    if (s === 30) return 'fishing';
+    if (s >= 40 && s <= 49) return 'hsc';
+    if (s >= 60 && s <= 69) return 'passenger';
+    if (s >= 70 && s <= 79) return 'cargo';
+    if (s >= 80 && s <= 89) return 'tanker';
+    if (s === 35 || s === 51 || s === 55 || s === 58) return 'official';
+    if ((s >= 31 && s <= 34) || s === 50 || s === 52 || s === 53 || s === 54 || s === 57 || s === 59) return 'service';
+    if (!s && t.cls === 'B') return 'sail';   /* a Class B set with no type is almost always a yacht */
+    return 'unknown';
+  }
+  function shipKind(t) { var c = shipCat(t); return c === 'sail' ? 'yacht' : c === 'cargo' || c === 'tanker' ? 'ship' : c === 'unknown' ? (t.cls === 'B' ? 'yacht' : 'ship') : c; }
 
-  var api = { decodeLine: decodeLine, Targets: Targets, cpa: cpa, encodePosition: encodePosition, encodeStatic: encodeStatic, shipKind: shipKind };
+  var api = { decodeLine: decodeLine, Targets: Targets, cpa: cpa, encodePosition: encodePosition, encodeStatic: encodeStatic, shipKind: shipKind, shipCat: shipCat, CATS: CATS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FSAIS = api;
 })(this);
