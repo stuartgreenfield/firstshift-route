@@ -92,6 +92,8 @@ jobs:
           json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=src, received=rec), open('site/status.json', 'w'), indent=1)
           for f in glob.glob('site/status-*.json'): os.remove(f)
           PY
+      - name: A model whose newest run failed keeps its last good run, marked as older
+        run: python3 scripts/keep_old_layers.py prev site || echo "could not keep older runs"
       - name: Use the newest app from main (a change pushed while this job ran must not be overwritten)
         run: |
           git fetch -q origin main

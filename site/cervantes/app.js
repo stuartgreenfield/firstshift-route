@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.6.8';
+  var VERSION = 'FirstShift Route v0.6.9';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.6.8 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.6.9 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -359,11 +359,20 @@
     [].forEach.call(document.querySelectorAll('.tabs .tab'), function (x) { x.setAttribute('aria-selected', x.dataset.tab === t); $('t-' + x.dataset.tab).hidden = x.dataset.tab !== t; });
     setTimeout(resizeDraw, 0);
   }
+  /* newest run or an older one kept because the newest was not ready (Stuart 12 Nov): the navigator decides */
+  var THUMB = '<svg class="thumb" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9H4v-9z"/><path d="M7 11l4-7c1.3 0 2 1 2 2.2V10h5.4c1.1 0 1.9 1 1.7 2.1l-1.3 6.4c-.2.9-1 1.5-1.9 1.5H7"/></svg>';
+  function runOf(l) { return (meta.runs && meta.runs[l.id]) || ''; }
+  function runBadge(l) {
+    if (l.latest === true) return '<span class="runok" title="The newest run of this model">' + THUMB + ' newest run ' + wizEsc(runOf(l)) + '</span>';
+    if (l.latest === false) return '<span class="runold" title="The newest run was not ready, so the last good run is used">! older run ' + wizEsc(runOf(l).replace(' (older run kept)', '')) + ': the newest was not ready</span>';
+    return runOf(l) ? '<span class="runnone">run ' + wizEsc(runOf(l)) + '</span>' : '';
+  }
+  function olderModels() { return (meta.layers || []).filter(function (l) { return l.kind === 'wind' && l.latest === false && selectedModels().indexOf(l.id) >= 0; }).map(function (l) { return short(l.id); }); }
   function modelsList() {
     var h = '', prev = selectedModels(), first = !$('models').children.length;
     meta.layers.filter(function (l) { return l.kind === 'wind'; }).forEach(function (l) {
       var on = !!P.wind[l.id], st = STYLE[l.id], v = l[S.loaded[l.id] || 'full'];
-      h += '<label class="chk"><input type="checkbox" data-m="' + l.id + '"' + (on ? '' : ' disabled') + ((first ? on && l.id !== 'mog' && l.id !== 'arpege' : prev.indexOf(l.id) >= 0 && on) ? ' checked' : '') + '><span class="sw" style="border-color:var(' + st[0] + ');border-top-style:' + (st[1].length ? 'dashed' : 'solid') + '"></span>' + l.name + ' <span class="pill">' + (on ? res(v) + ', ' + v.step_h + ' h' : 'not downloaded') + '</span></label>';
+      h += '<label class="chk"><input type="checkbox" data-m="' + l.id + '"' + (on ? '' : ' disabled') + ((first ? on && l.id !== 'mog' && l.id !== 'arpege' : prev.indexOf(l.id) >= 0 && on) ? ' checked' : '') + '><span class="sw" style="border-color:var(' + st[0] + ');border-top-style:' + (st[1].length ? 'dashed' : 'solid') + '"></span>' + l.name + ' <span class="pill">' + (on ? res(v) + ', ' + v.step_h + ' h' : 'not downloaded') + '</span>' + runBadge(l) + '</label>';
     });
     $('models').innerHTML = h;
   }
@@ -1486,7 +1495,7 @@
     var fu = futureGet(), st = +$('startSel').value, chosen = S.startChosen || store('fs-autostart') === '1';
     rows.push({ k: 'start', t: 'Start', ok: chosen && !fu, s: fu ? clockAbs(fu.ep) + ' UTC: beyond the forecasts' : chosen && st ? clockAbs(st) + ' UTC' : 'Choose your class start (UTC)' });
     var ms = selectedModels(), est = (st ? (st - T0) / 3600 : 0) + courseNm(c) / (5.5 * (+$('tcc').value || 1)), cover = ms.filter(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return h && h.length && h[h.length - 1] >= est; }).length;
-    rows.push({ k: 'fc', t: 'Forecasts', ok: ms.length > 0 && cover > 0, s: !ms.length ? 'Tick at least one forecast model' : ms.length + ' model' + (ms.length === 1 ? '' : 's') + ' · ' + (cover === ms.length ? 'all reach the finish' : cover ? cover + ' reach the finish, the rest hand over' : 'none reaches the finish') });
+    rows.push({ k: 'fc', t: 'Forecasts', ok: ms.length > 0 && cover > 0, s: !ms.length ? 'Tick at least one forecast model' : ms.length + ' model' + (ms.length === 1 ? '' : 's') + ' · ' + (cover === ms.length ? 'all reach the finish' : cover ? cover + ' reach the finish, the rest hand over' : 'none reaches the finish') + (olderModels().length ? ' · ' + olderModels().length + ' on an older run' : '') });
     return rows;
   }
   /* the set-up card is the one place to set up a race (Stuart 12 Nov): the old steps open only for the single item tapped, then come back here */
@@ -1530,7 +1539,8 @@
     var own = S.routes.filter(function (s) { return !s.r.partial && !s.combined && s.id !== 'chain'; }).map(function (s) { return s.r.finish; });
     if (own.length > 1) { var sp = Math.max.apply(null, own) - Math.min.apply(null, own), dur = Math.min.apply(null, own) - (S.start ? S.start.t : 0); ck.push(sp > Math.max(1, dur * 0.08) ? [0, 'Models disagree by ' + fmtH(sp) + ' on the finish: compare the routes before you commit'] : [1, 'Models agree within ' + fmtH(sp) + ' on the finish']); }
     ck.push([1, 'Boat: ' + ($('boatName').value || 'My boat') + ', TCC ' + (+$('tcc').value || 1).toFixed(3) + ', sailing at ' + Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3 || 100) + '% of the polar']);
-    ck.push(nextMeta || S.sessStale ? [0, 'A newer forecast is out: Route again to use it'] : [1, 'Forecast run ' + (meta.run || '') + ', the newest on the server']);
+    var om = olderModels(); if (om.length) ck.push([0, om.join(', ') + (om.length === 1 ? ' is' : ' are') + ' on an older run: the newest was not ready. Compare with the newest models before you commit']);
+    ck.push(nextMeta || S.sessStale ? [0, 'A newer forecast is out: Route again to use it'] : [1, 'Forecast build ' + (meta.run || '') + ', the newest on the server']);
     el.innerHTML = '<h4>Can you trust it?</h4>' + ck.map(function (c) { return '<div class="ck' + (c[0] ? '' : ' w') + '"><i>' + (c[0] ? '✓' : '!') + '</i><span>' + wizEsc(c[1]) + '</span></div>'; }).join('');
   }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }

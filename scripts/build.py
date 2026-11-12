@@ -24,8 +24,10 @@ for race in RACES:
     env = dict(os.environ, FS_DATA=data, FS_BOX=f"{b['s']},{b['n']},{b['w']},{b['e']}", FS_HOURS=str(hrs))
     def one(src):
         if src == 'mars' and (b['s'] > 50.0 or b['n'] < 48.6 or b['w'] > -1.2 or b['e'] < -3.3): return   # the 250 m model only covers the western Channel
+        first = None
         for i, c in enumerate(cyc):
             if src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
+            if first is None: first = c   # the newest run this model should have by now
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)
             t1 = time.time()
@@ -34,7 +36,7 @@ for race in RACES:
             except subprocess.TimeoutExpired:
                 log[f'{race}:{src}'] = f'{c} timed out'; continue
             if r.returncode == 0 and good(out, (12 if src == 'mars' else 30) + 6 * i):
-                log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time())); break
+                log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time()), latest=(c == first), newest=first); break
             log[f'{race}:{src}'] = f'{c} failed: {(r.stderr or r.stdout)[-200:]}'
         else:   # no cycle worked: leave nothing behind, so the router simply goes without this source this time
             out = os.path.join(data, src + '.npz')
