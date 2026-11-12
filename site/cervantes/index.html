@@ -304,8 +304,26 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .prog.mini{left:auto;right:var(--gut,12px);transform:none;top:calc(env(safe-area-inset-top,0px) + 150px);width:min(230px,48vw);padding:6px 9px;opacity:.92}.prog.mini #pgD{display:none}.prog.mini .pg-t{font-size:12px}
 #askTxt{white-space:pre-line}
 @media (min-width:900px){.tip.docked{right:auto!important;width:330px;top:116px!important}}
+/* landing page while Route starts: the boat in the brand blues */
+.splash{position:fixed;inset:0;z-index:100;display:grid;grid-template-columns:1fr;background:#021630;color:#fff;transition:opacity .5s ease;overflow:hidden}
+.splash.out{opacity:0;pointer-events:none}
+.splash .sp-img{position:absolute;inset:0;background:url(../brand/route-hero.webp) center 30%/cover no-repeat}
+.splash .sp-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,22,48,0) 35%,rgba(2,22,48,.86) 68%,#021630 100%)}
+.splash .sp-txt{position:relative;align-self:end;display:grid;gap:12px;padding:0 max(22px,env(safe-area-inset-left,0px)) calc(28px + env(safe-area-inset-bottom,0px));max-width:560px}
+.splash .sp-logo{height:44px;width:auto;justify-self:start}
+.splash h1{margin:0;font:600 clamp(64px,17vw,132px)/.9 var(--f-head);letter-spacing:-.04em;color:#fff}
+.splash h1 span{color:#6FA9E0}
+.splash p{margin:0;font:400 15px/1.5 var(--f-body);color:#CFE3F6;max-width:44ch}
+.splash .sp-mail{font:500 13px var(--f-data);color:#6FA9E0;letter-spacing:.02em}
+.splash .sp-go{font:500 12px var(--f-body);color:#9AB6CF}
+@media (min-width:900px){.splash{grid-template-columns:minmax(420px,1fr) 1.15fr}.splash .sp-img{left:auto;width:54%}.splash .sp-shade{background:linear-gradient(90deg,#021630 46%,rgba(2,22,48,.0) 70%)}.splash .sp-txt{align-self:center;padding-left:max(56px,6vw)}}
+@media (orientation:landscape) and (max-height:500px){.splash .sp-img{left:auto;width:55%}.splash .sp-shade{background:linear-gradient(90deg,#021630 45%,rgba(2,22,48,0) 75%)}.splash .sp-txt{align-self:center;max-width:52%;gap:8px}.splash h1{font-size:64px}.splash .sp-logo{height:32px}}
 </style>
 
+<div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
+  <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span></h1>
+  <p>Free race routing for offshore sailors. Every forecast model, the tide, your boat and your sails, worked out on your phone, with a route you can trust and a plan the crew can read.</p>
+  <span class="sp-mail" id="spMail">firstshiftsailing.com</span><span class="sp-go">Tap to start · planning aid, not for navigation</span></div></div>
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
