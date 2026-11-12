@@ -1010,6 +1010,7 @@
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
+    var olds = oldRoutes(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(o.savedAt).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
     h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
     h += bcBox();
     $('raceList').innerHTML = h; bcWire();
@@ -1018,6 +1019,8 @@
     $('rMarks').onclick = function () { startEdit(courseCopy()); editForm(); };
     $('rNew').onclick = function () { newCourse(); };
     [].forEach.call($('raceList').querySelectorAll('[data-open]'), function (b) { b.onclick = function () { openMy(b.dataset.open); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-old]'), function (b) { b.onclick = function () { openOld(b.dataset.old); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-olddel]'), function (b) { b.onclick = function () { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; } store('fs-oldroutes', JSON.stringify(oldRoutes().filter(function (x) { return x.id !== b.dataset.olddel; }))); racesSheet(); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-del]'), function (b) { b.onclick = function () {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
       setMyRaces(myRaces().filter(function (x) { return x.id !== b.dataset.del; })); if (S.myId === b.dataset.del) S.myId = null; racesSheet(); }; });
@@ -1078,16 +1081,38 @@
   /* ---------- carry on: reopening Route brings back the last race, boat, start and routes exactly as they were (Stuart 12 Nov).
      Kept until 24 hours after the routed finish; a small box offers a new race or boat instead. ---------- */
   function sessKey() { return 'fs-sess-' + HERE; }
-  function sessSave() {
-    if (!S.routes || !S.routes.length || !S.start || S.running || startGate()) return;
+  function sessSave(give) {
+    if (!S.routes || !S.routes.length || !S.start || (S.running && !give) || (!give && startGate())) return null;
     try {
       var l = lastGet() || {}, fin = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
       var o = { v: 1, rk: raceKey(), at: Date.now(), T0: T0, built: meta.built || meta.t0, race: l.race || null, my: l.my || null, startVal: $('startSel').value,
         until: (T0 + fin * 3600) * 1000 + 24 * 3600 * 1000, from: S.from || null, to: S.to || null, t: S.t, sel: S.routes.indexOf(S.sel),
         start: S.start, legs: S.legs, base: S.base, matrix: S.matrix,
         routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, hidden: !!s.hidden, r: { arrivals: s.r.arrivals, path: s.r.path, finish: s.r.finish, partial: s.r.partial || undefined } }; }) };
+      if (give) return o;
       store(sessKey(), JSON.stringify(o));
     } catch (e) {}
+    return null;
+  }
+  /* old routes: when a new course is started, the routes on the chart are kept here (newest first, six at most) and cleared */
+  function oldRoutes() { try { return JSON.parse(store('fs-oldroutes') || '[]'); } catch (e) { return []; } }
+  function archiveRoutes() {
+    var o = sessSave(true); if (!o) return null;
+    o.id = 'o' + Date.now().toString(36); o.name = meta.course.name; o.page = HERE; o.savedAt = Date.now();
+    o.summary = S.sel ? (S.sel.combined ? 'Combined' : short(S.sel.id)) + ' ' + fmtH(S.sel.r.finish - S.start.t) : '';
+    var a = [o].concat(oldRoutes()).slice(0, 6);
+    while (a.length) { try { localStorage.setItem('fs-oldroutes', JSON.stringify(a)); break; } catch (e) { a.pop(); } }   /* phone storage full: drop the oldest */
+    S.gen = (S.gen || 0) + 1; S.running = false; prog(''); busy('');
+    if ($('runNote')) $('runNote').textContent = '';
+    sessDrop(); S.routes = []; S.sel = null; S.matrix = null; S.ens = null; S.from = null; S.to = null; if ($('finBox')) $('finBox').innerHTML = ''; draw();
+    return o;
+  }
+  function openOld(id) {
+    var o = oldRoutes().filter(function (x) { return x.id === id; })[0]; if (!o) return;
+    var r = Object.assign({}, o, { until: Date.now() + 24 * 3600 * 1000 }); delete r.id; delete r.name; delete r.page; delete r.savedAt; delete r.summary;
+    try { localStorage.setItem('fs-sess-' + o.page, JSON.stringify(r)); localStorage.setItem('fs-last-' + o.page, JSON.stringify({ race: o.race, my: o.my, start: +o.startVal || null, chosen: true })); } catch (e) {}
+    try { sessionStorage.setItem('fs-wiz', ''); } catch (e) {} WIZ.on = false;   /* the set-up must not take over: old routes open as they were */
+    location.href = '../' + o.page + '/';
   }
   function sessGet() { try { var o = JSON.parse(store(sessKey()) || 'null'); return o && o.v === 1 && Date.now() < o.until ? o : null; } catch (e) { return null; } }
   function sessDrop() { try { localStorage.removeItem(sessKey()); } catch (e) {} }
@@ -1108,7 +1133,7 @@
   }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
   function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); c.textContent = S.startChosen || store('fs-autostart') === '1' ? (v ? 'Start ' + clockAbs(v) + ' UTC' : 'Start: tap to choose') : 'Start: tap to choose'; }
-  function wizCourseChosen(fromEditor) { if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor ? 4 : 1); return true; }
+  function wizCourseChosen(fromEditor) { var fresh = !WIZ.on || S.drawnNew; S.drawnNew = false; if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor && !fresh ? 4 : 1); return true; }   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
     WIZ.step = n; wizSave();
@@ -1236,6 +1261,7 @@
   /* a new course is drawn on the forecast area that will route it, so the wind, tide and depth are there when it is saved (Stuart 12 Nov) */
   function myRegion() { return REGIONS.filter(function (g) { return g.id === HERE; })[0] || null; }
   function newCourse() {
+    var arc = archiveRoutes(); if (arc) { busy('Routes for ' + arc.name + ' kept under Races, Old routes'); setTimeout(function () { busy(''); }, 2500); }
     if (myRegion()) { startEdit(null); return; }
     var opts2 = REGIONS.filter(function (g) { return READY[g.id]; });
     if (opts2.length === 1) { goNew(opts2[0].id); return; }
@@ -1250,6 +1276,8 @@
   function startEdit(c) {
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
     S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [], closed: !!c };
+    if (!c) S.drawnNew = true;
+    if (!c) { var rg = myRegion(); if (rg && rg.region) { var b = rg.region; view.s = Math.max(20, Math.min(W / ((b.e - b.w) * K * 1.05), (H - 160) / ((b.n - b.s) * 1.05))); view.lo = (b.w + b.e) / 2; view.la = (b.s + b.n) / 2 + 35 / view.s; S.routes = []; S.sel = null; } }   /* a new course: the whole area Route can route, nothing old on it */
     $('editBar').hidden = false; editPrompt(); draw();
   }
   function editPrompt() {
@@ -1378,10 +1406,10 @@
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
     var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
-    S.running = true; busy(''); S.key = null;
+    S.running = true; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
-    pass(true).then(function () { return pass(false); }).then(function () { S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); draw(); });
+    pass(true).then(function () { return pass(false); }).then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
+    .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
@@ -1391,14 +1419,15 @@
       var FINE = ['ukv', 'arome', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends */
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       var jobs = sets.length * 2 + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
-      var tick = function () { done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
+      var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
       return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }) }).then(function (r) { tick(); s.r = r; return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
+        if (gen !== S.gen) throw { abandoned: true };
         S.routes = res.filter(function (s) { return s.r; });
         var errs = res.filter(function (s) { return s.err; });
         if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
         var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }), paths: [s.r.path] }).then(function (x) { tick(); return x; }); });
-        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }).then(function (x) { tick(); return x; }); }).concat(selfJobs)).then(function (allr) {
+        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }).then(function (x) { tick(); return x; }); }).concat(selfJobs)).then(function (allr) { if (gen !== S.gen) throw { abandoned: true };
           var cols = allr.slice(0, ms.length), self = allr.slice(ms.length).map(function (x) { return x[0]; });
           S.routes.forEach(function (s, i) { var k = (s.r.finish - start.t) / Math.max(0.1, self[i] - start.t); cols.forEach(function (c) { c[i] = start.t + (c[i] - start.t) * k; }); });
           S.matrix = { models: ms, cols: cols, start: start.t };

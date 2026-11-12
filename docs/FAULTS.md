@@ -58,3 +58,6 @@ The 04:23 forecast build was the first to carry the Ifremer MARS 500 m tidal str
 
 ## F21 Channel Race failed on Stuart's phone with no message (12 Nov 06:08) - fixed
 Routing worked locally on all five Channel races, so the likely cause is the phone's kept copy of the pre-routes from before the 04:23 build, whose pre-routes were lost to F20. When an instant pre-route could not be used, Route stopped without routing fresh and without saying anything. It now falls back to a fresh route. Any routing or forecast failure also shows a red banner with Try again, and a route still running after two minutes with nothing to show says so.
+
+## F22 New course: old routes stayed on the chart and refining carried on (12 Nov 06:28) - fixed
+Stuart: starting a new course must close the old route, keep it as old routes, show the whole area and go through the set-up. New course now keeps the routes on the chart under Races, Old routes (six at most, Open puts them back exactly as they were), stops any routing still running so nothing old comes back, shows the whole forecast area to draw on, and after saving goes through every set-up step from step 1.
