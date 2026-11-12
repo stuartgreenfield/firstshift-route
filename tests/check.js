@@ -11,7 +11,8 @@ const DEV = [
   ['Pixel 7', devices['Pixel 7']], ['Pixel 7 on its side', devices['Pixel 7 landscape']], ['iPad', devices['iPad (gen 7)']], ['iPad on its side', devices['iPad (gen 7) landscape']],
   ['Galaxy Tab S4', devices['Galaxy Tab S4']], ['Computer', { viewport: { width: 1440, height: 860 } }], ['Small laptop', { viewport: { width: 1280, height: 720 } }]
 ].filter(d => d[1]);
-const DONE = () => { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); };
+const TERMS = () => { const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); };
+const DONE = () => { const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); };
 function rec(dev, area, name, ok, note, img) { R.push({ dev, area, name, ok: !!ok, note: note || '', img: img || '' }); console.log((ok ? 'PASS ' : 'FAIL ') + dev + ' | ' + area + ' | ' + name + (note ? ' | ' + note : '')); }
 async function snap(p, dev, what) { const f = (++shot).toString().padStart(3, '0') + '-' + (dev + '-' + what).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.png'; await p.screenshot({ path: path.join(OUT, f) }); return f; }
 async function layout(p) {
@@ -88,7 +89,7 @@ async function waitRoutes(p, ms) {
   }
   /* 3. first-time user: the guided set-up */
   for (const [dn, d] of DEV.filter(x => ['iPhone 13', 'Computer'].includes(x[0]))) {
-    const ctx = await b.newContext({ ...d }); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+    const ctx = await b.newContext({ ...d }); await ctx.addInitScript(TERMS); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(BASE + '/channel-area/');
     try {
       await p.waitForSelector('#wiz:not([hidden])', { timeout: 60000 });
@@ -107,7 +108,7 @@ async function waitRoutes(p, ms) {
     await ctx.close();
   }
   /* 4. server side: forecasts fresh, functions answer */
-  const ctx = await b.newContext(); const p = await ctx.newPage(); await p.goto(BASE + '/');
+  const ctx = await b.newContext(); await ctx.addInitScript(TERMS); const p = await ctx.newPage(); await p.goto(BASE + '/');
   const st = await p.evaluate(async () => { const o = {}; for (const pg of ['channel-area', 'fastnet', 'northsea-area', 'irishsea-area', 'biscay-area']) { try { const m = await fetch('/' + pg + '/pack/pack.json', { cache: 'no-store' }).then(r => r.json()); const pre = await fetch('/' + pg + '/pre/routes.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null); o[pg] = { ageH: Math.round((Date.now() / 1000 - m.built) / 3600), winds: m.layers.filter(l => l.kind === 'wind').map(l => l.id), pre: pre ? Object.keys(pre.r).length : 0 }; } catch (e) { o[pg] = { err: String(e) }; } }
     o.ais = await fetch('/api/ais?s=50.5&n=50.9&w=-1.6&e=-1.0').then(r => r.status).catch(() => 0); o.boat = await fetch('/api/boat/TESTAB').then(r => r.status).catch(() => 0); return o; });
   for (const pg of ['channel-area', 'fastnet', 'northsea-area', 'irishsea-area', 'biscay-area']) { const s = st[pg]; rec('Server', pg, 'forecast fresh (under 9 h)', s && s.ageH <= 9, s && (s.err || s.ageH + ' h old, ' + s.winds.length + ' wind models')); rec('Server', pg, 'pre-routes for instant start', s && s.pre >= 4, s && (s.pre + ' start times')); }

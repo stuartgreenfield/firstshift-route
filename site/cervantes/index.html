@@ -321,6 +321,18 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 /* landing page while Route starts: the boat in the brand blues */
 .splash{position:fixed;inset:0;z-index:100;display:grid;grid-template-columns:1fr;background:#021630;color:#fff;transition:opacity .5s ease;overflow:hidden}
 .splash.out{opacity:0;pointer-events:none}
+.splash.terms .sp-go{display:none}
+.splash.terms .sp-txt{max-height:100%;overflow-y:auto;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+@media (max-height:740px){.splash.terms .sp-txt>p,.splash.terms .sp-mail{display:none}.splash.terms h1{font-size:64px}}
+.sp-terms{background:rgba(2,22,48,.94);border:1px solid #6FA9E0;border-radius:14px;padding:14px 16px;display:grid;gap:10px;color:#fff;font:400 14px/1.5 var(--f-body)}
+.sp-terms b{font:600 17px/1.2 var(--f-head)}
+.sp-terms p{margin:0;font-size:14px;color:#E3EEF9}
+.sp-tb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sp-tb a{color:#9CC8F0;text-decoration:underline}
+.sp-tb .btn{min-height:44px;padding:0 20px;font-weight:600}
+.errbox{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:8;display:flex;align-items:center;gap:8px;max-width:min(92vw,520px);background:var(--panel);border:2px solid #ff3b30;border-radius:12px;padding:8px 8px 8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:14px;line-height:1.35}
+.errbox span{flex:1;min-width:0}
+
 .splash .sp-img{position:absolute;inset:0;background:url(../brand/route-hero.webp) center 30%/cover no-repeat}
 .splash .sp-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,22,48,0) 35%,rgba(2,22,48,.86) 68%,#021630 100%)}
 .splash .sp-txt{position:relative;align-self:end;display:grid;gap:12px;padding:0 max(22px,env(safe-area-inset-left,0px)) calc(28px + env(safe-area-inset-bottom,0px));max-width:560px}
@@ -354,7 +366,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
   <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span></h1>
   <p>Free race routing for offshore sailors. Eight forecast models, tidal streams, sea state and your own sail crossovers, worked through on your phone, tablet or computer. The route, the plan and the crew brief, ready before you slip the lines.</p>
-  <span class="sp-mail" id="spMail">firstshiftsailing.com<br>stuart@greenfield.co.uk</span><span class="sp-go">Tap to start · planning aid, not for navigation</span></div></div>
+  <span class="sp-mail" id="spMail">firstshiftsailing.com<br>stuart@greenfield.co.uk</span><span class="sp-go">Tap to start · planning aid, not for navigation</span>
+  <div class="sp-terms" id="spTerms" hidden role="alertdialog" aria-label="Before you use Route"><b>Before you use Route</b><p>Route is a planning aid, not for navigation. Its forecasts, tidal streams, depths and routes come from computer models and can be wrong, late or incomplete. Check official charts, the sailing instructions and the latest forecasts, and keep a proper lookout. The skipper alone is responsible for the safety of the boat and crew. You use Route at your own risk.</p><div class="sp-tb"><a href="../help/terms.html" target="_blank" rel="noopener">Full terms and data sources</a><button class="btn primary" id="spAgree">I understand</button></div></div></div></div>
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
@@ -379,6 +392,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="tip" id="tip" hidden><button class="x" id="tipX" aria-label="Close">×</button><div id="tipBody"></div></div>
     <div class="busy" id="busy" hidden></div>
     <button class="boatwarn" id="boatWarn" hidden>Generic boat in use: set up your boat</button>
+    <div class="errbox" id="errBox" hidden role="alert"><span id="errMsg"></span><button class="btn" id="errRetry">Try again</button><button class="btn" id="errX" aria-label="Close">✕</button></div>
     <div class="sessbox" id="sessBox" hidden role="dialog" aria-label="Carry on"><span>Start a new race or boat?</span><button class="btn" id="sessNo">No</button><button class="btn primary" id="sessYes">Yes</button></div>
     <div class="prog" id="prog" role="status" aria-live="polite" hidden><div class="pg-t"><span id="pgT"></span><b id="pgP"></b></div><div class="pg-bar"><i id="pgBar"></i></div><div class="pg-d" id="pgD"></div></div>
   </div>

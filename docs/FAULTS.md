@@ -55,3 +55,6 @@ Stuart's iPhone screenshot at 01:31: the top bar was gone and a gap sat below th
 
 ## F20 No routes in the Channel, Fastnet and Cervantes after the 04:23 build (12 Nov) - fixed
 The 04:23 forecast build was the first to carry the Ifremer MARS 500 m tidal streams. Where MARS covers, the router lays MARS over the chosen tide model, but the code fetched the fallback model by calling itself, so it looped until the browser gave up ("Maximum call stack size exceeded"). Every route failed in the three areas MARS reaches; North Sea, Irish Sea and Biscay were unaffected. The same fault stopped the build making pre-routes. The fallback is now the plain tide model. All six areas tested routing locally, then the build was re-run to restore the pre-routes.
+
+## F21 Channel Race failed on Stuart's phone with no message (12 Nov 06:08) - fixed
+Routing worked locally on all five Channel races, so the likely cause is the phone's kept copy of the pre-routes from before the 04:23 build, whose pre-routes were lost to F20. When an instant pre-route could not be used, Route stopped without routing fresh and without saying anything. It now falls back to a fresh route. Any routing or forecast failure also shows a red banner with Try again, and a route still running after two minutes with nothing to show says so.

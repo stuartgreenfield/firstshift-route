@@ -66,7 +66,24 @@
       else p.parentNode.insertBefore(b, p);
     });
   })();
+  function errShow(msg) { var b = $('errBox'); if (!b) return; $('errMsg').textContent = msg; b.hidden = false; }
+  function errHide() { var b = $('errBox'); if (b) b.hidden = true; }
+  (function () { var b = $('errBox'); if (!b) return; $('errX').onclick = errHide; $('errRetry').onclick = function () { errHide(); S.running = false; S.preBad = true; S.routes = []; run(); }; })();
+  setInterval(function () {   /* a route that has run for two minutes with nothing to show is stuck: say so */
+    if (S.running) { S.runSince = S.runSince || Date.now(); if (Date.now() - S.runSince > 120000 && !(S.routes && S.routes.length) && $('errBox') && $('errBox').hidden) errShow('Routing is taking far longer than usual. Try again, or choose fewer wind models in Settings, Forecasts.'); }
+    else S.runSince = 0;
+  }, 5000);
+  var TERMS_DAY = (function () { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); })();
+  var TERMS_OK = (function () { try { return localStorage.getItem('fs-terms') === TERMS_DAY; } catch (e) { return false; } })();
+  if (TERMS_OK) SPLASH_MIN = Math.min(SPLASH_MIN, 1200);   /* once accepted today, opening again is quick */
   (function () { var sp = $('splash'); if (!sp) return; var t0 = Date.now(), gone = false; function hide() { if (gone) return; gone = true; sp.classList.add('out'); setTimeout(function () { sp.hidden = true; }, 550); }
+    if (!TERMS_OK) {   /* the first open each day: the disclaimer must be accepted before Route can be used */
+      sp.classList.add('terms'); var tb = $('spTerms'); if (tb) tb.hidden = false;
+      S.splashDone = function () {};
+      $('spAgree').onclick = function (ev) { ev.stopPropagation(); try { localStorage.setItem('fs-terms', TERMS_DAY); } catch (e) {} TERMS_OK = true; hide(); };
+      if (tb) tb.addEventListener('click', function (ev) { ev.stopPropagation(); });
+      return;
+    }
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
@@ -75,7 +92,7 @@
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return loadPre().then(function () { earlyPre(); return download(); });
-  }).then(function () { return omFallback(); }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; });
+  }).then(function () { return omFallback(); }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; errShow('Could not load the forecasts: ' + e.message); });
 
   /* ---------- new forecasts: check every 5 minutes; a button downloads them and routes again ---------- */
   var nextMeta = null;
@@ -1341,11 +1358,11 @@
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
-    var hit = preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function () { S.running = false; }); return; }
+    var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
     S.running = true; busy(''); S.key = null;
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
     pass(true).then(function () { return pass(false); }).then(function () { S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); draw(); });
+    .catch(function (e) { S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
