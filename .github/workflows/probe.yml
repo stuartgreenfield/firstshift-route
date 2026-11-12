@@ -1,0 +1,17 @@
+name: Probe
+# A small manual job, started by hand, to try a new data source from GitHub's network before adding it to the forecast job.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL to fetch (first 4 kB shown)
+        required: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch
+        env:
+          URL: ${{ github.event.inputs.url }}
+        run: curl -sS -L --max-time 60 -w '\nHTTP %{http_code}, %{size_download} bytes\n' "$URL" | head -c 4000
