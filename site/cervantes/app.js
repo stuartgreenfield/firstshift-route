@@ -1965,7 +1965,9 @@
     var vb = viewBox(), obs = (meta.course && meta.course.race && meta.course.race.obstructions) || [], pat = hatch(css['--shoaledge'] || '#B0302A');
     if (S.show.tss && ZONES.length) {
       ZONES.forEach(function (z) {
-        if (!ringOn(z.poly, vb)) return; polyPath(z.poly);
+        if (!ringOn(z.poly, vb)) return;
+        if (z.kind === 'edge') { ctx.beginPath(); z.poly.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.strokeStyle = css['--shoaledge']; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.3; ctx.stroke(); ctx.globalAlpha = 1; return; }
+        polyPath(z.poly);
         if (z.kind === 'zone') { ctx.fillStyle = pat; ctx.fill(); }
         ctx.strokeStyle = css['--shoaledge']; ctx.globalAlpha = z.kind === 'lane' ? 0.6 : z.kind === 'zone' ? 0.85 : 0.45; ctx.lineWidth = z.kind === 'zone' ? 1.4 : 1; ctx.setLineDash(z.kind === 'lane' ? [] : z.kind === 'zone' ? [] : [5, 4]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
       });

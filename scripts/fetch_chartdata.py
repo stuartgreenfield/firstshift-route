@@ -1,7 +1,7 @@
 """Chart extras for the whole FirstShift Route area: traffic separation schemes (as possible no-go zones) and the main
 lighthouses and buoys. Not for navigation. Runs weekly on GitHub (workflow chartdata.yml) and writes site/zones/.
 Sources: OpenStreetMap seamarks via Overpass (ODbL, credit "OpenStreetMap contributors"); SHOM traffic separation
-schemes for French waters (Licence Ouverte 2.0, credit "Shom")."""
+schemes for French waters (Licence Ouverte 2.0, credit "Shom"); Rijkswaterstaat schemes for Dutch waters via PDOK (CC0)."""
 import json, os, sys, time, urllib.request, urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,8 +75,46 @@ for L, kind in SHOM.items():
             zones.append(dict(kind=kind, name=(f.get('properties') or {}).get('nom', ''), poly=ring, src='shom', dir=(f.get('properties') or {}).get('orient'))); n += 1
     print('SHOM', L, n, flush=True)
 
+
+# Rijkswaterstaat: the official Dutch schemes (CC0), with the lane boundary lines OSM lacks off the Netherlands
+PD = 'https://api.pdok.nl/rws/scheepvaart-verkeersscheidingsstelsel-noordzee/ogc/v1/collections/'
+def pdok(col):
+    out, url = [], PD + col + '/items?f=json&limit=1000'
+    while url:
+        j = json.loads(http(url)); out += j.get('features', [])
+        url = next((l['href'] for l in j.get('links', []) if l.get('rel') == 'next'), None)
+    return out
+def rws_kind(nm):
+    n = nm.lower()
+    if 'windenergie' in n: return None
+    if 'voorzorg' in n: return 'precaution'
+    if 'vermijden' in n: return 'avoid'
+    if 'kustverkeer' in n: return 'inshore'
+    return 'zone'
+try:
+    n = 0
+    for f in pdok('seperatiezones'):
+        p = f.get('properties') or {}; nm = (p.get('naam_separatiezone') or '').strip(); nm = '' if nm == '-' else nm
+        kind = rws_kind(nm); g = f.get('geometry') or {}
+        if not kind: continue
+        polys = [g['coordinates']] if g.get('type') == 'Polygon' else g.get('coordinates', []) if g.get('type') == 'MultiPolygon' else []
+        for poly in polys:
+            ring = [[r4(c[1]), r4(c[0])] for c in poly[0]]
+            if len(ring) >= 4: zones.append(dict(kind=kind, name=nm, poly=ring, src='rws')); n += 1
+    print('RWS zones', n, flush=True); n = 0
+    for f in pdok('begrenzing'):
+        p = f.get('properties') or {}; g = f.get('geometry') or {}
+        lines = [g['coordinates']] if g.get('type') == 'LineString' else g.get('coordinates', []) if g.get('type') == 'MultiLineString' else []
+        for ln in lines:
+            pts = [[r4(c[1]), r4(c[0])] for c in ln]
+            if len(pts) >= 2 and any(S <= q[0] <= N and W <= q[1] <= E for q in pts):
+                zones.append(dict(kind='edge', name=(p.get('gebied') or '').strip(), poly=pts, src='rws')); n += 1
+    print('RWS boundary lines', n, flush=True)
+except Exception as e:
+    print('RWS failed', e, flush=True)
+
 json.dump(dict(note='Traffic separation schemes: not for navigation. Lanes and separation zones can be set as no-go zones in the router.',
-               credit=['OpenStreetMap contributors (ODbL)', 'Shom, Dispositifs de séparation du trafic (Licence Ouverte 2.0)'],
+               credit=['OpenStreetMap contributors (ODbL)', 'Rijkswaterstaat, Verkeersscheidingsstelsel Noordzee via PDOK (CC0)', 'Shom, Dispositifs de séparation du trafic (Licence Ouverte 2.0)'],
                built=time.strftime('%Y-%m-%d'), zones=zones), open(os.path.join(OUT, 'tss.json'), 'w'), separators=(',', ':'))
 
 # ---------- lighthouses and main buoys ----------
