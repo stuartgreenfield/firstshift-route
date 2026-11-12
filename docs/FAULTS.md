@@ -52,3 +52,6 @@ The AIS target table was rebuilt on every frame of the chart (every slider move 
 
 ## F19 iPhone: top bar pushed off the screen after the set-up (12 Nov) - fixed
 Stuart's iPhone screenshot at 01:31: the top bar was gone and a gap sat below the time slider. Focusing a field in the set-up scrolled the page's own body (overflow hidden still scrolls by focus), shifting the whole app up. Route now puts the page back when a field loses focus, when the keyboard closes and whenever the body scrolls with no field in use.
+
+## F20 No routes in the Channel, Fastnet and Cervantes after the 04:23 build (12 Nov) - fixed
+The 04:23 forecast build was the first to carry the Ifremer MARS 500 m tidal streams. Where MARS covers, the router lays MARS over the chosen tide model, but the code fetched the fallback model by calling itself, so it looped until the browser gave up ("Maximum call stack size exceeded"). Every route failed in the three areas MARS reaches; North Sea, Irish Sea and Biscay were unaffected. The same fault stopped the build making pre-routes. The fallback is now the plain tide model. All six areas tested routing locally, then the build was re-run to restore the pre-routes.
