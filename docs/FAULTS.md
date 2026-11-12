@@ -46,3 +46,6 @@ Adding the isochrones switch broke the if/else in the Layers panel, so ticking w
 
 ## F17 Clock showed Thu 1 Jan 00:00 (12 Nov) - fixed
 Saved settings (a saved race or the boat code) put back a start time that had passed. It was no longer in the start list, so the list went blank and Route read the start as 0: 1 January 1970, a Thursday. Saved choices that no longer exist are now skipped, and routing never starts from a blank list.
+
+## F18 Race boat TCC box vanished as soon as it opened (12 Nov) - fixed
+The AIS target table was rebuilt on every frame of the chart (every slider move and every replay frame), so a tapped Race boat button was replaced before the TCC box could be used. The table now redraws at most every two seconds, never while a TCC is being typed, and an open box survives a redraw.
