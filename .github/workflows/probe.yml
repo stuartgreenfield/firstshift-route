@@ -6,6 +6,10 @@ on:
       url:
         description: URL to fetch (first 4 kB shown)
         required: true
+      grep:
+        description: optional text to keep only lines matching it (with 3 lines after)
+        required: false
+        default: ''
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -14,4 +18,7 @@ jobs:
       - name: Fetch
         env:
           URL: ${{ github.event.inputs.url }}
-        run: curl -sS -L --max-time 60 -w '\nHTTP %{http_code}, %{size_download} bytes\n' "$URL" | head -c 4000
+          GREP: ${{ github.event.inputs.grep }}
+        run: |
+          curl -sS -L --max-time 120 -w '\nHTTP %{http_code}, %{size_download} bytes\n' "$URL" > out.txt || true
+          if [ -n "$GREP" ]; then grep -A3 -e "$GREP" -e '^HTTP ' out.txt | head -c 8000; else head -c 4000 out.txt; echo; tail -n 2 out.txt; fi
