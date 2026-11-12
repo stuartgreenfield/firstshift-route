@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.7.4';
+  var VERSION = 'FirstShift Route v0.7.5';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.7.4 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.7.5 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1152,7 +1152,16 @@
   var WIZ = { on: false, step: 0 }, WIZN = ['Race and boat', 'Choose the race', 'The start', 'Boats you are racing', 'Check and route'], WIZD = [0, 1, 1, 2, 3, 4];   /* five screens, four steps: the race list is part of step 1 (Stuart 12 Nov: race and boat first, then the start) */
   function wizSave() { try { sessionStorage.setItem('fs-wiz', WIZ.on ? String(WIZ.step) : ''); } catch (e) {} }
   function boatIsSet() { return store('fs-boatset') === '1' || Object.keys(boats()).length > 0 || !!BC.code; }
-  function boatWarn() { $('boatWarn').hidden = boatIsSet() || WIZ.on; }
+  /* what Route is sailing: TCC, where the polar comes from, and the boat (Stuart 12 Nov: say what is in use, not just "generic") */
+  function boatDesc() {
+    var tc = (+$('tcc').value || 1).toFixed(3), ty = $('boatType').selectedOptions[0] ? $('boatType').selectedOptions[0].textContent.split(',')[0] : '';
+    var pol = boatSrc === 'polar' ? 'your own polar' : boatSrc === 'tcc' ? 'FirstShift generic, scaled to the TCC' : (ty ? ty + ' shape' : 'boat type') + ', scaled to the TCC';
+    return { tcc: tc, polar: pol, name: $('boatName').value.trim() };
+  }
+  function boatWarn() {
+    var d = boatDesc(), set = boatIsSet(); $('boatWarn').hidden = set || WIZ.on;
+    $('boatWarn').textContent = 'TCC ' + d.tcc + ' · Polar: ' + d.polar + ' · Boat: ' + (d.name || 'not named') + (set ? '' : '. Tap to set up your boat');
+  }
   /* a set-up step that cannot go on says why, in red, beside Next, and marks the box to fix */
   function wizErr(msg, id) {
     var h = $('wizHint'); h.textContent = msg; h.classList.add('err');
@@ -1288,7 +1297,7 @@
       var pct = Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3), tide = $('tideSel').options[$('tideSel').selectedIndex];
       var row = function (k, v, step, warn) { return '<div><b>' + k + '</b><span' + (warn ? ' class="warn"' : '') + '>' + v + '</span><button class="btn" data-go="' + step + '">Change</button></div>'; };
       h += '<h3>Check before routing</h3><p class="wlead">Everything Route will use. Change anything, or Route it.</p><div class="wcheck">' +
-        row('Boat', bs ? wizEsc($('boatName').value || 'Your boat') + ', TCC ' + (+$('tcc').value).toFixed(3) + ', ' + pct + '% of the polar' : 'Generic boat: TCC ' + (+$('tcc').value).toFixed(3) + '. Set up your boat for a true answer.', 1, !bs) +
+        row('Boat', (function () { var d = boatDesc(); return wizEsc(d.name || (bs ? 'Your boat' : 'Boat not named')) + ', TCC ' + d.tcc + ', polar: ' + wizEsc(d.polar) + ', ' + pct + '% of the polar' + (bs ? '' : '. Set up your boat for a true answer.'); })(), 1, !bs) +
         row('Sails', sl.sails + ' sails' + (sl.reef ? ', reef points on' : ''), 1) +
         row('Race', wizEsc(c.name) + ', ' + courseNm(c) + ' nm' + (issue ? '. ' + wizEsc(issue) : ''), 2, !!issue) +
         row('Start', clockAbs(+$('startSel').value) + ' UTC' + (/class="fit no/.test(fitHtml($('startSel').value)) ? '. The race may outlast the forecasts.' : ''), 3, /class="fit no/.test(fitHtml($('startSel').value))) +
@@ -1966,8 +1975,8 @@
     ((c && c.band) || []).forEach(function (b) { pts.push([b[0], b[1]], [b[2], b[3]]); });
     if (!pts.length) { view.s = Math.min(W / (2.25 * K), (H - top) / 1.4); view.lo = -0.8; view.la = 50.15 + top / 2 / view.s; return; }
     var s = 90, n = -90, w = 180, e = -180; pts.forEach(function (p) { s = Math.min(s, p[0]); n = Math.max(n, p[0]); w = Math.min(w, p[1]); e = Math.max(e, p[1]); });
-    var pad = 0.08; s -= (n - s) * pad; n += (n - s) * pad; w -= (e - w) * pad; e += (e - w) * pad;
-    view.s = Math.max(150, Math.min(W / ((e - w) * K), (H - top - 90) / (n - s))); view.lo = (w + e) / 2; view.la = (s + n) / 2 + top / 2 / view.s;
+    var pad = 0.08; s -= (n - s) * pad; n += (n - s) * pad; w -= (e - w) * pad; e += (e - w) * (pad + 0.14);   /* more room east: mark names sit to the right of each mark */
+    view.s = Math.max(20, Math.min(W / ((e - w) * K), (H - top - 90) / (n - s)));   /* a long course (the Fastnet) fits whole on a phone (Stuart 12 Nov) */ view.lo = (w + e) / 2; view.la = (s + n) / 2 + top / 2 / view.s;
   }
   function X(lo) { return (lo - view.lo) * K * view.s + W / 2; }
   function Y(la) { return (view.la - la) * view.s + H / 2; }
@@ -2356,7 +2365,7 @@
   /* ---------- pointer ---------- */
   var ptrs = new Map(), pinch = 0, moved = 0;
   cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
-  function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(150, Math.min(20000, view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
+  function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(20000, view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
   cv.addEventListener('dblclick', function () { fit(); draw(); });
   cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(e.offsetX, e.offsetY) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
   cv.addEventListener('pointermove', function (e) {
@@ -2491,7 +2500,7 @@
     $('plotKey').innerHTML = ws.map(function (w, i) { return '<span style="color:' + tok(cols[i]) + ';font-weight:700">━</span> ' + w + ' kn'; }).join(' &nbsp; ') + (tuned ? ' &nbsp; dashed: before tuning' : '') + '. Boat speed in knots; wind from the top.';
   }
   var spTimer = null;
-  function boatChanged() { spCache = {}; ['Up', 'Reach', 'Run'].forEach(function (n) { $('tu' + n + 'V').textContent = $('tu' + n).value + '%'; }); clearTimeout(spTimer); spTimer = setTimeout(plotPolar, 60); }
+  function boatChanged() { try { if (document.activeElement && /^(tcc|boatType|boatName)$/.test(document.activeElement.id) || boatChanged.user) store('fs-boatset', '1'); boatChanged.user = false; boatWarn(); } catch (e) {} spCache = {}; ['Up', 'Reach', 'Run'].forEach(function (n) { $('tu' + n + 'V').textContent = $('tu' + n).value + '%'; }); clearTimeout(spTimer); spTimer = setTimeout(plotPolar, 60); }
   function boats() { try { return JSON.parse(store('fsBoats') || '{}') || {}; } catch (e) { return {}; } }
   function listBoats(sel) { var b = boats(); $('myBoat').innerHTML = '<option value="">' + (Object.keys(b).length ? 'Choose a saved boat…' : 'Not saved yet') + '</option>' + Object.keys(b).sort().map(function (n) { return '<option>' + n.replace(/</g, '&lt;') + '</option>'; }).join(''); $('myBoat').value = sel || ''; $('boatDel').hidden = !sel; }
   function initBoat() {
@@ -2499,7 +2508,7 @@
     $('boatType').value = 'perf';
     var eg = function () { var t = FSBoat.TYPES.filter(function (x) { return x.id === $('boatType').value; })[0]; $('typeEg').textContent = (t ? t.eg.charAt(0).toUpperCase() + t.eg.slice(1) + '. ' : '') + 'A FirstShift generic shape for the type, not a class polar; the TCC sets the overall speed.'; };
     eg(); $('boatType').onchange = function () { eg(); boatChanged(); };
-    [].forEach.call($('srcSeg').querySelectorAll('button'), function (b) { b.onclick = function () { setSrc(b.dataset.src); if (b.dataset.src === 'polar') readOwn(true); boatChanged(); }; });
+    [].forEach.call($('srcSeg').querySelectorAll('button'), function (b) { b.onclick = function () { setSrc(b.dataset.src); if (b.dataset.src === 'polar') readOwn(true); boatChanged.user = true; boatChanged(); }; });
     $('tcc').addEventListener('input', boatChanged);
     ['tuUp', 'tuReach', 'tuRun'].forEach(function (id) { $(id).oninput = boatChanged; });
     $('tuReset').onclick = function () { ['tuUp', 'tuReach', 'tuRun'].forEach(function (id) { $(id).value = 100; }); boatChanged(); };
