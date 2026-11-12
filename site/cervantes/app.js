@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.8.8';
+  var VERSION = 'FirstShift Route v0.8.9';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.8.8 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.8.9 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1694,6 +1694,7 @@
       var st = $('startSel') ? +$('startSel').value : 0, fu = null; try { fu = meta ? futureGet() : null; } catch (e) {} if (fu && fu.ep) st = fu.ep;
       if (!st) { $('tzRace').innerHTML = ''; return; }
       var sec = Math.round(st - now / 1000);
+      try { if (LIVE.on && LIVE.fix && LIVE.calc && LIVE.calc.pre) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}   /* the GPS countdown ticks every second, between fixes too */
       var nar = innerWidth <= 520; $('tzRace').innerHTML = sec > 0 ? (nar ? 'Start ' : 'Start in ') + '<b' + (sec <= 600 ? ' class="soon"' : '') + '>' + (sec <= 600 ? Math.floor(sec / 60) + ':' + p2(sec % 60) : sec < 86400 ? hm(sec / 60) : Math.floor(sec / 86400) + 'd ' + hm((sec % 86400) / 60)) + '</b>' : 'Race <b>' + hm(-sec / 60) + '</b>';
     }
     function set(v) { off = Math.max(-12, Math.min(14, v)); store('fs-tz', String(off)); tick(); }
@@ -1740,6 +1741,9 @@
   }
   function liveCalc(f) {
     var o = { fix: f }, nowH = (Date.now() / 1000 - T0) / 3600, s = S.sel; o.nowH = nowH;
+    /* before the gun (Stuart 12 Nov): course and distance to the start and the countdown, not ahead or behind a plan that has not begun */
+    var gun = +$('startSel').value; try { var fu = futureGet(); if (fu && fu.ep) gun = fu.ep; } catch (e) {}
+    if (gun && Date.now() / 1000 < gun && meta && meta.course && meta.course.start) { o.pre = { to: rhumb({ lat: f.la, lon: f.lo }, meta.course.start), secs: gun - Date.now() / 1000, name: meta.course.start.name || 'the start' }; return o; }
     if (!s || !s.r || !s.r.path) return o;
     var p = s.r.path, ts = tsOf(p), kx = Math.cos(f.la * R) * 60, best = null;
     for (var i = 0; i < p.length - 1; i++) { var ax = (p[i].lo - f.lo) * kx, ay = (p[i].la - f.la) * 60, bx = (p[i + 1].lo - f.lo) * kx, by = (p[i + 1].la - f.la) * 60, dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)), qx = ax + u * dx, qy = ay + u * dy, d = Math.hypot(qx, qy);
@@ -1778,6 +1782,7 @@
       '<p><b>Orange:</b> an alert limit is passed: off track by more than ' + (xl ? xl + ' nm' : 'the limit (off)') + ' or behind by more than ' + (bl ? bl + ' min' : 'the limit (off)') + '. It sounds once as it goes over. Change the limits, or set 0 to turn one off, in Settings, Course, While racing.</p>' +
       '<p><b>Green trail:</b> where the boat has been; tap it for time, SOG and COG. <b>GPS ±:</b> how sure the phone is of its position.</p>' +
       '<p><b>Buttons:</b> <b>MIN</b> shrinks this window to a small GPS live pill: its dot and border are green within your limits and orange past one, with off track and the minutes; tap the pill (Open) for this window again. <b>Big</b> shows the figures large for the cockpit; Chart comes back. <b>Re-route</b> works out a fresh route from the boat and says how its finish compares with the plan; it then becomes the plan. <b>Stop</b> turns the GPS off (the trail stays on the chart). <b>Clear track</b> wipes the trail. <b>i</b> opens or closes these notes.</p>' +
+      '<p><b>Before the start:</b> To the start (course and distance to the start position in the course) and Gun in (the countdown to your class start). Ahead, behind and the alerts begin at the gun.</p>' +
       '<p>Keep Route open with the screen on. Not for navigation.</p><button class="btn" id="lvInfoX">Close</button></div>';
   }
   function liveShow() {
@@ -1789,6 +1794,21 @@
       $('lvStop').onclick = function () { liveStop(); }; return; }
     if (!c) return;
     var sog = f.sog != null ? n1(f.sog) + ' kn' : '--', cog = f.cog != null && f.sog > 0.5 ? p3(f.cog) : '--';
+    if (c.pre) {
+      var pr = c.pre, sc = Math.max(0, Math.round(pr.secs)), gun = sc <= 600 ? Math.floor(sc / 60) + ':' + ('0' + sc % 60).slice(-2) : sc < 86400 ? Math.floor(sc / 3600) + 'h ' + ('0' + Math.floor(sc % 3600 / 60)).slice(-2) : Math.floor(sc / 86400) + 'd ' + Math.floor(sc % 86400 / 3600) + 'h', ts2 = p3(pr.to.brg) + ' ' + n1(pr.to.nm) + ' nm';
+      LIVE.alarm = false; $('liveBox').classList.remove('alarm'); $('liveBox').classList.toggle('mini', !!LIVE.mini && !LIVE.big);
+      if (LIVE.mini && !LIVE.big) { $('liveBox').innerHTML = '<button class="lvmini" id="lvOpen" aria-label="Open the GPS window"><span class="lvdot"></span><span class="lvlab">GPS live</span><b>' + ts2 + '</b><b>' + gun + '</b><span class="lvup">Open</span></button>'; $('lvOpen').onclick = function () { LIVE.mini = false; store('fs-livemini', '0'); liveShow(); followBoat(); draw(); }; $('liveBig').hidden = true; return; }
+      $('liveBox').innerHTML = '<div class="lvg"><div><small>SOG</small><b>' + sog + '</b></div><div><small>COG</small><b>' + cog + '</b></div><div style="grid-column:span 2"><small>To the start</small><b>' + ts2 + '</b></div></div>' +
+        '<div class="lvl">Gun in <b>' + gun + '</b> · ' + wizEsc(pr.name) + '. Course and distance are to the start position in the course; the line\'s two ends are not known. After the gun Route compares the boat with the plan.</div>' + (LIVE.info ? liveInfo() : '') +
+        '<div class="lvx"><button class="btn lvmin" id="lvMin" aria-label="Minimise to a small pill" title="Minimise to a small pill">MIN</button><button class="btn primary" id="lvBig">Big</button><button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">GPS ±' + Math.round(f.acc || 0) + ' m</span></div>';
+      $('lvMin').onclick = function () { LIVE.mini = true; LIVE.info = false; store('fs-livemini', '1'); liveShow(); followBoat(); draw(); }; $('lvInfo').onclick = function () { LIVE.info = !LIVE.info; liveShow(); }; if ($('lvInfoX')) $('lvInfoX').onclick = function () { LIVE.info = false; liveShow(); };
+      $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; $('lvBig').onclick = function () { LIVE.big = true; liveShow(); };
+      $('liveBig').hidden = !LIVE.big; $('liveBig').classList.remove('alarm');
+      if (LIVE.big) { var cl = function (k, v, sub) { return '<div><small>' + k + '</small><b>' + v + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>'; };
+        $('liveBig').innerHTML = '<div class="lbg">' + cl('SOG', sog) + cl('COG', cog) + cl('To the start', p3(pr.to.brg), n1(pr.to.nm) + ' nm to ' + wizEsc(pr.name)) + cl('Gun in', gun, 'class start ' + clockAbs(+$('startSel').value).slice(-5) + ' UTC') + '</div><div class="lvx"><button class="btn primary" id="lbChart">Chart</button><button class="btn" id="lbStop">Stop GPS</button></div>';
+        $('lbChart').onclick = function () { LIVE.big = false; liveShow(); }; $('lbStop').onclick = function () { liveStop(); }; }
+      return;
+    }
     var xl = +$('xteLim').value || 0, bl = +$('behLim').value || 0, xte = c.xte, offX = xte && xl > 0 && xte.d > xl, offB = c.xte && bl > 0 && c.ahead < -bl, alarm = offX || offB;
     if (alarm && !LIVE.alarm) liveBeep(); LIVE.alarm = alarm;
     var xt = xte ? n1(xte.d) + ' nm ' + (xte.d < 0.02 ? '' : xte.side === 'L' ? 'left' : 'right') : '--', ab = xte ? (Math.abs(c.ahead) < 1 ? 'On plan' : mm(c.ahead) + (c.ahead > 0 ? ' ahead' : ' behind')) : '--';
@@ -1835,6 +1855,7 @@
     if (LIVE.trail.length > 1) { ctx.strokeStyle = '#4CC38A'; ctx.globalAlpha = 0.8; ctx.lineWidth = 2; ctx.beginPath(); LIVE.trail.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.stroke(); ctx.globalAlpha = 1; }
     if (!LIVE.on || !f) { ctx.restore(); return; }
     var x = X(f.lo), y = Y(f.la);
+    if (c.pre && meta.course && meta.course.start) { var sx = X(meta.course.start.lon), sy = Y(meta.course.start.lat); ctx.strokeStyle = '#4CC38A'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]); }   /* before the gun: the way to the start */
     if (c.plan) { ctx.strokeStyle = css['--ink']; ctx.setLineDash([3, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.plan.lo), Y(c.plan.la)); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(c.plan.lo), Y(c.plan.la), 7, 0, 7); ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.font = '600 10px Inter, sans-serif'; ctx.fillText('PLAN NOW', X(c.plan.lo) + 10, Y(c.plan.la) + 4); }
     if (c.rejoin) { ctx.strokeStyle = css['--warn']; ctx.setLineDash([7, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.rejoin.lo), Y(c.rejoin.la)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css['--warn']; ctx.beginPath(); ctx.arc(X(c.rejoin.lo), Y(c.rejoin.la), 4.5, 0, 7); ctx.fill(); }
     if (f.acc && f.acc > 30) { ctx.globalAlpha = 0.15; ctx.fillStyle = '#4CC38A'; ctx.beginPath(); ctx.arc(x, y, Math.max(6, f.acc / 1852 / 60 * view.s), 0, 7); ctx.fill(); ctx.globalAlpha = 1; }

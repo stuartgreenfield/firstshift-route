@@ -78,7 +78,7 @@ body.editing #prog{display:none!important}
 .cvf.all{background:#4CC38A}.cvf.part{background:var(--warn)}.cvt{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}
 .cvold{color:var(--warn)}.cvnew svg{width:12px;height:12px;vertical-align:-1px;fill:none;stroke:#4CC38A;stroke-width:2}
 .livebtn{font-weight:700;letter-spacing:.04em}.livebtn[aria-pressed="true"]{background:#4CC38A!important;color:#0E1C2D!important;border-color:#4CC38A!important}
-.livebox{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,560px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.livebox{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,560px);z-index:9;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .livebox.alarm,.livebig.alarm{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn)}
 .lvg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px 8px}.lvg div{display:flex;flex-direction:column;min-width:0}
 .lvg small{font:600 10px var(--f-body);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}.lvg b{font:600 16px var(--f-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -619,7 +619,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.8.8</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.8.9</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
