@@ -30,6 +30,11 @@ jobs:
           npx playwright install --with-deps chromium || npx playwright install chromium
       - name: Run the full check against the live site
         run: node tests/check.js https://firstshift-route.pages.dev check-out
+      - name: Live GPS against the plan (simulated phone at known positions)
+        run: |
+          node tests/live.js https://firstshift-route.pages.dev 'channel-area/?race=morgan' 'fastnet/' | tee live-out.txt
+          { echo '## Live GPS check'; echo '```'; cat live-out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          grep -q ' 0 failed' live-out.txt
       - name: Report
         if: always()
         run: |
