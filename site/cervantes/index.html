@@ -70,6 +70,8 @@ canvas#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cu
 
 /* popovers */
 body.editing #prog{display:none!important}
+.amberb{background:var(--warn)!important;color:#0E1C2D!important;border-color:var(--warn)!important;font-weight:600}
+#edTxt .chg{color:var(--warn)}
 .markpop{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(92vw,380px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;z-index:31;display:grid;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .markpop input,.markpop select{width:100%;min-width:0;box-sizing:border-box;height:42px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit}
 .mphd{display:flex;justify-content:space-between;align-items:center}.mpll{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -424,7 +426,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="modemenu" id="modeMenu" hidden role="menu" aria-label="Screen"><button data-m="dark">Dark</button><button data-m="night">Night red</button><button data-m="light">Light</button><button data-m="auto">Follow this device</button></div>
     <div class="adjpill" id="adjPill" hidden><span id="adjPillTxt"></span><button class="btn" id="adjPillX">Back to the forecast</button></div>
     <div class="markpop" id="markPop" hidden></div>
-    <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
+    <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn amberb" id="edGo" hidden>Re-route</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
 
     <div class="top">
       <div class="lead"><a class="logobox" href="https://firstshiftsailing.com" target="_blank" rel="noopener" title="FirstShift: Yacht Racing Intelligence, firstshiftsailing.com" aria-label="FirstShift website, opens in a new window"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></a><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><b id="raceShort" class="rshort"></b><span class="offb" id="offBadge" hidden>Offline</span><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div><button class="stbtn" id="startChip" title="Class start: tap to change"><span class="stl">Start</span><span class="stv">tap to choose</span></button></div>
@@ -578,7 +580,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.7.0</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.7.1</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
