@@ -43,6 +43,8 @@
 [hidden]{display:none!important}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{position:fixed;inset:0;width:100%}
+/* iPhone home-screen app: iOS 26 can size the page short of the screen bottom, leaving a black band (WebKit bug 301994). vh and lvh measure the whole screen there. Only in the home-screen app: in Safari 100vh would run under the toolbar. */
+@media (display-mode:standalone){html,body{height:100vh;height:100lvh}body{bottom:auto}.app{height:100vh;height:100lvh}}
 body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);margin:0;padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
 button,select,input,textarea{font:inherit;color:inherit}
 .app{position:relative;height:100%;display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr) auto}
