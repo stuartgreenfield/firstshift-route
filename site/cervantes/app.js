@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.8.1';
+  var VERSION = 'FirstShift Route v0.8.2';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.8.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.8.2 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1740,6 +1740,19 @@
     try { if (navigator.vibrate) navigator.vibrate([300, 120, 300]); } catch (e) {}
     try { if (!$('liveSound').checked || !LIVE.ac) return; var ac = LIVE.ac; if (ac.state === 'suspended') ac.resume(); [0, 0.35].forEach(function (d) { var o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; g.gain.value = 0.25; o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + d); o.stop(ac.currentTime + d + 0.22); }); } catch (e) {}
   }
+  /* (i) on the live window: what each figure and colour means (Stuart 12 Nov) */
+  function liveInfo() {
+    var xl = +$('xteLim').value || 0, bl = +$('behLim').value || 0;
+    return '<div class="lvinfo"><b>What these mean</b>' +
+      '<p><b>SOG, COG:</b> speed and course over the ground from this phone\'s GPS. GPS gives no heading.</p>' +
+      '<p><b>Off track:</b> distance from the planned route, L or R looking along it.</p>' +
+      '<p><b>Plan:</b> minutes ahead (+) or behind (−) the plan at the point of the route you are level with.</p>' +
+      '<p><b>To plan now:</b> course and distance to where the plan says the boat should be now (PLAN NOW on the chart).</p>' +
+      '<p><b>Catch plan:</b> the course to steer, speed over the ground and time to be level with the plan again, from the wind, tide and your polar now. <b>Back on track:</b> when you cannot catch it, the soonest way back onto the planned track. The amber dashed line on the chart shows it.</p>' +
+      '<p><b>Orange:</b> an alert limit is passed: off track by more than ' + (xl ? xl + ' nm' : 'the limit (off)') + ' or behind by more than ' + (bl ? bl + ' min' : 'the limit (off)') + '. It sounds once as it goes over. Change the limits, or set 0 to turn one off, in Settings, Course, While racing.</p>' +
+      '<p><b>Green trail:</b> where the boat has been; tap it for time, SOG and COG. <b>GPS ±:</b> how sure the phone is of its position.</p>' +
+      '<p>Keep Route open with the screen on. Not for navigation.</p><button class="btn" id="lvInfoX">Close</button></div>';
+  }
   function liveShow() {
     var c = LIVE.calc, f = LIVE.fix; if (!f) return;
     var n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return ('00' + Math.round((x + 360) % 360) % 360).slice(-3) + '°T'; }, mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h ' + ('0' + a % 60).slice(-2) : a + ' min'; };
@@ -1760,15 +1773,15 @@
     var rjs = rj ? (rj.kind === 'catch' ? 'Catch plan: ' : 'Back on track: ') + '<b>' + p3(rj.steer) + '</b> · ' + n1(rj.sog) + ' kn · ' + n1(rj.nm) + ' nm · ' + mm(rj.nm / rj.sog * 60) + (rj.kind === 'catch' ? '' : ' · ' + mm(rj.lost * 60) + ' behind') + (rj.tack ? ' · beat/run' : '') : (S.sel && xte && xte.d <= 0.1 && c.ahead >= -1 ? 'On plan' : S.sel ? 'No straight way back: re-route' : 'Route the race to compare with a plan');
     $('liveBox').innerHTML = '<div class="lvg"><div><small>SOG</small><b>' + sog + '</b></div><div><small>COG</small><b>' + cog + '</b></div><div><small>Off track</small><b' + (offX ? ' class="lvwarn"' : '') + '>' + xs + '</b></div><div><small>Plan</small><b' + (offB ? ' class="lvwarn"' : '') + '>' + as + '</b></div></div>' +
       '<div class="lvl">To plan now: <b>' + tp + '</b> · ' + rjs + '</div>' + (LIVE.cmp ? '<div class="lvl">' + LIVE.cmp + '</div>' : '') +
-      '<div class="lvx"><button class="btn primary" id="lvBig">Big</button>' + (S.sel ? '<button class="btn" id="lvRe">Re-route</button>' : '') + '<button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><span class="lvl" style="align-self:center;margin-left:auto">GPS ±' + Math.round(f.acc || 0) + ' m</span></div>';
-    $('lvBig').onclick = function () { LIVE.big = true; liveShow(); }; $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; if ($('lvRe')) $('lvRe').onclick = liveReroute;
+      (LIVE.info ? liveInfo() : '') + '<div class="lvx"><button class="btn primary" id="lvBig">Big</button>' + (S.sel ? '<button class="btn" id="lvRe">Re-route</button>' : '') + '<button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">GPS ±' + Math.round(f.acc || 0) + ' m</span></div>';
+    $('lvBig').onclick = function () { LIVE.big = true; liveShow(); }; $('lvInfo').onclick = function () { LIVE.info = !LIVE.info; liveShow(); }; if ($('lvInfoX')) $('lvInfoX').onclick = function () { LIVE.info = false; liveShow(); }; $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; if ($('lvRe')) $('lvRe').onclick = liveReroute;
     $('liveBig').hidden = !LIVE.big; $('liveBig').classList.toggle('alarm', alarm);
     if (LIVE.big) {
       var cell = function (k, v, sub, cls) { return '<div class="' + (cls || '') + '"><small>' + k + '</small><b>' + v + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>'; };
       $('liveBig').innerHTML = '<div class="lbg">' + cell('SOG', sog) + cell('COG', cog) + cell('Off track', xs, xte ? (xte.d < 0.05 ? 'on the planned route' : xte.side === 'L' ? 'left of the planned route' : 'right of the planned route') : '', offX ? 'warnc' : '') + cell('Plan', as, xte ? (Math.abs(c.ahead) < 1 ? 'on plan' : c.ahead > 0 ? 'ahead of the plan' : 'behind the plan') : '', offB ? 'warnc' : '') +
         cell('To plan position', c.toPlan ? p3(c.toPlan.brg) : '--', c.toPlan ? n1(c.toPlan.nm) + ' nm' : tp) + cell(rj && rj.kind === 'catch' ? 'Catch the plan: steer' : 'Back on track: steer', rj ? p3(rj.steer) : '--', rj ? rjt : (S.sel ? 'On plan' : '')) + '</div>' +
-        '<div class="lvx"><button class="btn primary" id="lbChart">Chart</button>' + (S.sel ? '<button class="btn" id="lbRe">Re-route from here</button>' : '') + '<button class="btn" id="lbStop">Stop GPS</button></div>';
-      $('lbChart').onclick = function () { LIVE.big = false; liveShow(); }; $('lbStop').onclick = function () { liveStop(); }; if ($('lbRe')) $('lbRe').onclick = function () { LIVE.big = false; liveReroute(); };
+        (LIVE.info ? liveInfo().replace('id="lvInfoX"', 'id="lbInfoX"') : '') + '<div class="lvx"><button class="btn primary" id="lbChart">Chart</button>' + (S.sel ? '<button class="btn" id="lbRe">Re-route from here</button>' : '') + '<button class="btn" id="lbStop">Stop GPS</button><button class="btn lvi" id="lbInfo" aria-label="What these mean" title="What these mean">i</button></div>';
+      $('lbChart').onclick = function () { LIVE.big = false; liveShow(); }; $('lbInfo').onclick = function () { LIVE.info = !LIVE.info; liveShow(); }; if ($('lbInfoX')) $('lbInfoX').onclick = function () { LIVE.info = false; liveShow(); }; $('lbStop').onclick = function () { liveStop(); }; if ($('lbRe')) $('lbRe').onclick = function () { LIVE.big = false; liveReroute(); };
     }
   }
   function liveReroute() {
