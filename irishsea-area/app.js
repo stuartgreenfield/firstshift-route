@@ -1800,7 +1800,7 @@
     rows = rows.filter(function (r, i) { return r.t1 - r.t0 >= 0.33 || i === 0; });
     var h = '<tr><th>From</th><th>Sail</th><th>Hdg</th><th>TWS</th><th>TWA</th><th>BSP</th><th>SOG</th><th>Tacks</th></tr>', leg = -1;
     rows.forEach(function (r) {
-      if (r.leg !== leg) { leg = r.leg; h += '<tr><td colspan="8" style="font-family:var(--f-body);color:var(--muted)">To ' + S.legs[Math.min(leg, S.legs.length - 1)].name + '</td></tr>'; }
+      if (r.leg !== leg) { leg = r.leg; h += '<tr><td colspan="8" style="font-family:var(--f-body);color:var(--muted)">To ' + (S.legs && S.legs.length ? S.legs[Math.min(leg, S.legs.length - 1)].name : 'the next mark') + '</td></tr>'; }
       h += '<tr><td>' + clockH(r.t0).slice(4) + '</td><td style="font-family:var(--f-body)">' + r.sail + '</td><td>' + pad(Math.atan2(r.hx, r.hy) / R) + '°</td><td>' + (r.tws / r.n).toFixed(1) + '</td><td>' + Math.round(r.twa / r.n) + '°</td><td>' + (r.bsp / r.n).toFixed(1) + '</td><td>' + ((r.sog || 0) / r.n).toFixed(1) + '</td><td>' + r.tacks + '</td></tr>';
     });
     s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="7" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
@@ -2270,7 +2270,7 @@
     var s = S.sel, h = '';
     if (s) {
       var p = s.r.path, pos = posAt(tsOf(p), p, S.t);
-      if (pos && !pos.done && pos.i != null) {
+      if (pos && !pos.done && pos.i != null && S.legs && S.legs.length) {
         var q = p[pos.i + 1] || p[pos.i], lg = S.legs[Math.min(q.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a;
         var vmc = q.bsp * Math.cos((q.hdg - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
         h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + (q.twa < 0 ? 'S' : 'P')) + kv('TWS', q.tws.toFixed(1)) + kv('VMG mark', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
@@ -2284,7 +2284,7 @@
   var follow = store('fs-follow') !== '0';
   function followSet(on) { follow = on; store('fs-follow', on ? '1' : '0'); $('followBtn').setAttribute('aria-pressed', on); $('followBtn').title = on ? 'Following the boat: tap to stop' : 'Follow the boat: keeps it in the middle as the time moves'; if (on) { followBoat(); draw(); } }
   function followBoat() {
-    if (!follow || !S.sel || !W) return;
+    if (!follow || !S.sel || !W || S.edit) return;   /* editing a course: the chart stays where it is */
     var p = S.sel.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos) pos = { la: p[0].la, lo: p[0].lo };
     var top = 70, bot = H, bar = document.querySelector('.bar'), pn = $('panel'), cr = cv.getBoundingClientRect();
     [bar, !wide() && pn && !pn.hidden && !pn.classList.contains('collapsed') ? pn : null].forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (r.height && r.top > cr.top + top && r.left < cr.left + W / 2 && r.right > cr.left + W / 2) bot = Math.min(bot, r.top - cr.top); });
@@ -2369,7 +2369,7 @@
     // boat figures only when the pointer is on a route: open water has no boat
     var best = null, bs = null, bd2 = docked ? 26 : 16;
     S.routes.forEach(function (s) { if (s.hidden) return; s.r.path.forEach(function (p) { if (p.bsp == null) return; var d = Math.hypot(X(p.lo) - x, Y(p.la) - y) - (s === S.sel ? 3 : 0); if (d < bd2) { bd2 = d; best = p; bs = s; } }); });
-    if (best) {
+    if (best && S.legs && S.legs.length) {
       var lg = S.legs[Math.min(best.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a, o = opts(bs.models), spd = speedFn(o);
       var tgt = spd(best.tws, best.twa), sf = FSRouter.seaFactor(best.hs, best.wd, best.hdg, o.sea);
       var bu = FSRouter.bestVmg(spd, best.tws, true), bdn = FSRouter.bestVmg(spd, best.tws, false);
