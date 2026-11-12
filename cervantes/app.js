@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.8.9';
+  var VERSION = 'FirstShift Route v0.9.0';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -32,7 +32,8 @@
   function call(w, msg, tr) { return new Promise(function (ok, no) { msg.id = ++jid; jobs[jid] = { ok: ok, no: no }; w.postMessage(msg, tr || []); }); }
   function pool(msg) { if (!workers.length) return Promise.reject(new Error('This browser cannot run background routing.')); return call(workers[wq++ % workers.length], msg); }
   function all(msgFn) { return Promise.all(workers.map(function (w) { var m = msgFn(); return call(w, m.msg, m.tr); })); }
-  var n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+  var MOBILE = /iPhone|iPad|iPod|Android|Mobi/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));   /* iPadOS calls itself a Mac */
+  var n = Math.max(1, Math.min(MOBILE ? 2 : 4, (navigator.hardwareConcurrency || 2) - 1));   /* each worker holds every forecast: two on a phone or tablet, so iOS does not close Route for memory (Stuart 12 Nov) */
   for (var i = 0; i < n; i++) { try { var w = new Worker('worker.js'); w.onmessage = function (e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }; workers.push(w); } catch (e) { break; } }
 
   /* phones: From here sits beside Play in the bottom bar */
@@ -219,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.8.9 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -433,6 +434,15 @@
   var MET = [['mGust', 'Gusts', 'gust', '#E8A33D'], ['mMsl', 'Pressure (isobars)', 'msl', '#9AAEBB'], ['mRain', 'Rain', 'rain', '#4FA3E0'], ['mCape', 'Thunderstorm and squall risk', 'cape', '#C04BD8'], ['mCloud', 'Cloud', 'cloud', '#8C99A6'], ['mTemp', 'Air temperature', 'temp', '#E07A5F']];
   function metField() { var k = Object.keys(P.met || {}); return k.length ? P.met[k[0]] : null; }
   function metAt(k, la, lo, t) { var f = metField(); if (!f) return NaN; return f.sample(k, la, lo, t); }
+  /* the weather overlays are drawn once into a spare canvas and reused until the chart moves or the time changes (Stuart 12 Nov: phone closed with every overlay on) */
+  var metC = null, metKey = '';
+  function drawMetCached() {
+    if (!metField() || !MET.some(function (m) { return S.show[m[0]]; })) return;
+    var key = [view.lo.toFixed(5), view.la.toFixed(5), view.s.toFixed(2), W, H, dpr, S.t.toFixed(3), MET.map(function (m) { return S.show[m[0]] ? 1 : 0; }).join(''), css['--ink'], css['--muted']].join('|');
+    if (!metC || metC.width !== cv.width || metC.height !== cv.height) { metC = document.createElement('canvas'); metC.width = cv.width; metC.height = cv.height; metKey = ''; }
+    if (key !== metKey) { var keep = ctx, oc = metC.getContext('2d'); oc.setTransform(1, 0, 0, 1, 0, 0); oc.clearRect(0, 0, metC.width, metC.height); oc.setTransform(dpr, 0, 0, dpr, 0, 0); ctx = oc; try { drawMet(); } finally { ctx = keep; } metKey = key; }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(metC, 0, 0); ctx.restore();
+  }
   function drawMet() {
     var f = metField(); if (!f) return; var on = MET.filter(function (m) { return S.show[m[0]]; }); if (!on.length) return;
     var L = f.L, t = S.t, la0 = Math.max(L.lat0, LA(H)), la1 = Math.min(L.lat0 + L.dlat * (L.ny - 1), LA(0)), lo0 = Math.max(L.lon0, LO(0)), lo1 = Math.min(L.lon0 + L.dlon * (L.nx - 1), LO(W));
@@ -2258,7 +2268,7 @@
     if (S.edit) { ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.setLineDash([6, 5]);   /* every area a drawn course can route in, each named */
       REGIONS.forEach(function (g) { if (!READY[g.id]) return; var rb = g.region; ctx.globalAlpha = g.id === HERE ? 1 : 0.6; ctx.lineWidth = g.id === HERE ? 1.8 : 1.2; ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.fillText(g.name, X(rb.w) + 5, Y(rb.n) + 13); });
       ctx.restore(); }   /* the area a new course must stay inside */
-    try { drawMet(); } catch (e) {}
+    try { drawMetCached(); } catch (e) {}
     try { drawEns(); } catch (e) {}
     try { drawIso(); } catch (e) {}
     if (S.show.lay) { try { laylines(); } catch (e) {} }
