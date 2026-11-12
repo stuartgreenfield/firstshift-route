@@ -1087,6 +1087,11 @@
   function wizSave() { try { sessionStorage.setItem('fs-wiz', WIZ.on ? String(WIZ.step) : ''); } catch (e) {} }
   function boatIsSet() { return store('fs-boatset') === '1' || Object.keys(boats()).length > 0 || !!BC.code; }
   function boatWarn() { $('boatWarn').hidden = boatIsSet() || WIZ.on; }
+  /* a set-up step that cannot go on says why, in red, beside Next, and marks the box to fix */
+  function wizErr(msg, id) {
+    var h = $('wizHint'); h.textContent = msg; h.classList.add('err');
+    var el = id && $(id); if (el) { el.classList.add('bad'); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(function () { try { el.focus(); } catch (e) {} }, 250); el.addEventListener('input', function f() { el.classList.remove('bad'); h.classList.remove('err'); h.textContent = ''; el.removeEventListener('input', f); }); }
+  }
   function wizOpen(n) { WIZ.on = true; S.wizHold = true; boatWarn(); wizShow(n || 1); }
   function wizClose(route) {
     WIZ.on = false; S.wizHold = false; $('wiz').hidden = true; $('wizBar').hidden = true; $('races').hidden = true; store('fs-wizdone', '1'); wizSave(); boatWarn();
@@ -1162,7 +1167,7 @@
   function wizCourseChosen(fromEditor) { var fresh = !WIZ.on || S.drawnNew; S.drawnNew = false; if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor && !fresh ? 4 : 1); return true; }   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
-    WIZ.step = n; wizSave();
+    WIZ.step = n; wizSave(); if ($('wizHint')) $('wizHint').classList.remove('err');
     var dn = WIZD[n]; $('wizDots').innerHTML = [1, 2, 3, 4].map(function (i) { return '<i class="' + (i === dn ? 'on' : i < dn ? 'done' : '') + '"></i>'; }).join('');
     if (n === 2) { $('wiz').hidden = true; racesSheet(); $('races').hidden = false; $('wizBar').hidden = false; $('wizBarT').textContent = 'Step 1 of 4: choose a race, open one of yours, or New course'; return; }
     $('wizBar').hidden = true; $('races').hidden = true; $('wiz').hidden = false;
@@ -1179,7 +1184,7 @@
         '<details id="wzMore"' + (known ? '' : ' open') + '><summary>' + (known ? 'Change the boat details' : 'Boat details') + '</summary>' +
         '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc(known ? cur : '') + '" placeholder="For example Morning After" autocomplete="off"></div>' +
         '<div class="row"><label for="wzType">Boat type</label><select id="wzType">' + $('boatType').innerHTML + '</select></div>' +
-        '<div class="row"><label for="wzTcc">IRC TCC</label><input type="number" id="wzTcc" step="0.001" min="0.8" max="1.8" inputmode="decimal" value="' + wizEsc($('tcc').value) + '"></div>' +
+        '<div class="row"><label for="wzTcc">IRC TCC</label><input type="number" id="wzTcc" step="0.001" min="0.7" max="2.2" inputmode="decimal" value="' + wizEsc($('tcc').value) + '"></div>' +
         '<div class="row"><label for="wzPct">Your speed</label><input type="number" id="wzPct" min="80" max="110" step="1" inputmode="numeric" value="' + Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3) + '"><span class="note">% of the polar you expect to sail at (95 is typical for a well-sailed race)</span></div>' +
         '<div class="row"><label for="wzSails">Sails</label><select id="wzSails"><option value="">Keep my sails (' + (window.FSSails ? FSSails.summary().sails : 0) + ')</option><option value="asym">Asymmetric kites on a bowsprit</option><option value="sym">Symmetric spinnaker on a pole</option><option value="white">White sails only</option></select></div>' +
         '<label class="row" style="gap:8px"><input type="checkbox" id="wzReef"' + (window.FSSails && FSSails.summary().reef ? ' checked' : '') + '> Tell me when to reef</label>' +
@@ -1232,7 +1237,8 @@
     var n = WIZ.step;
     if (n === 1) {
       var nm = $('wzName').value.trim(), tc = +$('wzTcc').value, pc = +$('wzPct').value;
-      if (!(tc >= 0.8 && tc <= 1.8)) { $('wizHint').textContent = 'Enter the TCC from your IRC certificate, for example 1.031.'; return; }
+      if (!(tc >= 0.7 && tc <= 2.2)) { wizErr(tc ? 'TCC ' + tc + ' is not an IRC TCC. Enter the TCC from your IRC certificate, between 0.700 and 2.200, for example 1.031.' : 'Enter the TCC from your IRC certificate, for example 1.031.', 'wzTcc'); return; }
+      if (!(pc >= 50 && pc <= 120)) { wizErr('Your speed is a percentage of the polar: between 50 and 120, usually about 95.', 'wzPct'); return; }
       $('boatName').value = nm || 'My boat';
       if ($('wzType').value !== $('boatType').value) { $('boatType').value = $('wzType').value; $('boatType').dispatchEvent(new Event('change')); }
       $('tcc').value = tc.toFixed(3); $('tcc').dispatchEvent(new Event('input'));
@@ -1492,7 +1498,7 @@
   function myFleet() { try { return JSON.parse(store(mfKey()) || '[]') || []; } catch (e) { return []; } }
   function setMyFleet(a) { store(mfKey(), JSON.stringify(a)); mfShow(); ghosts().then(function () { fleetTable(); draw(); }, function (e) { console.error('fleet', e && e.message); }); if (AIS.src !== 'off') aisUpdate(); }
   function mfAdd(name, tcc, mmsi) {
-    name = String(name || '').trim(); tcc = +tcc; if (!name || !(tcc > 0.5 && tcc < 2)) return false;
+    name = String(name || '').trim(); tcc = +tcc; if (!name || !(tcc >= 0.7 && tcc <= 2.2)) return false;
     var a = myFleet().filter(function (f) { return f.name.toUpperCase() !== name.toUpperCase() && (!mmsi || f.mmsi !== mmsi); }); a.push({ name: name, tcc: tcc, mmsi: mmsi || null }); setMyFleet(a); return true;
   }
   function mfShow() {

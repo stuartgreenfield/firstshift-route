@@ -61,3 +61,6 @@ Routing worked locally on all five Channel races, so the likely cause is the pho
 
 ## F22 New course: old routes stayed on the chart and refining carried on (12 Nov 06:28) - fixed
 Stuart: starting a new course must close the old route, keep it as old routes, show the whole area and go through the set-up. New course now keeps the routes on the chart under Races, Old routes (six at most, Open puts them back exactly as they were), stops any routing still running so nothing old comes back, shows the whole forecast area to draw on, and after saving goes through every set-up step from step 1.
+
+## F23 Set-up step 1 would not go on with TCC 2, and the reason was easy to miss (12 Nov 07:04) - fixed
+Stuart's screenshot: the TCC accepted only 0.8 to 1.8, and the refusal was a small grey line by Next. The range is now 0.700 to 2.200 (the biggest maxis), a refusal shows in red beside Next, the box to fix is outlined in red and brought into view, and the step progress bar no longer overlaps the text when the step scrolls.
