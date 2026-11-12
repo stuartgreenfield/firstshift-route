@@ -347,9 +347,10 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .lgrp{margin:8px 0 2px;font:600 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .stchip{display:block;font:600 11px/1.3 var(--f-data);color:var(--brand);background:none;border:0;padding:0;margin:1px 0;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
 .stchip.ask{color:var(--warn)}
-.sethelp{display:none;margin-left:auto;margin-right:8px;min-height:36px;padding:0 12px;font-weight:600}
-@media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px), (orientation:landscape) and (max-height:500px){#helpBtn{display:none!important}.sethelp{display:inline-flex;align-items:center}}
+@media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px), (orientation:landscape) and (max-height:500px){}
 @media (orientation:landscape) and (max-height:500px){.brand{min-width:70px!important;flex:1 1 auto}.stbtn .stl{display:none}.stbtn{height:38px;padding:2px 6px}.lead{max-width:calc(100% - 228px)!important;min-width:0}.logobox{width:40px!important;height:40px!important}}
+.fabhelp{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:52px;z-index:3;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.3);color:var(--ink);cursor:pointer;padding:0}
+.fabhelp svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .stbtn{flex:none;display:grid;align-content:center;justify-items:start;gap:1px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:4px 10px;height:52px;cursor:pointer;text-align:left;color:var(--brand);font:600 12px/1.15 var(--f-data);pointer-events:auto}
 .stbtn .stl{font:600 10px/1 var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 .stbtn .stv{white-space:nowrap}
@@ -384,6 +385,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
+    <button class="fabhelp" id="helpBtn" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r=".6"/></svg></button>
     <div class="modemenu" id="spdMenu" hidden role="menu" aria-label="Replay speed"></div>
     <div class="cpawarn" id="cpaWarn" hidden></div>
     <div class="modemenu" id="modeMenu" hidden role="menu" aria-label="Screen"><button data-m="dark">Dark</button><button data-m="night">Night red</button><button data-m="light">Light</button><button data-m="auto">Follow this device</button></div>
@@ -397,7 +399,6 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
         <button class="ib" id="layersBtn" aria-expanded="false" title="What the chart shows"><svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5z"/><path d="m2 13 10 5 10-5"/></svg><span class="lbl">Layers</span></button>
         <button class="ib" id="panelBtn" aria-expanded="false" title="Results"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/></svg><span class="lbl">Results</span></button>
         <button class="ib" id="nightBtn" aria-pressed="false" title="Night mode: red only"><svg viewBox="0 0 24 24"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg><span class="lbl">Night</span></button>
-        <button class="ib" id="helpBtn" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r=".6"/></svg></button>
         <button class="ib" id="setBtn" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="lbl">Settings</span></button>
       </div>
     </div>
@@ -528,7 +529,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.5.1</span></h2><button class="btn sethelp" id="setHelp" aria-label="Help">? Help</button><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.5.1</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
       <button class="tab" data-s="fc" aria-selected="false">Forecasts</button>

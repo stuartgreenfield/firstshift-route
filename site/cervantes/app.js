@@ -1647,7 +1647,7 @@
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
     $('sayStop').onclick = sayStop;
     $('helpBtn').onclick = function () { $('help').hidden = false; };
-    if ($('setHelp')) $('setHelp').onclick = function () { $('sheetX').click(); $('help').hidden = false; };   /* on phones Help lives in Settings, to give the race name room (Stuart 12 Nov) */
+    /* Help is a round ? on the chart, bottom right, the same on every screen (Stuart 12 Nov) */
     $('helpX').onclick = function () { sayStop(); $('help').hidden = true; };
   }
   /* ---------- route export: GPX and KML (planning aid, not for navigation) ---------- */
