@@ -73,3 +73,6 @@ Stuart: the day list should show all dates and say when a day is outside the for
 
 ## F26 Course row on the set-up card did nothing (12 Nov 10:13) - fixed
 The tap opened the race menu, then reached the page, whose "tap elsewhere closes the menu" rule shut it at once. The row now stops the tap there. Tested on a computer and an iPhone screen: the menu opens, RORC races lists 9 races, and choosing the Morgan Cup returns to the card with Course ticked.
+
+## F27 Forecast build ran out of time with seven areas (12 Nov 07:41 to 10:41) - fixed
+The build fetched the areas one after another. With ECMWF's servers slow (13 to 25 minutes per area for the ECMWF fields, against about 5 overnight) six areas filled the three-hour limit and nothing was published; the live forecasts stayed at the 07:05 build. The workflow now runs one job per area side by side (each with a two-hour limit), then one publish job that starts from what is live, so an area whose fetch fails keeps its last forecasts instead of disappearing, merges the status, pre-routes and publishes.

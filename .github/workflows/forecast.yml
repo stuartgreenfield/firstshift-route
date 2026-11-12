@@ -1,6 +1,7 @@
 name: Forecasts
 
 # Every six hours, about seven hours after each 00, 06, 12 and 18 UTC model run, plus a button to run it by hand.
+# The areas are fetched side by side, one job each (12 Nov 2026: one after another took over three hours with seven areas).
 on:
   schedule:
     - cron: '17 1,7,13,19 * * *'
@@ -16,9 +17,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    outputs:
+      skip: ${{ steps.fresh.outputs.skip }}
     steps:
       - name: Skip a back-up run if the last publish is recent
         id: fresh
@@ -28,26 +30,74 @@ jobs:
             age=$(( $(date -u +%s) - built ))
             if [ "$age" -lt 18000 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
           fi
+
+  area:
+    needs: gate
+    if: needs.gate.outputs.skip != '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        area: [cervantes, fastnet, channel-area, northsea-area, irishsea-area, biscay-area, celtic-area]
+    steps:
       - uses: actions/checkout@v4
-        if: steps.fresh.outputs.skip != '1'
       - uses: actions/setup-python@v5
-        if: steps.fresh.outputs.skip != '1'
         with:
           python-version: '3.12'
       - name: Install
-        if: steps.fresh.outputs.skip != '1'
         run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
-      - name: Fetch forecasts and build packs
-        if: steps.fresh.outputs.skip != '1'
-        run: python3 scripts/build.py cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area
+      - name: Fetch forecasts and build the pack for ${{ matrix.area }}
+        env:
+          FS_STATUS_PART: status-${{ matrix.area }}.json
+        run: python3 scripts/build.py ${{ matrix.area }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: area-${{ matrix.area }}
+          path: |
+            site/${{ matrix.area }}/pack
+            site/status-${{ matrix.area }}.json
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    needs: [gate, area]
+    if: always() && needs.gate.outputs.skip != '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start from what is live, so an area whose fetch failed keeps its last forecasts
+        run: |
+          git fetch -q origin site || true
+          mkdir -p prev && (git archive origin/site | tar -x -C prev) || echo "no site branch yet"
+          for d in prev/*/; do n=$(basename "$d"); [ -d "prev/$n/pack" ] && mkdir -p "site/$n" && cp -r "prev/$n/pack" "site/$n/" || true; done
+          [ -f prev/status.json ] && cp prev/status.json site/status-previous.json || true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: area-*
+          path: new
+      - name: Lay the new packs over the old
+        run: |
+          for a in new/area-*; do n=${a#new/area-}; if [ -d "$a/$n/pack" ]; then rm -rf "site/$n/pack"; mkdir -p "site/$n"; cp -r "$a/$n/pack" "site/$n/"; echo "new forecasts: $n"; else echo "kept the last forecasts: $n"; fi; cp "$a"/status-*.json site/ 2>/dev/null || true; done
+          python3 - <<'PY'
+          import json, glob, os, time
+          prev = {}
+          try: prev = json.load(open('site/status-previous.json'))
+          except Exception: pass
+          src = dict(prev.get('sources', {})); rec = dict(prev.get('received', {}))
+          for f in sorted(glob.glob('site/status-*.json')):
+              if f.endswith('status-previous.json'): continue
+              j = json.load(open(f)); src.update(j.get('sources', {})); rec.update(j.get('received', {}))
+          json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=src, received=rec), open('site/status.json', 'w'), indent=1)
+          for f in glob.glob('site/status-*.json'): os.remove(f)
+          PY
       - name: Use the newest app from main (a change pushed while this job ran must not be overwritten)
-        if: steps.fresh.outputs.skip != '1'
         run: |
           git fetch -q origin main
           git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand site/route.webmanifest site/follow _headers | tar -x
-          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area; do cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
+          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
       - name: Publish to the site branch
-        if: steps.fresh.outputs.skip != '1'
         run: |
           cp _headers site/_headers
           cd site
@@ -58,7 +108,6 @@ jobs:
           git commit -q -m "Forecasts $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
       - name: Pre-route each race for the standard settings
-        if: steps.fresh.outputs.skip != '1'
         continue-on-error: true
         timeout-minutes: 75
         run: |
@@ -67,13 +116,11 @@ jobs:
           npx playwright install-deps chromium || echo 'system packages not refreshed; using what the runner has'
           PRE_HOURS=6 PRE_HOURS_RACE=3 node scripts/preroute.js site channel-area channel-area:myth channel-area:deguingand channel-area:morgan channel-area:dinard channel-area:channel channel-area:cherbourg northsea-area northsea-area:northsea irishsea-area biscay-area celtic-area fastnet cervantes
       - name: Use the newest app from main again before the second publish
-        if: steps.fresh.outputs.skip != '1'
         run: |
           git fetch -q origin main
           git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand site/route.webmanifest site/follow _headers | tar -x
-          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area; do cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
+          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
       - name: Publish again with the pre-routes
-        if: steps.fresh.outputs.skip != '1'
         run: |
           cd site
           rm -rf .git && git init -q -b site

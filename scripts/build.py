@@ -61,4 +61,6 @@ for race in RACES:
         import shutil
         for f in os.listdir(os.path.join(ROOT, 'site', 'cervantes')):
             if f.endswith(('.html', '.js')): shutil.copy(os.path.join(ROOT, 'site', 'cervantes', f), os.path.join(ROOT, 'site', race, f))
-json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=log, received=recv), open(os.path.join(ROOT, 'site', 'status.json'), 'w'), indent=1)
+# one area per job (the forecast workflow runs the areas side by side): each writes its own part, the publish job merges them
+part = os.environ.get('FS_STATUS_PART')
+json.dump(dict(built=time.strftime('%Y-%m-%dT%H:%MZ', time.gmtime()), sources=log, received=recv), open(os.path.join(ROOT, 'site', part or 'status.json'), 'w'), indent=1)
