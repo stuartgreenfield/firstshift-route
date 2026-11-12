@@ -11,7 +11,7 @@ const DEV = [
   ['Pixel 7', devices['Pixel 7']], ['Pixel 7 on its side', devices['Pixel 7 landscape']], ['iPad', devices['iPad (gen 7)']], ['iPad on its side', devices['iPad (gen 7) landscape']],
   ['Galaxy Tab S4', devices['Galaxy Tab S4']], ['Computer', { viewport: { width: 1440, height: 860 } }], ['Small laptop', { viewport: { width: 1280, height: 720 } }]
 ].filter(d => d[1]);
-const DONE = () => { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); };
+const DONE = () => { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); };
 function rec(dev, area, name, ok, note, img) { R.push({ dev, area, name, ok: !!ok, note: note || '', img: img || '' }); console.log((ok ? 'PASS ' : 'FAIL ') + dev + ' | ' + area + ' | ' + name + (note ? ' | ' + note : '')); }
 async function snap(p, dev, what) { const f = (++shot).toString().padStart(3, '0') + '-' + (dev + '-' + what).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.png'; await p.screenshot({ path: path.join(OUT, f) }); return f; }
 async function layout(p) {

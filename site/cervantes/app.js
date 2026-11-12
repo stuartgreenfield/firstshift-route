@@ -509,9 +509,11 @@
         if (last.my && myRaces().some(function (x) { return x.id === last.my && (!x.page || x.page === HERE); })) my = last.my;
         else if (last.race && last.race !== want && RACES.some(function (r) { return r.id === last.race && (r.page || r.id) === HERE; })) { $('raceSel').value = last.race; applyRace(last.race); }
         if (last.start) S.pendingStart = last.start;
+        S.startChosen = false;   /* asked every time a race is opened (Stuart 12 Nov); the last start is offered first */
+        var rg = startRange(); if (last.start && rg && +last.start >= rg[0] && +last.start <= rg[1] && ![].some.call($('startSel').options, function (o) { return o.value === last.start; })) setStart(+last.start);
       }
       if (my) setTimeout(function () { openMy(my, true); if (last && last.start && [].some.call($('startSel').options, function (o) { return o.value === last.start; })) { $('startSel').value = last.start; } }, 0);
-      wizBoot(qs);
+      if (qs.get('new')) { setTimeout(function () { startEdit(null); }, 400); } else wizBoot(qs);
       if (S.pendingCourse) { applyCourseObj(asRace(S.pendingCourse)); S.pendingCourse = null; }
       if (S.pendingStart && [].some.call($('startSel').options, function (o) { return o.value === S.pendingStart; })) $('startSel').value = S.pendingStart; S.pendingStart = null;
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
@@ -889,10 +891,11 @@
   /* reopen the course last used on this page (a RORC race or one of My races) and its start time */
   function setShort(t) { $('raceTitle').setAttribute('data-short', t); $('raceShort').textContent = t; }   /* a real element: Safari does not always redraw text taken from an attribute */
   function lastGet() { try { return JSON.parse(store('fs-last-' + HERE) || 'null'); } catch (e) { return null; } }
-  function lastSet(o) { if (S.booting) return; var old = lastGet() || {}; o.start = o.start || (old.race === o.race && old.my === o.my ? old.start : null); store('fs-last-' + HERE, JSON.stringify(o)); }
+  function lastSet(o) { if (S.booting) return; var old = lastGet() || {}, same = old.race === o.race && old.my === o.my; o.start = o.start || (same ? old.start : null); o.chosen = same ? !!old.chosen : false; if (!same) { S.startChosen = false; } store('fs-last-' + HERE, JSON.stringify(o)); chipStart(); }
   function openMy(id, boot) {
     var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
     if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '3'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
+    if (courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
     S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
   function racesSheet() {
@@ -900,13 +903,13 @@
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
-    h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (ready ? 'Forecasts ready' : 'Course only: forecasts for this area come later') + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
+    h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
     h += bcBox();
     $('raceList').innerHTML = h; bcWire();
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
     $('rEdit').onclick = function () { startEdit(courseCopy()); };
     $('rMarks').onclick = function () { startEdit(courseCopy()); editForm(); };
-    $('rNew').onclick = function () { startEdit(null); };
+    $('rNew').onclick = function () { newCourse(); };
     [].forEach.call($('raceList').querySelectorAll('[data-open]'), function (b) { b.onclick = function () { openMy(b.dataset.open); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-del]'), function (b) { b.onclick = function () {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
@@ -954,6 +957,19 @@
     if (route) { S.from = null; run(); }
   }
   /* every race or course you choose goes through start, fleet and check before it routes (Stuart 12 Nov), whether or not the set-up was open */
+  /* the start is the sailor's to give: Route asks for it before routing a race (Stuart 12 Nov), and the chip under the race name shows it */
+  /* what the race list can honestly say: the chart and forecast area are ready, but a race's own forecast only exists within about 10 days of its start */
+  function raceReady(r, ready) {
+    if (!ready) return 'Course only: forecasts for this area come later';
+    if (!r.date2027) return 'Chart ready · routes from the latest forecast';
+    var st = Date.parse(r.date2027 + 'T00:00Z') / 1000, end = T0 + HMAX() * 3600;
+    if (st <= end) return 'Forecast covers race day';
+    var from = new Date((st - 10 * 86400) * 1000);
+    return 'Chart ready · race-day forecast from about ' + from.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][from.getUTCMonth()];
+  }
+  function startGate() { return store('fs-autostart') !== '1' && !S.startChosen; }
+  function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
+  function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); c.textContent = S.startChosen || store('fs-autostart') === '1' ? (v ? 'Start ' + clockAbs(v) + ' UTC' : 'Start: tap to choose') : 'Start: tap to choose'; }
   function wizCourseChosen(fromEditor) { if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor ? 4 : 3); return true; }
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
@@ -1028,7 +1044,7 @@
       if (window.FSSails) { if ($('wzSails').value) FSSails.usePreset($('wzSails').value); if ($('wzReef').checked !== FSSails.summary().reef) FSSails.reefs($('wzReef').checked); }
       $('boatSave').click(); store('fs-boatset', '1'); wizShow(2); return;
     }
-    if (n === 3) { var ep3 = startPickerRead('wz'); if (!(ep3 === ep3)) return; setStart(ep3); wizShow(4); return; }
+    if (n === 3) { var ep3 = startPickerRead('wz'); if (!(ep3 === ep3)) return; setStart(ep3); startChosen(); wizShow(4); return; }
     if (n === 4) { var t = $('wzMfPaste').value; if (t.trim()) { $('mfPaste').value = t; $('mfPasteGo').click(); } wizShow(5); return; }
     if (n === 5) { wizClose(true); return; }
   }
@@ -1059,7 +1075,7 @@
     $('racesX').onclick = function () { $('races').hidden = true; };
     $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };
     $('edUndo').onclick = function () { S.edit.pts.pop(); editPrompt(); draw(); };
-    $('edCancel').onclick = function () { S.edit = null; $('editBar').hidden = true; draw(); };
+    $('edCancel').onclick = function () { S.edit = null; $('editBar').hidden = true; draw(); if (QS0.get('new') && !S.newDone) { S.newDone = true; run(); } };
     $('edDone').onclick = function () { if (S.edit.pts.length < 2) return; editForm(); };
 
   }
@@ -1072,6 +1088,20 @@
     var v = n.length === 1 ? n[0] : n[0] + n[1] / 60 + (n[2] || 0) / 3600; v = neg ? -v : v;
     return Math.abs(v) <= (lat ? 90 : 180) ? v : NaN;
   }
+  /* a new course is drawn on the forecast area that will route it, so the wind, tide and depth are there when it is saved (Stuart 12 Nov) */
+  function myRegion() { return REGIONS.filter(function (g) { return g.id === HERE; })[0] || null; }
+  function newCourse() {
+    if (myRegion()) { startEdit(null); return; }
+    var opts2 = REGIONS.filter(function (g) { return READY[g.id]; });
+    if (opts2.length === 1) { goNew(opts2[0].id); return; }
+    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts' };
+    $('raceList').innerHTML = '<h3>Where is the race?</h3><p class="note">Route draws your course on the forecast area that will route it, so the wind, tide and depth are ready when you save it.</p>' +
+      opts2.map(function (g) { return '<div class="ritem"><div><b>' + g.name + '</b><span class="note">' + (AREA[g.id] || '') + '</span></div><div class="xrow"><button class="btn primary" data-newin="' + g.id + '">Draw here</button></div></div>'; }).join('') +
+      '<p class="note">Further afield (Irish Sea, Biscay) comes later.</p>';
+    $('races').hidden = false;
+    [].forEach.call($('raceList').querySelectorAll('[data-newin]'), function (b) { b.onclick = function () { goNew(b.dataset.newin); }; });
+  }
+  function goNew(id) { try { if (WIZ.on) sessionStorage.setItem('fs-wiz', ''); } catch (e) {} location.href = '../' + id + '/?new=1'; }
   function startEdit(c) {
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
     S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [], closed: !!c };
@@ -1085,6 +1115,7 @@
   }
   function editOk(la, lo) {
     if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) { busy('Outside the routing area: cannot route there.'); setTimeout(function () { busy(''); }, 2500); return false; }
+    var rg = myRegion(); if (rg && (la < rg.region.s || la > rg.region.n || lo < rg.region.w || lo > rg.region.e)) { busy('Outside the ' + rg.name + ' forecast area (the dashed box). For a course elsewhere, choose its area under New course.'); setTimeout(function () { busy(''); }, 3500); return false; }
     var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy('That is land. Choose open water.'); setTimeout(function () { busy(''); }, 2000); return false; }
     return true;
   }
@@ -1150,7 +1181,7 @@
       var pts = p.map(function (q, i) { return { name: q.name || (i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i), lat: q.lat, lon: q.lon, side: i > 0 && i < p.length - 1 ? (q.side || 'port') : undefined }; });
       var c = { name: S.edit.name || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
       if ($('edDay') && !(startPickerRead('ed') === startPickerRead('ed'))) { busy('Check the start time.'); setTimeout(function () { busy(''); }, 2000); return; }
-      var stv = $('edStart').value, keepId = S.myId; S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); meta.course.race.id = rec.id;
+      var stv = $('edStart').value, keepId = S.myId; S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); startChosen(); S.newDone = true; meta.course.race.id = rec.id;
       $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…');
       var issue = courseIssue(meta.course), reg = issue ? regionFor(c) : null;
       if (reg && reg.id !== HERE) {   /* outside this page's forecasts but inside a whole-area page: keep the course there and open it */
@@ -1183,7 +1214,7 @@
     $('runNote').textContent = 'Routed on the server ' + clockAbs(S.pre.at) + (early ? '; forecasts still loading for the replay.' : '. Change any setting and Route works it out on your device.');
     return (early ? Promise.resolve() : ghosts()).then(show);
   }
-  function earlyPre() { var h = preEntry(false); if (h && !S.routes.length) { try { usePre(h, true); } catch (e) {} } }
+  function earlyPre() { if (startGate() || S.wizHold) return; var h = preEntry(false); if (h && !S.routes.length) { try { usePre(h, true); } catch (e) {} } }
   function show() {
     busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
     var maxT = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
@@ -1192,7 +1223,8 @@
   }
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
-    if (S.running || S.wizHold) return;
+    if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
+    if (startGate()) { busy(''); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); wizShow(3); } return; }
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
@@ -1253,8 +1285,11 @@
   function mfInit() {
     var exSync = function () { var v = +$('startSel').value; if (v) $('startExact').value = hhmm(v); };
     $('startSel').addEventListener('change', exSync); setTimeout(exSync, 0);
-    $('startExact').onchange = function () { var d = Math.floor(+$('startSel').value / 86400) * 86400, ep = exactEpoch(d, this.value), e = startCheck(ep); $('startExactErr').textContent = e; if (!e) setStart(ep); };
+    $('startExact').onchange = function () { var d = Math.floor(+$('startSel').value / 86400) * 86400, ep = exactEpoch(d, this.value), e = startCheck(ep); $('startExactErr').textContent = e; if (!e) { setStart(ep); startChosen(); } };
     $('startSel').addEventListener('change', function () { var l = lastGet(); if (l) { l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } });
+    $('startSel').addEventListener('change', function (e) { if (e.isTrusted && !$('sheet').hidden) startChosen(); chipStart(); });   /* a start picked by hand in Settings counts as chosen */
+    $('startChip').onclick = function (e) { e.stopPropagation(); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(3); };
+    chipStart();
     $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCC between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
     $('mfPasteGo').onclick = function () {
       var a = myFleet(), n = 0;
@@ -1497,6 +1532,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
+    if (S.edit && myRegion()) { var rb = myRegion().region; ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]); ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.restore(); }   /* the area a new course must stay inside */
     try { drawMet(); } catch (e) {}
     try { drawIso(); } catch (e) {}
     if (S.show.lay) { try { laylines(); } catch (e) {} }

@@ -23,7 +23,7 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
     const meta = JSON.parse(fs.readFileSync(path.join(site, race, 'pack', 'pack.json')));
     const out = OUTS[race] || (OUTS[race] = { built: meta.built || meta.t0, at: Math.round(Date.now() / 1000), r: {}, log: [] }), log = out.log, t0 = Date.now();
     const p = await b.newPage(); p.on('pageerror', (e) => console.log(race, 'page error', e.message));
-    await p.addInitScript(() => { try { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); } catch (e) {} });
+    await p.addInitScript(() => { try { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} });
     await p.goto(`http://localhost:${port}/${race}/` + (rid ? '?race=' + rid : ''));
     const note = () => p.evaluate(() => document.getElementById('runNote').textContent);
     const waitDone = () => p.waitForFunction(() => { const t = document.getElementById('runNote').textContent; return /First answer|Routed on the server/.test(t) || (!/Quick route|Refining/.test(t) && /No route|Cannot|outside|No way|forecasts end/.test(t)); }, null, { timeout: +(process.env.PRE_WAIT_MS || 1500000) });
