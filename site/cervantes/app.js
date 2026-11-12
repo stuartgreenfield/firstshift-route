@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.9.5';
+  var VERSION = 'FirstShift Route v0.9.6';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.9.5 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.6 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -384,7 +384,7 @@
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
   function layersPop() {
-    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div>' + '<div class="lgrp">Charts (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
+    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
       '<label><input type="checkbox" data-l="legs"' + (S.show.legs ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Leg courses and distances</label>' +
@@ -2100,7 +2100,7 @@
     ['Routes', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
-    ['Real charts', 'Layers, then Charts, adds two free layers under the routes: depth shading from EMODnet Bathymetry (the EU sea-bed survey, licensed CC BY 4.0) and buoys, beacons and lights from OpenSeaMap (OpenStreetMap contributors, licensed CC BY-SA). They load from the internet as you pan and zoom, so they need a signal; buoys show once you zoom in to a few miles across. Neither is an official chart and neither is for navigation: use your official paper or electronic charts for that. Licensed GeoGarage (UKHO) and C-MAP charts are being looked into as an option for people who already subscribe.'],
+    ['Real charts', 'Layers, then Charts, adds buoys, beacons and lights from OpenSeaMap (OpenStreetMap contributors, licensed CC BY-SA). They load from the internet as you pan and zoom, so they need a signal, and show once you zoom in to a few miles across. This is not an official chart and is not for navigation: use your official paper or electronic charts for that. Signing in to your own GeoGarage (UKHO) or C-MAP account is being looked into for the phone app.'],
     ['Chart orientation', 'The round compass above the edit button turns the chart. Tap it for North up (the normal chart), Course up (the GPS course over the ground is up, like a car satnav: needs Live GPS on and the boat moving over 1.5 knots, otherwise the chart stays north up and the compass dims) and Route up (the course to the next mark is up; steady through tacks, and it works without GPS). The red tip of the compass always points north. Text stays upright; the scale bar stays square to the screen.'],
     ['Live GPS while racing', 'Tap GPS by the timeline. Route shows the boat from this phone\'s own GPS, no boat wifi needed, with a long track behind it: tap the track for the time, SOG and COG there. It compares the boat with the chosen route: off track left or right, ahead or behind the plan, and the course and distance to where the plan says you should be now. Catch the plan gives the course to steer, speed and time to be level with the plan again, using the wind, tide and your polar now; if you cannot catch it, Back on the track gives the soonest way back onto the planned track. Re-route works out a fresh route from the boat and says how its finish compares. Big shows large numbers for the cockpit; Chart comes back. MIN shrinks the window to a small GPS live pill, green within your alert limits and orange past one, with off track and the minutes; tap the pill to open the window again. The round i on the window explains every figure and button. Set the alerts and the battery mode in Settings, Course, While racing. Keep the screen on: a web page cannot follow the GPS in the background. Heading is the GPS course over the ground. Not for navigation.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
@@ -2283,12 +2283,11 @@
   /* Real chart layers (Stuart 12 Nov): free tiles now, licensed GeoGarage or C-MAP tiles slot into CHARTS later.
      Tiles are web Mercator; this chart is equirectangular, so each tile is stretched between its own edge latitudes, which is exact at the corners and well under a pixel off inside a tile at the zooms used. */
   var CHARTS = {
-    cdepth: { name: 'Depth shading (EMODnet)', url: 'https://tiles.emodnet-bathymetry.eu/latest/mean_atlas_land/web_mercator/{z}/{x}/{y}.png', zmin: 3, zmax: 12, alpha: 0.85, credit: 'Depth \u00a9 EMODnet' },
     cmarks: { name: 'Buoys, beacons and lights (OpenSeaMap)', url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', zmin: 9, zmax: 18, alpha: 1, credit: 'Seamarks © OpenSeaMap' }
   };
   var TILES = {}, tileN = 0, tileRaf = 0, chartLog = { asked: 0, loaded: 0, failed: 0 };
-  (function () { try { var c = JSON.parse(localStorage.getItem('fs-charts') || '{}'); S.show.cdepth = !!c.cdepth; S.show.cmarks = !!c.cmarks; } catch (e) {} })();
-  function chartSave() { try { localStorage.setItem('fs-charts', JSON.stringify({ cdepth: !!S.show.cdepth, cmarks: !!S.show.cmarks })); } catch (e) {} }
+  (function () { try { var c = JSON.parse(localStorage.getItem('fs-charts') || '{}'); S.show.cmarks = !!c.cmarks; } catch (e) {} })();
+  function chartSave() { try { localStorage.setItem('fs-charts', JSON.stringify({ cmarks: !!S.show.cmarks })); } catch (e) {} }
   function tileZoom(c) { var z = Math.round(Math.log(360 * K * view.s * Math.min(dpr || 1, 2) / 256) / Math.LN2); return Math.max(c.zmin, Math.min(c.zmax, z)); }
   function tLon(x, z) { return x / Math.pow(2, z) * 360 - 180; }
   function tLat(y, z) { var n = Math.PI * (1 - 2 * y / Math.pow(2, z)); return Math.atan(Math.sinh(n)) * 180 / Math.PI; }
@@ -2359,7 +2358,6 @@
     baseLand();
     if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     try { drawDepthLines(); } catch (e) {}
-    try { chartDraw('cdepth'); } catch (e) {}
     grid();
     if (S.show.band) bandEdge();
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
