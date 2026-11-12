@@ -221,6 +221,18 @@
         S.from = { lat: la, lon: lo, t: t, gps: true }; $('fromHere').setAttribute('aria-pressed', 'false'); busy(''); run();
       }, function () { tap('No GPS fix.'); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
     };
+    /* friends and family: the boat's GPS position every five minutes and the chosen route, under the boat code, for the follow page */
+    (function () {
+      var cb = $('shareTrack'); if (!cb) return; cb.checked = store('fs-share') === '1';
+      cb.onchange = function () { store('fs-share', cb.checked ? '1' : '0'); if (cb.checked && !BC.code) $('shareNote').textContent = 'Make or join a boat code first: tap the race name, then Boat code.'; if (cb.checked) { send(); sendRoute(); } };
+      function post(o) { if (!BC.code || !navigator.onLine) return; o.name = $('boatName').value || ''; fetch('/api/track/' + BC.code, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(o) }).catch(function () {}); }
+      function send() { if (!cb.checked || !BC.code || !navigator.geolocation || document.hidden) return; navigator.geolocation.getCurrentPosition(function (g) { post({ pos: [Date.now() / 1000, g.coords.latitude, g.coords.longitude, g.coords.speed != null && g.coords.speed >= 0 ? g.coords.speed / KN : null] }); }, function () {}, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }); }
+      var lastKey = '';
+      function sendRoute() { if (!cb.checked || !BC.code || !S.sel || !S.sel.r) return; var p = S.sel.r.path, key = S.sel.id + p.length + (S.sel.r.finish || 0); if (key === lastKey) return; lastKey = key; var step = Math.max(1, Math.floor(p.length / 600)), path = p.filter(function (q, i) { return i % step === 0 || i === p.length - 1; }).map(function (q) { return [q.la, q.lo]; });
+        post({ route: { name: meta.course.name, path: path, finish: S.sel.r.partial ? null : T0 + S.sel.r.finish * 3600 } }); }
+      setInterval(send, 300000); setInterval(sendRoute, 60000);
+      $('shareLink').onclick = function () { if (!BC.code) { $('shareNote').textContent = 'Make or join a boat code first: tap the race name, then Boat code.'; return; } var link = location.origin + '/follow/?boat=' + BC.code, t = 'Follow ' + ($('boatName').value || 'the boat') + ' on FirstShift Route: ' + link; if (navigator.share) navigator.share({ title: 'Follow the boat', text: t }).catch(function () {}); else (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('shareNote').textContent = 'Link copied: ' + link; }, function () { $('shareNote').textContent = link; }); };
+    })();
     /* while racing: once From here has a GPS fix, route again from the boat's position on a timer */
     (function () {
       var sel = $('autoFrom'), v = store('fs-autofrom'); if (v != null) sel.value = v; sel.onchange = function () { store('fs-autofrom', sel.value); };
@@ -250,7 +262,7 @@
     /* Settings: route again by itself on closing, if anything that affects the routes changed */
     var setSnap = '';
     function settingsSnap() { return [].map.call(document.querySelectorAll('#sheet input, #sheet select, #sheet textarea'), function (el) { return el.id + '=' + (el.type === 'checkbox' ? el.checked : el.value); }).join('|') + '|' + JSON.stringify(meta && meta.course ? [meta.course.name, meta.course.marks, meta.course.start, meta.course.finish] : ''); }
-    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom)=/;
+    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom|shareTrack|leeway)=/;
     function routeSnap() { return settingsSnap().split('|').filter(function (x) { return !DISPLAY_ONLY.test(x); }).join('|'); }
     $('setBtn').onclick = function () { setSnap = routeSnap(); $('sheet').hidden = false; plotPolar(); };
     $('sheetX').onclick = function () { $('sheet').hidden = true; if (setSnap && routeSnap() !== setSnap && !S.running) { busy('Settings changed: routing again…'); S.from = null; run(); } setSnap = ''; };
@@ -1394,6 +1406,7 @@
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
     ['Routing while racing', 'Press From here: Route finds the boat by the phone or tablet GPS and routes from there, from now. If there is no GPS, tap the chart where the boat is. To keep the route fresh, Settings, Course, While racing: choose Every 10, 20 or 30 minutes and Route routes again from the new position on that timer while the screen is on.'],
     ['Route to any point', 'Tap the water anywhere on the chart (click on a computer) and choose Route here from the boat: Route works out the routes from where the boat is at the slider time to that point, in every model. Useful for a waypoint, a tidal gate or a what-if. Route again goes back to the course.'],
+    ['Family and friends', 'Settings, Course, While racing: tick Let family and friends follow the boat, then Send the follow link. While Route is open on a crew phone with a boat code, it sends the boat\'s GPS position every five minutes and the chosen route. The link opens a simple map with the track so far, the planned route and the finish time. Only people with the code can see it.'],
     ['Isochrones', 'Layers, Isochrones of the chosen route. Each line is how far the boat could have got by that hour, sailing its fastest in every direction from the start or the last mark. The line nearest the slider time is drawn brighter, and every sixth hour is labelled. Where the lines bunch up, the boat is slow; where they bulge, the wind or tide is helping.'],
     ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
     ['Your sails and reefs', 'Settings, Sails. Copy each sail from your sail log: the true wind angles and true wind speeds you use it in. Rows are checked from the top and the first that fits wins. Tick Show when to reef and enter the wind speed for each reef, upwind and downwind. The crossover chart colours each sail, marks the reefs and puts this route\'s winds on it as dots, so you can see any wind with no sail set. You can paste a chart grid from Expedition, PredictWind or SailGrib under Edit as text.'],

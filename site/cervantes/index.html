@@ -558,6 +558,9 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <h3>While racing</h3>
       <div class="row"><label for="autoFrom">Reroute from GPS</label><select id="autoFrom"><option value="0">Only when I press From here</option><option value="10">Every 10 minutes</option><option value="20">Every 20 minutes</option><option value="30">Every 30 minutes</option></select></div>
       <p class="note">After From here has found the boat by GPS, Route routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
+      <div class="row"><label class="chk"><input type="checkbox" id="shareTrack"> Let family and friends follow the boat</label></div>
+      <p class="note" id="shareNote">Needs a boat code (tap the race name, Boat code). While Route is open it sends the boat's GPS position every five minutes and the chosen route to FirstShift's server; anyone with the code can watch on the follow page. Nothing is sent when this is off.</p>
+      <div class="xrow"><button class="btn" id="shareLink">Send the follow link</button></div>
       <h3>Race</h3>
       <div class="row"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
       <p class="warnbox" id="courseWarn" hidden></p>
