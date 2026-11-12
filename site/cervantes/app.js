@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.9.1';
+  var VERSION = 'FirstShift Route v0.9.2';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.9.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.2 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -438,6 +438,7 @@
   var metC = null, metKey = '';
   function drawMetCached() {
     if (!metField() || !MET.some(function (m) { return S.show[m[0]]; })) return;
+    if (ORI.ang) { drawMet(); return; }   /* turned chart: draw straight in */
     var key = [view.lo.toFixed(5), view.la.toFixed(5), view.s.toFixed(2), W, H, dpr, S.t.toFixed(3), MET.map(function (m) { return S.show[m[0]] ? 1 : 0; }).join(''), css['--ink'], css['--muted']].join('|');
     if (!metC || metC.width !== cv.width || metC.height !== cv.height) { metC = document.createElement('canvas'); metC.width = cv.width; metC.height = cv.height; metKey = ''; }
     if (key !== metKey) { var keep = ctx, oc = metC.getContext('2d'); oc.setTransform(1, 0, 0, 1, 0, 0); oc.clearRect(0, 0, metC.width, metC.height); oc.setTransform(dpr, 0, 0, dpr, 0, 0); ctx = oc; try { drawMet(); } finally { ctx = keep; } metKey = key; }
@@ -1356,6 +1357,7 @@
     $('sheetX').addEventListener('click', function () { if (WIZ.on && WIZ.back) { var b = WIZ.back; WIZ.back = 0; setTimeout(function () { wizShow(b); }, 0); } });
     $('racesX').addEventListener('click', function () { if (WIZ.on && WIZ.step === 2) wizClose(false); });
     boatWarn();
+    try { if ($('oriBtn')) $('oriBtn').onclick = function () { ORI.mode = ORI.mode === 'north' ? 'course' : ORI.mode === 'course' ? 'route' : 'north'; store('fs-orient', ORI.mode); ORI.sm = null; busy(ORI.mode === 'north' ? 'North up' : ORI.mode === 'course' ? 'Course up: the GPS course over the ground is up (Live GPS on, moving over 1.5 kn); otherwise north up' : 'Route up: the course to the next mark is up'); setTimeout(function () { busy(''); }, 2500); draw(); }; } catch (e) {}
     try { liveSet(); $('liveBtn').onclick = function () { if (LIVE.on) liveStop(); else liveStart(); }; } catch (e) {}
   }
   /* after the race list loads: resume a set-up that moved to another forecast page, or start one for a first-time user */
@@ -1408,6 +1410,7 @@
         if (q[0] === 0) return q[1] >= 0; var r = q[1] / q[0]; if (q[0] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; });
       if (!ok || Math.hypot(dx, dy) * (t1 - t0) < (strong ? 70 : 90)) continue;
       var t = legTxt(a, b), w = ctx.measureText(t).width + 10, mx = x1 + dx * (t0 + t1) / 2, my = y1 + dy * (t0 + t1) / 2;
+      if (ORI.turned) { upright(mx, my, function (ux, uy) { ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(ux - w / 2, uy - 9, w, 18, 9); else ctx.rect(ux - w / 2, uy - 9, w, 18); ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, ux - w / 2 + 5, uy + 0.5); }); continue; }
       ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(mx - w / 2, my - 9, w, 18, 9); else ctx.rect(mx - w / 2, my - 9, w, 18); ctx.fill();
       ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, mx - w / 2 + 5, my + 0.5);
     }
@@ -1533,6 +1536,7 @@
   window.__fsLive = function () { return LIVE.calc ? { plan: LIVE.calc.plan, xte: LIVE.calc.xte, ahead: LIVE.calc.ahead, rejoin: LIVE.calc.rejoin } : null; };   /* for the automatic tests */
   window.__fsPlan = function () { if (!S.sel || !S.sel.r) return null; var p = S.sel.r.path; return { T0: T0, name: S.sel.name, path: p.map(function (q) { return [q.la, q.lo, q.leg || 0]; }), ts: tsOf(p) }; };   /* for the automatic tests */
   window.__fsLine = function () { return LIVE.calc && LIVE.calc.pre ? LIVE.calc.pre.line : null; };   /* for the automatic tests */
+  window.__fsScr = function (la, lo) { var r = $('map').getBoundingClientRect(), x = X(lo), y = Y(la); if (ORI.ang) { var a = -ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; x = ORI.cx + dx * Math.cos(a) - dy * Math.sin(a); y = ORI.cy + dx * Math.sin(a) + dy * Math.cos(a); } return [r.left + x, r.top + y, ORI.mode, Math.round(ORI.ang)]; };   /* for the automatic tests: where a position shows on a turned chart */
   window.__fsEditPts = function () { var r = $('map').getBoundingClientRect(); return S.edit ? S.edit.pts.map(function (q) { return [r.left + X(q.lon), r.top + Y(q.lat), q.name || '']; }) : null; };   /* for the automatic tests */
   function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
@@ -2096,6 +2100,7 @@
     ['Routes', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
+    ['Chart orientation', 'The round compass above the edit button turns the chart. Tap it for North up (the normal chart), Course up (the GPS course over the ground is up, like a car satnav: needs Live GPS on and the boat moving over 1.5 knots, otherwise the chart stays north up and the compass dims) and Route up (the course to the next mark is up; steady through tacks, and it works without GPS). The red tip of the compass always points north. Text stays upright; the scale bar stays square to the screen.'],
     ['Live GPS while racing', 'Tap GPS by the timeline. Route shows the boat from this phone\'s own GPS, no boat wifi needed, with a long track behind it: tap the track for the time, SOG and COG there. It compares the boat with the chosen route: off track left or right, ahead or behind the plan, and the course and distance to where the plan says you should be now. Catch the plan gives the course to steer, speed and time to be level with the plan again, using the wind, tide and your polar now; if you cannot catch it, Back on the track gives the soonest way back onto the planned track. Re-route works out a fresh route from the boat and says how its finish compares. Big shows large numbers for the cockpit; Chart comes back. MIN shrinks the window to a small GPS live pill, green within your alert limits and orange past one, with off track and the minutes; tap the pill to open the window again. The round i on the window explains every figure and button. Set the alerts and the battery mode in Settings, Course, While racing. Keep the screen on: a web page cannot follow the GPS in the background. Heading is the GPS course over the ground. Not for navigation.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
     ['Routing while racing', 'Press From here: Route finds the boat by the phone or tablet GPS and routes from there, from now. If there is no GPS, tap the chart where the boat is. To keep the route fresh, Settings, Course, While racing: choose Every 10, 20 or 30 minutes and Route routes again from the new position on that timer while the screen is on.'],
@@ -2193,7 +2198,9 @@
   }
 
   /* ---------- chart ---------- */
-  var cv = $('map'), ctx = cv.getContext('2d'), W = 0, H = 0, dpr = 1, K = Math.cos(50.1 * R), view = { lo: -0.8, la: 50.15, s: 300 }, fitted = false;
+  var cv = $('map'), ctx = cv.getContext('2d'), FT0 = ctx.fillText, CTX0 = ctx;
+  CTX0.fillText = function (t, x, y, mw) { if (!ORI.ang || !ORI.turned) return mw == null ? FT0.call(CTX0, t, x, y) : FT0.call(CTX0, t, x, y, mw); CTX0.save(); CTX0.translate(x, y); CTX0.rotate(ORI.ang * R); if (mw == null) FT0.call(CTX0, t, 0, 0); else FT0.call(CTX0, t, 0, 0, mw); CTX0.restore(); };   /* text stays upright on a turned chart */
+  var _unused0 = 0, W = 0, H = 0, dpr = 1, K = Math.cos(50.1 * R), view = { lo: -0.8, la: 50.15, s: 300 }, fitted = false;
   function resize() { var r = cv.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); if (!fitted && W) { fit(); fitted = true; } }
   function resizeDraw() { resize(); draw(); }
   /* frame the whole course: start, marks, finish and the forecast band */
@@ -2208,6 +2215,29 @@
   }
   function X(lo) { return (lo - view.lo) * K * view.s + W / 2; }
   function Y(la) { return (view.la - la) * view.s + H / 2; }
+  /* chart orientation (Stuart 12 Nov): North up, Course up (GPS course over the ground) or Route up (the course to the next mark). The world is turned about cx, cy; text stays upright; touches are turned back */
+  var ORI = { mode: (function () { var m = store('fs-orient'); return m === 'course' || m === 'route' ? m : 'north'; })(), ang: 0, cx: 0, cy: 0, pad: 0, sm: null };
+  function oriTarget() {
+    if (ORI.mode === 'course') { var f = LIVE.on && LIVE.fix; return f && f.cog != null && f.sog > 1.5 ? f.cog : null; }
+    if (ORI.mode === 'route') { var la, lo, leg = 0;
+      if (LIVE.on && LIVE.fix) { la = LIVE.fix.la; lo = LIVE.fix.lo; var c0 = LIVE.calc; leg = c0 && c0.xte && S.sel ? (S.sel.r.path[c0.xte.i + 1] || {}).leg || 0 : 0; }
+      else if (S.sel && S.sel.r) { var pp = S.sel.r.path, ps = posAt(tsOf(pp), pp, S.t); if (!ps) ps = { la: pp[0].la, lo: pp[0].lo, i: 0 }; la = ps.la; lo = ps.lo; leg = (pp[Math.min(pp.length - 1, (ps.i || 0) + 1)] || {}).leg || 0; }
+      if (la == null || !S.legs || !S.legs.length) return null; var lg = S.legs[Math.min(leg, S.legs.length - 1)], tg = lg.point || (lg.gate && lg.gate.a); if (!tg) return null;
+      return rhumb({ lat: la, lon: lo }, { lat: tg[0], lon: tg[1] }).brg; }
+    return null;
+  }
+  function oriUpdate() {
+    var t = ORI.mode === 'north' ? null : oriTarget();
+    if (t == null) { ORI.ang = 0; ORI.sm = null; } else { if (ORI.sm == null) ORI.sm = t; else { var d = ((t - ORI.sm + 540) % 360) - 180; ORI.sm = (ORI.sm + d * 0.35 + 360) % 360; } ORI.ang = ORI.sm; }
+    var bp = LIVE.on && LIVE.fix ? { la: LIVE.fix.la, lo: LIVE.fix.lo } : (S.sel && S.sel.r ? posAt(tsOf(S.sel.r.path), S.sel.r.path, S.t) : null);
+    if (ORI.ang && follow && bp) { ORI.cx = X(bp.lo); ORI.cy = Y(bp.la); } else { ORI.cx = W / 2; ORI.cy = H / 2; }
+    ORI.pad = ORI.ang ? Math.ceil(Math.hypot(W, H) / 2) : 0;
+    var rb = $('oriBtn'); if (rb) { rb.querySelector('svg').style.transform = 'rotate(' + (-ORI.ang) + 'deg)'; rb.querySelector('.orl').textContent = ORI.mode === 'north' ? 'N UP' : ORI.mode === 'course' ? 'CRS UP' : 'RTE UP'; rb.classList.toggle('on', ORI.mode !== 'north'); rb.classList.toggle('idle', ORI.mode !== 'north' && !ORI.ang); }
+  }
+  function upright(x, y, fn) { if (!ORI.turned) return fn(x, y); ctx.save(); ctx.translate(x, y); ctx.rotate(ORI.ang * R); ORI.turned = false; try { fn(0, 0); } finally { ORI.turned = true; ctx.restore(); } }   /* draw a label square to the screen on a turned chart */
+  function unrot(x, y) { if (!ORI.ang) return [x, y]; var a = ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; return [ORI.cx + dx * Math.cos(a) - dy * Math.sin(a), ORI.cy + dx * Math.sin(a) + dy * Math.cos(a)]; }   /* a point on the screen to where it is in the north-up chart */
+  function evx(e) { return unrot(e.offsetX, e.offsetY)[0]; }
+  function evy(e) { return unrot(e.offsetX, e.offsetY)[1]; }
   function LO(x) { return (x - W / 2) / (K * view.s) + view.lo; }
   function LA(y) { return view.la - (y - H / 2) / view.s; }
   var depthImg = null;
@@ -2272,6 +2302,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (S.big) { drawBig(); return; }
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
+    oriUpdate(); ORI.turned = !!ORI.ang; if (ORI.ang) { ctx.translate(ORI.cx, ORI.cy); ctx.rotate(-ORI.ang * R); ctx.translate(-ORI.cx, -ORI.cy); }
     baseLand();
     if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     try { drawDepthLines(); } catch (e) {}
@@ -2305,6 +2336,7 @@
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(tsOf(s.r.path), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
     if (S.from) { ctx.strokeStyle = css['--ink']; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(S.from.lon), Y(S.from.lat), 10, 0, 7); ctx.stroke(); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ORI.turned = false;   /* the scale bar stays square to the screen */
     scale();
   }
   /* ---------- traffic separation schemes, keep-out areas, lighthouses and buoys (not for navigation) ---------- */
@@ -2313,7 +2345,7 @@
     fetch('../zones/tss.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { ZONES = j.zones || []; draw(); } }).catch(function () {});
     fetch('../zones/marks.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { LIGHTS = j.marks || []; draw(); } }).catch(function () {});
   }
-  function viewBox() { return { s: LA(H), n: LA(0), w: LO(0), e: LO(W) }; }
+  function viewBox() { if (!ORI.ang) return { s: LA(H), n: LA(0), w: LO(0), e: LO(W) }; var c = [[0, 0], [W, 0], [0, H], [W, H]].map(function (q) { return unrot(q[0], q[1]); }), xs = c.map(function (q) { return q[0]; }), ys = c.map(function (q) { return q[1]; }); return { s: LA(Math.max.apply(null, ys)), n: LA(Math.min.apply(null, ys)), w: LO(Math.min.apply(null, xs)), e: LO(Math.max.apply(null, xs)) }; }
   function ringOn(ring, vb) { for (var i = 0; i < ring.length; i++) { var q = ring[i]; if (q[0] >= vb.s && q[0] <= vb.n && q[1] >= vb.w && q[1] <= vb.e) return true; } var la = 0, lo = 0; ring.forEach(function (q) { la += q[0]; lo += q[1]; }); la /= ring.length; lo /= ring.length; return la > vb.s - 2 && la < vb.n + 2 && lo > vb.w - 3 && lo < vb.e + 3; }
   function hatch(colr) {
     var c = document.createElement('canvas'); c.width = c.height = 10; var g = c.getContext('2d'); g.strokeStyle = colr; g.globalAlpha = 0.55; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, 10); g.lineTo(10, 0); g.moveTo(-2, 2); g.lineTo(2, -2); g.moveTo(8, 12); g.lineTo(12, 8); g.stroke(); return ctx.createPattern(c, 'repeat');
@@ -2367,9 +2399,10 @@
     ctx.strokeStyle = css['--ink']; ctx.globalAlpha = 0.08; ctx.lineWidth = 1; ctx.font = '10px "JetBrains Mono", monospace'; ctx.fillStyle = css['--muted'];
     var step = [1 / 60, 1 / 30, 1 / 12, 1 / 6, 0.25, 0.5, 1, 2, 5, 10].find(function (s) { return s * view.s > 90; }) || 10;
     ctx.beginPath();
-    for (var lo = Math.ceil(LO(0) / step) * step; lo < LO(W); lo += step) { ctx.moveTo(X(lo), 0); ctx.lineTo(X(lo), H); }
-    for (var la = Math.ceil(LA(H) / step) * step; la < LA(0); la += step) { ctx.moveTo(0, Y(la)); ctx.lineTo(W, Y(la)); }
-    ctx.stroke(); ctx.globalAlpha = 1;
+    var gb = viewBox(), gy0 = Y(gb.n), gy1 = Y(gb.s), gx0 = X(gb.w), gx1 = X(gb.e);
+    for (var lo = Math.ceil(gb.w / step) * step; lo < gb.e; lo += step) { ctx.moveTo(X(lo), gy0); ctx.lineTo(X(lo), gy1); }
+    for (var la = Math.ceil(gb.s / step) * step; la < gb.n; la += step) { ctx.moveTo(gx0, Y(la)); ctx.lineTo(gx1, Y(la)); }
+    ctx.stroke(); ctx.globalAlpha = 1; if (ORI.ang) return;   /* edge labels only when north is up */
     for (lo = Math.ceil(LO(0) / step) * step; lo < LO(W); lo += step) ctx.fillText(dm(lo, 'EW'), X(lo) + 3, H - 6);
     for (la = Math.ceil(LA(H) / step) * step; la < LA(0); la += step) ctx.fillText(dm(la, 'NS'), 4, Y(la) - 3);
   }
@@ -2402,7 +2435,7 @@
     var now = performance.now();
     if (kind === 'wind' && (sym === 'W2' || sym === 'W6')) BB = { l: new Path2D(), f: new Path2D() };
     var off = kind === 'tide' ? sp / 2 : 0;
-    for (var y = 80 + off; y < H; y += sp) for (var x = sp / 2 + off; x < W; x += sp) {
+    for (var y = 80 + off - ORI.pad; y < H + ORI.pad; y += sp) for (var x = sp / 2 + off - ORI.pad; x < W + ORI.pad; x += sp) {
       var la = LA(y), lo = LO(x);
       if (kind === 'tide') { if (!P.depth || !(P.depth.nearest('z', la, lo) < 0)) continue; }
       else if (coastLand(la, lo)) continue;   /* wind symbols only over the sea */
@@ -2441,7 +2474,8 @@
   }
   /* which way round: a red PORT or green STBD tag under each mark's name (Stuart 12 Nov); "?" where the side is assumed, not from the sailing instructions */
   function sideTag(m, x, y) {
-    if (!m.side) return; var pt = m.side !== 'starboard', night = document.documentElement.hasAttribute('data-night'), t = (pt ? '◀ PORT' : 'STBD ▶') + (m.sideAssumed ? ' ?' : '');
+    if (!m.side) return; if (ORI.turned) return upright(x, y, function (a, b) { ORI.turned = false; sideTag(m, a, b); });
+    var pt = m.side !== 'starboard', night = document.documentElement.hasAttribute('data-night'), t = (pt ? '◀ PORT' : 'STBD ▶') + (m.sideAssumed ? ' ?' : '');
     ctx.save(); ctx.font = '700 9.5px Inter, sans-serif'; var w = ctx.measureText(t).width + 10, colr = night ? css['--ink'] : pt ? '#E5484D' : '#30A46C';
     ctx.fillStyle = colr; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, 15, 7.5); else ctx.rect(x, y, w, 15); ctx.fill();
     ctx.fillStyle = night ? css['--panel'] : '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(t, x + 5, y + 8); ctx.restore();
@@ -2594,10 +2628,10 @@
 
   /* ---------- pointer ---------- */
   var ptrs = new Map(), pinch = 0, pmid = null, moved = 0;
-  cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
+  cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(evx(e), evy(e), e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
   function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(20000, view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
   cv.addEventListener('dblclick', function () { fit(); draw(); });
-  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(e.offsetX, e.offsetY) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
+  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
   /* two fingers move the chart as well as zoom it, like a map app (Stuart 12 Nov): read both fingers together once a frame */
   var pairRaf = 0;
   function pairNow() { var v = Array.from(ptrs.values()); return { x: (v[0][0] + v[1][0]) / 2, y: (v[0][1] + v[1][1]) / 2, d: Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]) }; }
@@ -2610,10 +2644,10 @@
     pmid = q;
   }
   cv.addEventListener('pointermove', function (e) {
-    if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse' && ($('tip').hidden || !$('tip').classList.contains('docked'))) hover(e.offsetX, e.offsetY, false); return; }   /* a tip pinned by a click stays until closed */
-    var prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
-    if (S.drag != null && ptrs.size === 1) { var dq = S.edit.pts[S.drag]; dq.lat = +LA(e.offsetY).toFixed(5); dq.lon = +LO(e.offsetX).toFixed(5); moved = 99; draw(); return; }
-    if (ptrs.size === 1) { var dx = e.offsetX - prev[0], dy = e.offsetY - prev[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 6) { if (follow) followSet(false); view.lo -= dx / (K * view.s); view.la += dy / view.s; draw(); if (e.pointerType === 'mouse') $('tip').hidden = true; } return; }
+    if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse' && ($('tip').hidden || !$('tip').classList.contains('docked'))) hover(evx(e), evy(e), false); return; }   /* a tip pinned by a click stays until closed */
+    var prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [evx(e), evy(e)]);
+    if (S.drag != null && ptrs.size === 1) { var dq = S.edit.pts[S.drag]; dq.lat = +LA(evy(e)).toFixed(5); dq.lon = +LO(evx(e)).toFixed(5); moved = 99; draw(); return; }
+    if (ptrs.size === 1) { var dx = evx(e) - prev[0], dy = evy(e) - prev[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 6) { if (follow) followSet(false); view.lo -= dx / (K * view.s); view.la += dy / view.s; draw(); if (e.pointerType === 'mouse') $('tip').hidden = true; } return; }
     moved = 99; if (!pmid) { pmid = pairNow(); return; } if (!pairRaf) pairRaf = requestAnimationFrame(pairApply);   /* both fingers together, once a frame */
   });
   /* iPhone and iPad Safari: take the pinch from its own gesture events and stop it zooming the whole page */
@@ -2627,7 +2661,7 @@
   }
   cv.addEventListener('pointerup', function (e) {
     if (S.drag != null && moved < 6) { var ti = S.drag; S.drag = null; S.edit.hist.pop(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; markCard(ti); draw(); return; }   /* a tap on a mark, not a drag: open its card */
-    if (S.drag != null) { var dq = S.edit.pts[S.drag]; if (!editOk(dq.lat, dq.lon)) { Object.assign(dq, S.dragFrom); S.edit.hist.pop(); } S.drag = null; editPrompt(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; draw(); return; } if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(e.offsetX, e.offsetY, e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
+    if (S.drag != null) { var dq = S.edit.pts[S.drag]; if (!editOk(dq.lat, dq.lon)) { Object.assign(dq, S.dragFrom); S.edit.hist.pop(); } S.drag = null; editPrompt(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; draw(); return; } if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(evx(e), evy(e), e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
   cv.addEventListener('pointercancel', function (e) { ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
