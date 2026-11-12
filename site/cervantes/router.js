@@ -82,6 +82,13 @@
 
   /* wind sampler for one model or the mean of several; returns [tws kn, twd deg from] */
   function windSampler(P, ids) {
+    if (ids[0] === 'chain') {   /* finest first: at each point and hour, the highest-resolution model that covers it, then the next (NavimetriX-style hand-over) */
+      var ch = ids.slice(1).map(function (i) { return P.wind[i]; }).filter(Boolean), fb = windSampler(P, ids.slice(1));
+      return function (la, lo, t) {
+        for (var i = 0; i < ch.length; i++) { var f = ch[i], h = f.hours; if (h && h.length > 1 && t > h[h.length - 1]) continue; var a = f.sample('u', la, lo, t), b = f.sample('v', la, lo, t); if (a === a && b === b) return [Math.sqrt(a * a + b * b) / KN, (Math.atan2(-a, -b) / R + 360) % 360]; }
+        return fb(la, lo, t);
+      };
+    }
     var fs = ids.map(function (i) { return P.wind[i]; }).filter(Boolean), all = Object.keys(P.wind).map(function (k) { return P.wind[k]; });
     function live(f, t) { var h = f.hours; return !h || h.length < 2 || t <= h[h.length - 1] + 1; }
     return function (la, lo, t) {

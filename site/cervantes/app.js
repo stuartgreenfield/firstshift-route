@@ -3,7 +3,7 @@
   var VERSION = 'FirstShift Route v0.5.1';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
-  var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]] };
+  var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
   var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true, lay: true }, choice: {}, loaded: {} };
   var css = {};
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -340,7 +340,7 @@
   function clockAbs(epoch) { var d = new Date(epoch * 1000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
   function clockH(h) { return clockAbs(T0 + h * 3600); }
   function fmtH(h) { var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0'); }
-  function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE', om: 'Open-Meteo' }[id] || id; }
+  function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE', om: 'Open-Meteo', chain: 'Finest first' }[id] || id; }
   /* Progress card. Nielsen Norman Group: waits of 2 to 10 seconds get a looped indicator, longer ones a percent-done bar with a step count
      and a rough time left (Katie Sherwin, "Progress Indicators Make a Slow System Less Insufferable", 2014). */
   var PG = { t0: 0, est: 0 };
@@ -1241,6 +1241,8 @@
       if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180 });   /* quick first pass: about a sixth of the work */
       var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
+      var FINE = ['ukv', 'arome', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends */
+      if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       var jobs = sets.length * 2 + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
       var tick = function () { done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
