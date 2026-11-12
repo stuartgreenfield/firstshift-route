@@ -3,7 +3,7 @@ Runs on GitHub Actions every six hours; also runs on a laptop. Usage: python3 sc
 import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area', 'irishsea-area', 'biscay-area']
-SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet', 'mars']
+SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet', 'mars', 'ens']
 
 def cycles(lag_h=7, n=4):
     """Latest 00/06/12/18 UTC cycles that should be published by now, newest first."""
@@ -25,7 +25,7 @@ for race in RACES:
     def one(src):
         if src == 'mars' and (b['s'] > 50.0 or b['n'] < 48.6 or b['w'] > -1.2 or b['e'] < -3.3): return   # the 250 m model only covers the western Channel
         for i, c in enumerate(cyc):
-            if src in ('ecmwf', 'ecwav', 'ecmet') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
+            if src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)
             t1 = time.time()

@@ -94,6 +94,9 @@ for k, name, note, sp in [('nwswav', 'Copernicus NW Shelf waves', 'height, direc
 add('met', 'ecmet', 'ECMWF weather', 'gusts, pressure, rain, thunderstorm energy, cloud and air temperature; 0.25°, 3-hourly', ['gust', 'msl', 'rain', 'cape', 'cloud', 'temp'],
     dict(gust=0.01, msl=0.1, rain=0.01, cape=1.0, cloud=1.0, temp=0.01), 1, 6)
 
+for m in range(1, 11):   # ECMWF ensemble members: routed only when you ask for the ensemble
+    add('ens', f'e{m:02d}', f'ECMWF ensemble member {m}', '0.25°, 6-hourly then 12-hourly', ['u', 'v'], dict(u=0.01, v=0.01), 1, 1)
+
 # depth and coast are static for the race area
 for f in os.listdir(ST):
     if f.endswith('.wasm') or f.endswith('-runs.json'): shutil.copy(os.path.join(ST, f), OUT)

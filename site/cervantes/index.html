@@ -393,6 +393,10 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <h4 class="xh">Compare the routes</h4>
       <div class="tw"><table id="compare"></table></div>
       <p class="note">Each route sailed in its own forecast: time on each point of sail, the most wind and sea it meets, and the work for the crew. Upwind is under 60° true wind angle, downwind over 120°.</p>
+      <h4 class="xh">How sure is the forecast?</h4>
+      <p class="note">The ECMWF ensemble: the same model run 10 times with small changes to today's weather. Route sails your course in each one. When the 10 routes and finish times agree, trust the forecast; when they spread, keep your options open.</p>
+      <div class="xrow"><button class="btn" id="ensRun">Route the ensemble</button></div>
+      <div id="ensOut"></div>
       <h4 class="xh">When to leave</h4>
       <p class="note">For a delivery, a qualifier or your own course: the chosen route's models, routed from starts every 6 hours across the forecast. A quick route for each start, so allow a few minutes either way.</p>
       <div class="xrow"><button class="btn" id="depRun">Compare start times</button></div>

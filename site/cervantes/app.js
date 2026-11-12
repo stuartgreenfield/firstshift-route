@@ -101,6 +101,7 @@
     if (!meta) return;
     var tot = 0, now = Date.now(), h = '<tr><th>Layer</th><th>Version</th><th>Grid</th><th>Step</th><th>Size</th></tr>', kinds = { wind: 'Wind', tide: 'Tide', wave: 'Sea state', depth: 'Depth', met: 'Weather' };
     meta.layers.forEach(function (L) {
+      if (L.kind === 'ens') return;   /* the ensemble members load only when asked for, from the Routes tab */
       var c = S.choice[L.id] || 'off', v = L[c === 'off' ? 'full' : c], loaded = S.loaded[L.id];
       if (c !== 'off' && loaded !== c) tot += L[c].gz;
       h += '<tr><td style="font-family:var(--f-body)">' + kinds[L.kind] + ': ' + L.name + (loaded ? ' <span class="pill">on device</span>' : '') + '</td><td><select data-dl="' + L.id + '" aria-label="' + L.name + '">' +
@@ -772,6 +773,31 @@
     out.push((risks.length ? 'Watch for ' + risks.join(' and ') + '. ' : '') + (st.sails ? st.sails + ' sail changes' : 'No sail changes') + (st.reefs ? ' and ' + st.reefs + ' reef changes' : '') + ' in all. Planning aid, not for navigation.');
     return out.join('\n\n');
   }
+  /* ensemble: route the course in each ECMWF ensemble member (quick routes), draw them as a spaghetti and give the spread of finish times */
+  function ensRun() {
+    var ids = meta.layers.filter(function (L) { return L.kind === 'ens'; }).map(function (L) { return L.id; });
+    if (!ids.length) { $('ensOut').innerHTML = '<p class="note">The ensemble is not on the server for this page yet: it comes with the next forecast build.</p>'; return; }
+    if (S.running || S.ensBusy) return; S.ensBusy = true; $('ensRun').textContent = 'Downloading the ensemble…';
+    ids.forEach(function (id) { if (!S.loaded[id]) S.choice[id] = 'full'; });
+    download().then(function () {
+      var base = Object.assign(opts(ids.slice(0, 1)), { dt: 1200, hstep: 10, sectors: 180 }), st = startPt(), legs = legsFor(S.from), done = 0;
+      $('ensRun').textContent = 'Routing 0 of ' + ids.length + '…';
+      return Promise.all(ids.map(function (id) { return pool({ type: 'route', o: Object.assign({}, base, { models: [id], start: st, legs: legs }) }).then(function (r) { done++; $('ensRun').textContent = 'Routing ' + done + ' of ' + ids.length + '…'; return { id: id, r: r }; }, function (e) { done++; return { id: id, err: e.message }; }); }));
+    }).then(function (res) {
+      S.ensBusy = false; $('ensRun').textContent = 'Route the ensemble again';
+      S.ens = res.filter(function (x) { return x.r; });
+      var fin = S.ens.filter(function (x) { return !x.r.partial; }).map(function (x) { return x.r.finish; }).sort(function (a, b) { return a - b; }), part = S.ens.length - fin.length;
+      if (!fin.length) { $('ensOut').innerHTML = '<p class="note">The ensemble forecasts end before any member finishes' + (part ? ' (' + part + ' routes shown as far as they reach)' : '') + '.</p>'; draw(); return; }
+      var med = fin[Math.floor(fin.length / 2)], spread = fin[fin.length - 1] - fin[0];
+      $('ensOut').innerHTML = '<div class="fit ' + (spread < 3 ? 'ok' : spread < 8 ? 'tight' : 'no') + '"><b>' + (spread < 3 ? 'The members agree.' : spread < 8 ? 'Some spread between the members.' : 'The members disagree.') + '</b> Fastest finish ' + clockH(fin[0]).slice(4) + ', middle ' + clockH(med).slice(4) + ', slowest ' + clockH(fin[fin.length - 1]).slice(4) + ' UTC: a spread of ' + fmtH(spread) + '.' + (part ? ' ' + part + ' of the members run out of forecast before the finish.' : '') + ' The thin grey lines on the chart are the ' + S.ens.length + ' ensemble routes.</div>';
+      draw();
+    }).catch(function (e) { S.ensBusy = false; $('ensRun').textContent = 'Route the ensemble'; $('ensOut').innerHTML = '<p class="note">' + e.message + '</p>'; });
+  }
+  function drawEns() {
+    if (!S.ens || !S.ens.length) return; ctx.save(); ctx.strokeStyle = css['--muted'] || '#9AAEBB'; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.55; ctx.setLineDash([]);
+    S.ens.forEach(function (x) { var p = x.r.path; ctx.beginPath(); for (var i = 0; i < p.length; i++) { var X1 = X(p[i].lo), Y1 = Y(p[i].la); if (i) ctx.lineTo(X1, Y1); else ctx.moveTo(X1, Y1); } ctx.stroke(); });
+    ctx.restore();
+  }
   /* departure planning: the chosen route's models from starts every 6 hours (quick routes), finish and elapsed for each */
   function depRun() {
     var s = S.sel, r = startRange(); if (!s || !r) { $('depTable').innerHTML = '<tr><td>Route first.</td></tr>'; return; }
@@ -794,7 +820,7 @@
       .then(function () { S.depBusy = false; $('depRun').textContent = 'Compare start times'; });
   }
   function askInit() {
-    $('depRun').onclick = depRun;
+    $('depRun').onclick = depRun; $('ensRun').onclick = ensRun;
     [].forEach.call($('askRow').querySelectorAll('[data-q]'), function (b) { b.onclick = function () { $('askTxt').textContent = ask(b.dataset.q); $('askAns').hidden = false; }; });
     $('askSay').onclick = function () { try { if (speechSynthesis.speaking) { speechSynthesis.cancel(); $('askSay').textContent = 'Read it out'; return; } var u = new SpeechSynthesisUtterance($('askTxt').textContent.replace(/°/g, ' degrees').replace(/UTC/g, 'U T C')); var v = voice(); if (v) u.voice = v; u.lang = v ? v.lang : 'en-GB'; u.onend = u.onerror = function () { $('askSay').textContent = 'Read it out'; }; speechSynthesis.speak(u); $('askSay').textContent = 'Stop reading'; } catch (e) {} };
   }
@@ -1245,6 +1271,7 @@
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
     if (startGate()) { busy(''); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); wizShow(1); } return; }
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
+    S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
@@ -1582,6 +1609,7 @@
     if (S.mob) mobDraw();
     if (S.edit && myRegion()) { var rb = myRegion().region; ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]); ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.restore(); }   /* the area a new course must stay inside */
     try { drawMet(); } catch (e) {}
+    try { drawEns(); } catch (e) {}
     try { drawIso(); } catch (e) {}
     if (S.show.lay) { try { laylines(); } catch (e) {} }
     var ab = $('adjWhere') && $('adjWhere').value === 'box' ? adjBox() : null;   /* the area of a forecast override */

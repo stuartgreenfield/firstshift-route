@@ -44,7 +44,8 @@ def cached(key, fn):
 
 
 # ---------- GRIB (ECMWF open data, GFS) ----------
-def grib_crop(buf):
+def grib_crop(buf, box=None):
+    B_ = box or BOX
     import eccodes
     h = eccodes.codes_new_from_message(buf)
     ni, nj = eccodes.codes_get(h, 'Ni'), eccodes.codes_get(h, 'Nj')
@@ -54,8 +55,8 @@ def grib_crop(buf):
     v = eccodes.codes_get_values(h).reshape(nj, ni); eccodes.codes_release(h)
     lat = la1 - np.arange(nj) * dj if scan_neg else la1 + np.arange(nj) * dj
     lon = (lo1 + np.arange(ni) * di + 180) % 360 - 180
-    iy = np.where((lat >= BOX['s'] - .3) & (lat <= BOX['n'] + .3))[0]
-    ix = np.where((lon >= BOX['w'] - .3) & (lon <= BOX['e'] + .3))[0]
+    iy = np.where((lat >= B_['s'] - .3) & (lat <= B_['n'] + .3))[0]
+    ix = np.where((lon >= B_['w'] - .3) & (lon <= B_['e'] + .3))[0]
     oy = np.argsort(lat[iy]); ox = np.argsort(lon[ix])
     return v[np.ix_(iy[oy], ix[ox])].astype('f4'), lat[iy][oy], lon[ix][ox]
 
@@ -307,6 +308,36 @@ if __name__ == '__main__':
             S, D, h, g = metoffice('uk-deterministic-2km' if s == 'ukv' else 'global-deterministic-10km')
             u, v, la, lo = regrid_mo(S, D, g, 0.02 if s == 'ukv' else 0.1)
             save(s, u=u, v=v, hours=h, lat=la, lon=lo)
+        elif s == 'ens':   # ECMWF ensemble: 10 of its 50 members, wind only, 6-hourly to 144 h then 12-hourly to 240 h; downloaded once for the whole area, cut per page
+            from concurrent.futures import ThreadPoolExecutor
+            base = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'; d, r = RUN; NM = 10
+            steps = [h for h in HOURS_LONG if (h % 6 == 0 and h <= 144) or (h % 12 == 0 and h <= 240)]
+            def one_step(hh):
+                stem = f'{d}/{r}z/ifs/0p25/enfo/{d}{r}0000-{hh}h-enfo-ef'
+                try: idx = [json.loads(l) for l in get(f'{base}/{stem}.index', tries=3).decode().splitlines() if l.strip().startswith('{')]
+                except Exception: return hh, None
+                got = {}
+                for x in idx:
+                    if x.get('param') not in ('10u', '10v') or x.get('type') != 'pf' or not (1 <= int(x.get('number', 0)) <= NM): continue
+                    k = (int(x['number']), x['param']); p_ = os.path.join(SHARED, f'ens_{d}{r}_{hh:03d}_{k[0]:02d}_{k[1]}.npz')
+                    if not os.path.exists(p_):
+                        buf = get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1))
+                        a, la, lo = grib_crop(buf, AREA); np.savez(p_, a=a, la=la, lo=lo)
+                    got[k] = p_
+                return hh, got
+            with ThreadPoolExecutor(6) as ex: res = sorted(ex.map(one_step, steps))
+            res = [(hh, g) for hh, g in res if g and len(g) == 2 * NM]
+            if len(res) < 3: raise SystemExit('ens: too few steps')
+            hrs = np.array([hh for hh, _ in res]); lat = lon = None; U = [[] for _ in range(NM)]; V = [[] for _ in range(NM)]
+            for hh, g in res:
+                for m in range(1, NM + 1):
+                    for prm, L_ in (('10u', U), ('10v', V)):
+                        z = np.load(g[(m, prm)]); la, lo = z['la'], z['lo']
+                        iy = np.where((la >= BOX['s'] - .3) & (la <= BOX['n'] + .3))[0]; ix = np.where((lo >= BOX['w'] - .3) & (lo <= BOX['e'] + .3))[0]
+                        L_[m - 1].append(z['a'][np.ix_(iy, ix)]); lat, lon = la[iy], lo[ix]
+            for m in range(NM): save(f'e{m + 1:02d}', u=np.array(U[m]), v=np.array(V[m]), hours=hrs, lat=lat, lon=lon)
+            save(s, hours=hrs, members=np.array(NM))
+            print('ens', len(hrs), 'steps', NM, 'members')
         elif s == 'mars':   # Ifremer MARS2D western Channel, 250 m tidal streams (Licence Ouverte), read at 500 m round the Channel Islands and Cherbourg
             import netCDF4
             ds = netCDF4.Dataset('https://tds1.ifremer.fr/thredds/dodsC/MARC-MANW250-L1_MARS2D-FOR_FULL_TIME_SERIE')

@@ -73,7 +73,7 @@
   }
 
   function addLayer(P, L, buf) { var f = Field(L, buf); if (L.kind === 'depth') P.depth = f; else (P[L.kind] = P[L.kind] || {})[L.id] = f; return f; }
-  function emptyPack() { return { wind: {}, tide: {}, wave: {}, met: {}, depth: null }; }
+  function emptyPack() { return { wind: {}, tide: {}, wave: {}, met: {}, ens: {}, depth: null }; }
   function loadPack(meta, bin) {
     var P = { meta: meta, wind: {}, tide: {}, wave: {}, met: {}, depth: null };
     meta.layers.forEach(function (L) { var f = Field(L, bin); if (L.kind === 'depth') P.depth = f; else P[L.kind][L.id] = f; });
@@ -89,7 +89,7 @@
         return fb(la, lo, t);
       };
     }
-    var fs = ids.map(function (i) { return P.wind[i]; }).filter(Boolean), all = Object.keys(P.wind).map(function (k) { return P.wind[k]; });
+    var fs = ids.map(function (i) { return P.wind[i] || (P.ens && P.ens[i]); }).filter(Boolean), all = Object.keys(P.wind).map(function (k) { return P.wind[k]; });
     function live(f, t) { var h = f.hours; return !h || h.length < 2 || t <= h[h.length - 1] + 1; }
     return function (la, lo, t) {
       var u = 0, v = 0, n = 0, use = fs.filter(function (f) { return live(f, t); });
