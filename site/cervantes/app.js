@@ -510,7 +510,7 @@
         else if (last.race && last.race !== want && RACES.some(function (r) { return r.id === last.race && (r.page || r.id) === HERE; })) { $('raceSel').value = last.race; applyRace(last.race); }
         if (last.start) S.pendingStart = last.start;
       }
-      if (my) setTimeout(function () { openMy(my); if (last && last.start && [].some.call($('startSel').options, function (o) { return o.value === last.start; })) { $('startSel').value = last.start; } }, 0);
+      if (my) setTimeout(function () { openMy(my, true); if (last && last.start && [].some.call($('startSel').options, function (o) { return o.value === last.start; })) { $('startSel').value = last.start; } }, 0);
       wizBoot(qs);
       if (S.pendingCourse) { applyCourseObj(asRace(S.pendingCourse)); S.pendingCourse = null; }
       if (S.pendingStart && [].some.call($('startSel').options, function (o) { return o.value === S.pendingStart; })) $('startSel').value = S.pendingStart; S.pendingStart = null;
@@ -890,10 +890,10 @@
   function setShort(t) { $('raceTitle').setAttribute('data-short', t); $('raceShort').textContent = t; }   /* a real element: Safari does not always redraw text taken from an attribute */
   function lastGet() { try { return JSON.parse(store('fs-last-' + HERE) || 'null'); } catch (e) { return null; } }
   function lastSet(o) { if (S.booting) return; var old = lastGet() || {}; o.start = o.start || (old.race === o.race && old.my === o.my ? old.start : null); store('fs-last-' + HERE, JSON.stringify(o)); }
-  function openMy(id) {
+  function openMy(id, boot) {
     var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
-    if (rec.page && rec.page !== HERE) { location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
-    S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); $('races').hidden = true; if (wizCourseChosen(true)) return; S.from = null; run();
+    if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '3'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
+    S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
   function racesSheet() {
     var c = meta.course, mine = myRaces(), h = '';
@@ -912,7 +912,7 @@
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
       setMyRaces(myRaces().filter(function (x) { return x.id !== b.dataset.del; })); if (S.myId === b.dataset.del) S.myId = null; racesSheet(); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-race]'), function (b) { b.onclick = function () {
-      var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { location.href = '../' + pg + '/' + (pg !== id ? '?race=' + id : ''); return; }
+      var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { try { sessionStorage.setItem('fs-wiz', '3'); } catch (e) {} location.href = '../' + pg + '/?race=' + encodeURIComponent(id); return; }
       S.myId = null; applyRace(id); $('races').hidden = true; if (wizCourseChosen(false)) return; if (!courseIssue(meta.course)) { S.from = null; run(); } };
     });
   }
@@ -953,7 +953,8 @@
     WIZ.on = false; S.wizHold = false; $('wiz').hidden = true; $('wizBar').hidden = true; $('races').hidden = true; store('fs-wizdone', '1'); wizSave(); boatWarn();
     if (route) { S.from = null; run(); }
   }
-  function wizCourseChosen(fromEditor) { if (!WIZ.on) return false; wizShow(fromEditor ? 4 : 3); return true; }
+  /* every race or course you choose goes through start, fleet and check before it routes (Stuart 12 Nov), whether or not the set-up was open */
+  function wizCourseChosen(fromEditor) { if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor ? 4 : 3); return true; }
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
     WIZ.step = n; wizSave();
@@ -1044,7 +1045,7 @@
   /* after the race list loads: resume a set-up that moved to another forecast page, or start one for a first-time user */
   function wizBoot(qs) {
     var st = 0; try { st = +(sessionStorage.getItem('fs-wiz') || 0); } catch (e) {}
-    if (st) { WIZ.on = true; S.wizHold = true; setTimeout(function () { wizShow(st === 2 && (qs.get('race') || qs.get('my')) ? (qs.get('my') ? 4 : 3) : st); }, 300); return; }
+    if (st) { WIZ.on = true; S.wizHold = true; setTimeout(function () { wizShow((st === 2 || st === 3) && (qs.get('race') || qs.get('my')) ? 3 : st); }, 300); return; }
     if (!store('fs-wizdone') && !qs.get('course') && !qs.get('my') && !qs.get('race') && !boatIsSet()) setTimeout(function () { wizOpen(1); }, 300);
   }
   var REGIONS = [];
