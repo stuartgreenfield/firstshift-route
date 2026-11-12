@@ -1005,8 +1005,34 @@
     if (courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
     S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
-  function racesSheet() {
+  function racesSheet(mode) {
     var c = meta.course, mine = myRaces(), h = '';
+    $('racesH').textContent = mode === 'new' ? 'Start new course' : mode === 'saved' ? 'Saved routes' : mode === 'rorc' ? 'RORC races' : 'Races';
+    if (mode === 'new') {   /* one question, then the whole area and the set-up steps */
+      h = '<p class="note">The routes on the chart now are kept under Saved routes.</p>' +
+        '<div class="ritem"><div><b>A RORC race</b><span class="note">Pick from the RORC course library, then the set-up steps</span></div><div class="xrow"><button class="btn primary" id="nRorc">Choose a RORC race</button></div></div>' +
+        '<div class="ritem"><div><b>Draw my own course</b><span class="note">The whole forecast area opens; tap the start, the marks and the finish</span></div><div class="xrow"><button class="btn primary" id="nDraw">Draw a course</button></div></div>';
+      $('raceList').innerHTML = h;
+      $('nRorc').onclick = function () { archiveRoutes(); $('races').hidden = true; S.drawnNew = true; wizOpen(2); };
+      $('nDraw').onclick = function () { $('races').hidden = true; newCourse(); };
+      return;
+    }
+    if (mode === 'saved') {   /* one list, newest first: courses you saved and routes kept when you started something new */
+      var all = mine.map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || (r.course ? courseNm(r.course) + ' nm' : ''), on: r.id === S.myId }; })
+        .concat(oldRoutes().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary }; }))
+        .sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+      h = all.length ? all.map(function (x) { return '<div class="ritem' + (x.on ? ' on' : '') + '"><div><b>' + wizEsc(x.name) + '</b><span class="note">' + (x.at ? new Date(x.at).toUTCString().slice(5, 22) : '') + (x.sum ? ' · ' + wizEsc(x.sum) : '') + (x.kind === 'old' ? ' · routes kept' : ' · your course') + '</span></div><div class="xrow"><button class="btn" data-sv="' + x.kind + ':' + x.id + '">Open</button><button class="btn" data-svdel="' + x.kind + ':' + x.id + '">Delete</button></div></div>'; }).join('')
+        : '<p class="note">Nothing saved yet. Routes are kept here when you start a new course, and courses you draw are saved here too.</p>';
+      $('raceList').innerHTML = h;
+      [].forEach.call($('raceList').querySelectorAll('[data-sv]'), function (b) { b.onclick = function () { var k = b.dataset.sv.split(':'); if (k[0] === 'old') openOld(k[1]); else { archiveRoutes(); openMy(k[1]); } }; });
+      [].forEach.call($('raceList').querySelectorAll('[data-svdel]'), function (b) { b.onclick = function () {
+        if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
+        var k = b.dataset.svdel.split(':');
+        if (k[0] === 'old') store('fs-oldroutes', JSON.stringify(oldRoutes().filter(function (x) { return x.id !== k[1]; })));
+        else { setMyRaces(myRaces().filter(function (x) { return x.id !== k[1]; })); if (S.myId === k[1]) S.myId = null; }
+        racesSheet('saved'); }; });
+      return;
+    }
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
@@ -1240,7 +1266,18 @@
   function racesInit() {
     fetch('../status.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { Object.keys(j.sources || {}).forEach(function (k) { READY[k.split(':')[0]] = true; }); }).catch(function () { READY[HERE] = true; });
     READY[HERE] = true;
-    $('raceBtn').onclick = function () { if (store('fs-wizdone')) wizOpen(2); else { racesSheet(); $('races').hidden = false; } };
+    /* the race box next to the logo opens a short menu (Stuart 12 Nov): new course, saved routes, RORC races, edit */
+    $('raceBtn').onclick = function (e) {
+      var m = $('raceMenu'); if (!m.hidden) { m.hidden = true; return; }
+      var n = myRaces().length + oldRoutes().length; $('rmSaved').textContent = '☰ Saved routes' + (n ? ' (' + n + ')' : '');
+      var r = $('raceBtn').getBoundingClientRect(); m.style.left = Math.max(8, Math.min(innerWidth - 250, r.left)) + 'px'; m.style.top = (r.bottom + 6) + 'px'; m.style.bottom = ''; m.hidden = false; if (e) e.stopPropagation();
+    };
+    ['raceTitle', 'raceShort'].forEach(function (id) { $(id).onclick = function (e) { $('raceBtn').onclick(e); }; });   /* the name itself is a tap target, so a phone does not nudge the tap onto the start chip below it */
+    document.addEventListener('click', function (e) { var m = $('raceMenu'); if (!m.hidden && !m.contains(e.target) && !$('raceBtn').contains(e.target)) m.hidden = true; });
+    $('rmNew').onclick = function () { $('raceMenu').hidden = true; racesSheet('new'); $('races').hidden = false; };
+    $('rmSaved').onclick = function () { $('raceMenu').hidden = true; racesSheet('saved'); $('races').hidden = false; };
+    $('rmRorc').onclick = function () { $('raceMenu').hidden = true; if (store('fs-wizdone')) wizOpen(2); else { racesSheet('rorc'); $('races').hidden = false; } };
+    $('rmEdit').onclick = function () { $('raceMenu').hidden = true; startEdit(courseCopy()); };
     $('dataChip').addEventListener('click', function (e) { e.stopPropagation(); });
     $('racesX').onclick = function () { $('races').hidden = true; };
     $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };

@@ -286,7 +286,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .adjpill{position:absolute;left:var(--gut);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:calc(100% - var(--gut) - var(--gutR));background:var(--panel);border:1px solid #F0A43A;border-radius:10px;padding:6px 8px 6px 12px;font-size:13px}.adjpill[hidden]{display:none!important}.adjpill .btn{min-height:34px;padding:4px 10px}
 .offb{font:700 10px var(--f-data);letter-spacing:.06em;text-transform:uppercase;color:#1b1200;background:#F0A43A;border-radius:6px;padding:2px 6px;margin-left:8px;align-self:center;flex:none}.offb[hidden]{display:none!important}
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.offb{position:static;margin:0 0 0 6px;font-size:10px;padding:3px 6px}}
-.modemenu{position:fixed;z-index:25;display:grid;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:180px}.modemenu[hidden]{display:none!important}.modemenu button{border:0;background:none;color:var(--ink);text-align:left;padding:10px 12px;border-radius:8px;font:600 14px var(--f-body);cursor:pointer}.modemenu button[aria-pressed="true"]{background:var(--soft);color:var(--brand)}
+.modemenu{position:fixed;z-index:25;display:grid;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:180px}.modemenu[hidden]{display:none!important}.racemenu{min-width:240px}.racemenu button{font-size:16px;padding:13px 14px;min-height:46px}.modemenu button{border:0;background:none;color:var(--ink);text-align:left;padding:10px 12px;border-radius:8px;font:600 14px var(--f-body);cursor:pointer}.modemenu button[aria-pressed="true"]{background:var(--soft);color:var(--brand)}
 .xh{font:600 14px var(--f-head);margin:14px 0 4px}
 .askrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.askrow .btn{min-height:36px;padding:6px 10px;font-size:13px}.ans{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:grid;gap:8px}.ans p{margin:0;font-size:14px;line-height:1.5}.ans .btn{justify-self:start}
 .bcode{font:700 16px var(--f-data);letter-spacing:.12em;color:var(--brand)}
@@ -496,9 +496,10 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   </div>
 </div>
 <div class="wizbar" id="wizBar" hidden><span id="wizBarT">Step 2 of 5: choose the race</span><button class="btn" id="wizBarBack">Back to set-up</button></div>
+<div class="modemenu racemenu" id="raceMenu" hidden role="menu" aria-label="Races"><button id="rmNew">＋ Start new course</button><button id="rmSaved">☰ Saved routes</button><button id="rmRorc">⚑ RORC races</button><button id="rmEdit">✎ Edit this course</button></div>
 <div class="sheet" id="races" hidden>
   <div class="in" role="dialog" aria-label="Races">
-    <div class="shead"><h2>Races</h2><button class="close" id="racesX" aria-label="Close races">×</button></div>
+    <div class="shead"><h2 id="racesH">Races</h2><button class="close" id="racesX" aria-label="Close races">×</button></div>
     <div class="sbody" id="raceList"></div>
   </div>
 </div>
