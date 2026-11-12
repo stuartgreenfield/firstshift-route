@@ -23,7 +23,7 @@ def overpass(q):
     for host in ('https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'):
         try: return json.loads(http(host, urllib.parse.urlencode({'data': q}).encode()))['elements']
         except Exception as e: print('overpass failed on', host, e, flush=True)
-    raise SystemExit('Overpass unavailable')
+    print('Overpass unavailable: keeping the last OpenStreetMap data', flush=True); return None
 
 r4 = lambda x: round(float(x), 4)
 def ours(la, lo):   # UK, Ireland, France, Biscay, Iberian Atlantic and the North Sea; not the Mediterranean or the Baltic
@@ -34,7 +34,12 @@ def ours(la, lo):   # UK, Ireland, France, Biscay, Iberian Atlantic and the Nort
 # ---------- traffic separation schemes ----------
 KINDS = {'separation_zone': 'zone', 'separation_lane': 'lane', 'inshore_traffic_zone': 'inshore', 'precautionary_area': 'precaution'}
 zones = []
+OLD = os.path.join(OUT, 'tss.json')
 els = overpass(f'[out:json][timeout:300];(way["seamark:type"~"^({"|".join(KINDS)})$"]{BB};relation["seamark:type"~"^({"|".join(KINDS)})$"]{BB};);out geom;')
+if els is None:   # OSM down: carry last week's OSM schemes forward
+    try: zones = [z for z in json.load(open(OLD))['zones'] if z.get('src') == 'osm']
+    except Exception: zones = []
+    els = []
 for e in els:
     t = e.get('tags', {}); kind = KINDS.get(t.get('seamark:type'))
     rings = []
@@ -122,6 +127,8 @@ json.dump(dict(note='Traffic separation schemes: not for navigation. Lanes and s
 marks = []
 els = overpass(f'[out:json][timeout:300];(node["seamark:type"="light_major"]{BB};node["man_made"="lighthouse"]["seamark:type"]{BB};'
                f'node["seamark:type"~"^(buoy_cardinal|buoy_safe_water|buoy_isolated_danger|buoy_special_purpose|beacon_cardinal)$"]["seamark:name"]{BB};);out;')
+if els is None:
+    print('Lights left as they were', flush=True); raise SystemExit(0)
 seen = set()
 for e in els:
     t = e.get('tags', {}); key = (r4(e['lat']), r4(e['lon']))
