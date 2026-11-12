@@ -198,7 +198,7 @@
     } else Object.keys(bySt).sort().forEach(function (s) { starts.push(+s); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + s + '">' + clockAbs(+s).slice(4) + ' · ' + Object.keys(bySt[s]).sort().join(', ') + '</option>'); });
     $('startSel').value = String(starts[0]);
     S.tmin = (starts[0] - T0) / 3600; S.tmax = Math.min(HMAX(), S.tmin + 26);
-    meta.fleet.filter(function (f) { return f.irc; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (f) { $('boatPick').insertAdjacentHTML('beforeend', '<option value="' + f.name + '">' + f.name + ' · TCC ' + f.tcc.toFixed(3) + '</option>'); });
+    meta.fleet.filter(function (f) { return f.irc; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (f) { $('boatPick').insertAdjacentHTML('beforeend', '<option value="' + f.name + '">' + f.name + ' · TCF ' + f.tcc.toFixed(3) + '</option>'); });
     $('boatPick').onchange = function () { var f = meta.fleet.find(function (x) { return x.name === $('boatPick').value; }); if (f) { $('tcc').value = f.tcc.toFixed(3); if (!$('boatName').value) $('boatName').value = f.name; if (!meta.live) $('startSel').value = String(f.start); boatChanged(); } };
     initBoat();
     $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
@@ -642,16 +642,16 @@
     list.forEach(function (x) { x.race = !!(byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()])); });
     var dz = list.filter(function (x) { return x.danger; })[0];
     $('cpaWarn').hidden = !dz; if (dz) $('cpaWarn').textContent = 'Close quarters: ' + (dz.name || dz.mmsi) + ' passes ' + dz.c.cpa.toFixed(2) + ' nm away in ' + Math.round(dz.c.tcpa) + ' min';
-    var og = function (x) { var e = byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()]); if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
+    var og = function (x) { var e = byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()]); if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCF ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
     var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + list.slice(0, 30).map(function (x) {
-      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
-    var ae = document.activeElement; if (AIS.open && Date.now() - AIS.open.at < 90000 && ae && $('aisTable').contains(ae)) return;   /* someone is typing a TCC: do not redraw the table under them */
+      var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + FSAIS.shipKind(x) + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCF" aria-label="TCF"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
+    var ae = document.activeElement; if (AIS.open && Date.now() - AIS.open.at < 90000 && ae && $('aisTable').contains(ae)) return;   /* someone is typing a TCF: do not redraw the table under them */
     if (AIS.tableAt && Date.now() - AIS.tableAt < 2000 && !AIS.forceTable) return; AIS.tableAt = Date.now(); AIS.forceTable = false;   /* the table redraws at most every 2 s, so a tap on a button lands (it was redrawn on every frame of the replay) */
     $('aisTable').innerHTML = h; $('aisBox').hidden = false;
     if (AIS.open && Date.now() - AIS.open.at < 90000) { var ob = $('rb' + AIS.open.m), obt = $('aisTable').querySelector('[data-rb="' + AIS.open.m + '"]'); if (ob) { ob.hidden = false; if (obt) obt.hidden = true; var oi = ob.querySelector('input'); oi.value = AIS.open.v || ''; oi.oninput = function () { AIS.open.v = this.value; }; } }
     $('aisNote').textContent = list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'live from the shore network, updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
     [].forEach.call($('aisTable').querySelectorAll('[data-rb]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var box = $('rb' + b.dataset.rb); box.hidden = false; b.hidden = true; var x = AIS.tg.t[b.dataset.rb], k = x && x.name && (meta.fleet || []).filter(function (f) { return f.name.toUpperCase() === x.name.toUpperCase(); })[0]; if (k) box.querySelector('input').value = k.tcc; var inp = box.querySelector('input'); AIS.open = { m: b.dataset.rb, v: inp.value, at: Date.now() }; inp.oninput = function () { AIS.open.v = this.value; AIS.open.at = Date.now(); }; inp.focus(); AIS.hold = Date.now(); }; });
-    [].forEach.call($('aisTable').querySelectorAll('[data-rbok]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var x = AIS.tg.t[b.dataset.rbok], v = b.previousSibling.value; AIS.open = null; AIS.forceTable = true; if (!mfAdd(x ? x.name || String(x.mmsi) : b.dataset.rbok, v, +b.dataset.rbok)) { busy('Enter the TCC, for example 1.021.'); setTimeout(function () { busy(''); }, 2000); } }; });
+    [].forEach.call($('aisTable').querySelectorAll('[data-rbok]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var x = AIS.tg.t[b.dataset.rbok], v = b.previousSibling.value; AIS.open = null; AIS.forceTable = true; if (!mfAdd(x ? x.name || String(x.mmsi) : b.dataset.rbok, v, +b.dataset.rbok)) { busy('Enter the TCF, for example 1.021.'); setTimeout(function () { busy(''); }, 2000); } }; });
     [].forEach.call($('aisTable').querySelectorAll('.aistcc input'), function (i) { i.onclick = function (e) { e.stopPropagation(); }; });
     [].forEach.call($('aisTable').querySelectorAll('tr[data-mmsi]'), function (tr) { tr.onclick = function () { var x = AIS.tg.t[tr.dataset.mmsi]; if (x) { view.la = x.lat; view.lo = x.lon; draw(); } }; });
   }
@@ -976,7 +976,7 @@
   function startPickerHtml(id, cur) { var days = startDayList(), cd = Math.floor(cur / 86400) * 86400; return '<div class="row"><label for="' + id + 'Day">Day</label><select id="' + id + 'Day">' + days.map(function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; }).join('') + '</select></div><div class="row"><label for="' + id + 'Time">Time (UTC)</label><input type="time" id="' + id + 'Time" step="60" value="' + hhmm(cur) + '" required></div><p class="note" id="' + id + 'Err" style="color:var(--warn)"></p>'; }
   function startPickerRead(id) { var ep = exactEpoch($(id + 'Day').value, $(id + 'Time').value), e = startCheck(ep); $(id + 'Err').textContent = e; return e ? NaN : ep; }
   /* Will the forecasts last the race? Each wind model's last hour against a rough finish time (course length at about
-     5.5 knots times the TCC). A model that ends early hands over to the longer ones; only when every model has ended
+     5.5 knots times the TCF). A model that ends early hands over to the longer ones; only when every model has ended
      can Route not finish the race. */
   function fitHtml(startEp, c) {
     c = c || meta.course; var st = (+startEp - T0) / 3600, nm = courseNm(c), tcc = +$('tcc').value || 1, est = nm / (5.5 * tcc), fin = st + est;
@@ -1027,11 +1027,11 @@
         '<div class="xrow"><button class="btn" id="wzRace">Change race</button><button class="btn" id="wzNew">New course</button></div></div>' +
         '<div class="wzboat"><span class="wzk">Boat</span>' +
         '<div class="row"><select id="wzMy" aria-label="Your boat">' + bl.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + wizEsc(x) + '</option>'; }).join('') + '<option value=""' + (known ? '' : ' selected') + '>' + (bl.length ? 'A new boat…' : 'Your boat') + '</option></select></div>' +
-        (known ? '<p class="note">IRC TCC ' + (+$('tcc').value).toFixed(3) + ', ' + wizEsc($('boatType').options[$('boatType').selectedIndex].text) + ', ' + (window.FSSails ? FSSails.summary().sails : 0) + ' sails</p>' : '') +
+        (known ? '<p class="note">IRC TCF ' + (+$('tcc').value).toFixed(3) + ', ' + wizEsc($('boatType').options[$('boatType').selectedIndex].text) + ', ' + (window.FSSails ? FSSails.summary().sails : 0) + ' sails</p>' : '') +
         '<details id="wzMore"' + (known ? '' : ' open') + '><summary>' + (known ? 'Change the boat details' : 'Boat details') + '</summary>' +
         '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc(known ? cur : '') + '" placeholder="For example Morning After" autocomplete="off"></div>' +
         '<div class="row"><label for="wzType">Boat type</label><select id="wzType">' + $('boatType').innerHTML + '</select></div>' +
-        '<div class="row"><label for="wzTcc">IRC TCC</label><input type="number" id="wzTcc" step="0.001" min="0.8" max="1.8" inputmode="decimal" value="' + wizEsc($('tcc').value) + '"></div>' +
+        '<div class="row"><label for="wzTcc">IRC TCF</label><input type="number" id="wzTcc" step="0.001" min="0.8" max="1.8" inputmode="decimal" value="' + wizEsc($('tcc').value) + '"></div>' +
         '<div class="row"><label for="wzPct">Your speed</label><input type="number" id="wzPct" min="80" max="110" step="1" inputmode="numeric" value="' + Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3) + '"><span class="note">% of the polar you expect to sail at (95 is typical for a well-sailed race)</span></div>' +
         '<div class="row"><label for="wzSails">Sails</label><select id="wzSails"><option value="">Keep my sails (' + (window.FSSails ? FSSails.summary().sails : 0) + ')</option><option value="asym">Asymmetric kites on a bowsprit</option><option value="sym">Symmetric spinnaker on a pole</option><option value="white">White sails only</option></select></div>' +
         '<label class="row" style="gap:8px"><input type="checkbox" id="wzReef"' + (window.FSSails && FSSails.summary().reef ? ' checked' : '') + '> Tell me when to reef</label>' +
@@ -1053,21 +1053,21 @@
       if (!order.length) { $('wizHint').textContent = 'No start times: the forecast has not loaded yet.'; }
     } else if (n === 4) {
       var mf = myFleet(), ent = (meta.fleet || []).filter(function (f) { return f.irc && f.start; });
-      h += '<h3>Boats you are racing</h3><p class="wlead">Optional. Route sails each one along your route at its own TCC, so you can see who should be ahead on the water and on corrected time.</p>' +
+      h += '<h3>Boats you are racing</h3><p class="wlead">Optional. Route sails each one along your route at its own TCF, so you can see who should be ahead on the water and on corrected time.</p>' +
         (ent.length ? '<p class="note">' + ent.length + ' boats from the entry list are already in.</p>' : '') +
         '<p class="note" id="wzMfN">' + (mf.length ? mf.length + ' added by you: ' + mf.map(function (f) { return wizEsc(f.name); }).join(', ') : 'None added yet.') + '</p>' +
-        '<div class="mfadd"><input id="wzMfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="wzMfTcc" type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="btn" id="wzMfAdd">Add</button></div>' +
-        '<p class="note">Or paste the entry list, one boat per line with its TCC (for example <i>Jolly Jack, 1.021</i>):</p><textarea id="wzMfPaste" spellcheck="false" style="min-height:90px"></textarea>';
+        '<div class="mfadd"><input id="wzMfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="wzMfTcc" type="number" inputmode="decimal" step="0.001" placeholder="TCF" aria-label="TCF"><button class="btn" id="wzMfAdd">Add</button></div>' +
+        '<p class="note">Or paste the entry list, one boat per line with its TCF (for example <i>Jolly Jack, 1.021</i>):</p><textarea id="wzMfPaste" spellcheck="false" style="min-height:90px"></textarea>';
       B.innerHTML = h + '</div>';
       var redraw = function () { var a = myFleet(); $('wzMfN').textContent = a.length ? a.length + ' added by you: ' + a.map(function (f) { return f.name; }).join(', ') : 'None added yet.'; };
-      $('wzMfAdd').onclick = function () { if (mfAdd($('wzMfName').value, $('wzMfTcc').value)) { $('wzMfName').value = ''; $('wzMfTcc').value = ''; redraw(); } else $('wizHint').textContent = 'Enter a name and a TCC, for example 1.021.'; };
+      $('wzMfAdd').onclick = function () { if (mfAdd($('wzMfName').value, $('wzMfTcc').value)) { $('wzMfName').value = ''; $('wzMfTcc').value = ''; redraw(); } else $('wizHint').textContent = 'Enter a name and a TCF, for example 1.021.'; };
     } else if (n === 5) {
       var c = meta.course, issue = courseIssue(c), bs = boatIsSet(), sl = window.FSSails ? FSSails.summary() : { sails: 0, reef: false };
       var ms = selectedModels().map(function (m) { return short(m); }), fl = myFleet().length + (meta.fleet || []).filter(function (f) { return f.irc && f.start; }).length;
       var pct = Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3), tide = $('tideSel').options[$('tideSel').selectedIndex];
       var row = function (k, v, step, warn) { return '<div><b>' + k + '</b><span' + (warn ? ' class="warn"' : '') + '>' + v + '</span><button class="btn" data-go="' + step + '">Change</button></div>'; };
       h += '<h3>Check before routing</h3><p class="wlead">Everything Route will use. Change anything, or Route it.</p><div class="wcheck">' +
-        row('Boat', bs ? wizEsc($('boatName').value || 'Your boat') + ', TCC ' + (+$('tcc').value).toFixed(3) + ', ' + pct + '% of the polar' : 'Generic boat: TCC ' + (+$('tcc').value).toFixed(3) + '. Set up your boat for a true answer.', 1, !bs) +
+        row('Boat', bs ? wizEsc($('boatName').value || 'Your boat') + ', TCF ' + (+$('tcc').value).toFixed(3) + ', ' + pct + '% of the polar' : 'Generic boat: TCF ' + (+$('tcc').value).toFixed(3) + '. Set up your boat for a true answer.', 1, !bs) +
         row('Sails', sl.sails + ' sails' + (sl.reef ? ', reef points on' : ''), 1) +
         row('Race', wizEsc(c.name) + ', ' + courseNm(c) + ' nm' + (issue ? '. ' + wizEsc(issue) : ''), 2, !!issue) +
         row('Start', clockAbs(+$('startSel').value) + ' UTC' + (/class="fit no/.test(fitHtml($('startSel').value)) ? '. The race may outlast the forecasts.' : ''), 3, /class="fit no/.test(fitHtml($('startSel').value))) +
@@ -1084,7 +1084,7 @@
     var n = WIZ.step;
     if (n === 1) {
       var nm = $('wzName').value.trim(), tc = +$('wzTcc').value, pc = +$('wzPct').value;
-      if (!(tc >= 0.8 && tc <= 1.8)) { $('wizHint').textContent = 'Enter the TCC from your IRC certificate, for example 1.031.'; return; }
+      if (!(tc >= 0.8 && tc <= 1.8)) { $('wizHint').textContent = 'Enter the TCF from your IRC certificate, for example 1.031.'; return; }
       $('boatName').value = nm || 'My boat';
       if ($('wzType').value !== $('boatType').value) { $('boatType').value = $('wzType').value; $('boatType').dispatchEvent(new Event('change')); }
       $('tcc').value = tc.toFixed(3); $('tcc').dispatchEvent(new Event('input'));
@@ -1330,7 +1330,7 @@
   }
   function mfShow() {
     var a = myFleet(), esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    $('mfList').innerHTML = a.length ? a.map(function (f, i) { return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>TCC ' + f.tcc.toFixed(3) + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>'; }).join('') : '<p class="note">None added yet.</p>';
+    $('mfList').innerHTML = a.length ? a.map(function (f, i) { return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>TCF ' + f.tcc.toFixed(3) + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>'; }).join('') : '<p class="note">None added yet.</p>';
     [].forEach.call($('mfList').querySelectorAll('button'), function (b) { b.onclick = function () { var x = myFleet(); x.splice(+b.dataset.i, 1); setMyFleet(x); }; });
   }
   function mfInit() {
@@ -1341,7 +1341,7 @@
     $('startSel').addEventListener('change', function (e) { if (e.isTrusted && !$('sheet').hidden) startChosen(); chipStart(); });   /* a start picked by hand in Settings counts as chosen */
     $('startChip').onclick = function (e) { e.stopPropagation(); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(3); };
     chipStart();
-    $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCC between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
+    $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCF between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
     $('mfPasteGo').onclick = function () {
       var a = myFleet(), n = 0;
       $('mfPaste').value.split(/\r?\n/).forEach(function (l) { var m = /^(.*?)[\s,;\t]+([01]\.\d{2,4})\s*$/.exec(l.trim()); if (!m) return; var nm = m[1].replace(/[,;\t]+$/, '').trim(); a = a.filter(function (f) { return f.name.toUpperCase() !== nm.toUpperCase(); }); a.push({ name: nm, tcc: +m[2], mmsi: null }); n++; });
@@ -1440,7 +1440,7 @@
     ['Isochrones', 'Layers, Isochrones of the chosen route. Each line is how far the boat could have got by that hour, sailing its fastest in every direction from the start or the last mark. The line nearest the slider time is drawn brighter, and every sixth hour is labelled. Where the lines bunch up, the boat is slow; where they bulge, the wind or tide is helping.'],
     ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
     ['Your sails and reefs', 'Settings, Sails. Copy each sail from your sail log: the true wind angles and true wind speeds you use it in. Rows are checked from the top and the first that fits wins. Tick Show when to reef and enter the wind speed for each reef, upwind and downwind. The crossover chart colours each sail, marks the reefs and puts this route\'s winds on it as dots, so you can see any wind with no sail set. You can paste a chart grid from Expedition, PredictWind or SailGrib under Edit as text.'],
-    ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCC, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],
+    ['Your boat', 'Settings, Boat. Pick a boat type, enter your TCF, or load your own polar. The three sliders tune the polar upwind, reaching and downwind: 95 percent means you expect to sail at 95 percent of the polar.'],
     ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. To change only part of the race, set Where to an area, tap Draw the area and tap two opposite corners on the chart: the change applies inside it and fades out over 3 nm. Close Settings and Route works it out again; Back to the forecast undoes it.'],
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
@@ -1448,7 +1448,7 @@
     ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],
     ['AIS', 'Settings, Display, AIS. Test fleet shows emulated race boats and ships to try the screens; Live online shows real AIS from shore stations when you have signal. The Fleet tab lists every target with range, bearing, CPA and time to CPA; a target inside the CPA alarm flashes red and beeps.'],
     ['Man overboard', 'Press and hold the red MOB button for one second. Route marks the position from the phone GPS, starts the clock and shows the bearing and distance back to where they went in, and to where the tide has probably carried them. Show on chart shrinks the panel so you can see both. Hold End MOB to finish. Route is no substitute for the boat\'s own MOB drill, the VHF DSC button and the Coastguard.'],
-    ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you.']
+    ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCF: who you owe time to, and who owes you.']
   ];
   var speaking = -1;
   function voice() { var v = speechSynthesis.getVoices(); return v.filter(function (x) { return /en-GB/i.test(x.lang); })[0] || v.filter(function (x) { return /^en/i.test(x.lang); })[0] || null; }
@@ -1518,7 +1518,7 @@
     if (!S.ghosts || !S.sel) return;
     var myCor = (S.sel.r.finish - S.start.t) * (+$('tcc').value || 1), path = S.sel.r.path, me = posAt(tsOf(path), path, S.t);
     var rows = S.ghosts.map(function (g) { var fin = g.ts[g.ts.length - 1], pos = posAt(g.ts, path, S.t); return { g: g, fin: fin, cor: (fin - g.ts[0]) * g.tcc, gap: me && pos ? FSRouter.dist(me.la, me.lo, pos.la, pos.lo) * (pos.k > me.k ? 1 : -1) : null }; }).sort(function (a, b) { return a.cor - b.cor; });
-    var h = '<tr><th>Boat</th><th>TCC</th><th>Now</th><th>Corrected</th><th>vs you</th></tr>';
+    var h = '<tr><th>Boat</th><th>TCF</th><th>Now</th><th>Corrected</th><th>vs you</th></tr>';
     rows.forEach(function (r) { var d = (r.cor - myCor) * 60; h += '<tr><td style="font-family:var(--f-body)">' + r.g.name + '</td><td>' + r.g.tcc.toFixed(3) + '</td><td>' + (r.gap == null ? '-' : (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ' nm') + '</td><td>' + fmtH(r.cor) + '</td><td>' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' min</td></tr>'; });
     $('fleet').innerHTML = rows.length ? h : ''; $('fleetEmpty').hidden = !!rows.length;
   }
@@ -1987,8 +1987,8 @@
       if (best.tack) rows.push(r2('Manoeuvre', Math.abs(best.twa) > 90 ? 'gybe' : 'tack'));
     }
     var near = null, nd = docked ? 16 : 10;
-    ((S.show.ghosts && S.ghostXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ' if on your route (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
-    ((S.show.real && S.realXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ', real position (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
+    ((S.show.ghosts && S.ghostXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ' if on your route (TCF ' + g[2].tcc.toFixed(3) + ')'; } });
+    ((S.show.real && S.realXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ', real position (TCF ' + g[2].tcc.toFixed(3) + ')'; } });
     if (near) rows.push('<b>' + near + '</b>');
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
     if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.push('<div class="xrow" style="margin-top:6px"><button class="btn" id="tipRoute">Route here from the boat</button></div>');
@@ -1998,7 +1998,7 @@
     else { tip.style.left = ''; tip.style.top = ''; dot(la, lo, 5, 'transparent', css['--ink']); }
   }
   function r2(k, v) { return '<div class="r"><span>' + k + '</span><span>' + v + '</span></div>'; }
-  /* ---------- the boat: type, TCC or own polar, tuning, saved boats ---------- */
+  /* ---------- the boat: type, TCF or own polar, tuning, saved boats ---------- */
   var boatSrc = 'type';
   function boatSpec() { return { src: boatSrc, type: $('boatType').value, tcc: +$('tcc').value || 1, text: $('polarTxt').value, tune: { up: +$('tuUp').value, reach: +$('tuReach').value, run: +$('tuRun').value } }; }
   function setSrc(src) {
@@ -2014,7 +2014,7 @@
   var gridPol = null;
   function readOwn(rebuildGrid) {
     var r = FSBoat.readPolar($('polarTxt').value);
-    if (!$('polarTxt').value.trim()) { $('polarRead').textContent = 'No polar yet: routing uses the TCC until you add one.'; gridPol = null; if (rebuildGrid) polarGrid(null); return; }
+    if (!$('polarTxt').value.trim()) { $('polarRead').textContent = 'No polar yet: routing uses the TCF until you add one.'; gridPol = null; if (rebuildGrid) polarGrid(null); return; }
     if (!r) { $('polarRead').textContent = 'Could not read this polar. Check it has wind speeds across and angles down.'; gridPol = null; if (rebuildGrid) polarGrid(null); return; }
     gridPol = r.pol; $('polarRead').textContent = r.kind + ' read: ' + r.pol.tws.length + ' wind speeds, ' + r.pol.twa.length + ' angles' + (r.pol.name ? ' · ' + r.pol.name : '') + '.';
     if (rebuildGrid) polarGrid(r.pol);
@@ -2041,7 +2041,7 @@
   function initBoat() {
     $('boatType').innerHTML = FSBoat.TYPES.map(function (t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join('');
     $('boatType').value = 'perf';
-    var eg = function () { var t = FSBoat.TYPES.filter(function (x) { return x.id === $('boatType').value; })[0]; $('typeEg').textContent = (t ? t.eg.charAt(0).toUpperCase() + t.eg.slice(1) + '. ' : '') + 'A FirstShift generic shape for the type, not a class polar; the TCC sets the overall speed.'; };
+    var eg = function () { var t = FSBoat.TYPES.filter(function (x) { return x.id === $('boatType').value; })[0]; $('typeEg').textContent = (t ? t.eg.charAt(0).toUpperCase() + t.eg.slice(1) + '. ' : '') + 'A FirstShift generic shape for the type, not a class polar; the TCF sets the overall speed.'; };
     eg(); $('boatType').onchange = function () { eg(); boatChanged(); };
     [].forEach.call($('srcSeg').querySelectorAll('button'), function (b) { b.onclick = function () { setSrc(b.dataset.src); if (b.dataset.src === 'polar') readOwn(true); boatChanged(); }; });
     $('tcc').addEventListener('input', boatChanged);

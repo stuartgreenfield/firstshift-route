@@ -230,7 +230,7 @@
     return res;
   }
 
-  /* Compare a polar with a reference. Scale is applied to the reference, for example your TCC over its TCC. */
+  /* Compare a polar with a reference. Scale is applied to the reference, for example your TCF over its TCF. */
   function compare(pol, ref, scale) {
     scale = isNum(scale) && scale > 0 ? scale : 1;
     var rv = resample(ref, pol.tws, pol.twa).map(function (r) { return r.map(function (x) { return x == null ? null : x * scale; }); }), d = [], pct = [], sum = 0, n = 0, best = null, worst = null;
@@ -247,7 +247,7 @@
     return { ref: rv, diff: d, pct: pct, meanPct: n ? sum / n : null, cells: n, best: best, worst: worst, scale: scale };
   }
 
-  /* A rough starting polar from an IRC rating: FirstShift's generic shape, scaled in proportion to TCC.
+  /* A rough starting polar from an IRC rating: FirstShift's generic shape, scaled in proportion to TCF.
      Time on time means a boat rated r is expected to be r times as fast as a boat rated 1.000. */
   function genericShape(w, a) {
     var C = [[30, 0], [35, .62], [40, .74], [45, .82], [52, .88], [60, .93], [75, .985], [90, 1], [110, 1.02], [120, 1], [135, .95], [150, .87], [165, .79], [180, .75]], s = 0, i;
@@ -258,7 +258,7 @@
   function startFromTcc(tcc) {
     var tws = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], twa = [];
     for (var a = 35; a <= 180; a += 5) twa.push(a);
-    return { name: 'FirstShift generic polar for TCC ' + tcc.toFixed(3), tws: tws, twa: twa, v: tws.map(function (w) { return twa.map(function (x) { return genericShape(w, x) * 1.2 * tcc; }); }) };
+    return { name: 'FirstShift generic polar for TCF ' + tcc.toFixed(3), tws: tws, twa: twa, v: tws.map(function (w) { return twa.map(function (x) { return genericShape(w, x) * 1.2 * tcc; }); }) };
   }
 
   /* Combine a starting polar with logged data. Each cell moves from the start to the measured value as steady minutes build.

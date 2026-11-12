@@ -1,4 +1,4 @@
-/* FirstShift Route: the boat. Three ways to set the boat's speed (a generic type scaled by TCC, TCC alone, or the owner's
+/* FirstShift Route: the boat. Three ways to set the boat's speed (a generic type scaled by TCF, TCF alone, or the owner's
    own polar or ORC certificate), then three tuning sliders for upwind, reaching and downwind targets.
    Loaded by the page and by the routing workers. Needs engine.js (FSPolar) loaded first. */
 (function (root, factory) {
@@ -8,7 +8,7 @@
   'use strict';
 
   /* Generic shapes by type. Not class polars: each type bends FirstShift's generic polar where boats of that kind are
-     relatively strong or weak, then the whole polar is rescaled so the TCC still sets the overall speed.
+     relatively strong or weak, then the whole polar is rescaled so the TCF still sets the overall speed.
      up, reach, run: relative strength; plane: extra speed from 14 kn TWS at 110 to 160 TWA; light: relative speed under 8 kn. */
   var TYPES = [
     { id: 'classic', name: 'Classic and heavy cruiser-racer', eg: 'for example Contessa 32, Nicholson 33, S&S 34', up: 1.04, reach: 0.98, run: 0.92, plane: 0, light: 0.92 },
@@ -39,7 +39,7 @@
     var base = FSPolar.startFromTcc(tcc), t = TYPES.filter(function (x) { return x.id === typeId; })[0];
     if (!t) return base;
     var norm = 0; MIX.forEach(function (m) { norm += typeFactor(t, m[0], m[1]); }); norm /= MIX.length;
-    return { name: t.name + ' at TCC ' + tcc.toFixed(3), tws: base.tws, twa: base.twa,
+    return { name: t.name + ' at TCF ' + tcc.toFixed(3), tws: base.tws, twa: base.twa,
       v: base.tws.map(function (w, i) { return base.twa.map(function (a, j) { return base.v[i][j] * typeFactor(t, w, a) / norm; }); }) };
   }
 
@@ -117,7 +117,7 @@
     var tcc = +spec.tcc || 1, pol = null, kind = '';
     if (spec.src === 'polar') { var r = readPolar(spec.text); if (r) { pol = r.pol; kind = r.kind; } }
     if (!pol && spec.src === 'type') { pol = typedPolar(spec.type, tcc); kind = 'Generic type'; }
-    if (!pol) { pol = FSPolar.startFromTcc(tcc); kind = spec.src === 'polar' ? 'TCC (polar not read)' : 'TCC'; }
+    if (!pol) { pol = FSPolar.startFromTcc(tcc); kind = spec.src === 'polar' ? 'TCF (polar not read)' : 'TCF'; }
     return { pol: tune(pol, spec.tune), base: pol, kind: kind };
   }
 
