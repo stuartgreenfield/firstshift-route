@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.9.6';
+  var VERSION = 'FirstShift Route v0.9.7';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.9.6 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1402,14 +1402,17 @@
     return { nm: Math.sqrt(dp * dp + q * q * dl * dl) * 3440.065, brg: (Math.atan2(dl, dq) / R + 360) % 360 };
   }
   function legTxt(a, b) { var r = rhumb(a, b), c = Math.round(r.brg) % 360; return ('00' + c).slice(-3) + '°T · ' + (r.nm < 10 ? r.nm.toFixed(1) : Math.round(r.nm)) + ' nm'; }
-  function legsDraw(pts, strong) {   /* course and distance at the middle of each leg */
-    if (pts.length < 2) return; ctx.save(); ctx.font = '600 10.5px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle';
+  function legsDraw(pts, strong, part) {   /* part: 'line' draws only the course lines (under the routes), 'label' only the labels (over them) */   /* course and distance at the middle of each leg */
+    if (pts.length < 2) return; ctx.save(); ctx.font = '600 10.5px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle'; var placed = [];
     for (var i = 1; i < pts.length; i++) {
       var a = pts[i - 1], b = pts[i], x1 = X(a.lon), y1 = Y(a.lat), x2 = X(b.lon), y2 = Y(b.lat);
       var t0 = 0, t1 = 1, dx = x2 - x1, dy = y2 - y1, m0 = 50, ok = [[-dx, x1 - m0], [dx, W - m0 - x1], [-dy, y1 - 70], [dy, H - 40 - y1]].every(function (q) {   /* clip to the visible chart, so the label sits on the part you can see */
         if (q[0] === 0) return q[1] >= 0; var r = q[1] / q[0]; if (q[0] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; });
-      if (!ok || Math.hypot(dx, dy) * (t1 - t0) < (strong ? 70 : 90)) continue;
+      if (!strong && part !== 'label') { ctx.save(); ctx.setLineDash([7, 6]); ctx.lineWidth = 1.4; ctx.globalAlpha = 0.75; ctx.strokeStyle = css['--muted'] || '#8EA3BF'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore(); }   /* the course line itself, so the label never floats on its own (Stuart 12 Nov) */
+      if (part === 'line' || !ok || Math.hypot(dx, dy) * (t1 - t0) < (strong ? 70 : 90)) continue;
       var t = legTxt(a, b), w = ctx.measureText(t).width + 10, mx = x1 + dx * (t0 + t1) / 2, my = y1 + dy * (t0 + t1) / 2;
+      for (var k = 0; k < 6 && placed.some(function (q) { return Math.abs(q[0] - mx) < (q[2] + w) / 2 + 4 && Math.abs(q[1] - my) < 22; }); k++) my += 24;   /* an out-and-back course puts two legs on one line: stack the labels instead of overlapping them */
+      placed.push([mx, my, w]);
       if (ORI.turned) { upright(mx, my, function (ux, uy) { ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(ux - w / 2, uy - 9, w, 18, 9); else ctx.rect(ux - w / 2, uy - 9, w, 18); ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, ux - w / 2 + 5, uy + 0.5); }); continue; }
       ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(mx - w / 2, my - 9, w, 18, 9); else ctx.rect(mx - w / 2, my - 9, w, 18); ctx.fill();
       ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, mx - w / 2 + 5, my + 0.5);
@@ -2373,6 +2376,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) { myMarksDraw(); editDraw(); }
     if (S.mob) mobDraw();
+    if (!S.edit && S.show.legs && meta.course) { var lc = meta.course; legsDraw([lc.start].concat(lc.marks).concat([lc.finish]), false, 'label'); }
     liveDraw();
     if (S.edit) { ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.setLineDash([6, 5]);   /* every area a drawn course can route in, each named */
       REGIONS.forEach(function (g) { if (!READY[g.id]) return; var rb = g.region; ctx.globalAlpha = g.id === HERE ? 1 : 0.6; ctx.lineWidth = g.id === HERE ? 1.8 : 1.2; ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.fillText(g.name, X(rb.w) + 5, Y(rb.n) + 13); });
@@ -2536,7 +2540,7 @@
   function marks() {
     var c = meta.course; ctx.font = '600 11px Inter, sans-serif';
     [c.start].concat(c.marks).concat([c.finish]).forEach(function (m, i, a) { var mx = X(m.lon), my = Y(m.lat); ctx.beginPath(); ctx.arc(mx, my, 7.5, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--ink']; ctx.lineWidth = 1.5; ctx.stroke(); triMark(mx, my + 0.8, 0, 4.6, css['--ink']); ctx.fillStyle = css['--ink']; ctx.font = '600 11px Inter, sans-serif'; ctx.fillText(m.name, mx + 11, my - 8); if (i > 0 && i < a.length - 1) sideTag(m, mx + 11, my - 2); });
-    if (S.show.legs) legsDraw([c.start].concat(c.marks).concat([c.finish]), false);
+    if (S.show.legs) legsDraw([c.start].concat(c.marks).concat([c.finish]), false, 'line');
     if (S.legs && S.legs[0].gate) { var g = S.legs[0].gate; ctx.strokeStyle = css['--ink']; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(g.a[1]), Y(g.a[0])); ctx.lineTo(X(g.b[1]), Y(g.b[0])); ctx.stroke(); ctx.setLineDash([]); }
   }
   /* FirstShift triangle markers: open for your boat, solid for the fleet, triangle in a circle for marks */
