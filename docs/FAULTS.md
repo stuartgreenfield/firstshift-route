@@ -64,3 +64,6 @@ Stuart: starting a new course must close the old route, keep it as old routes, s
 
 ## F23 Set-up step 1 would not go on with TCC 2, and the reason was easy to miss (12 Nov 07:04) - fixed
 Stuart's screenshot: the TCC accepted only 0.8 to 1.8, and the refusal was a small grey line by Next. The range is now 0.700 to 2.200 (the biggest maxis), a refusal shows in red beside Next, the box to fix is outlined in red and brought into view, and the step progress bar no longer overlaps the text when the step scrolls.
+
+## F24 A drawn course routed along the edge of the forecast data (12 Nov 07:34) - fixed, new area building
+Stuart's screenshot: routes zig-zagged along 49 00N. At 06:55 I had let drawn courses use the Fastnet page's forecasts, but that page's data stops at 49 00N, and the router treats the edge as a wall. The Fastnet page is withdrawn from drawn courses; a proper Celtic Sea and Western Approaches area (48 18N to 52 18N, 10 48W to 2 00W, from Ushant and north Brittany to the south coast of Ireland, out past Fastnet Rock) is added to the forecast build; and Route now warns, in the run note and a red banner, whenever routes run along the edge of a forecast area.

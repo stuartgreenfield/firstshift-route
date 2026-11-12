@@ -448,28 +448,36 @@
    "note": "Forecasts for the whole Channel from Land's End to Dover: every RORC Channel race and any course of your own inside the box routes here."
   },
   {
-   "id": "fastnet",
+   "id": "celtic-area",
    "name": "Celtic Sea and Western Approaches",
    "region": {
-    "s": 49.0,
-    "n": 52.0,
-    "w": -10.6,
-    "e": -0.7
+    "s": 48.3,
+    "n": 52.3,
+    "w": -10.8,
+    "e": -2.0
    },
    "hours": 240,
    "start": {
-    "name": "Start, RYS line, Cowes",
-    "lat": 50.7769,
-    "lon": -1.3051
+    "name": "Start, off Plymouth breakwater (example)",
+    "lat": 50.315,
+    "lon": -4.155
    },
-   "marks": [],
+   "marks": [
+    {
+     "name": "Fastnet Rock",
+     "lat": 51.38917,
+     "lon": -9.60317,
+     "side": "port",
+     "sideAssumed": false
+    }
+   ],
    "finish": {
-    "name": "Finish, Cherbourg",
-    "lat": 49.677,
-    "lon": -1.66,
+    "name": "Finish, off Plymouth breakwater (example)",
+    "lat": 50.32,
+    "lon": -4.14,
     "radius_nm": 0.4
    },
-   "note": "The Fastnet page's forecasts cover the whole box: Cowes to Fastnet Rock, the Scillies and the south coast of Ireland. Added 12 Nov 2026 so drawn courses can route there."
+   "note": "Forecasts for the whole box from Ushant and north Brittany to the south coast of Ireland, out past Fastnet Rock, overlapping the western Channel. The example course is Plymouth round Fastnet Rock and back; any course of your own inside the box routes here."
   },
   {
    "id": "northsea-area",

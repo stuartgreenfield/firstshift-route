@@ -1310,7 +1310,7 @@
     if (myRegion()) { startEdit(null); return; }
     var opts2 = REGIONS.filter(function (g) { return READY[g.id]; });
     if (opts2.length === 1) { goNew(opts2[0].id); return; }
-    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts', 'irishsea-area': "From St George's Channel to the North Channel, Wales to the east coast of Ireland", 'fastnet': 'From the Solent west past the Scillies to Fastnet Rock and the south coast of Ireland', 'biscay-area': 'From Ushant to Cape Finisterre, the French coast down to the Gironde' };
+    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts', 'irishsea-area': "From St George's Channel to the North Channel, Wales to the east coast of Ireland", 'celtic-area': 'From Ushant and north Brittany to the south coast of Ireland, out past Fastnet Rock and the Scillies', 'biscay-area': 'From Ushant to Cape Finisterre, the French coast down to the Gironde' };
     $('raceList').innerHTML = '<h3>Where is the race?</h3><p class="note">Route draws your course on the forecast area that will route it, so the wind, tide and depth are ready when you save it.</p>' +
       opts2.map(function (g) { return '<div class="ritem"><div><b>' + g.name + '</b><span class="note">' + (AREA[g.id] || '') + '</span></div><div class="xrow"><button class="btn primary" data-newin="' + g.id + '">Draw here</button></div></div>'; }).join('') +
       '<p class="note">Further afield comes later.</p>';
@@ -1322,7 +1322,7 @@
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
     S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [], closed: !!c };
     if (!c) S.drawnNew = true;
-    if (!c) { var rg = { region: { s: 48.4, n: 55.3, w: -10.6, e: 5.4 } }; if (rg && rg.region) { var b = rg.region;   /* the whole of Route's waters: the Irish Sea, out past Fastnet Rock, the Channel and the southern North Sea (Biscay is a pan away) */ var cv = $('map').getBoundingClientRect(); $('editBar').hidden = false; var eb = $('editBar').getBoundingClientRect(), pn = $('panel') && !$('panel').hidden ? $('panel').getBoundingClientRect() : null;
+    if (!c) { var rg = { region: { s: 48.3, n: 55.3, w: -10.8, e: 5.4 } }; if (rg && rg.region) { var b = rg.region;   /* the whole of Route's waters: the Irish Sea, out past Fastnet Rock, the Channel and the southern North Sea (Biscay is a pan away) */ var cv = $('map').getBoundingClientRect(); $('editBar').hidden = false; var eb = $('editBar').getBoundingClientRect(), pn = $('panel') && !$('panel').hidden ? $('panel').getBoundingClientRect() : null;
         var top = Math.max(0, eb.bottom - cv.top + 6), bot = pn && pn.top > cv.top + 100 ? Math.min(H, pn.top - cv.top - 6) : H - 10, room = Math.max(120, bot - top);   /* fit between the edit bar and the panel */
         view.s = Math.max(20, Math.min(W / ((b.e - b.w) * K * 1.04), room / ((b.n - b.s) * 1.04))); view.lo = (b.w + b.e) / 2; view.la = (b.s + b.n) / 2 + ((top + bot) / 2 - H / 2) / view.s; S.routes = []; S.sel = null; } }   /* a new course: the whole area Route can route, nothing old on it */
     $('editBar').hidden = false; editPrompt(); draw();
@@ -1413,6 +1413,13 @@
       if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue + (reg ? '' : ' No forecast area covers the whole course yet.'); } else { if (wizCourseChosen(true)) { busy(''); return; } S.from = null; run(); }
     };
   }
+  /* routes that run along the edge of the forecast area are being stopped by the edge, not the weather: say so (Stuart 12 Nov) */
+  function edgeHit() {
+    var L = (meta.layers || []).filter(function (l) { return l.kind === 'wind' && l.full && l.full.lat0 != null; })[0]; if (!L || !S.routes) return '';
+    var f = L.full, s = f.lat0, n = f.lat0 + f.dlat * (f.ny - 1), w = f.lon0, e = f.lon0 + f.dlon * (f.nx - 1), mla = 2.5 / 60, mlo = mla / Math.cos((s + n) / 2 * Math.PI / 180), hit = '';
+    S.routes.forEach(function (r) { var k = 0, side = ''; (r.r.path || []).forEach(function (q) { var la = q.la, lo = q.lo; var sd = la - s < mla ? 'south' : n - la < mla ? 'north' : lo - w < mlo ? 'west' : e - lo < mlo ? 'east' : ''; if (sd) { k++; side = sd; } }); if (k >= 4 && !hit) hit = side; });
+    return hit ? 'Warning: routes run along the ' + hit + ' edge of this forecast area (' + (hit === 'south' ? dm(s, 'NS') : hit === 'north' ? dm(n, 'NS') : hit === 'west' ? dm(w, 'EW') : dm(e, 'EW')) + '). The best route probably lies outside it, so treat these routes with care.' : '';
+  }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
   function loadPre() {
@@ -1486,6 +1493,7 @@
           S.sel = best; S.base = base; S.legs = legs; S.start = start;
           var part = S.routes.filter(function (x) { return x.r.partial; });
           $('runNote').textContent = (quick ? 'Quick route in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Choose an earlier start for a full route.' : '') + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
+          var edge = edgeHit(); if (edge) { $('runNote').textContent += ' ' + edge; if (!quick) errShow(edge); }
           return ghosts();
         });
       }).then(function () {
