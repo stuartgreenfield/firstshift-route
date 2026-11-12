@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.6.6';
+  var VERSION = 'FirstShift Route v0.6.7';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.6.6 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.6.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -785,7 +785,7 @@
     if (!$('races').hidden) return 'races';
     return 'chart';
   }
-  function shareUrl(view) { return crewLink() + (BC.code ? '&boat=' + BC.code : '') + (view && view !== 'chart' ? '&view=' + encodeURIComponent(view) : ''); }
+  function shareUrl() { return crewLink() + (BC.code ? '&boat=' + BC.code : ''); }   /* crew land on Route's first page with the same race and start (Stuart 12 Nov), not on the navigator's settings page */
   function viewName(v) { return v === 'start' ? 'the start' : v === 'boat' ? 'the boat' : v === 'races' ? 'the race list' : /^settings:/.test(v) ? 'Settings, ' + ({ boat: 'Boat', course: 'Course', fc: 'Forecasts', sails: 'Sails', display: 'Display' }[v.split(':')[1]] || 'Settings') : 'the chart'; }
   function drawQr(cv, text) {
     if (!window.qrcode) return false; var q = qrcode(0, 'M'); q.addData(text); q.make(); var n = q.getModuleCount(), px = Math.floor(cv.width / (n + 2)), off = Math.floor((cv.width - px * n) / 2), g = cv.getContext('2d');
@@ -794,8 +794,8 @@
     return true;
   }
   function openShare() {
-    var v = currentView(), url = shareUrl(v);
-    $('shareWhat').textContent = meta.course.name + ' · start ' + clockAbs(+$('startSel').value) + ' UTC · opens on ' + viewName(v) + (BC.code ? ' · boat code ' + BC.code : '');
+    var url = shareUrl();
+    $('shareWhat').textContent = meta.course.name + ' · start ' + clockAbs(+$('startSel').value) + ' UTC' + (BC.code ? ' · boat code ' + BC.code : '');
     $('shareUrl').value = url; if (!drawQr($('shareQr'), url)) $('shareWhat').textContent += ' (the code could not be drawn: use Share or Copy link)';
     $('shareBox').hidden = false;
   }
