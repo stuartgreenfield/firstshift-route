@@ -104,11 +104,12 @@ try:
     print('RWS zones', n, flush=True); n = 0
     for f in pdok('begrenzing'):
         p = f.get('properties') or {}; g = f.get('geometry') or {}
+        if (p.get('entiteit') or '').strip().lower() not in ('begrenzing', 'junction', 'precautionary area', 'inshore', 'vss'): continue   # not reporting limits, channel centre lines, turning circles or wind-farm clearways
         lines = [g['coordinates']] if g.get('type') == 'LineString' else g.get('coordinates', []) if g.get('type') == 'MultiLineString' else []
         for ln in lines:
             pts = [[r4(c[1]), r4(c[0])] for c in ln]
             if len(pts) >= 2 and any(S <= q[0] <= N and W <= q[1] <= E for q in pts):
-                zones.append(dict(kind='edge', name=(p.get('gebied') or '').strip(), poly=pts, src='rws')); n += 1
+                zones.append(dict(kind='edge', name=(p.get('gebied') or '').strip(), poly=pts, src='rws', what=(p.get('omschrijving') or '').strip())); n += 1
     print('RWS boundary lines', n, flush=True)
 except Exception as e:
     print('RWS failed', e, flush=True)
