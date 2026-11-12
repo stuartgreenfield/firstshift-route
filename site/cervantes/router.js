@@ -228,8 +228,12 @@
       var tgt = leg.point || (far ? leg.gate.a : [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2]);
       var oLa = 0, oLo = 0; pts.forEach(function (p) { oLa += p.la; oLo += p.lo; }); oLa /= pts.length; oLo /= pts.length;
       var kO = Math.cos(oLa * R), done = false;
+      /* an offshore rounding mark (the Fastnet Rock): near it, keep the front in sectors round the mark itself, so routes can work
+         round any side of it; beyond it, sailing on past the mark loses score instead of gaining it (Stuart 12 Nov: routes overshot
+         the Rock and sat against the edge of the forecasts) */
+      var MS = far ? 72 : 0, NEARM = 20, mx = (tgt[1] - oLo) * kO, my = tgt[0] - oLa, dM = Math.sqrt(mx * mx + my * my) * 60, ux = dM ? mx * 60 / dM : 0, uy = dM ? my * 60 / dM : 0, kT = Math.cos(tgt[0] * R);
       for (var step = 0; step < maxSteps; step++) {
-        var hit = [], calm = 0, ncand = 0, best = new Array(sectors), bestS = new Float64Array(sectors).fill(-Infinity), secW = 360 / sectors, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
+        var hit = [], calm = 0, ncand = 0, best = new Array(sectors + MS), bestS = new Float64Array(sectors + MS).fill(-Infinity), secW = 360 / sectors, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
         var gate = leg.gate, ga = gate && gate.a, gb = gate && gate.b;
         for (var pi = 0; pi < pts.length; pi++) {
           var p = pts[pi], W = o.wind(p.la, p.lo, t), C = o.tide(p.la, p.lo, t), V = o.wave ? o.wave(p.la, p.lo, t) : [0, NaN];
@@ -268,6 +272,10 @@
               sec = Math.min(sectors - 1, Math.floor(bb / secW));
               var dtg = dist(nla, nlo, tgt[0], tgt[1]), dfo = Math.sqrt(bx2 * bx2 + by2 * by2) * 60;
               score = dfo - wDtg * dtg - (lost > 0 ? 0.01 : 0) + 2 * Math.max(0, near0 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
+              if (MS) {
+                if (dtg < NEARM) { var mb = (Math.atan2((nlo - tgt[1]) * kT, nla - tgt[0]) / R + 360) % 360; sec = sectors + Math.min(MS - 1, Math.floor(mb / (360 / MS))); score = 1000 - dtg - (lost > 0 ? 0.01 : 0); }
+                else { var over = Math.max(0, (bx2 * ux + by2 * uy) * 60 - dM); score = Math.min(dfo, dM) - 2 * over - wDtg * dtg - (lost > 0 ? 0.01 : 0); }
+              }
               if (score <= bestS[sec]) { ncand++; continue; }
             }
             if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
