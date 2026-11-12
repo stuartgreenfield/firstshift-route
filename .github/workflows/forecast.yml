@@ -97,7 +97,7 @@ jobs:
       - name: Use the newest app from main (a change pushed while this job ran must not be overwritten)
         run: |
           git fetch -q origin main
-          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand site/route.webmanifest site/follow _headers | tar -x
+          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand site/route.webmanifest site/follow site/zones _headers | tar -x
           for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
       - name: Publish to the site branch
         run: |
@@ -120,7 +120,7 @@ jobs:
       - name: Use the newest app from main again before the second publish
         run: |
           git fetch -q origin main
-          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand site/route.webmanifest site/follow _headers | tar -x
+          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand site/route.webmanifest site/follow site/zones _headers | tar -x
           for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
       - name: Publish again with the pre-routes
         run: |
