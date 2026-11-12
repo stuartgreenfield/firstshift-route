@@ -44,7 +44,7 @@ jobs:
         if: steps.fresh.outputs.skip != '1'
         run: |
           git fetch -q origin main
-          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help _headers | tar -x
+          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand _headers | tar -x
           for d in fastnet channel-area northsea-area; do cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
       - name: Publish to the site branch
         if: steps.fresh.outputs.skip != '1'
@@ -70,7 +70,7 @@ jobs:
         if: steps.fresh.outputs.skip != '1'
         run: |
           git fetch -q origin main
-          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help _headers | tar -x
+          git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/brand _headers | tar -x
           for d in fastnet channel-area northsea-area; do cp site/cervantes/*.js site/cervantes/index.html "site/$d/"; done
       - name: Publish again with the pre-routes
         if: steps.fresh.outputs.skip != '1'
