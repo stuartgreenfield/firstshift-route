@@ -133,3 +133,17 @@ Status: Built · Partly built · To build · Researching · Later.
 - "Sail type panel drop down not working": choosing a typical inventory needed two more taps. Now applies at once with Undo. Fixed (F14).
 - Overnight, no input needed: landscape readings row (check failures); forecast build watchdog (to-do 44); Open-Meteo device fallback (17); 10-day ECMWF, AIFS and GFS (48); GPS reroute timer (24); help pictures (22); crew moments through the boat code (28); area overrides (23); router 2.5 to 3 times faster (20); isochrones and tap-to-route (4, idea 7); wind over the water (idea 11); race briefing (idea 3).
 - Skipped, needs Stuart: new areas (Irish Sea, Biscay: which first), tide sources and UKHO data (licences), RORC entry list source, friends and family page (YB or RORC permission), Google Play steps, phone design pass (taste), Safari on the Mac.
+
+## 12 Nov 2026, 00:00 to 01:00
+- "grib files give other data such as pressure, rain ... toggle them all": ECMWF gusts, isobars, rain, squall risk (CAPE), cloud, air temperature, each its own layer switch; shown in the chart tip when on; gusts and squalls in the briefing. Built.
+- "Boat speed and SOG at each point plus tide and wind": chart tip shows BSP, SOG and COG, tide on the route, true wind; SOG column in the plan. Built.
+- "check other routing systems ... leeway": qtVlm, OpenCPN and LuckGrib do not apply leeway in routing; Expedition puts leeway into TWA; the ORC speed guide adds leeway to the instrument angle, so polar angles are track-relative. Route keeps routing on the track; optional Leeway upwind gives a Steer heading. Built.
+- "does the AIS engine get data over mobile or wifi ... test it": yes, through FirstShift's server; tested live, real ships returned. Done.
+- Landing page: Morning After in the brand blues, web address and email, 5 s before launch, wording without claims. Built.
+- "When you pick a race it just runs it without asking for a start time ... or to check the details of boat": every race choice now goes through start, fleet and check; start asked every time a race opens (Stuart's choice); start chip under the race name. Built.
+- "Why does it say 1st Jan": fault F17, fixed.
+- "forecasts ready - none can be but the charting area can be": race list now says Chart ready, race-day forecast from about 10 days before. Built.
+- "new course ... no wind or tide ... design a solution": New course asks which forecast area and draws there inside a dashed box; saved courses move to their area. Built.
+- Set-up sheet ran off the side on iPhone Safari: fixed.
+- "design the Home Screen box and logo ... like the other tools": icon in the tools style with Route's magenta band, iPhone and Android, app manifest. Built.
+- Finest-first model chain (idea 8): UKV, AROME, ICON, ARPEGE, then global, handing over where each ends. Built.
