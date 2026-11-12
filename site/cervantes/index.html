@@ -379,7 +379,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   <section class="panel collapsed" id="panel" hidden aria-label="Results">
     <div class="grab"></div>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="decision" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5V13"/><path class="dash" d="M12 13 6.2 5.8"/><path d="M12 13l4.7-6"/><path class="k" d="M19.6 3l-.7 5.8-4.6-3.6z"/></svg><span>Decision</span></button>
+      <button class="tab" role="tab" data-tab="decision" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.5V13"/><path class="dash" d="M12 13 6.2 5.8"/><path d="M12 13l4.7-6"/><path class="k" d="M19.6 3l-.7 5.8-4.6-3.6z"/></svg><span>Routes</span></button>
       <button class="tab" role="tab" data-tab="plan" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3v15"/><path class="f" d="M12.2 4.2v13.3h7.1z"/><path d="M9.6 6.6v10.9H4.2z"/><path d="M3 20h18l-2 2.2H5z"/></svg><span>Plan</span></button>
       <button class="tab" role="tab" data-tab="fleet" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path class="k" d="M12 2.6l4 7.6H8z"/><path d="M6 12.6l4 7.6H2z"/><path d="M18 12.6l4 7.6h-8z"/></svg><span>Fleet</span></button>
       <button class="tab" role="tab" data-tab="data" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16l9 4.5 9-4.5"/></svg><span>Data</span></button>
@@ -403,7 +403,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <h4 class="xh" style="margin-top:0">Ask Route</h4>
       <div class="askrow" id="askRow"><button class="btn" data-q="next">What next?</button><button class="btn" data-q="tack">Next tack or gybe</button><button class="btn" data-q="sail">Next sail change</button><button class="btn" data-q="shift">Biggest wind shift ahead</button><button class="btn" data-q="mark">Next mark</button><button class="btn" data-q="tide">Tide now</button><button class="btn" data-q="brief">Race briefing</button></div>
       <div class="ans" id="askAns" hidden><p id="askTxt"></p><button class="btn say" id="askSay">Read it out</button></div>
-      <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Decision. Sails from the crossover chart in Settings.</p>
+      <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Routes. Sails from the crossover chart in Settings.</p>
       <h4 class="xh">Send to the crew</h4>
       <div class="xrow"><button class="btn primary" id="xCrew">Send to crew…</button><button class="btn" id="xCopy">Copy text</button><button class="btn" id="xMoment" title="Shows on every phone, tablet and computer on your boat code">Send to boat code devices</button></div><p class="note" id="xMomentNote"></p>
       <ol class="steps"><li>Tap <b>Send to crew</b>. On a phone, choose WhatsApp (or Messages, or email) and the crew group.</li><li>The crew get the message below. When they tap the link, Route opens on their phone with the same course and start, and works out the same routes.</li><li>No app to install and no login: the link is all they need.</li></ol>

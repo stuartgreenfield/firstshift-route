@@ -9,6 +9,7 @@ const BASE = (process.argv[2] || 'http://localhost:8766').replace(/\/$/, ''), OU
   await p.goto(BASE + '/channel-area/?race=myth');
   await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length > 0, null, { timeout: 300000 });
   await p.waitForFunction(() => !document.getElementById('prog') || document.getElementById('prog').hidden, null, { timeout: 300000 }).catch(() => {});
+  await p.evaluate(() => { const s = document.getElementById('splash'); if (s) s.click(); }); await p.waitForTimeout(700);
   await p.evaluate(() => { const x = document.getElementById('cbannerX'); if (x) x.click(); const t = document.getElementById('time'); t.value = 380; t.dispatchEvent(new Event('input', { bubbles: true })); });
   await p.waitForTimeout(800);
   const shot = async (name, sel) => { const el = sel ? await p.$(sel) : null; await (el || p).screenshot({ path: `${OUT}/${name}.png` }); console.log(name); };
@@ -24,7 +25,7 @@ const BASE = (process.argv[2] || 'http://localhost:8766').replace(/\/$/, ''), OU
   await p.evaluate(() => document.querySelector('.stabs .tab[data-s="course"]').click()); await p.waitForTimeout(300); await shot('course', '#sheet');
   await p.evaluate(() => document.getElementById('sheetX').click());
   const c2 = await b.newContext({ ...devices['iPhone 13'] }); await c2.addInitScript(() => { try { localStorage.setItem('fs-theme', 'dark'); } catch (e) {} }); const p2 = await c2.newPage();
-  await p2.goto(BASE + '/channel-area/'); await p2.waitForSelector('#wiz:not([hidden])', { timeout: 120000 }); await p2.waitForTimeout(600);
+  await p2.goto(BASE + '/channel-area/'); await p2.waitForSelector('#wiz:not([hidden])', { timeout: 120000 }); await p2.evaluate(() => { const s = document.getElementById('splash'); if (s) s.click(); }); await p2.waitForTimeout(900);
   await (await p2.$('#wiz')).screenshot({ path: `${OUT}/setup.png` }); console.log('setup');
   await b.close();
 })();

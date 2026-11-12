@@ -1387,8 +1387,8 @@
   }
   /* ---------- help: text and a spoken run-through, using the device's own speech (free, works offline) ---------- */
   var HELP = [
-    ['What Route does', 'Route works out the fastest way round the race course for your boat, in each forecast model, with the tide. It routes as soon as you open it, again when new forecasts arrive, and again when you close Settings after a change. Route again, at the top of Decision, forces it. A planning aid, not for navigation.'],
-    ['Decision', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
+    ['What Route does', 'Route works out the fastest way round the race course for your boat, in each forecast model, with the tide. It routes as soon as you open it, again when new forecasts arrive, and again when you close Settings after a change. Route again, at the top of Routes, forces it. A planning aid, not for navigation.'],
+    ['Routes', 'The boxes at the top give the finish time for each model\'s route and for the combined route. The table below sails every route through every model: the best route is the one that loses least if the forecast is wrong. Tap a row or a box to show that route on the chart.'],
     ['Play the race', 'Press the play button to watch the boat sail the chosen route. The strip along the bottom gives heading, boat speed, wind angle and speed, the sail and the sea state at each moment. Choose the speed under Settings, Display.'],
     ['Plan', 'The Plan tab turns the chosen route into a sailing plan: when to change sail, the heading, wind and boat speed for each part, and the time at each mark. Save GPX puts the route on your plotter; How to load it explains the steps for your make.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
@@ -1422,7 +1422,7 @@
     });
   }
   function helpInit() {
-    var PIC = { 'What Route does': 'overview', 'Decision': 'decision', 'Play the race': 'bar', 'Plan': 'plan', 'Setting up a race': 'setup', 'Your sails and reefs': 'sails', 'Your boat': 'boat', 'Routing while racing': 'course', 'Fleet': 'fleet' };
+    var PIC = { 'What Route does': 'overview', 'Routes': 'decision', 'Play the race': 'bar', 'Plan': 'plan', 'Setting up a race': 'setup', 'Your sails and reefs': 'sails', 'Your boat': 'boat', 'Routing while racing': 'course', 'Fleet': 'fleet' };
     $('helpList').innerHTML = HELP.map(function (h, i) { return '<div class="htopic"><h3>' + h[0] + '<button class="btn say" data-say="' + i + '">Listen</button></h3><p>' + h[1] + '</p>' + (PIC[h[0]] ? '<img class="hpic" loading="lazy" alt="Screen picture: ' + h[0] + '" src="../help/' + PIC[h[0]] + '.webp">' : '') + '</div>'; }).join('');
     [].forEach.call(document.querySelectorAll('[data-say]'), function (b) { b.onclick = function () { say([+b.dataset.say]); }; });
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
@@ -1458,7 +1458,7 @@
     return { name: f + '.kml', type: 'application/vnd.google-earth.kml+xml', text: k + '</Document></kml>\n' };
   }
   function xSave(kind) {
-    if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Decision.'; return; }
+    if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Routes.'; return; }
     var x = xFile(kind), a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([x.text], { type: x.type })); a.download = x.name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     $('xNote').textContent = 'Saved ' + x.name + (x.n ? ' (' + x.n + ' waypoints)' : '') + '.';
   }
@@ -1467,7 +1467,7 @@
     $('xHelpBtn').onclick = function () { var h = $('xHelp'); h.hidden = !h.hidden; this.setAttribute('aria-expanded', String(!h.hidden)); };
     try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.gpx', { type: 'application/gpx+xml' })] })) $('xShare').hidden = false; } catch (e) {}
     $('xShare').onclick = function () {
-      if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Decision.'; return; }
+      if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Routes.'; return; }
       var x = xFile('gpx'); navigator.share({ files: [new File([x.text], x.name, { type: x.type })], title: xName() }).catch(function (e) { if (e && e.name !== 'AbortError') $('xNote').textContent = 'Sharing did not work here: use Save GPX.'; });
     };
   }
