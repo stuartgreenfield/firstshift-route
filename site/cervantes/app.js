@@ -1,10 +1,10 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.6.9';
+  var VERSION = 'FirstShift Route v0.7.0';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
-  var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true, lay: true }, choice: {}, loaded: {} };
+  var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true, lay: true, legs: true }, choice: {}, loaded: {} };
   var css = {};
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.6.9 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.7.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -386,6 +386,7 @@
     var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
+      '<label><input type="checkbox" data-l="legs"' + (S.show.legs ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Leg courses and distances</label>' +
       (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
       (LIGHTS.length ? '<label><input type="checkbox" data-l="lights"' + (S.show.lights ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink);border-top-style:dotted"></span>Lighthouses and main buoys</label>' : '') +
       '<label><input type="checkbox" data-l="lay"' + (S.show.lay ? ' checked' : '') + '><span class="sw" style="border-color:var(--brand);border-top-style:dashed"></span>Laylines to the next mark</label>' +
@@ -396,7 +397,7 @@
       (meta.live ? '' : '<label><input type="checkbox" data-l="real"' + (S.show.real ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Real 2026 boats (YB)</label>');
     S.routes.forEach(function (s, i) { var st = s.combined ? ['--route', []] : STYLE[s.id]; h += '<label><input type="checkbox" data-r="' + i + '"' + (s.hidden ? '' : ' checked') + '><span class="sw" style="border-color:var(' + st[0] + ');border-top-width:' + (s.combined ? 4 : 3) + 'px;border-top-style:' + (st[1].length ? 'dashed' : 'solid') + '"></span>' + s.name + ' · ' + fmtH(s.r.finish - S.start.t) + '</label>'; });
     $('layers').innerHTML = h;
-    var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band'];
+    var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band', 'legs'];
     $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
     $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
     [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (c.dataset.l === 'iso' && c.checked) isoFetch(); } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
@@ -1357,12 +1358,71 @@
     $('racesX').onclick = function () { $('races').hidden = true; };
     $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };
     $('edUndo').onclick = function () { S.edit.pts.pop(); editPrompt(); draw(); };
-    $('edCancel').onclick = function () { S.edit = null; $('editBar').hidden = true; draw(); if (QS0.get('new') && !S.newDone) { S.newDone = true; run(); } };
-    $('edDone').onclick = function () { if (S.edit.pts.length < 2) return; editForm(); };
+    $('edCancel').onclick = function () { if ($('markPop')) $('markPop').hidden = true; S.edit = null; $('editBar').hidden = true; draw(); if (QS0.get('new') && !S.newDone) { S.newDone = true; run(); } };
+    $('edDone').onclick = function () { if (S.edit.pts.length < 2) return; if ($('markPop')) $('markPop').hidden = true; editForm(); };
 
   }
   /* course editor: any course, from the race list or your own. On the chart: tap to place points, drag any point to move it.
      In the list: names, rounding sides, positions typed as latitude and longitude, add, remove and reorder marks. */
+  /* rhumb line between two points: the true course to steer and its length in nautical miles */
+  function rhumb(a, b) {
+    var p1 = a.lat * R, p2 = b.lat * R, dp = p2 - p1, dl = (b.lon - a.lon) * R; if (Math.abs(dl) > Math.PI) dl -= (dl > 0 ? 2 : -2) * Math.PI;
+    var dq = Math.log(Math.tan(Math.PI / 4 + p2 / 2) / Math.tan(Math.PI / 4 + p1 / 2)), q = Math.abs(dq) > 1e-12 ? dp / dq : Math.cos(p1);
+    return { nm: Math.sqrt(dp * dp + q * q * dl * dl) * 3440.065, brg: (Math.atan2(dl, dq) / R + 360) % 360 };
+  }
+  function legTxt(a, b) { var r = rhumb(a, b), c = Math.round(r.brg) % 360; return ('00' + c).slice(-3) + '°T · ' + (r.nm < 10 ? r.nm.toFixed(1) : Math.round(r.nm)) + ' nm'; }
+  function legsDraw(pts, strong) {   /* course and distance at the middle of each leg */
+    if (pts.length < 2) return; ctx.save(); ctx.font = '600 10.5px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle';
+    for (var i = 1; i < pts.length; i++) {
+      var a = pts[i - 1], b = pts[i], x1 = X(a.lon), y1 = Y(a.lat), x2 = X(b.lon), y2 = Y(b.lat);
+      if (Math.hypot(x2 - x1, y2 - y1) < (strong ? 70 : 110)) continue;
+      var t = legTxt(a, b), w = ctx.measureText(t).width + 10, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(mx - w / 2, my - 9, w, 18, 9); else ctx.rect(mx - w / 2, my - 9, w, 18); ctx.fill();
+      ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, mx - w / 2 + 5, my + 0.5);
+    }
+    ctx.restore();
+  }
+  /* my marks: named positions kept on this device for future courses */
+  function myMarks() { try { return JSON.parse(store('fs-mymarks') || '[]'); } catch (e) { return []; } }
+  function myMarksSet(a) { store('fs-mymarks', JSON.stringify(a.slice(0, 200))); }
+  function myMarkSave(q, name) {
+    var nm = (name || q.name || '').trim(); if (!nm) { busy('Give the mark a name first.'); setTimeout(function () { busy(''); }, 2000); return false; }
+    var a = myMarks().filter(function (m) { return m.name.toLowerCase() !== nm.toLowerCase(); }); a.unshift({ name: nm, lat: +q.lat.toFixed(5), lon: +q.lon.toFixed(5) }); myMarksSet(a);
+    busy('Saved to My marks: ' + nm); setTimeout(function () { busy(''); }, 1800); return true;
+  }
+  function myMarksDraw() {
+    var vb = viewBox(), used = S.edit.pts; ctx.save(); ctx.font = '500 10.5px Inter, sans-serif';
+    myMarks().forEach(function (m) {
+      if (m.lat < vb.s || m.lat > vb.n || m.lon < vb.w || m.lon > vb.e) return;
+      if (used.some(function (q) { return Math.abs(q.lat - m.lat) < 1e-4 && Math.abs(q.lon - m.lon) < 1e-4; })) return;
+      var x = X(m.lon), y = Y(m.lat); ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--brand'] || css['--route']; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.fillStyle = css['--muted']; ctx.fillText(m.name, x + 9, y + 4);
+    });
+    ctx.restore();
+  }
+  function myMarkHit(x, y) { var best = null, bd = 16; myMarks().forEach(function (m) { var d = Math.hypot(X(m.lon) - x, Y(m.lat) - y); if (d < bd) { bd = d; best = m; } }); return best; }
+  function legHit(x, y) {   /* the leg a tap lands on, as the index to insert before */
+    var p = S.edit.pts, best = -1, bd = 16;
+    for (var i = 1; i < p.length; i++) { var x1 = X(p[i - 1].lon), y1 = Y(p[i - 1].lat), x2 = X(p[i].lon), y2 = Y(p[i].lat), dx = x2 - x1, dy = y2 - y1, L = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L)), d = Math.hypot(x - x1 - t * dx, y - y1 - t * dy); if (d < bd && t > 0.08 && t < 0.92) { bd = d; best = i; } }
+    return best;
+  }
+  /* the mark card: tap a point on the chart to name it, set its position or side, delete it or keep it in My marks */
+  function markCard(i) {
+    var p = S.edit.pts, q = p[i], n = p.length, kind = i === 0 ? 'Start' : i === n - 1 && S.edit.closed ? 'Finish' : 'Mark ' + i, mid = i > 0 && !(i === n - 1 && S.edit.closed), box = $('markPop');
+    var legs = (i > 0 ? '<span>From ' + (p[i - 1].name || (i - 1 ? 'Mark ' + (i - 1) : 'Start')) + ': <b>' + legTxt(p[i - 1], q) + '</b></span>' : '') + (i < n - 1 ? '<span>To next: <b>' + legTxt(q, p[i + 1]) + '</b></span>' : '');
+    box.innerHTML = '<div class="mphd"><b>' + kind + '</b><button class="btn" id="mpX" aria-label="Close">×</button></div>' +
+      '<input id="mpN" placeholder="Name" value="' + (q.name || '').replace(/"/g, '&quot;') + '" aria-label="Name">' +
+      '<div class="mpll"><input id="mpLa" aria-label="Latitude" value="' + fmtPos(q.lat, 'NS') + '"><input id="mpLo" aria-label="Longitude" value="' + fmtPos(q.lon, 'EW') + '"></div>' +
+      (mid ? '<select id="mpS" aria-label="Rounding side"><option value="port">Leave to port</option><option value="starboard">Leave to starboard</option></select>' : '') +
+      (legs ? '<div class="mplegs">' + legs + '</div>' : '') +
+      '<div class="xrow"><button class="btn primary" id="mpOk">Done</button><button class="btn" id="mpKeep">Save to My marks</button><button class="btn warnb" id="mpDel">Delete</button></div>';
+    box.hidden = false; if ($('mpS')) $('mpS').value = q.side || 'port';
+    var read = function () { var la = parsePos($('mpLa').value, true), lo = parsePos($('mpLo').value, false); $('mpLa').classList.toggle('bad', isNaN(la)); $('mpLo').classList.toggle('bad', isNaN(lo)); if (isNaN(la) || isNaN(lo)) return false; if (!editOk(la, lo)) return false; q.lat = +la.toFixed(5); q.lon = +lo.toFixed(5); q.name = $('mpN').value.trim(); if ($('mpS')) q.side = $('mpS').value; return true; };
+    $('mpX').onclick = function () { box.hidden = true; };
+    $('mpOk').onclick = function () { if (!read()) return; box.hidden = true; editPrompt(); draw(); };
+    $('mpKeep').onclick = function () { if (!read()) return; if (myMarkSave(q, q.name)) { box.hidden = true; draw(); } };
+    $('mpDel').onclick = function () { p.splice(i, 1); box.hidden = true; editPrompt(); draw(); };
+  }
   function fmtPos(v, ns) { var h = v < 0 ? ns[1] : ns[0], a = Math.abs(v), d = Math.floor(a), m = (a - d) * 60; if (m >= 59.995) { d++; m = 0; } return d + '°' + (m < 10 ? '0' : '') + m.toFixed(2) + '\'' + h; }
   function parsePos(t, lat) {   /* 50°38.24'N, 50 38.24 N, 50.6373, -1.65, 1 38.98W */
     t = String(t || '').trim().toUpperCase().replace(/[°'’′"″]/g, ' ').replace(/,/g, '.'); if (!t) return NaN;
@@ -1389,15 +1449,16 @@
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
     S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [], closed: !!c };
     if (!c) S.drawnNew = true;
-    if (!c) { var rg = { region: { s: 48.0, n: 56.0, w: -12.5, e: 6.5 } }; if (rg && rg.region) { var b = rg.region;   /* the whole of Route's waters: the Irish Sea, out past Fastnet Rock, the Channel and the southern North Sea (Biscay is a pan away) */ var cv = $('map').getBoundingClientRect(); $('editBar').hidden = false; var eb = $('editBar').getBoundingClientRect(), pn = $('panel') && !$('panel').hidden ? $('panel').getBoundingClientRect() : null;
+    var cb = null; if (c) { cb = { s: 90, n: -90, w: 180, e: -180 }; S.edit.pts.forEach(function (q) { cb.s = Math.min(cb.s, q.lat); cb.n = Math.max(cb.n, q.lat); cb.w = Math.min(cb.w, q.lon); cb.e = Math.max(cb.e, q.lon); }); var mla = Math.max(0.08, (cb.n - cb.s) * 0.15), mlo = Math.max(0.12, (cb.e - cb.w) * 0.15); cb.s -= mla; cb.n += mla; cb.w -= mlo; cb.e += mlo; }   /* an existing course: the whole course in view */
+    if (!c || cb) { var rg = { region: cb || { s: 48.0, n: 56.0, w: -12.5, e: 6.5 } }; if (rg && rg.region) { var b = rg.region;   /* the whole of Route's waters: the Irish Sea, out past Fastnet Rock, the Channel and the southern North Sea (Biscay is a pan away) */ var cv = $('map').getBoundingClientRect(); $('editBar').hidden = false; var eb = $('editBar').getBoundingClientRect(), pn = $('panel') && !$('panel').hidden ? $('panel').getBoundingClientRect() : null;
         var top = Math.max(0, eb.bottom - cv.top + 6), bot = pn && pn.top > cv.top + 100 ? Math.min(H, pn.top - cv.top - 6) : H - 10, room = Math.max(120, bot - top);   /* fit between the edit bar and the panel */
-        view.s = Math.max(20, Math.min(W / ((b.e - b.w) * K * 1.04), room / ((b.n - b.s) * 1.04))); view.lo = (b.w + b.e) / 2; view.la = (b.s + b.n) / 2 + ((top + bot) / 2 - H / 2) / view.s; S.routes = []; S.sel = null; } }   /* a new course: the whole area Route can route, nothing old on it */
+        view.s = Math.max(20, Math.min(W / ((b.e - b.w) * K * 1.04), room / ((b.n - b.s) * 1.04))); view.lo = (b.w + b.e) / 2; view.la = (b.s + b.n) / 2 + ((top + bot) / 2 - H / 2) / view.s; if (!c) { S.routes = []; S.sel = null; } } }   /* a new course: the whole area Route can route, nothing old on it */
     $('editBar').hidden = false; editPrompt(); draw();
   }
   function editPrompt() {
     var n = S.edit.pts.length;
-    $('edTxt').textContent = S.edit.closed ? 'Drag any point to move it. Tap the chart to add a mark before the finish. Done for names, sides and positions.' :
-      n === 0 ? 'Tap the chart to place the start.' : n === 1 ? 'Tap to add each mark in order, and the finish last. Drag a point to move it.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
+    $('edTxt').textContent = S.edit.closed ? 'Tap a mark to name it, set its position or delete it. Tap a leg to add a mark on it. Drag to move. ◇ are My marks: tap one to use it.' :
+      n === 0 ? 'Tap the chart to place the start, or a ◇ from My marks.' : n === 1 ? 'Tap to add each mark in order, and the finish last. Tap a mark to edit or delete it.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
     $('edDone').disabled = n < 2; $('edUndo').disabled = !n;
   }
   function editOk(la, lo) {
@@ -1408,11 +1469,16 @@
     return true;
   }
   function editTap(x, y) {
-    var la = LA(y), lo = LO(x); if (!editOk(la, lo)) return;
-    var q = { lat: +la.toFixed(5), lon: +lo.toFixed(5) };
-    if (S.edit.closed && S.edit.pts.length >= 2) S.edit.pts.splice(S.edit.pts.length - 1, 0, q); else S.edit.pts.push(q);
+    if ($('markPop') && !$('markPop').hidden) { $('markPop').hidden = true; return; }
+    var hit = editHit(x, y); if (hit >= 0) { markCard(hit); return; }
+    var mm = myMarkHit(x, y), q, la, lo;
+    if (mm) q = { lat: mm.lat, lon: mm.lon, name: mm.name, side: 'port' };
+    else { la = LA(y); lo = LO(x); if (!editOk(la, lo)) return; q = { lat: +la.toFixed(5), lon: +lo.toFixed(5) }; }
+    var leg = legHit(x, y), p = S.edit.pts;
+    if (leg > 0) p.splice(leg, 0, q); else if (S.edit.closed && p.length >= 2) p.splice(p.length - 1, 0, q); else p.push(q);
     editPrompt(); draw();
   }
+  window.__fsEditPts = function () { var r = $('map').getBoundingClientRect(); return S.edit ? S.edit.pts.map(function (q) { return [r.left + X(q.lon), r.top + Y(q.lat), q.name || '']; }) : null; };   /* for the automatic tests */
   function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
     var p = S.edit.pts; if (!p.length) return;
@@ -1420,7 +1486,7 @@
     ctx.font = '600 12px Inter, sans-serif';
     p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat), on = S.drag === i; ctx.beginPath(); ctx.arc(x, y, on ? 11 : 8, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--route']; ctx.lineWidth = on ? 3 : 2; ctx.stroke(); ctx.fillStyle = css['--ink'];
       var lbl = i === 0 ? 'Start' : i === p.length - 1 && (p.length > 1) ? (S.edit.closed ? 'Finish' : 'Finish?') : 'Mark ' + i; ctx.fillText(q.name || lbl, x + 12, y - 10); });
-    ctx.restore();
+    ctx.restore(); legsDraw(p, true);
   }
   function editRead() {   // take what is typed in the list back into the points
     var p = S.edit.pts; if (!$('edName')) return true; var ok = true; S.edit.name = $('edName').value.trim() || 'My course';
@@ -1436,10 +1502,10 @@
     h += '<p class="note">Positions as on the chart, for example 50°38.24\'N and 1°38.98\'W, or in decimal degrees (50.6373, -1.6497).</p>';
     p.forEach(function (q, i) {
       var kind = i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i, mid = i > 0 && i < p.length - 1;
-      h += '<div class="edpt"><div class="edhd"><b>' + kind + '</b><span class="edbtn">' + (mid ? '<button class="btn" data-up="' + i + '" aria-label="Move up">↑</button><button class="btn" data-dn="' + i + '" aria-label="Move down">↓</button><button class="btn" data-rm="' + i + '" aria-label="Remove ' + kind + '">Remove</button>' : '') + '</span></div>' +
+      h += '<div class="edpt"><div class="edhd"><b>' + kind + '</b><span class="edbtn">' + (mid ? '<button class="btn" data-up="' + i + '" aria-label="Move up">↑</button><button class="btn" data-dn="' + i + '" aria-label="Move down">↓</button><button class="btn" data-rm="' + i + '" aria-label="Remove ' + kind + '">Remove</button>' : '') + '<button class="btn" data-keep="' + i + '" aria-label="Save ' + kind + ' to My marks" title="Save to My marks">☆</button></span></div>' +
         '<div class="edgrid"><input id="edN' + i + '" placeholder="Name" value="' + (q.name || kind).replace(/"/g, '&quot;') + '"><input id="edLa' + i + '" inputmode="text" aria-label="' + kind + ' latitude" value="' + fmtPos(q.lat, 'NS') + '"><input id="edLo' + i + '" inputmode="text" aria-label="' + kind + ' longitude" value="' + fmtPos(q.lon, 'EW') + '">' +
         (mid ? '<select id="edS' + i + '"><option value="port">to port</option><option value="starboard">to starboard</option></select>' : '<span></span>') + '</div></div>';
-      if (i < p.length - 1) h += '<button class="btn edadd" data-add="' + (i + 1) + '">+ Add a mark here</button>';
+      if (i < p.length - 1) h += '<div class="edleg"><span class="legv">' + legTxt(q, p[i + 1]) + '</span><button class="btn edadd" data-add="' + (i + 1) + '">+ Add a mark here</button>' + (myMarks().length ? '<select class="edpick" data-pick="' + (i + 1) + '" aria-label="Add one of My marks here"><option value="">+ One of My marks…</option>' + myMarks().map(function (m, k) { return '<option value="' + k + '">' + m.name.replace(/</g, '&lt;') + '</option>'; }).join('') + '</select>' : '') + '</div>';
     });
     /* when is the start: the exact class start, asked first so a new course always routes from the right start */
     var cur = $('startSel').value;
@@ -1447,6 +1513,7 @@
     h = when + h;
     var opts = '';
     h += '<p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
+    var mk = myMarks(); if (mk.length) h += '<details class="edmy"><summary>My marks (' + mk.length + ')</summary>' + mk.map(function (m, k) { return '<div class="edmyr"><span><b>' + m.name.replace(/</g, '&lt;') + '</b> ' + fmtPos(m.lat, 'NS') + ' ' + fmtPos(m.lon, 'EW') + '</span><button class="btn" data-mdel="' + k + '" aria-label="Delete ' + m.name.replace(/"/g, '') + ' from My marks">Delete</button></div>'; }).join('') + '<p class="note">Kept on this device. Tap ☆ by any point to add it here.</p></details>';
     h += '<p class="note" id="edNm">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edMap">Edit on the chart</button><button class="btn" id="edCancel2">Cancel</button></div>';
     $('raceList').innerHTML = '<h3>Course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
     var edC = function () { return { start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }; };
@@ -1458,6 +1525,9 @@
     [].forEach.call($('raceList').querySelectorAll('[data-rm]'), function (b) { b.onclick = function () { redo(function () { p.splice(+b.dataset.rm, 1); }); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-up]'), function (b) { b.onclick = function () { var i = +b.dataset.up; if (i > 1) redo(function () { var t = p[i]; p[i] = p[i - 1]; p[i - 1] = t; }); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-dn]'), function (b) { b.onclick = function () { var i = +b.dataset.dn; if (i < p.length - 2) redo(function () { var t = p[i]; p[i] = p[i + 1]; p[i + 1] = t; }); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-keep]'), function (b) { b.onclick = function () { if (!editRead()) return; var i = +b.dataset.keep; if (myMarkSave(p[i], p[i].name)) editForm(); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-pick]'), function (b) { b.onchange = function () { if (b.value === '') return; var m = myMarks()[+b.value]; redo(function () { p.splice(+b.dataset.pick, 0, { lat: m.lat, lon: m.lon, name: m.name, side: 'port' }); }); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-mdel]'), function (b) { b.onclick = function () { if (!editRead()) return; var a = myMarks(); a.splice(+b.dataset.mdel, 1); myMarksSet(a); editForm(); draw(); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-add]'), function (b) { b.onclick = function () { redo(function () { var i = +b.dataset.add, a = p[i - 1], c = p[i]; p.splice(i, 0, { lat: +((a.lat + c.lat) / 2).toFixed(5), lon: +((a.lon + c.lon) / 2).toFixed(5), side: 'port' }); }); }; });
     [].forEach.call($('raceList').querySelectorAll('.edgrid input'), function (el) { el.onchange = function () { if (editRead()) { $('edNm').textContent = courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.'; draw(); } }; });
     $('edMap').onclick = function () { if (!editRead()) return; $('races').hidden = true; $('wizBar').hidden = true; $('editBar').hidden = false; editPrompt(); draw(); };
@@ -1924,13 +1994,14 @@
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
     if (S.show.wind && $('windShow').value) { ctx.save(); ctx.globalAlpha = (+$('windDim').value || 0) / 100; arrows('wind'); ctx.restore(); }
     zonesDraw(); lightsDraw();
-    if (!(S.edit && S.drawnNew)) marks();   /* drawing a new course: the old course's marks are not shown */
+    document.body.classList.toggle('editing', !!S.edit);
+    if (!S.edit) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
     var selOn = S.sel && !S.sel.hidden;
     if (selOn) line(S.sel, 9, 0.35);
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
     if (selOn) line(S.sel, 2.2, 1);
-    if (S.edit) editDraw();
+    if (S.edit) { myMarksDraw(); editDraw(); }
     if (S.mob) mobDraw();
     if (S.edit) { ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.setLineDash([6, 5]);   /* every area a drawn course can route in, each named */
       REGIONS.forEach(function (g) { if (!READY[g.id]) return; var rb = g.region; ctx.globalAlpha = g.id === HERE ? 1 : 0.6; ctx.lineWidth = g.id === HERE ? 1.8 : 1.2; ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.fillText(g.name, X(rb.w) + 5, Y(rb.n) + 13); });
@@ -2084,6 +2155,7 @@
   function marks() {
     var c = meta.course; ctx.font = '600 11px Inter, sans-serif';
     [c.start].concat(c.marks).concat([c.finish]).forEach(function (m) { var mx = X(m.lon), my = Y(m.lat); ctx.beginPath(); ctx.arc(mx, my, 7.5, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--ink']; ctx.lineWidth = 1.5; ctx.stroke(); triMark(mx, my + 0.8, 0, 4.6, css['--ink']); ctx.fillStyle = css['--ink']; ctx.fillText(m.name, mx + 11, my - 8); });
+    if (S.show.legs) legsDraw([c.start].concat(c.marks).concat([c.finish]), false);
     if (S.legs && S.legs[0].gate) { var g = S.legs[0].gate; ctx.strokeStyle = css['--ink']; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(g.a[1]), Y(g.a[0])); ctx.lineTo(X(g.b[1]), Y(g.b[0])); ctx.stroke(); ctx.setLineDash([]); }
   }
   /* FirstShift triangle markers: open for your boat, solid for the fleet, triangle in a circle for marks */
@@ -2249,6 +2321,7 @@
     cv.addEventListener('gestureend', function () { gMid = null; });
   }
   cv.addEventListener('pointerup', function (e) {
+    if (S.drag != null && moved < 6) { var ti = S.drag; S.drag = null; ptrs.delete(e.pointerId); pinch = 0; markCard(ti); draw(); return; }   /* a tap on a mark, not a drag: open its card */
     if (S.drag != null) { var dq = S.edit.pts[S.drag]; if (!editOk(dq.lat, dq.lon)) Object.assign(dq, S.dragFrom); S.drag = null; ptrs.delete(e.pointerId); pinch = 0; draw(); return; } if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(e.offsetX, e.offsetY, e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0; });
   cv.addEventListener('pointercancel', function (e) { ptrs.delete(e.pointerId); pinch = 0; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
