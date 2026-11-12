@@ -330,8 +330,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .sp-tb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .sp-tb a{color:#9CC8F0;text-decoration:underline}
 .sp-tb .btn{min-height:44px;padding:0 20px;font-weight:600}
-.errbox{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:8;display:flex;align-items:center;gap:8px;max-width:min(92vw,520px);background:var(--panel);border:2px solid #ff3b30;border-radius:12px;padding:8px 8px 8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:14px;line-height:1.35}
-.errbox span{flex:1;min-width:0}
+.errbox{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:30;display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:min(92vw,520px);box-sizing:border-box;background:var(--panel);border:2px solid #ff3b30;border-radius:12px;padding:8px 8px 8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:14px;line-height:1.35}
+.errbox span{flex:1 1 100%;min-width:0}.errbox .btn{flex:none}#errRetry{margin-left:auto}
 
 .splash .sp-img{position:absolute;inset:0;background:url(../brand/route-hero.webp) center 30%/cover no-repeat}
 .splash .sp-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,22,48,0) 35%,rgba(2,22,48,.86) 68%,#021630 100%)}
@@ -568,7 +568,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.6.7</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.6.8</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>

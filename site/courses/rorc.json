@@ -30,7 +30,13 @@
     "radius_nm": 0.4
    },
    "nm": 110,
-   "source": "https://racing.rorc.org/rorc-offshore-racing-returns-to-europe-04-2026"
+   "source": "https://racing.rorc.org/rorc-offshore-racing-returns-to-europe-04-2026",
+   "region": {
+    "s": 48.9,
+    "n": 51.2,
+    "w": -2.8,
+    "e": 1.2
+   }
   },
   {
    "id": "myth",
@@ -347,7 +353,13 @@
     }
    ],
    "fleetNote": "Demo: Sunrise only. TCC 1.098 confirmed by Stuart 11 Nov 2026; fully crewed, 450 kg crew.",
-   "bandNear": 1
+   "bandNear": 1,
+   "region": {
+    "s": 48.0,
+    "n": 52.8,
+    "w": -12.5,
+    "e": -0.3
+   }
   },
   {
    "id": "channel",
@@ -420,10 +432,10 @@
    "id": "channel-area",
    "name": "English Channel",
    "region": {
-    "s": 48.4,
-    "n": 51.0,
-    "w": -5.3,
-    "e": 1.7
+    "s": 48.0,
+    "n": 51.2,
+    "w": -6.5,
+    "e": 2.5
    },
    "hours": 240,
    "start": {
@@ -451,9 +463,9 @@
    "id": "celtic-area",
    "name": "Celtic Sea and Western Approaches",
    "region": {
-    "s": 48.3,
-    "n": 52.3,
-    "w": -10.8,
+    "s": 48.0,
+    "n": 52.6,
+    "w": -12.0,
     "e": -2.0
    },
    "hours": 240,
@@ -483,10 +495,10 @@
    "id": "northsea-area",
    "name": "Southern North Sea",
    "region": {
-    "s": 51.0,
-    "n": 53.9,
-    "w": 0.6,
-    "e": 5.4
+    "s": 50.8,
+    "n": 55.0,
+    "w": 0.0,
+    "e": 6.5
    },
    "hours": 240,
    "start": {
@@ -507,10 +519,10 @@
    "id": "irishsea-area",
    "name": "Irish Sea",
    "region": {
-    "s": 51.4,
-    "n": 55.3,
-    "w": -7.0,
-    "e": -2.7
+    "s": 51.2,
+    "n": 56.0,
+    "w": -8.0,
+    "e": -2.5
    },
    "hours": 240,
    "start": {
@@ -531,10 +543,10 @@
    "id": "biscay-area",
    "name": "Bay of Biscay",
    "region": {
-    "s": 43.2,
-    "n": 48.6,
-    "w": -10.0,
-    "e": -1.0
+    "s": 43.0,
+    "n": 48.8,
+    "w": -10.5,
+    "e": -0.8
    },
    "hours": 240,
    "start": {
