@@ -373,6 +373,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .shareurl{width:100%;font:500 12px var(--f-data);padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--glass);color:var(--ink)}
 #shareBox{z-index:60}
 .updbar{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:9;max-width:min(92vw,520px);border:0;border-radius:12px;padding:12px 16px;background:var(--brand);color:#0E1C2D;font:600 15px var(--f-body);box-shadow:0 4px 16px rgba(0,0,0,.35);cursor:pointer}
+.aiswarn{margin:6px 0 8px;padding:8px 10px;border:2px solid var(--warn);border-radius:10px;font-size:13px;line-height:1.45}.aiswarn b{color:var(--warn)}
 .stbtn{flex:none;display:grid;align-content:center;justify-items:start;gap:1px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:4px 10px;height:52px;cursor:pointer;text-align:left;color:var(--brand);font:600 12px/1.15 var(--f-data);pointer-events:auto}
 .stbtn .stl{font:600 10px/1 var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 .stbtn .stv{white-space:nowrap}
@@ -488,7 +489,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
         <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
-      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
+      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><p class="aiswarn" id="aisWarn" hidden><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
       <p class="note">Every boat you are racing, sailing your chosen route at its own TCC from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
       <p class="note warnt" id="fleetEmpty" hidden>No entry list for this race yet. Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>
@@ -567,7 +568,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.6.5</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.6.6</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -689,7 +690,7 @@ A4, 125, 180, 18, 60</textarea>
     </div>
     <div class="sbody" id="s-display" hidden>
       <h3>AIS</h3>
-      <div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Live online (shore stations, when you have signal)</option></select></div>
+      <p class="aiswarn"><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Free online AIS (not for navigation)</option></select></div>
       <div class="row"><label for="cpaNm">CPA alarm inside</label><input type="number" id="cpaNm" value="0.5" min="0.1" max="5" step="0.1"> nm</div>
       <div class="row"><label for="tcpaMin">and within</label><input type="number" id="tcpaMin" value="15" min="2" max="60" step="1"> min</div>
       <label class="chk"><input type="checkbox" id="cpaSound" checked><span>Sound the CPA alarm</span></label>
