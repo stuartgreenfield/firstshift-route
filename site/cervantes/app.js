@@ -83,9 +83,9 @@
 
   /* ---------- data plans ---------- */
   var PLANS = {
-    full: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'full', mog: 'full', icon: 'full', arome: 'full', arpege: 'full', nwscur: 'full', ibicur: 'full', nwswav: 'full', ecwav: 'full', emodnet: 'full' },
-    coastal: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'off', mog: 'off', icon: 'full', arome: 'full', arpege: 'off', nwscur: 'full', ibicur: 'off', nwswav: 'lite', ecwav: 'off', emodnet: 'full' },
-    lite: { ukv: 'lite', ecmwf: 'lite', gfs: 'lite', aifs: 'off', mog: 'off', icon: 'lite', arome: 'lite', arpege: 'off', nwscur: 'lite', ibicur: 'off', nwswav: 'off', ecwav: 'full', emodnet: 'lite' }
+    full: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'full', mog: 'full', icon: 'full', arome: 'full', arpege: 'full', nwscur: 'full', ibicur: 'full', nwswav: 'full', ecwav: 'full', ecmet: 'full', emodnet: 'full' },
+    coastal: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'off', mog: 'off', icon: 'full', arome: 'full', arpege: 'off', nwscur: 'full', ibicur: 'off', nwswav: 'lite', ecwav: 'off', ecmet: 'full', emodnet: 'full' },
+    lite: { ukv: 'lite', ecmwf: 'lite', gfs: 'lite', aifs: 'off', mog: 'off', icon: 'lite', arome: 'lite', arpege: 'off', nwscur: 'lite', ibicur: 'off', nwswav: 'off', ecwav: 'full', ecmet: 'lite', emodnet: 'lite' }
   };
   function applyPlan(p) { S.choice = Object.assign({}, PLANS[p]); S.plan = p; store('fs-plan', p); [].forEach.call($('plans').children, function (b) { b.setAttribute('aria-pressed', b.dataset.plan === p); }); dataTable(); }
   function layer(id) { return meta.layers.find(function (l) { return l.id === id; }); }
@@ -99,7 +99,7 @@
   function ageCls(h) { return h > 18 ? ' style="color:var(--shoaledge);font-weight:700"' : h > 12 ? ' style="color:var(--warn);font-weight:700"' : ''; }
   function dataTable() {
     if (!meta) return;
-    var tot = 0, now = Date.now(), h = '<tr><th>Layer</th><th>Version</th><th>Grid</th><th>Step</th><th>Size</th></tr>', kinds = { wind: 'Wind', tide: 'Tide', wave: 'Sea state', depth: 'Depth' };
+    var tot = 0, now = Date.now(), h = '<tr><th>Layer</th><th>Version</th><th>Grid</th><th>Step</th><th>Size</th></tr>', kinds = { wind: 'Wind', tide: 'Tide', wave: 'Sea state', depth: 'Depth', met: 'Weather' };
     meta.layers.forEach(function (L) {
       var c = S.choice[L.id] || 'off', v = L[c === 'off' ? 'full' : c], loaded = S.loaded[L.id];
       if (c !== 'off' && loaded !== c) tot += L[c].gz;
@@ -320,6 +320,7 @@
       (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
       (LIGHTS.length ? '<label><input type="checkbox" data-l="lights"' + (S.show.lights ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink);border-top-style:dotted"></span>Lighthouses and main buoys</label>' : '') +
       '<label><input type="checkbox" data-l="lay"' + (S.show.lay ? ' checked' : '') + '><span class="sw" style="border-color:var(--brand);border-top-style:dashed"></span>Laylines to the next mark</label>' +
+      (metField() ? '<div class="lgrp">Weather from ECMWF, at the slider time</div>' + MET.map(function (m) { return '<label><input type="checkbox" data-l="' + m[0] + '"' + (S.show[m[0]] ? ' checked' : '') + '><span class="sw" style="border-color:' + m[3] + '"></span>' + m[1] + '</label>'; }).join('') : '') +
       '<label><input type="checkbox" data-l="iso"' + (S.show.iso ? ' checked' : '') + '><span class="sw" style="border-color:var(--muted)"></span>Isochrones of the chosen route (each hour)</label>' +
       '<label><input type="checkbox" data-l="band"' + (S.show.band ? ' checked' : '') + '><span class="sw" style="border-color:var(--muted);border-top-style:dashed"></span>Forecast band edge</label>' +
       (S.ov ? '<label><input type="checkbox" data-big="1"' + (S.big ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Big picture: north-west Europe</label>' : '') +
@@ -329,7 +330,7 @@
     var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band'];
     $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
     $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
-    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) S.show[c.dataset.l] = c.checked; if (c.dataset.l === 'iso' && c.checked) isoFetch(); else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
+    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (c.dataset.l === 'iso' && c.checked) isoFetch(); } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
     $('layersX').onclick = closeLayers;
     $('lWind').onchange = function () { $('windSym').value = $('lWind').value; $('windSym').onchange(); };
@@ -354,6 +355,40 @@
     var left = '';
     if (PG.est) { var el = (Date.now() - PG.t0) / 1000, rem = PG.est - el; left = rem > 2 ? ' · about ' + Math.ceil(rem) + ' s left' : ' · nearly done'; }
     $('pgD').textContent = (detail || '') + left;
+  }
+  /* weather beyond the wind (ECMWF): each one a layer you switch on, so the chart stays clear */
+  var MET = [['mGust', 'Gusts', 'gust', '#E8A33D'], ['mMsl', 'Pressure (isobars)', 'msl', '#9AAEBB'], ['mRain', 'Rain', 'rain', '#4FA3E0'], ['mCape', 'Thunderstorm and squall risk', 'cape', '#C04BD8'], ['mCloud', 'Cloud', 'cloud', '#8C99A6'], ['mTemp', 'Air temperature', 'temp', '#E07A5F']];
+  function metField() { var k = Object.keys(P.met || {}); return k.length ? P.met[k[0]] : null; }
+  function metAt(k, la, lo, t) { var f = metField(); if (!f) return NaN; return f.sample(k, la, lo, t); }
+  function drawMet() {
+    var f = metField(); if (!f) return; var on = MET.filter(function (m) { return S.show[m[0]]; }); if (!on.length) return;
+    var L = f.L, t = S.t, la0 = Math.max(L.lat0, LA(H)), la1 = Math.min(L.lat0 + L.dlat * (L.ny - 1), LA(0)), lo0 = Math.max(L.lon0, LO(0)), lo1 = Math.min(L.lon0 + L.dlon * (L.nx - 1), LO(W));
+    var cw = Math.abs(X(L.lon0 + L.dlon) - X(L.lon0)), ch = Math.abs(Y(L.lat0 + L.dlat) - Y(L.lat0)), every = Math.max(1, Math.ceil(46 / Math.min(cw, ch)));
+    ctx.save(); ctx.font = '600 10px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var cells = []; for (var y = 0; y < L.ny; y++) { var la = L.lat0 + y * L.dlat; if (la < la0 - L.dlat || la > la1 + L.dlat) continue; for (var x = 0; x < L.nx; x++) { var lo = L.lon0 + x * L.dlon; if (lo < lo0 - L.dlon || lo > lo1 + L.dlon) continue; cells.push([y, x, la, lo]); } }
+    var fill = function (k, colour, alphaOf) { ctx.fillStyle = colour; cells.forEach(function (c) { var v = f.sample(k, c[2], c[3], t); var a = v === v ? alphaOf(v) : 0; if (a <= 0) return; ctx.globalAlpha = a; ctx.fillRect(X(c[3] - L.dlon / 2), Y(c[2] + L.dlat / 2), cw + 1, ch + 1); }); ctx.globalAlpha = 1; };
+    var label = function (k, colour, txt) { ctx.fillStyle = colour; cells.forEach(function (c) { if (c[0] % every || c[1] % every) return; var v = f.sample(k, c[2], c[3], t); if (!(v === v)) return; var s2 = txt(v); if (s2) ctx.fillText(s2, X(c[3]), Y(c[2])); }); };
+    if (S.show.mCloud) fill('cloud', '#8C99A6', function (v) { return v > 20 ? v / 100 * 0.32 : 0; });
+    if (S.show.mRain) fill('rain', '#2F7FD0', function (v) { return v >= 0.1 ? Math.min(0.55, 0.12 + v / 6) : 0; });
+    if (S.show.mCape) fill('cape', '#C04BD8', function (v) { return v >= 300 ? Math.min(0.5, 0.12 + (v - 300) / 2500) : 0; });
+    if (S.show.mGust) { fill('gust', '#E8A33D', function (v) { var kn = v / KN; return kn >= 25 ? Math.min(0.5, 0.12 + (kn - 25) / 40) : 0; }); label('gust', css['--ink'] || '#fff', function (v) { return 'G' + Math.round(v / KN); }); }
+    if (S.show.mTemp) label('temp', '#E07A5F', function (v) { return Math.round(v) + '°'; });
+    if (S.show.mMsl) {   /* isobars every 2 hPa, by marching squares over the forecast grid */
+      ctx.strokeStyle = css['--muted'] || '#9AAEBB'; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.85; var g = {};
+      var val = function (y, x) { var k2 = y + ',' + x; if (!(k2 in g)) g[k2] = f.sample('msl', L.lat0 + y * L.dlat, L.lon0 + x * L.dlon, t); return g[k2]; };
+      var mn = 1e9, mx = -1e9; cells.forEach(function (c) { var v = val(c[0], c[1]); if (v === v) { mn = Math.min(mn, v); mx = Math.max(mx, v); } });
+      for (var lev = Math.ceil(mn / 2) * 2; lev <= mx; lev += 2) {
+        ctx.beginPath(); var lab = null;
+        cells.forEach(function (c) { var y = c[0], x = c[1]; if (y >= L.ny - 1 || x >= L.nx - 1) return;
+          var v = [val(y, x), val(y, x + 1), val(y + 1, x + 1), val(y + 1, x)]; if (v.some(function (q) { return !(q === q); })) return;
+          var P4 = [[y, x], [y, x + 1], [y + 1, x + 1], [y + 1, x]], pts = [];
+          for (var e = 0; e < 4; e++) { var a = v[e], b = v[(e + 1) % 4]; if ((a < lev) !== (b < lev)) { var fr = (lev - a) / (b - a), pa = P4[e], pb = P4[(e + 1) % 4]; pts.push([L.lat0 + (pa[0] + (pb[0] - pa[0]) * fr) * L.dlat, L.lon0 + (pa[1] + (pb[1] - pa[1]) * fr) * L.dlon]); } }
+          for (var q = 0; q + 1 < pts.length; q += 2) { ctx.moveTo(X(pts[q][1]), Y(pts[q][0])); ctx.lineTo(X(pts[q + 1][1]), Y(pts[q + 1][0])); if (!lab) lab = pts[q]; } });
+        ctx.stroke(); if (lab) { ctx.fillStyle = css['--muted'] || '#9AAEBB'; ctx.fillText(String(lev), X(lab[1]), Y(lab[0]) - 7); }
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
   }
   /* isochrones: the router's front each hour for the chosen route, worked out when the layer is switched on */
   function isoFetch() {
@@ -713,7 +748,10 @@
       if (against >= 1) t += ' Foul tide for about ' + fmtH(against) + ' from ' + clockH(tideT).slice(4) + ': that is where the inshore or offshore choice matters.';
       out.push(t);
     });
-    var risks = []; if (st.maxW >= 25) risks.push('wind up to ' + Math.round(st.maxW) + ' knots around ' + clockH(st.maxWt).slice(4) + ' UTC'); if (st.maxS >= 2.5) risks.push('sea up to ' + st.maxS.toFixed(1) + ' m');
+    var risks = [];
+    if (metField()) { var gMax = 0, gT = 0, sq = null; p.forEach(function (q) { var g = metAt('gust', q.la, q.lo, q.t) / KN, c = metAt('cape', q.la, q.lo, q.t), rn = metAt('rain', q.la, q.lo, q.t); if (g > gMax) { gMax = g; gT = q.t; } if (!sq && c >= 500 && rn >= 0.5) sq = q; });
+      if (gMax >= 25) risks.push('gusts to ' + Math.round(gMax) + ' knots around ' + clockH(gT).slice(4) + ' UTC'); if (sq) risks.push('squalls possible from ' + clockH(sq.t).slice(4) + ' UTC, with rain and thunderstorm energy on the route'); }
+    if (st.maxW >= 25) risks.push('wind up to ' + Math.round(st.maxW) + ' knots around ' + clockH(st.maxWt).slice(4) + ' UTC'); if (st.maxS >= 2.5) risks.push('sea up to ' + st.maxS.toFixed(1) + ' m');
     out.push((risks.length ? 'Watch for ' + risks.join(' and ') + '. ' : '') + (st.sails ? st.sails + ' sail changes' : 'No sail changes') + (st.reefs ? ' and ' + st.reefs + ' reef changes' : '') + ' in all. Planning aid, not for navigation.');
     return out.join('\n\n');
   }
@@ -1454,6 +1492,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
+    try { drawMet(); } catch (e) {}
     try { drawIso(); } catch (e) {}
     if (S.show.lay) { try { laylines(); } catch (e) {} }
     var ab = $('adjWhere') && $('adjWhere').value === 'box' ? adjBox() : null;   /* the area of a forecast override */
@@ -1805,6 +1844,8 @@
     if (tf) { var cu = tf.sample('u', la, lo, t), cv2 = tf.sample('v', la, lo, t); if (cu === cu) rows.push(r2('Tide', (Math.hypot(cu, cv2) / KN).toFixed(1) + ' kn to ' + pad(Math.atan2(cu, cv2) / R) + '°')); }
     var wv = P.wave[$('waveSel').value], hsv = 0, wdv = NaN;
     if (wv) { hsv = wv.sample('hs', la, lo, t); wdv = wv.sampleDir(la, lo, t); var tp = wv.sample('tp', la, lo, t); if (hsv === hsv) rows.push(r2('Sea', hsv.toFixed(1) + ' m from ' + pad(wdv) + '°' + (tp === tp ? ', ' + tp.toFixed(0) + ' s' : ''))); else hsv = 0; }
+    if (metField()) MET.forEach(function (m) { if (!S.show[m[0]]) return; var v = metAt(m[2], la, lo, t); if (!(v === v)) return;
+      rows.push(r2(m[1].replace(' (isobars)', ''), m[2] === 'gust' ? Math.round(v / KN) + ' kn' : m[2] === 'msl' ? v.toFixed(0) + ' hPa' : m[2] === 'rain' ? v.toFixed(1) + ' mm an hour' : m[2] === 'cape' ? (v < 300 ? 'low' : v < 1000 ? 'some' : v < 2500 ? 'high' : 'very high') + ' (' + Math.round(v) + ' J/kg)' : m[2] === 'cloud' ? Math.round(v) + '%' : Math.round(v) + '°C')); });
     // boat figures only when the pointer is on a route: open water has no boat
     var best = null, bs = null, bd2 = docked ? 26 : 16;
     S.routes.forEach(function (s) { if (s.hidden) return; s.r.path.forEach(function (p) { if (p.bsp == null) return; var d = Math.hypot(X(p.lo) - x, Y(p.la) - y) - (s === S.sel ? 3 : 0); if (d < bd2) { bd2 = d; best = p; bs = s; } }); });

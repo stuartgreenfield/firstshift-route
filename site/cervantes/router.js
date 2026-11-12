@@ -9,7 +9,7 @@
   function Field(L, bin) {
     var self = { L: L, ny: L.ny, nx: L.nx, hours: L.hours || [0] };
     function arr(d) { return d ? { a: new Int16Array(bin, d.off * 1, d.n), s: d.scale } : null; }
-    var keys = ['u', 'v', 'hs', 'dir', 'tp', 'z'], A = {};
+    var keys = ['u', 'v', 'hs', 'dir', 'tp', 'z', 'gust', 'msl', 'rain', 'cape', 'cloud', 'temp'], A = {};
     keys.forEach(function (k) { if (L[k]) A[k] = arr(L[k]); });
     self.A = A;
     var plane = L.ny * L.nx;
@@ -72,10 +72,10 @@
     return self;
   }
 
-  function addLayer(P, L, buf) { var f = Field(L, buf); if (L.kind === 'depth') P.depth = f; else P[L.kind][L.id] = f; return f; }
-  function emptyPack() { return { wind: {}, tide: {}, wave: {}, depth: null }; }
+  function addLayer(P, L, buf) { var f = Field(L, buf); if (L.kind === 'depth') P.depth = f; else (P[L.kind] = P[L.kind] || {})[L.id] = f; return f; }
+  function emptyPack() { return { wind: {}, tide: {}, wave: {}, met: {}, depth: null }; }
   function loadPack(meta, bin) {
-    var P = { meta: meta, wind: {}, tide: {}, wave: {}, depth: null };
+    var P = { meta: meta, wind: {}, tide: {}, wave: {}, met: {}, depth: null };
     meta.layers.forEach(function (L) { var f = Field(L, bin); if (L.kind === 'depth') P.depth = f; else P[L.kind][L.id] = f; });
     return P;
   }
