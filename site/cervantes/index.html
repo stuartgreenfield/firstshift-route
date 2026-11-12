@@ -366,6 +366,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .setup .sroute[disabled]{background:var(--line);color:var(--muted);cursor:default}
 .checks{display:grid;gap:5px;margin:10px 0;font-size:14px}.checks h4{margin:4px 0;font:600 12px var(--f-body);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
 .checks .ck{display:flex;gap:8px;align-items:flex-start}.checks .ck i{font-style:normal;font-weight:700;color:#4CC38A;flex:none;width:14px}.checks .ck.w i{color:var(--warn)}
+.setdone{margin:8px 14px 0;min-height:46px;font-weight:600;width:calc(100% - 28px)}
 .stbtn{flex:none;display:grid;align-content:center;justify-items:start;gap:1px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:4px 10px;height:52px;cursor:pointer;text-align:left;color:var(--brand);font:600 12px/1.15 var(--f-data);pointer-events:auto}
 .stbtn .stl{font:600 10px/1 var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 .stbtn .stv{white-space:nowrap}
@@ -547,7 +548,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.6.1</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.6.2</span></h2><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
       <button class="tab" data-s="fc" aria-selected="false">Forecasts</button>

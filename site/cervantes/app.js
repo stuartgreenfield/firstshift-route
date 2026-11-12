@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.6.1';
+  var VERSION = 'FirstShift Route v0.6.2';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.6.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.6.2 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1265,7 +1265,9 @@
     $('wizBack').onclick = function () { if (WIZ.step > 1) wizShow(WIZ.step === 3 ? 1 : WIZ.step - 1); };
     $('wizNext').onclick = wizNext;
     $('wizBarBack').onclick = function () { wizShow(1); };
-    $('boatWarn').onclick = function () { cardStep(1); };
+    $('boatWarn').onclick = function () { cardSettings('boat'); };
+    $('sheetX').addEventListener('click', cardSettingsClosed);
+    if ($('setDone')) $('setDone').onclick = function () { $('sheetX').click(); };
     $('sheetX').addEventListener('click', function () { if (WIZ.on && WIZ.back) { var b = WIZ.back; WIZ.back = 0; setTimeout(function () { wizShow(b); }, 0); } });
     $('racesX').addEventListener('click', function () { if (WIZ.on && WIZ.step === 2) wizClose(false); });
     boatWarn();
@@ -1445,6 +1447,16 @@
     S.suOpen = true; openTab('decision'); setupRender(); var el = $('setupCard'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
   }
   function afterCard() { try { var rows = setupRows(); if (rows.every(function (r) { return r.ok; })) { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; run(); } else setupRender(); } catch (e) {} }   /* all four ready: route straight away */
+  /* Boat and Forecasts open the full Settings tab (Stuart 12 Nov); closing Settings comes back to the set-up card */
+  function cardSettings(tab) {
+    S.card = tab; $('setBtn').click(); var t = document.querySelector('.stabs .tab[data-s="' + tab + '"]'); if (t) t.click();
+    var d = $('setDone'); if (d) { d.hidden = false; d.textContent = tab === 'boat' ? 'Done: save the boat and back to set-up' : 'Done: back to set-up'; }
+  }
+  function cardSettingsClosed() {
+    var tab = S.card; if (tab !== 'boat' && tab !== 'fc') return; S.card = false; if ($('setDone')) $('setDone').hidden = true;
+    if (tab === 'boat') { var tc = +$('tcc').value; if (tc >= 0.7 && tc <= 2.2) { if (!$('boatName').value.trim()) $('boatName').value = 'My boat'; $('boatSave').click(); store('fs-boatset', '1'); store('fs-wizdone', '1'); } }
+    setTimeout(function () { showCard(); if (!S.running && !(S.routes && S.routes.length)) afterCard(); }, 50);
+  }
   function cardStep(n) { S.card = true; WIZ.on = true; S.wizHold = true; wizShow(n); $('wizH').textContent = n === 1 ? 'Your boat' : 'The start'; $('wizDots').innerHTML = ''; $('wizNext').textContent = 'Done'; $('wizBack').hidden = true; }   /* one item from the set-up card: no step numbers */
   function setupRender() {
     var el = $('setupCard'); if (!el || !meta) return; var rows; try { rows = setupRows(); } catch (e) { return; }
@@ -1455,9 +1467,9 @@
       '<button class="sroute" id="suRoute"' + (all ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : 'Route (' + rows.filter(function (r) { return !r.ok; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
     [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function () { var k = b.dataset.su;
       if (k === 'course') { $('raceBtn').onclick({ stopPropagation: function () {} }); }
-      else if (k === 'boat') cardStep(1);
+      else if (k === 'boat') cardSettings('boat');
       else if (k === 'start') cardStep(3);
-      else { $('setBtn').click(); var t = document.querySelector('.stabs .tab[data-s="fc"]'); if (t) t.click(); } }; });
+      else cardSettings('fc'); }; });
     $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; run(); };
     if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
   }
@@ -1505,7 +1517,7 @@
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
-    if (startGate()) { busy(''); showCard(); return; }   /* start not chosen: the set-up card says so */
+    if (startGate()) { busy(''); if (S.card || ($('sheet') && !$('sheet').hidden) || !$('wiz').hidden) return; showCard(); return; }   /* never jump to the card while the boat, forecasts or start are being edited */   /* start not chosen: the set-up card says so */
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
     var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' UTC is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' UTC. Route will work out the routes once the forecasts reach the start, about ten days before. Choose an earlier start to route now.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
     S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
@@ -1517,7 +1529,7 @@
     var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
     S.running = true; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
-    pass(true).then(function () { return pass(false); }).then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
+    pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
     .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
