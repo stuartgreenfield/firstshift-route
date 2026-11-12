@@ -1094,10 +1094,10 @@
     if (myRegion()) { startEdit(null); return; }
     var opts2 = REGIONS.filter(function (g) { return READY[g.id]; });
     if (opts2.length === 1) { goNew(opts2[0].id); return; }
-    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts' };
+    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts', 'irishsea-area': "From St George's Channel to the North Channel, Wales to the east coast of Ireland" };
     $('raceList').innerHTML = '<h3>Where is the race?</h3><p class="note">Route draws your course on the forecast area that will route it, so the wind, tide and depth are ready when you save it.</p>' +
       opts2.map(function (g) { return '<div class="ritem"><div><b>' + g.name + '</b><span class="note">' + (AREA[g.id] || '') + '</span></div><div class="xrow"><button class="btn primary" data-newin="' + g.id + '">Draw here</button></div></div>'; }).join('') +
-      '<p class="note">Further afield (Irish Sea, Biscay) comes later.</p>';
+      '<p class="note">Further afield (Biscay and beyond) comes later.</p>';
     $('races').hidden = false;
     [].forEach.call($('raceList').querySelectorAll('[data-newin]'), function (b) { b.onclick = function () { goNew(b.dataset.newin); }; });
   }

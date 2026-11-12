@@ -470,6 +470,30 @@
     "radius_nm": 0.4
    },
    "note": "Forecasts for the southern North Sea: the North Sea Race and any course of your own inside the box."
+  },
+  {
+   "id": "irishsea-area",
+   "name": "Irish Sea",
+   "region": {
+    "s": 51.4,
+    "n": 55.3,
+    "w": -7.0,
+    "e": -2.7
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, Pwllheli Fairway buoy",
+    "lat": 52.8833,
+    "lon": -4.3833
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Dun Laoghaire East Pier",
+    "lat": 53.3024,
+    "lon": -6.1271,
+    "radius_nm": 0.4
+   },
+   "note": "Forecasts for the whole Irish Sea from St George's Channel to the North Channel. The example course is Pwllheli to Dun Laoghaire; any course of your own inside the box routes here."
   }
  ]
 }
