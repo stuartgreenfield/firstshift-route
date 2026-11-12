@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-12T12:20:57.868Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 107,
+   "note": "Routed in 81.4 s. The forecasts end before the finish on 6 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 222,
+   "note": "Routed in 94.0 s. The forecasts end before the finish on 8 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 337,
+   "note": "Routed in 95.0 s. The forecasts end before the finish on 8 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 447,
+   "note": "Routed in 90.7 s. The forecasts end before the finish on 7 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "fastnet",
+   "h": 4,
+   "s": 542,
+   "note": "Routed in 76.0 s. The forecasts end before the finish on 5 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "fastnet",
+   "h": 5,
+   "s": 662,
+   "note": "Routed in 100.2 s. The forecasts end before the finish on every route: they show as far as the forecasts reach, with the"
+  }
+ ]
+}

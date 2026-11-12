@@ -1,0 +1,149 @@
+{
+ "at": "2026-11-12T11:56:23.325Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 11,
+   "note": "Routed in 6.3 s. First answer in 2.4 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 20,
+   "note": "Routed in 6.9 s. First answer in 1.8 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 28,
+   "note": "Routed in 5.9 s. First answer in 2.0 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 34,
+   "note": "Routed in 4.5 s. First answer in 1.2 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 41,
+   "note": "Routed in 4.9 s. First answer in 1.3 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 48,
+   "note": "Routed in 5.2 s. First answer in 1.5 s."
+  },
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 24,
+   "note": "Routed in 17.4 s. First answer in 4.6 s."
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 45,
+   "note": "Routed in 16.9 s. First answer in 3.5 s."
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 67,
+   "note": "Routed in 17.5 s. First answer in 3.8 s."
+  },
+  {
+   "race": "deguingand",
+   "h": 0,
+   "s": 2,
+   "note": "Routed in 0.1 s. First answer in 0.4 s."
+  },
+  {
+   "race": "deguingand",
+   "h": 1,
+   "s": 3,
+   "note": "Routed in 0.1 s. First answer in 0.1 s."
+  },
+  {
+   "race": "deguingand",
+   "h": 2,
+   "s": 3,
+   "note": "Routed in 0.1 s. First answer in 0.1 s."
+  },
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 11,
+   "note": "Routed in 6.0 s. First answer in 2.7 s."
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 18,
+   "note": "Routed in 5.4 s. First answer in 1.5 s."
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 25,
+   "note": "Routed in 5.5 s. First answer in 1.5 s."
+  },
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 13,
+   "note": "Routed in 7.5 s. First answer in 2.7 s."
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 22,
+   "note": "Routed in 7.4 s. First answer in 1.8 s."
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 31,
+   "note": "Routed in 7.3 s. First answer in 1.7 s."
+  },
+  {
+   "race": "channel",
+   "h": 0,
+   "s": 1,
+   "note": "Routed on the server Thu 12 Nov 11:53; forecasts still loading for the replay."
+  },
+  {
+   "race": "channel",
+   "h": 1,
+   "s": 2,
+   "note": "Routed on the server Thu 12 Nov 11:53. Change any setting and Route works it out on your device."
+  },
+  {
+   "race": "channel",
+   "h": 2,
+   "s": 2,
+   "note": "Routed on the server Thu 12 Nov 11:53. Change any setting and Route works it out on your device."
+  },
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 9,
+   "note": "Routed in 4.4 s. First answer in 2.3 s."
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 15,
+   "note": "Routed in 4.4 s. First answer in 1.7 s."
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 21,
+   "note": "Routed in 4.4 s. First answer in 1.2 s."
+  }
+ ]
+}

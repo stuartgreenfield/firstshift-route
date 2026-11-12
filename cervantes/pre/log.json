@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-12T12:22:06.458Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 13,
+   "note": "Routed in 7.8 s. First answer in 2.9 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 24,
+   "note": "Routed in 7.5 s. First answer in 2.6 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 33,
+   "note": "Routed in 7.6 s. First answer in 2.1 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 44,
+   "note": "Routed in 8.0 s. First answer in 2.2 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 56,
+   "note": "Routed in 8.9 s. First answer in 2.5 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 69,
+   "note": "Routed in 10.1 s. First answer in 2.5 s."
+  }
+ ]
+}

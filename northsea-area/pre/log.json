@@ -1,0 +1,59 @@
+{
+ "at": "2026-11-12T11:57:37.802Z",
+ "log": [
+  {
+   "race": "northsea-area",
+   "h": 0,
+   "s": 11,
+   "note": "Routed in 5.9 s. First answer in 2.2 s."
+  },
+  {
+   "race": "northsea-area",
+   "h": 1,
+   "s": 18,
+   "note": "Routed in 5.8 s. First answer in 1.0 s."
+  },
+  {
+   "race": "northsea-area",
+   "h": 2,
+   "s": 25,
+   "note": "Routed in 6.0 s. First answer in 1.2 s."
+  },
+  {
+   "race": "northsea-area",
+   "h": 3,
+   "s": 33,
+   "note": "Routed in 6.1 s. First answer in 1.0 s."
+  },
+  {
+   "race": "northsea-area",
+   "h": 4,
+   "s": 40,
+   "note": "Routed in 6.4 s. First answer in 1.0 s."
+  },
+  {
+   "race": "northsea-area",
+   "h": 5,
+   "s": 49,
+   "note": "Routed in 6.8 s. First answer in 1.1 s."
+  },
+  {
+   "race": "northsea",
+   "h": 0,
+   "s": 11,
+   "note": "Routed in 6.0 s. First answer in 2.2 s."
+  },
+  {
+   "race": "northsea",
+   "h": 1,
+   "s": 19,
+   "note": "Routed in 5.9 s. First answer in 1.0 s."
+  },
+  {
+   "race": "northsea",
+   "h": 2,
+   "s": 26,
+   "note": "Routed in 5.9 s. First answer in 1.0 s."
+  }
+ ]
+}
