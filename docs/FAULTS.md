@@ -37,3 +37,9 @@ A mark is a short line from the buoy on the side the boat must not pass. Any cro
 
 ## F14 Sails inventory drop-down looked dead (11 Nov) - fixed
 Choosing an inventory only showed a Replace button, which then asked for a second tap. Now the choice applies at once, with Undo.
+
+## F15 Port and starboard shown the wrong way round (found 12 Nov) - fixed
+The router's true wind angle is heading minus wind direction, so a negative angle has the wind on the starboard side. The readings strip (141P), the chart tip and Ask Route's next tack labelled it the other way. Laylines were right. Fixed in all three; routes were never affected.
+
+## F16 Layer switches stopped working (12 Nov, about 00:00 to 00:25) - fixed
+Adding the isochrones switch broke the if/else in the Layers panel, so ticking wind, tide and the other layers threw an error. Live for about 25 minutes.

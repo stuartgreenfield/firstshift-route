@@ -512,6 +512,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>
       <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
       <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
+      <div class="row"><label for="leeway">Leeway upwind</label><input type="number" id="leeway" value="0" min="0" max="10" step="0.5"> °</div>
+      <p class="note">Optional. Polars measure the wind angle against the boat's track through the water, so the route already allows for leeway and this does not change it. Enter your boat's leeway close-hauled (from your instruments, Polar Live or the sailmaker) and Route shows a <b>Steer</b> heading to windward of the track, tapering to none on a beam reach. 0 leaves it off.</p>
     </div>
     <div class="sbody" id="s-fc" hidden>
       <h3>Wind models to route on</h3>
