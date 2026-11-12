@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.9.7';
+  var VERSION = 'FirstShift Route v0.9.8';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.9.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.8 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -384,10 +384,10 @@
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
   function layersPop() {
-    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lRoute">Just the route</button></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
+    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lCourse">Just the course</button><button class="btn" id="lRoute">Just the route</button></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
-      '<label><input type="checkbox" data-l="legs"' + (S.show.legs ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Leg courses and distances</label>' +
+      '<label><input type="checkbox" data-l="legs"' + (S.show.legs ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Course rhumb lines: course and distance</label>' +
       (ZONES.length ? '<label><input type="checkbox" data-l="tss"' + (S.show.tss ? ' checked' : '') + '><span class="sw" style="border-color:var(--warn)"></span>Traffic separation schemes</label>' : '') +
       (LIGHTS.length ? '<label><input type="checkbox" data-l="lights"' + (S.show.lights ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink);border-top-style:dotted"></span>Lighthouses and main buoys</label>' : '') +
       '<label><input type="checkbox" data-l="lay"' + (S.show.lay ? ' checked' : '') + '><span class="sw" style="border-color:var(--brand);border-top-style:dashed"></span>Laylines to the next mark</label>' +
@@ -400,6 +400,7 @@
     $('layers').innerHTML = h;
     var LK = ['wind', 'tide', 'ghosts', 'tss', 'lights', 'lay', 'band', 'legs'];
     $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
+    $('lCourse').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.show.legs = true; S.show.tss = true;   /* just the course: rhumb lines with course and distance on each leg, and the TSS, which always stay (Stuart 12 Nov) */ S.routes.forEach(function (r) { r.hidden = true; }); layersPop(); draw(); };
     $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.show.legs = true;   /* just the route still shows course and distance on each leg (Stuart 12 Nov) */ S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
     [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (CHARTS[c.dataset.l]) { chartSave(); chartCredit(); } if (c.dataset.l === 'iso' && c.checked) isoFetch(); } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
@@ -1408,7 +1409,7 @@
       var a = pts[i - 1], b = pts[i], x1 = X(a.lon), y1 = Y(a.lat), x2 = X(b.lon), y2 = Y(b.lat);
       var t0 = 0, t1 = 1, dx = x2 - x1, dy = y2 - y1, m0 = 50, ok = [[-dx, x1 - m0], [dx, W - m0 - x1], [-dy, y1 - 70], [dy, H - 40 - y1]].every(function (q) {   /* clip to the visible chart, so the label sits on the part you can see */
         if (q[0] === 0) return q[1] >= 0; var r = q[1] / q[0]; if (q[0] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; });
-      if (!strong && part !== 'label') { ctx.save(); ctx.setLineDash([7, 6]); ctx.lineWidth = 1.4; ctx.globalAlpha = 0.75; ctx.strokeStyle = css['--muted'] || '#8EA3BF'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore(); }   /* the course line itself, so the label never floats on its own (Stuart 12 Nov) */
+      if (!strong && part !== 'label') { ctx.save(); var alone = !S.routes.some(function (r) { return !r.hidden; }); ctx.setLineDash(alone ? [] : [7, 6]); ctx.lineWidth = alone ? 2.2 : 1.4; ctx.globalAlpha = alone ? 0.95 : 0.75; ctx.strokeStyle = alone ? (css['--brand'] || '#6FA9E0') : (css['--muted'] || '#8EA3BF');   /* with every route hidden the course itself is the picture: solid and clear */ ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore(); }   /* the course line itself, so the label never floats on its own (Stuart 12 Nov) */
       if (part === 'line' || !ok || Math.hypot(dx, dy) * (t1 - t0) < (strong ? 70 : 90)) continue;
       var t = legTxt(a, b), w = ctx.measureText(t).width + 10, mx = x1 + dx * (t0 + t1) / 2, my = y1 + dy * (t0 + t1) / 2;
       for (var k = 0; k < 6 && placed.some(function (q) { return Math.abs(q[0] - mx) < (q[2] + w) / 2 + 4 && Math.abs(q[1] - my) < 22; }); k++) my += 24;   /* an out-and-back course puts two legs on one line: stack the labels instead of overlapping them */
