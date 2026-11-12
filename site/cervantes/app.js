@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.8.7';
+  var VERSION = 'FirstShift Route v0.8.8';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.8.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.8.8 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -721,7 +721,12 @@
     var show = $('aisShow') ? $('aisShow').value : 'all', shown = list.filter(function (x) { return x.danger || aisShown(x, show); });   /* a close-quarters target always shows, whatever is chosen */
     AIS.list = shown;
     var dz = list.filter(function (x) { return x.danger; })[0];
-    $('cpaWarn').hidden = !dz; if (dz) $('cpaWarn').textContent = 'Close quarters: ' + (dz.name || dz.mmsi) + ' passes ' + dz.c.cpa.toFixed(2) + ' nm away in ' + Math.round(dz.c.tcpa) + ' min';
+    /* the red box can be closed (Stuart 12 Nov), but only for that ship: it comes back for another ship, if this one's CPA halves, or after 10 minutes */
+    var dm = AIS.dismiss, hid = dz && dm && dm.mmsi === dz.mmsi && Date.now() - dm.at < 600000 && dz.c.cpa > dm.cpa / 2;
+    $('cpaWarn').hidden = !dz || hid;
+    if (dz && !hid) {   /* build the box once, then only change its words, so the × is never swapped out under a finger */
+      if (!$('cpaX')) { $('cpaWarn').innerHTML = '<span id="cpaTxt"></span><button class="cpax" id="cpaX" aria-label="Close this warning for this ship">×</button>'; $('cpaX').onclick = function (ev) { ev.stopPropagation(); var d = AIS.cpaNow; if (d) AIS.dismiss = { mmsi: d.mmsi, at: Date.now(), cpa: d.c.cpa }; $('cpaWarn').hidden = true; }; }
+      AIS.cpaNow = dz; var txt = 'Close quarters: ' + String(dz.name || dz.mmsi) + ' passes ' + dz.c.cpa.toFixed(2) + ' nm away in ' + Math.round(dz.c.tcpa) + ' min'; if ($('cpaTxt').textContent !== txt) $('cpaTxt').textContent = txt; }
     var og = function (x) { var e = byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()]); if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
     var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + shown.slice(0, 40).map(function (x) {
       var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + (FSAIS.CATS[x.cat] || '') + (x.at && now - x.at > 150000 ? ', seen ' + Math.round((now - x.at) / 60000) + ' min ago' : '') + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
