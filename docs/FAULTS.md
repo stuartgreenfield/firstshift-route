@@ -49,3 +49,6 @@ Saved settings (a saved race or the boat code) put back a start time that had pa
 
 ## F18 Race boat TCC box vanished as soon as it opened (12 Nov) - fixed
 The AIS target table was rebuilt on every frame of the chart (every slider move and every replay frame), so a tapped Race boat button was replaced before the TCC box could be used. The table now redraws at most every two seconds, never while a TCC is being typed, and an open box survives a redraw.
+
+## F19 iPhone: top bar pushed off the screen after the set-up (12 Nov) - fixed
+Stuart's iPhone screenshot at 01:31: the top bar was gone and a gap sat below the time slider. Focusing a field in the set-up scrolled the page's own body (overflow hidden still scrolls by focus), shifting the whole app up. Route now puts the page back when a field loses focus, when the keyboard closes and whenever the body scrolls with no field in use.

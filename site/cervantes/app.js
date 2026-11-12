@@ -47,6 +47,25 @@
 
   /* ---------- landing page: shows while Route starts, at least 5 s before launch (Stuart 12 Nov), at most 12 s; tap to skip ---------- */
   var SPLASH_MIN = 5000;   /* pre-launch: long enough to read; shorten for launch */
+  /* Info buttons: the longer explanations sit behind a small (i) beside the control they explain, so the panels stay short. */
+  (function () {
+    var n = 0;
+    [].forEach.call(document.querySelectorAll('p.note[data-i]'), function (p) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'ibtn'; b.textContent = 'i';
+      b.setAttribute('aria-label', 'More about this'); b.setAttribute('aria-expanded', 'false');
+      p.id = p.id || 'inote' + (++n); b.setAttribute('aria-controls', p.id); p.hidden = true; p.classList.add('inote');
+      b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); p.hidden = !p.hidden; b.setAttribute('aria-expanded', String(!p.hidden)); b.classList.toggle('on', !p.hidden); };
+      var host = p.previousElementSibling, h = null;
+      if (p.dataset.i) h = document.getElementById(p.dataset.i);
+      else
+      if (host && /^(H3|H4)$/.test(host.tagName)) h = host;
+      else if (host && (host.classList.contains('row') || host.tagName === 'SUMMARY')) h = host;
+      else if (host && host.tagName === 'LABEL') h = host;
+      else { var q = p; while ((q = q.previousElementSibling)) if (/^(H3|H4)$/.test(q.tagName)) { h = q; break; } }
+      if (h) h.appendChild(b);
+      else p.parentNode.insertBefore(b, p);
+    });
+  })();
   (function () { var sp = $('splash'); if (!sp) return; var t0 = Date.now(), gone = false; function hide() { if (gone) return; gone = true; sp.classList.add('out'); setTimeout(function () { sp.hidden = true; }, 550); }
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
@@ -292,7 +311,15 @@
     ['sails', 'mains'].forEach(function (id) { $(id).addEventListener('input', function () { plan(); update(); }); });
     if (!wide()) $('panel').hidden = false;
     else if (store('fs-panel') !== 'closed') { $('panel').hidden = false; $('panel').classList.remove('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'true'); }   /* on a computer the results open beside the chart unless you closed them */
-    window.addEventListener('scroll', function () { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });   /* the app fills the window; never let the page itself scroll and hide the top bar */
+    window.addEventListener('scroll', function () { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });
+    /* iPhone: focusing a field in the set-up can scroll the body or html element itself (overflow:hidden still scrolls by focus), which
+       pushes the top bar off the screen and leaves a gap at the bottom. Put it back whenever that happens or the keyboard goes away. */
+    (function () { function home() { var d = document.documentElement, bd = document.body; if (d.scrollTop || bd.scrollTop || window.scrollY) { d.scrollTop = 0; bd.scrollTop = 0; window.scrollTo(0, 0); } }
+      function idle() { var ae = document.activeElement; if (!ae || !/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) home(); }
+      document.body.addEventListener('scroll', idle); document.documentElement.addEventListener('scroll', idle);
+      document.addEventListener('focusout', function () { setTimeout(home, 60); setTimeout(home, 400); });
+      if (window.visualViewport) { visualViewport.addEventListener('resize', function () { setTimeout(home, 60); }); }
+      window.addEventListener('pageshow', home); document.addEventListener('visibilitychange', home); })();   /* the app fills the window; never let the page itself scroll and hide the top bar */
     dayMode = ['auto', 'light', 'dark'].indexOf(store('fs-theme')) >= 0 ? store('fs-theme') : 'dark'; setMode(store('fs-night') === '1' ? 'night' : dayMode);
     var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readCss(); buildDepth(); draw(); });
     new MutationObserver(function () { readCss(); buildDepth(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

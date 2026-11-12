@@ -205,6 +205,7 @@ textarea{width:100%;min-height:100px;font-size:12px}
 .chk{display:flex;align-items:center;gap:10px;min-height:36px;cursor:pointer}
 .chk input{width:20px;height:20px;accent-color:var(--brand)}
 .note{font-size:12px;color:var(--muted);margin:0}
+.ibtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-width:22px;margin-left:8px;padding:0;border-radius:50%;border:1.5px solid var(--muted);background:transparent;color:var(--muted);font:italic 700 13px/1 Georgia,serif;cursor:pointer;vertical-align:middle;position:relative}.ibtn::after{content:"";position:absolute;inset:-10px}.ibtn.on{background:var(--brand);border-color:var(--brand);color:#fff}.inote{margin:6px 0 10px;padding:8px 10px;border-left:3px solid var(--brand);background:color-mix(in srgb,var(--brand) 8%,transparent);border-radius:4px}
 .xrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px}
 .xhelp h4{margin:12px 0 4px;font-size:13px}.xhelp ol{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
 .btn{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;min-height:40px}
@@ -392,13 +393,13 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="tw"><table id="matrix"></table></div>
       <h4 class="xh">Compare the routes</h4>
       <div class="tw"><table id="compare"></table></div>
-      <p class="note">Each route sailed in its own forecast: time on each point of sail, the most wind and sea it meets, and the work for the crew. Upwind is under 60° true wind angle, downwind over 120°.</p>
+      <p class="note" data-i>Each route sailed in its own forecast: time on each point of sail, the most wind and sea it meets, and the work for the crew. Upwind is under 60° true wind angle, downwind over 120°.</p>
       <h4 class="xh">How sure is the forecast?</h4>
-      <p class="note">The ECMWF ensemble: the same model run 10 times with small changes to today's weather. Route sails your course in each one. When the 10 routes and finish times agree, trust the forecast; when they spread, keep your options open.</p>
+      <p class="note" data-i>The ECMWF ensemble: the same model run 10 times with small changes to today's weather. Route sails your course in each one. When the 10 routes and finish times agree, trust the forecast; when they spread, keep your options open.</p>
       <div class="xrow"><button class="btn" id="ensRun">Route the ensemble</button></div>
       <div id="ensOut"></div>
       <h4 class="xh">When to leave</h4>
-      <p class="note">For a delivery, a qualifier or your own course: the chosen route's models, routed from starts every 6 hours across the forecast. A quick route for each start, so allow a few minutes either way.</p>
+      <p class="note" data-i>For a delivery, a qualifier or your own course: the chosen route's models, routed from starts every 6 hours across the forecast. A quick route for each start, so allow a few minutes either way.</p>
       <div class="xrow"><button class="btn" id="depRun">Compare start times</button></div>
       <div class="tw"><table id="depTable"></table></div>
       <p class="note" id="runNote"></p>
@@ -444,7 +445,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <label class="chk"><input type="checkbox" id="ovChk" checked> <span>Big-picture chart of north-west Europe: ECMWF pressure and wind, 1°, 6-hourly for 3 days <span class="pill" id="ovSize"></span></span></label>
       <div class="total"><span>Download</span><span id="dlTotal">-</span></div>
       <div class="row"><button class="btn primary" id="dlBtn">Download selected</button><span class="note" id="dlNote"></span></div>
-      <p class="note">Sizes are compressed download sizes, already cut to the course band and race hours. Seabed depth is sent only where it is shallower than 20 m, and only needs downloading once per race area. Forecasts refresh every six hours.</p>
+      <p class="note" data-i>Sizes are compressed download sizes, already cut to the course band and race hours. Seabed depth is sent only where it is shallower than 20 m, and only needs downloading once per race area. Forecasts refresh every six hours.</p>
     </div>
   </section>
 
@@ -514,7 +515,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <p class="note" id="srcTccNote" hidden>FirstShift's generic polar, scaled so the boat sails at its TCC. Use Boat type or Own polar for a truer shape.</p>
       <div id="srcPolar" hidden>
         <div class="row"><label for="polarFile">Load your polar</label><input type="file" id="polarFile" accept=".pol,.txt,.csv,.tsv,.json,.xml"></div>
-        <p class="note">Your own data: ORC rating data (JSON) or the polar table copied from your ORC certificate, an Expedition, B&amp;G, OpenCPN or qtVlm polar, or any table with TWA down and TWS across. Paste it below or load the file; edit any number in the table.</p>
+        <p class="note" data-i>Your own data: ORC rating data (JSON) or the polar table copied from your ORC certificate, an Expedition, B&amp;G, OpenCPN or qtVlm polar, or any table with TWA down and TWS across. Paste it below or load the file; edit any number in the table.</p>
         <textarea id="polarTxt" spellcheck="false" placeholder="Paste a polar here"></textarea>
         <div class="row"><button class="btn" id="polarFromType">Start from the boat type</button><span class="note" id="polarRead"></span></div>
         <div class="pgrid" id="polarGrid"></div>
@@ -523,10 +524,10 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="row tune"><label for="tuUp">Upwind</label><input type="range" id="tuUp" min="85" max="110" step="1" value="100"><b id="tuUpV">100%</b></div>
       <div class="row tune"><label for="tuReach">Reaching</label><input type="range" id="tuReach" min="85" max="110" step="1" value="100"><b id="tuReachV">100%</b></div>
       <div class="row tune"><label for="tuRun">Downwind</label><input type="range" id="tuRun" min="85" max="110" step="1" value="100"><b id="tuRunV">100%</b></div>
-      <p class="note">Below 100% for a light or new crew, tired sails or a sea the forecast misses; above it for a strong, heavy crew. Upwind runs to 55° TWA, reaching 70° to 110°, downwind from 130°, blended in between. <button class="linkbtn" id="tuReset">Reset to 100%</button></p>
+      <p class="note" data-i>Below 100% for a light or new crew, tired sails or a sea the forecast misses; above it for a strong, heavy crew. Upwind runs to 55° TWA, reaching 70° to 110°, downwind from 130°, blended in between. <button class="linkbtn" id="tuReset">Reset to 100%</button></p>
       <div class="plotbox"><canvas id="polarPlot" width="560" height="600" aria-label="Polar diagram"></canvas><p class="note" id="plotKey"></p></div>
       <h3>If you think the forecast is wrong</h3>
-      <p class="note">Applies to every route, over the whole race or an area you draw. Wind and tide arrows on the chart still show the forecast as published.</p>
+      <p class="note" data-i>Applies to every route, over the whole race or an area you draw. Wind and tide arrows on the chart still show the forecast as published.</p>
       <div class="row tune"><label for="adjWdir">Wind direction</label><input type="range" id="adjWdir" min="-40" max="40" step="5" value="0"><b id="adjWdirV"></b></div>
       <div class="row tune"><label for="adjWspd">Wind strength</label><input type="range" id="adjWspd" min="-40" max="40" step="5" value="0"><b id="adjWspdV"></b></div>
       <div class="row tune"><label for="adjWtime">Wind timing</label><input type="range" id="adjWtime" min="-6" max="6" step="1" value="0"><b id="adjWtimeV"></b></div>
@@ -540,28 +541,31 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>
       <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
       <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
+      <p class="note" data-i>Each tack or gybe costs this many seconds of sailing. Route charges it at every change of tack, so it only tacks or gybes when the gain pays for it.</p>
       <div class="row"><label for="leeway">Leeway upwind</label><input type="number" id="leeway" value="0" min="0" max="10" step="0.5"> °</div>
-      <p class="note">Optional. Polars measure the wind angle against the boat's track through the water, so the route already allows for leeway and this does not change it. Enter your boat's leeway close-hauled (from your instruments, Polar Live or the sailmaker) and Route shows a <b>Steer</b> heading to windward of the track, tapering to none on a beam reach. 0 leaves it off.</p>
+      <p class="note" data-i>Optional. Polars measure the wind angle against the boat's track through the water, so the route already allows for leeway and this does not change it. Enter your boat's leeway close-hauled (from your instruments, Polar Live or the sailmaker) and Route shows a <b>Steer</b> heading to windward of the track, tapering to none on a beam reach. 0 leaves it off.</p>
     </div>
     <div class="sbody" id="s-fc" hidden>
       <h3>Wind models to route on</h3>
       <div id="models"></div>
+      <p class="note" data-i>Each wind model is a separate forecast from a different weather service, and Route sails a route in each one. Combined averages the wind of every chosen model at each place and hour. Finest first uses the most detailed model that covers each place and hour, then the next. When a model’s forecast runs out, the others carry on.</p>
       <div class="row"><label for="tideSel">Tidal stream</label><select id="tideSel"></select></div>
       <div class="row"><label class="chk"><input type="checkbox" id="tideWind" checked> Sail on the wind over the water</label></div>
-      <p class="note">On: Route takes the tide out of the forecast wind, so the boat sails on the wind it feels. Wind against tide blows harder, wind with tide softer, and a cross-tide shifts it. Off: the forecast wind as it is.</p>
+      <p class="note" data-i>On: Route takes the tide out of the forecast wind, so the boat sails on the wind it feels. Wind against tide blows harder, wind with tide softer, and a cross-tide shifts it. Off: the forecast wind as it is.</p>
       <div class="row"><label for="waveSel">Sea state</label><select id="waveSel"></select></div>
       <h3>Sea state effect</h3>
       <div class="row"><label for="seaUp">Upwind loss</label><input type="number" id="seaUp" value="4" step="0.5"> % per m</div>
       <div class="row"><label for="seaReach">Reaching loss</label><input type="number" id="seaReach" value="1.5" step="0.5"> % per m</div>
       <div class="row"><label for="seaSurf">Downwind gain</label><input type="number" id="seaSurf" value="3" step="0.5"> % in 1.5 m+</div>
+      <p class="note" data-i>Waves come from the sea-state forecast. Heading into them, Route takes the upwind loss off the polar speed for every metre of wave height above half a metre; with the waves on the beam, the reaching loss. Running before waves over 1.5 m, it adds up to the downwind gain for surfing.</p>
       <p class="note">Only downloaded models can be used. Choose what to download under Results, Data.</p>
     </div>
     <div class="sbody" id="s-course" hidden>
       <div class="row"><label for="depth">Safety depth</label><input type="range" id="depth" min="0" max="20" step="0.5" value="3" style="width:180px"><b id="depthV" style="font-family:var(--f-data)">3.0 m</b></div>
-      <p class="note">The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
+      <p class="note" data-i>The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
       <h3>While racing</h3>
       <div class="row"><label for="autoFrom">Reroute from GPS</label><select id="autoFrom"><option value="0">Only when I press From here</option><option value="10">Every 10 minutes</option><option value="20">Every 20 minutes</option><option value="30">Every 30 minutes</option></select></div>
-      <p class="note">After From here has found the boat by GPS, Route routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
+      <p class="note" data-i>After From here has found the boat by GPS, Route routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
       <div class="row"><label class="chk"><input type="checkbox" id="shareTrack"> Let family and friends follow the boat</label></div>
       <p class="note" id="shareNote">Needs a boat code (tap the race name, Boat code). While Route is open it sends the boat's GPS position every five minutes and the chosen route to FirstShift's server; anyone with the code can watch on the follow page. Nothing is sent when this is off.</p>
       <div class="xrow"><button class="btn" id="shareLink">Send the follow link</button></div>
@@ -570,31 +574,31 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <p class="warnbox" id="courseWarn" hidden></p>
       <h3>Keep-out areas</h3>
       <label class="row" style="gap:8px"><input type="checkbox" id="tssNogo" checked> Keep out of traffic separation lanes and zones</label>
-      <p class="note">The router treats the lanes and separation zones near the course as no-go, as most sailing instructions require; the race's own keep-out boxes always apply. Source: OpenStreetMap and Shom. Not for navigation: check the sailing instructions.</p>
+      <p class="note" data-i>The router treats the lanes and separation zones near the course as no-go, as most sailing instructions require; the race's own keep-out boxes always apply. Source: OpenStreetMap and Shom. Not for navigation: check the sailing instructions.</p>
       <h3>Marks and rounding</h3>
       <div id="markSides"></div>
       <p class="note" id="courseNote"></p>
     </div>
     <div class="sbody" id="s-sails" hidden>
-      <p class="note">Copy each sail from your sail log or your sailmaker’s crossover chart: the true wind angles and true wind speeds you use it in. Route names the sail and the reef for every stretch of the route. Rows are checked from the top and the first that fits wins, so put the special cases first.</p>
+      <p class="note" data-i="hSails">Copy each sail from your sail log or your sailmaker’s crossover chart: the true wind angles and true wind speeds you use it in. Route names the sail and the reef for every stretch of the route. Rows are checked from the top and the first that fits wins, so put the special cases first.</p>
       <div class="row" style="gap:8px;flex-wrap:wrap"><select id="slPreset" style="flex:1 1 220px;min-width:0"></select><button class="btn" id="slUse" hidden>Undo</button></div>
-      <h3>Headsails and downwind sails</h3>
+      <h3 id="hSails">Headsails and downwind sails</h3>
       <div id="slTable" class="sltab"></div>
       <button class="btn" id="slAdd">+ Add a sail</button>
-      <h3>Mainsail reefs</h3>
+      <h3 id="hReefs">Mainsail reefs</h3>
       <label class="row" style="gap:8px"><input type="checkbox" id="rfOn"> Show when to reef</label>
       <div id="rfBox" hidden>
-        <p class="note">The true wind speed at which each reef goes in. Reef earlier upwind, where the apparent wind is stronger. Leave a box empty if you do not carry that reef.</p>
+        <p class="note" data-i="hReefs">The true wind speed at which each reef goes in. Reef earlier upwind, where the apparent wind is stronger. Leave a box empty if you do not carry that reef.</p>
         <div id="rfRows" class="rftab"></div>
         <label class="row" style="gap:8px;margin-top:8px">Upwind means a true wind angle below <input type="number" inputmode="decimal" id="rfSplit" min="30" max="150" style="width:70px">°</label>
-        <p class="note">Starting points from John Jourdane’s Pacific Cup guide: “Reefing begins sooner upwind than downwind because the apparent wind is greater sailing a beat or close reach.” <button class="linkbtn" id="rfReset">Use these again</button></p>
+        <p class="note" data-i>Starting points from John Jourdane’s Pacific Cup guide: “Reefing begins sooner upwind than downwind because the apparent wind is greater sailing a beat or close reach.” <button class="linkbtn" id="rfReset">Use these again</button></p>
       </div>
       <h3>Crossover chart</h3>
       <canvas id="slChart" class="slchart" aria-label="Sail crossover chart: true wind angle across, true wind speed up"></canvas>
       <p class="note" id="slMiss"></p>
       <p class="note" id="slAt">Tap the chart to see which sail it picks for that wind.</p>
       <details class="sltext"><summary>Edit as text, or paste a chart</summary>
-        <p class="note">One sail per line: name, TWA from, TWA to, TWS from, TWS to. You can also paste a grid from Expedition, PredictWind or SailGrib (first line the wind speeds, then one line per wind angle with the sail for each speed) and Route turns it into rows.</p>
+        <p class="note" data-i>One sail per line: name, TWA from, TWA to, TWS from, TWS to. You can also paste a grid from Expedition, PredictWind or SailGrib (first line the wind speeds, then one line per wind angle with the sail for each speed) and Route turns it into rows.</p>
         <textarea id="sails" spellcheck="false" style="min-height:200px"># sail, twa from, twa to, tws from, tws to
 J1, 0, 65, 0, 13
 J2, 0, 65, 13, 19
@@ -615,15 +619,15 @@ A4, 125, 180, 18, 60</textarea>
       <div class="row"><label for="cpaNm">CPA alarm inside</label><input type="number" id="cpaNm" value="0.5" min="0.1" max="5" step="0.1"> nm</div>
       <div class="row"><label for="tcpaMin">and within</label><input type="number" id="tcpaMin" value="15" min="2" max="60" step="1"> min</div>
       <label class="chk"><input type="checkbox" id="cpaSound" checked><span>Sound the CPA alarm</span></label>
-      <p class="note">Test fleet: eight race boats sailing near your route and ships crossing the area, sent as real AIS sentences through the same decoder the boat's feed and the online feed will use. They move with the replay time. CPA is worked out from your position: the phone GPS when it has one, otherwise the boat on the chosen route.</p>
+      <p class="note" data-i>Test fleet: eight race boats sailing near your route and ships crossing the area, sent as real AIS sentences through the same decoder the boat's feed and the online feed will use. They move with the replay time. CPA is worked out from your position: the phone GPS when it has one, otherwise the boat on the chosen route.</p>
       <h3>Screen</h3>
       <div class="seg" id="modeSeg" role="group" aria-label="Screen"><button data-mode="auto">Auto</button><button data-mode="light">Light</button><button data-mode="dark">Dark</button><button data-mode="night">Night red</button></div>
-      <p class="note">Auto follows the phone or computer. Light for bright sun, Dark for dusk and the nav table, Night red keeps every colour at the red end, at low brightness, to protect night vision on deck; turn the screen brightness down too. The Night button on the chart switches between Night red and your day setting.</p>
+      <p class="note" data-i>Auto follows the phone or computer. Light for bright sun, Dark for dusk and the nav table, Night red keeps every colour at the red end, at low brightness, to protect night vision on deck; turn the screen brightness down too. The Night button on the chart switches between Night red and your day setting.</p>
       <div class="row tune"><label for="windDim">Wind symbols</label><input type="range" id="windDim" min="15" max="100" step="5" value="55"><b id="windDimV"></b></div>
       <div class="row tune"><label for="tideDim">Tide arrows</label><input type="range" id="tideDim" min="15" max="100" step="5" value="50"><b id="tideDimV"></b></div>
       <div class="row"><label for="windSym">Wind symbol</label><select id="windSym"><option value="W6">W6 Barb with number</option><option value="W2">W2 Wind barb</option><option value="W5">W5 Slow streaks with numbers (moving)</option><option value="W7">W7 FirstShift triangle</option></select></div>
       <div class="row"><label for="tideSym">Tide symbol</label><select id="tideSym"><option value="T6">T6 Translucent arrow, outlined</option><option value="T5">T5 Translucent weighted arrow</option><option value="T1">T1 Dotted arrow</option><option value="T3">T3 Tidal atlas arrow</option></select></div>
-      <p class="note">Barbs: the staff points into the wind; half feather 5 kn, full feather 10, pennant 50. Tide arrows point the way the water flows, rate in knots (atlas arrows in tenths).</p>
+      <p class="note" data-i>Barbs: the staff points into the wind; half feather 5 kn, full feather 10, pennant 50. Tide arrows point the way the water flows, rate in knots (atlas arrows in tenths).</p>
       <div class="row"><label for="windShow">Wind shown from</label><select id="windShow"></select></div>
       <div class="row"><label for="speed">Play speed</label><select id="speed"><option value="0.5">30 min a second</option><option value="1" selected>1 hour a second</option><option value="3">3 hours a second</option><option value="6">6 hours a second</option></select></div>
     </div>
