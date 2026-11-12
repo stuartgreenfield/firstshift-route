@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.7.2';
+  var VERSION = 'FirstShift Route v0.7.3';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -185,7 +185,7 @@
     })).then(function () {
       return ovJob;
     }).then(function () {
-      busy(''); prog(''); dataTable(); modelsList(); selects(); chip(); buildDepth(); draw();
+      busy(''); prog(''); dataTable(); modelsList(); selects(); chip(); buildDepth(); draw(); try { setupRender(); } catch (e) {}
       $('dlNote').textContent = 'Up to date.';
     }).catch(function (e) { busy(''); prog(''); $('dlNote').textContent = e.message; });
   }
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.7.2 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.7.3 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1499,6 +1499,7 @@
   }
   window.__fsRoutes = function () { return (S.routes || []).map(function (r) { var p = r.r.path, w = 180, iw = 0; p.forEach(function (q, i) { if (q.lo < w) { w = q.lo; iw = i; } }); return { id: r.id, name: r.name, n: p.length, end: [p[p.length - 1].la, p[p.length - 1].lo], west: [p[iw].la, w, iw, p[iw].leg], legs: S.legs && S.legs.map(function (l) { return l.name; }) }; }); };
   window.__fsNear = function (la, lo, r) { var s = S.routes && S.routes[0]; if (!s) return null; return s.r.path.map(function (q, i) { return [i, +q.la.toFixed(3), +q.lo.toFixed(3), q.leg, q.t ? new Date(q.t * 1000).toISOString().slice(5, 16) : '']; }).filter(function (q) { return Math.abs(q[1] - la) < r && Math.abs(q[2] - lo) < r * 1.6; }); };
+  window.__fsXY = function (la, lo) { var r = $('map').getBoundingClientRect(); return [r.left + X(lo), r.top + Y(la)]; };   /* for the automatic tests */
   window.__fsEditPts = function () { var r = $('map').getBoundingClientRect(); return S.edit ? S.edit.pts.map(function (q) { return [r.left + X(q.lon), r.top + Y(q.lat), q.name || '']; }) : null; };   /* for the automatic tests */
   function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
@@ -1587,10 +1588,10 @@
   function setupRows() {
     var c = meta.course, rows = [], iss = courseIssue(c);
     rows.push({ k: 'course', t: 'Course', ok: !iss, s: iss ? iss : c.name + ' · ' + courseNm(c) + ' nm · ' + (c.marks || []).length + ' mark' + ((c.marks || []).length === 1 ? '' : 's') });
-    var bs = boatIsSet(); rows.push({ k: 'boat', t: 'Boat', ok: bs, s: bs ? ($('boatName').value || 'My boat') + ' · TCC ' + (+$('tcc').value || 1).toFixed(3) + ' · ' + ($('boatType').selectedOptions[0] ? $('boatType').selectedOptions[0].textContent.split(',')[0] : '') : 'Set up your boat: name, type and TCC' });
+    var bs = boatIsSet(); rows.push({ k: 'boat', t: 'Boat', ok: bs, s: bs ? ($('boatName').value || 'My boat') + ' · TCC ' + (+$('tcc').value || 1).toFixed(3) + ' · ' + ($('boatType').selectedOptions[0] ? $('boatType').selectedOptions[0].textContent.split(',')[0] : '') + (function () { var n = ($('sails').value || '').split('\n').filter(function (l) { return l.trim() && !/^\s*#/.test(l); }).length; return n ? ' · ' + n + ' sail' + (n === 1 ? '' : 's') + ($('mains') && !/no reefs/.test($('mains').value) ? ', reefs set' : '') : ''; })() : 'Set up your boat: name, type and TCC' });
     var fu = futureGet(), st = +$('startSel').value, chosen = S.startChosen || store('fs-autostart') === '1';
     rows.push({ k: 'start', t: 'Start', ok: chosen && !fu, s: fu ? clockAbs(fu.ep) + ' UTC: beyond the forecasts' : chosen && st ? clockAbs(st) + ' UTC' : 'Choose your class start (UTC)' });
-    var ms = selectedModels(), est = (st ? (st - T0) / 3600 : 0) + courseNm(c) / (5.5 * (+$('tcc').value || 1)), cover = ms.filter(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return h && h.length && h[h.length - 1] >= est; }).length;
+    var ms = cardModels(), est = (st ? (st - T0) / 3600 : 0) + courseNm(c) / (5.5 * (+$('tcc').value || 1)), cover = ms.filter(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return h && h.length && h[h.length - 1] >= est; }).length;
     rows.push({ k: 'fc', t: 'Forecasts', ok: ms.length > 0 && cover > 0, s: !ms.length ? 'Tick at least one forecast model' : ms.length + ' model' + (ms.length === 1 ? '' : 's') + ' · ' + (cover === ms.length ? 'all reach the finish' : cover ? cover + ' reach the finish, the rest hand over' : 'none reaches the finish') + (olderModels().length ? ' · ' + olderModels().length + ' on an older run' : '') });
     return rows;
   }
@@ -1612,6 +1613,7 @@
   }
   function cardStep(n) { S.card = true; WIZ.on = true; S.wizHold = true; wizShow(n); $('wizH').textContent = n === 1 ? 'Your boat' : 'The start'; $('wizDots').innerHTML = ''; $('wizNext').textContent = 'Done'; $('wizBack').hidden = true; }   /* one item from the set-up card: no step numbers */
   function setupRender() {
+    try { coverRender(); } catch (e) {}
     var el = $('setupCard'); if (!el || !meta) return; var rows; try { rows = setupRows(); } catch (e) { return; }
     var ready = rows.filter(function (r) { return r.ok; }).length, all = ready === rows.length, has = S.routes && S.routes.length;
     var open = S.suOpen || !all || !has;   /* routed and all ready: one line, tap to open */
@@ -1626,6 +1628,22 @@
     $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; run(); };
     if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
   }
+  /* how far each forecast reaches against the race (wireframe A4): a bar per wind model from the start, the white tick the estimated finish */
+  function coverRender() {
+    var el = $('fcCover'); if (!el || !meta || !meta.course) return;
+    var st = +$('startSel').value; if (!st) { el.innerHTML = ''; return; }
+    var s0 = (st - T0) / 3600, est = courseNm(meta.course) / (5.5 * (+$('tcc').value || 1)), fin = s0 + est, ms = cardModels();
+    var L = (meta.layers || []).filter(function (l) { return l.kind === 'wind'; }).map(function (l) { var v = l[S.loaded[l.id] || 'full'] || l.full, h = v && v.hours; return { l: l, end: h && h.length ? h[h.length - 1] : 0 }; });
+    if (!L.length) { el.innerHTML = ''; return; }
+    var span = Math.max(est * 1.15, Math.max.apply(null, L.map(function (x) { return x.end - s0; }))), pc = function (h) { return Math.max(0, Math.min(100, h / span * 100)); }, tick = pc(est);
+    var rows = L.map(function (x) {
+      var on = ms.indexOf(x.l.id) >= 0, have = Math.max(0, x.end - s0), all = x.end >= fin;
+      return '<div class="cvr' + (on ? '' : ' off') + '"><span class="cvn">' + wizEsc(short(x.l.id)) + (x.l.latest === false ? ' <b class="cvold" title="Older run: the newest was not ready">!</b>' : x.l.latest === true ? ' <span class="cvnew" title="Newest run">' + THUMB + '</span>' : '') + '</span>' +
+        '<span class="cvb"><span class="cvf ' + (all ? 'all' : have > 0 ? 'part' : 'none') + '" style="width:' + pc(have).toFixed(1) + '%"></span><span class="cvt" style="left:' + tick.toFixed(1) + '%"></span></span><span class="cvh">' + Math.round(have) + ' h</span></div>';
+    }).join('');
+    el.innerHTML = '<h3>How far each forecast reaches</h3><p class="note">From your start, ' + clockAbs(st) + ' UTC. The white tick is the estimated finish, about ' + Math.round(est) + ' h at TCC ' + (+$('tcc').value || 1).toFixed(3) + '. Green covers the race; amber stops short, and the longer forecasts take over. Faint: not ticked below.</p>' + rows;
+  }
+  document.addEventListener('change', function (e) { if (e.target && (e.target.matches('[data-m]') || e.target.id === 'startSel' || e.target.id === 'tcc')) coverRender(); });
   /* after routing: can you trust it? (Stuart 12 Nov) */
   function checksRender() {
     var el = $('checks'); if (!el) return; if (!S.routes || !S.routes.length) { el.innerHTML = ''; return; }
@@ -1639,6 +1657,8 @@
     ck.push(nextMeta || S.sessStale ? [0, 'A newer forecast is out: Route again to use it'] : [1, 'Forecast build ' + (meta.run || '') + ', the newest on the server']);
     el.innerHTML = '<h4>Can you trust it?</h4>' + ck.map(function (c) { return '<div class="ck' + (c[0] ? '' : ' w') + '"><i>' + (c[0] ? '✓' : '!') + '</i><span>' + wizEsc(c[1]) + '</span></div>'; }).join('');
   }
+  /* the set-up card and coverage bars: before the forecasts finish downloading the tick list is empty, so use the standard set (Stuart 12 Nov) */
+  function cardModels() { if ($('models') && $('models').children.length) return selectedModels(); return (meta.layers || []).filter(function (l) { return l.kind === 'wind' && l.id !== 'mog' && l.id !== 'arpege'; }).map(function (l) { return l.id; }); }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
   function loadPre() {

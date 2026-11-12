@@ -71,7 +71,7 @@ async function waitRoutes(p, ms) {
     await tryIt('Course', 'new course: draw, start time, save, route', async () => {
       await p.evaluate(() => { document.getElementById('raceBtn').click(); document.getElementById('rmNew').click(); }); await p.waitForTimeout(300);
       await p.evaluate(() => document.getElementById('nDraw').click()); await p.waitForTimeout(600);   /* race box menu, Start new course, Draw my own course */
-      const pts = await p.evaluate(() => { const r = document.getElementById('map').getBoundingClientRect(), pn = document.getElementById('panel'), pr = pn && !pn.hidden ? pn.getBoundingClientRect() : null; const right = pr && pr.width && pr.left > r.left + 100 ? Math.min(r.right, pr.left) : r.right, w = right - r.left; const fr = []; for (const fy of [0.62, 0.75, 0.5, 0.85, 0.4]) for (const fx of [0.35, 0.5, 0.65, 0.8]) fr.push([fx, fy]); return fr.map(f => [r.left + w * f[0], r.top + r.height * f[1]]); });   /* tap the part of the chart the side panel does not cover; taps on land are refused, so keep going until three points are in */
+      const pts = await p.evaluate(() => [[50.55, -1.0], [49.9, -2.6], [50.2, 0.4], [49.6, -1.0], [50.0, 1.2]].map(q => window.__fsXY(q[0], q[1])));   /* open water across the middle of the Channel, far enough apart to tap separately on a phone, all inside the English Channel area */
       for (const [x, y] of pts) { await p.mouse.click(x, y); await p.waitForTimeout(250); const k = await p.evaluate(() => +((document.getElementById('edTxt').textContent || '').match(/^(\d+) point/) || [0, 0])[1]); if (k >= 3) break; }
       const n = await p.evaluate(() => (document.getElementById('edTxt').textContent || ''));
       await p.evaluate(() => document.getElementById('edDone').click()); await p.waitForTimeout(400);
@@ -95,8 +95,8 @@ async function waitRoutes(p, ms) {
       await p.waitForSelector('#setupCard .srow', { timeout: 60000 });   /* first open: the set-up card (Course, Boat, Start, Forecasts) */
       const i1 = await snap(p, dn, 'setup-card');
       const flagged = await p.evaluate(() => document.querySelectorAll('#setupCard .srow.warn').length);
-      await p.evaluate(() => document.querySelector('[data-su="boat"]').click()); await p.waitForSelector('#wzTcc', { timeout: 10000 });
-      await p.fill('#wzName', 'Check Boat'); await p.fill('#wzTcc', '1.050'); await p.click('#wizNext'); await p.waitForTimeout(500);
+      await p.evaluate(() => document.querySelector('[data-su="boat"]').click()); await p.waitForSelector('#boatName', { state: 'visible', timeout: 10000 });   /* Boat opens the full boat settings (Stuart 12 Nov) */
+      await p.fill('#boatName', 'Check Boat'); await p.fill('#tcc', '1.050'); await p.evaluate(() => document.getElementById('setDone').click()); await p.waitForTimeout(800);
       const back = await p.evaluate(() => document.getElementById('wiz').hidden && !!document.querySelector('#setupCard [data-su="start"]'));
       await p.evaluate(() => document.querySelector('[data-su="start"]').click()); await p.waitForSelector('#wzTime', { timeout: 10000 }); await p.click('#wizNext');
       const r = await waitRoutes(p, 240000); const i5 = await snap(p, dn, 'setup-routed');
