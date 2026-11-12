@@ -1,0 +1,123 @@
+{
+ "at": "2026-11-12T16:49:17.332Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 4,
+   "note": "Routed in 1.8 s. First answer in 1.2 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 7,
+   "note": "Routed in 1.8 s. First answer in 0.4 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 9,
+   "note": "Routed in 1.9 s. First answer in 0.6 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 12,
+   "note": "Routed in 2.0 s. First answer in 0.5 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 15,
+   "note": "Routed in 1.9 s. First answer in 0.5 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 17,
+   "note": "Routed in 1.6 s. First answer in 0.6 s."
+  },
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 9,
+   "note": "Routed in 5.2 s. First answer in 2.2 s."
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 15,
+   "note": "Routed in 5.1 s. First answer in 1.2 s."
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 21,
+   "note": "Routed in 4.9 s. First answer in 1.1 s."
+  },
+  {
+   "race": "deguingand",
+   "stopped": "page.waitForFunction: Timeout 1500000ms exceeded.",
+   "s": 1500
+  },
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 5,
+   "note": "Routed in 2.1 s. First answer in 1.4 s."
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 7,
+   "note": "Routed in 1.9 s. First answer in 0.6 s."
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 10,
+   "note": "Routed in 1.8 s. First answer in 0.5 s."
+  },
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 5,
+   "note": "Routed in 2.5 s. First answer in 1.4 s."
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 9,
+   "note": "Routed in 2.6 s. First answer in 0.7 s."
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 12,
+   "note": "Routed in 2.6 s. First answer in 0.7 s."
+  },
+  {
+   "race": "channel",
+   "stopped": "page.waitForFunction: Timeout 1500000ms exceeded.",
+   "s": 1500
+  },
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 4,
+   "note": "Routed in 1.9 s. First answer in 1.2 s."
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 7,
+   "note": "Routed in 1.6 s. First answer in 0.5 s."
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 9,
+   "note": "Routed in 1.7 s. First answer in 0.5 s."
+  }
+ ]
+}
