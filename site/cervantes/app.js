@@ -1283,15 +1283,15 @@
     for (var i = 1; i < p.length; i++) {
       var q = p[i], sail = rig(q, cr, mr);
       if (!cur || cur.sail !== sail || cur.leg !== q.leg) { cur = { sail: sail, leg: q.leg, t0: p[i - 1].t, n: 0, hx: 0, hy: 0, tws: 0, twa: 0, bsp: 0, tacks: 0 }; rows.push(cur); }
-      cur.t1 = q.t; cur.n++; cur.hx += Math.sin(q.hdg * R); cur.hy += Math.cos(q.hdg * R); cur.tws += q.tws; cur.twa += Math.abs(q.twa); cur.bsp += q.bsp; if (q.tack) cur.tacks++;
+      cur.t1 = q.t; cur.n++; cur.hx += Math.sin(q.hdg * R); cur.hy += Math.cos(q.hdg * R); cur.tws += q.tws; cur.twa += Math.abs(q.twa); cur.bsp += q.bsp; cur.sog = (cur.sog || 0) + Math.hypot(q.bsp * Math.sin(q.hdg * R) + (q.cu || 0), q.bsp * Math.cos(q.hdg * R) + (q.cv || 0)); if (q.tack) cur.tacks++;
     }
     rows = rows.filter(function (r, i) { return r.t1 - r.t0 >= 0.33 || i === 0; });
-    var h = '<tr><th>From</th><th>Sail</th><th>Hdg</th><th>TWS</th><th>TWA</th><th>BSP</th><th>Tacks</th></tr>', leg = -1;
+    var h = '<tr><th>From</th><th>Sail</th><th>Hdg</th><th>TWS</th><th>TWA</th><th>BSP</th><th>SOG</th><th>Tacks</th></tr>', leg = -1;
     rows.forEach(function (r) {
-      if (r.leg !== leg) { leg = r.leg; h += '<tr><td colspan="7" style="font-family:var(--f-body);color:var(--muted)">To ' + S.legs[Math.min(leg, S.legs.length - 1)].name + '</td></tr>'; }
-      h += '<tr><td>' + clockH(r.t0).slice(4) + '</td><td style="font-family:var(--f-body)">' + r.sail + '</td><td>' + pad(Math.atan2(r.hx, r.hy) / R) + '°</td><td>' + (r.tws / r.n).toFixed(1) + '</td><td>' + Math.round(r.twa / r.n) + '°</td><td>' + (r.bsp / r.n).toFixed(1) + '</td><td>' + r.tacks + '</td></tr>';
+      if (r.leg !== leg) { leg = r.leg; h += '<tr><td colspan="8" style="font-family:var(--f-body);color:var(--muted)">To ' + S.legs[Math.min(leg, S.legs.length - 1)].name + '</td></tr>'; }
+      h += '<tr><td>' + clockH(r.t0).slice(4) + '</td><td style="font-family:var(--f-body)">' + r.sail + '</td><td>' + pad(Math.atan2(r.hx, r.hy) / R) + '°</td><td>' + (r.tws / r.n).toFixed(1) + '</td><td>' + Math.round(r.twa / r.n) + '°</td><td>' + (r.bsp / r.n).toFixed(1) + '</td><td>' + ((r.sog || 0) / r.n).toFixed(1) + '</td><td>' + r.tacks + '</td></tr>';
     });
-    s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="6" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
+    s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="7" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
     $('plan').innerHTML = h; if (window.FSSails) FSSails.draw();
   }
   /* ---------- help: text and a spoken run-through, using the device's own speech (free, works offline) ---------- */
@@ -1812,6 +1812,9 @@
       rows.push(r2('Heading', pad(best.hdg) + '\u00b0 · TWA ' + Math.abs(Math.round(best.twa)) + '\u00b0 ' + (best.twa < 0 ? 'port' : 'stbd')));
       rows.push(r2('Boat speed', best.bsp.toFixed(1) + ' kn' + (sf < 0.995 || sf > 1.005 ? ' (sea ' + (sf >= 1 ? '+' : '') + Math.round((sf - 1) * 100) + '%)' : '')));
       rows.push(r2('VMG to mark', (best.bsp * Math.cos((best.hdg - FSRouter.brg(best.la, best.lo, tg[0], tg[1])) * R)).toFixed(1) + ' kn'));
+      var gx = best.bsp * Math.sin(best.hdg * R) + (best.cu || 0), gy = best.bsp * Math.cos(best.hdg * R) + (best.cv || 0);   /* over the ground: boat speed through the water plus the tide */
+      rows.push(r2('Over the ground', 'SOG ' + Math.hypot(gx, gy).toFixed(1) + ' kn · COG ' + pad((Math.atan2(gx, gy) / R + 360) % 360) + '\u00b0'));
+      if (best.cu != null && Math.hypot(best.cu, best.cv) >= 0.1) rows.push(r2('Tide on the route', Math.hypot(best.cu, best.cv).toFixed(1) + ' kn to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '\u00b0'));
       rows.push(r2('True wind', best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '\u00b0'));
       rows.push(r2(Math.abs(best.twa) < 90 ? 'Upwind target' : 'Downwind target', Math.abs(best.twa) < 90 ? bu[0] + '\u00b0 · ' + bu[1].toFixed(1) + ' kn · VMG ' + bu[2].toFixed(1) : bdn[0] + '\u00b0 · ' + bdn[1].toFixed(1) + ' kn · VMG ' + bdn[2].toFixed(1)));
       var sl = FSRouter.sailFor(best, sailsList()), rf = reefOf(best); if (sl || rf) rows.push(r2('Sail', (sl || '-') + (rf ? ', ' + rf.toLowerCase() : '')));
