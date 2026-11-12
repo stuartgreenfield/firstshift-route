@@ -1302,7 +1302,7 @@
     if (myRegion()) { startEdit(null); return; }
     var opts2 = REGIONS.filter(function (g) { return READY[g.id]; });
     if (opts2.length === 1) { goNew(opts2[0].id); return; }
-    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts', 'irishsea-area': "From St George's Channel to the North Channel, Wales to the east coast of Ireland", 'biscay-area': 'From Ushant to Cape Finisterre, the French coast down to the Gironde' };
+    var AREA = { 'channel-area': 'From the Scillies to Dover, the Channel Islands and north Brittany', 'northsea-area': 'From the Thames Estuary to the Dutch and Belgian coasts', 'irishsea-area': "From St George's Channel to the North Channel, Wales to the east coast of Ireland", 'fastnet': 'From the Solent west past the Scillies to Fastnet Rock and the south coast of Ireland', 'biscay-area': 'From Ushant to Cape Finisterre, the French coast down to the Gironde' };
     $('raceList').innerHTML = '<h3>Where is the race?</h3><p class="note">Route draws your course on the forecast area that will route it, so the wind, tide and depth are ready when you save it.</p>' +
       opts2.map(function (g) { return '<div class="ritem"><div><b>' + g.name + '</b><span class="note">' + (AREA[g.id] || '') + '</span></div><div class="xrow"><button class="btn primary" data-newin="' + g.id + '">Draw here</button></div></div>'; }).join('') +
       '<p class="note">Further afield comes later.</p>';
@@ -1314,7 +1314,9 @@
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
     S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks).concat([c.finish]).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side }; }) : [], closed: !!c };
     if (!c) S.drawnNew = true;
-    if (!c) { var rg = myRegion(); if (rg && rg.region) { var b = rg.region; view.s = Math.max(20, Math.min(W / ((b.e - b.w) * K * 1.05), (H - 160) / ((b.n - b.s) * 1.05))); view.lo = (b.w + b.e) / 2; view.la = (b.s + b.n) / 2 + 35 / view.s; S.routes = []; S.sel = null; } }   /* a new course: the whole area Route can route, nothing old on it */
+    if (!c) { var rg = { region: { s: 48.4, n: 55.3, w: -10.6, e: 5.4 } }; if (rg && rg.region) { var b = rg.region;   /* the whole of Route's waters: the Irish Sea, out past Fastnet Rock, the Channel and the southern North Sea (Biscay is a pan away) */ var cv = $('map').getBoundingClientRect(); $('editBar').hidden = false; var eb = $('editBar').getBoundingClientRect(), pn = $('panel') && !$('panel').hidden ? $('panel').getBoundingClientRect() : null;
+        var top = Math.max(0, eb.bottom - cv.top + 6), bot = pn && pn.top > cv.top + 100 ? Math.min(H, pn.top - cv.top - 6) : H - 10, room = Math.max(120, bot - top);   /* fit between the edit bar and the panel */
+        view.s = Math.max(20, Math.min(W / ((b.e - b.w) * K * 1.04), room / ((b.n - b.s) * 1.04))); view.lo = (b.w + b.e) / 2; view.la = (b.s + b.n) / 2 + ((top + bot) / 2 - H / 2) / view.s; S.routes = []; S.sel = null; } }   /* a new course: the whole area Route can route, nothing old on it */
     $('editBar').hidden = false; editPrompt(); draw();
   }
   function editPrompt() {
@@ -1325,7 +1327,8 @@
   }
   function editOk(la, lo) {
     if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) { busy('Outside the routing area: cannot route there.'); setTimeout(function () { busy(''); }, 2500); return false; }
-    var rg = myRegion(); if (rg && (la < rg.region.s || la > rg.region.n || lo < rg.region.w || lo > rg.region.e)) { busy('Outside the ' + rg.name + ' forecast area (the dashed box). For a course elsewhere, choose its area under New course.'); setTimeout(function () { busy(''); }, 3500); return false; }
+    var inAny = REGIONS.some(function (g) { var b = g.region; return READY[g.id] && la >= b.s && la <= b.n && lo >= b.w && lo <= b.e; });
+    if (REGIONS.length && !inAny) { busy('Outside every forecast area (the dashed boxes): Route cannot route there yet.'); setTimeout(function () { busy(''); }, 3500); return false; }   /* any area will do: on saving, Route opens the course on the area that covers it */
     var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy('That is land. Choose open water.'); setTimeout(function () { busy(''); }, 2000); return false; }
     return true;
   }
@@ -1396,7 +1399,7 @@
       var issue = courseIssue(meta.course), reg = issue ? regionFor(c) : null;
       if (reg && reg.id !== HERE) {   /* outside this page's forecasts but inside a whole-area page: keep the course there and open it */
         var all = myRaces(); all.forEach(function (x) { if (x.id === rec.id) x.page = reg.id; }); setMyRaces(all);
-        if (WIZ.on) { WIZ.step = 4; wizSave(); }
+        if (WIZ.on || S.drawnNew) { var nw = S.drawnNew; WIZ.on = true; WIZ.step = nw ? 1 : 4; wizSave(); }   /* a new course carries on through the set-up on the area that routes it */
         busy('Opening ' + c.name + ' on the ' + reg.name + ' forecasts…'); location.href = '../' + reg.id + '/?my=' + encodeURIComponent(rec.id); return;
       }
       if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue + (reg ? '' : ' No forecast area covers the whole course yet.'); } else { if (wizCourseChosen(true)) { busy(''); return; } S.from = null; run(); }
@@ -1753,6 +1756,14 @@
     strokeSegs(depthLines.coast, css['--landedge'], 1.3);
     ctx.restore();
   }
+  /* a light coastline for all of Route's waters (Natural Earth 1:50m), under the detailed charts, so land shows outside this page's own area too */
+  var LAND50 = null;
+  fetch('../courses/land50.json').then(function (r) { return r.json(); }).then(function (j) { LAND50 = j.rings; draw(); }).catch(function () {});
+  function baseLand() {
+    if (!LAND50) return; ctx.save(); ctx.fillStyle = css['--land']; ctx.strokeStyle = css['--landedge']; ctx.lineWidth = 1; ctx.beginPath();
+    LAND50.forEach(function (r) { for (var i = 0; i < r.length; i += 2) { var x = X(r[i + 1]), y = Y(r[i]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.closePath(); });
+    ctx.fill('evenodd'); ctx.globalAlpha = 0.8; ctx.stroke(); ctx.restore();
+  }
   var coastBits = null;
   function coastLand(la, lo) { var C = meta.coast; if (!coastBits) return false; var y = Math.round((la - C.lat0) / C.dlat), x = Math.round((lo - C.lon0) / C.dlon); if (y < 0 || x < 0 || y >= C.ny || x >= C.nx) return false; var i = y * C.nx + x; return (coastBits[i >> 3] >> (7 - (i & 7))) & 1; }
   function draw() {
@@ -1760,6 +1771,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (S.big) { drawBig(); return; }
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
+    baseLand();
     if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     try { drawDepthLines(); } catch (e) {}
     grid();
@@ -1767,7 +1779,7 @@
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
     if (S.show.wind && $('windShow').value) { ctx.save(); ctx.globalAlpha = (+$('windDim').value || 0) / 100; arrows('wind'); ctx.restore(); }
     zonesDraw(); lightsDraw();
-    marks();
+    if (!(S.edit && S.drawnNew)) marks();   /* drawing a new course: the old course's marks are not shown */
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
     var selOn = S.sel && !S.sel.hidden;
     if (selOn) line(S.sel, 9, 0.35);
@@ -1775,7 +1787,9 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) editDraw();
     if (S.mob) mobDraw();
-    if (S.edit && myRegion()) { var rb = myRegion().region; ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]); ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.restore(); }   /* the area a new course must stay inside */
+    if (S.edit) { ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.setLineDash([6, 5]);   /* every area a drawn course can route in, each named */
+      REGIONS.forEach(function (g) { if (!READY[g.id]) return; var rb = g.region; ctx.globalAlpha = g.id === HERE ? 1 : 0.6; ctx.lineWidth = g.id === HERE ? 1.8 : 1.2; ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.fillText(g.name, X(rb.w) + 5, Y(rb.n) + 13); });
+      ctx.restore(); }   /* the area a new course must stay inside */
     try { drawMet(); } catch (e) {}
     try { drawEns(); } catch (e) {}
     try { drawIso(); } catch (e) {}

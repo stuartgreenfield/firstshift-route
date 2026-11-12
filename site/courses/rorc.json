@@ -448,6 +448,30 @@
    "note": "Forecasts for the whole Channel from Land's End to Dover: every RORC Channel race and any course of your own inside the box routes here."
   },
   {
+   "id": "fastnet",
+   "name": "Celtic Sea and Western Approaches",
+   "region": {
+    "s": 49.0,
+    "n": 52.0,
+    "w": -10.6,
+    "e": -0.7
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cherbourg",
+    "lat": 49.677,
+    "lon": -1.66,
+    "radius_nm": 0.4
+   },
+   "note": "The Fastnet page's forecasts cover the whole box: Cowes to Fastnet Rock, the Scillies and the south coast of Ireland. Added 12 Nov 2026 so drawn courses can route there."
+  },
+  {
    "id": "northsea-area",
    "name": "Southern North Sea",
    "region": {
