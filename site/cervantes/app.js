@@ -1357,9 +1357,9 @@
     $('dataChip').addEventListener('click', function (e) { e.stopPropagation(); });
     $('racesX').onclick = function () { $('races').hidden = true; };
     $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };
-    $('edUndo').onclick = function () { S.edit.pts.pop(); editPrompt(); draw(); };
+    $('edUndo').onclick = function () { if (!S.edit) return; S.edit.pts.pop(); editPrompt(); draw(); };
     $('edCancel').onclick = function () { if ($('markPop')) $('markPop').hidden = true; S.edit = null; $('editBar').hidden = true; draw(); if (QS0.get('new') && !S.newDone) { S.newDone = true; run(); } };
-    $('edDone').onclick = function () { if (S.edit.pts.length < 2) return; if ($('markPop')) $('markPop').hidden = true; editForm(); };
+    $('edDone').onclick = function () { if (!S.edit || S.edit.pts.length < 2) return; if ($('markPop')) $('markPop').hidden = true; editForm(); };
 
   }
   /* course editor: any course, from the race list or your own. On the chart: tap to place points, drag any point to move it.
@@ -1894,6 +1894,7 @@
     try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.gpx', { type: 'application/gpx+xml' })] })) $('xShare').hidden = false; } catch (e) {}
     $('xShare').onclick = function () {
       if (!S.sel) { $('xNote').textContent = 'Route first, then pick a route under Routes.'; return; }
+      if (!navigator.share) { $('xNote').textContent = 'This browser cannot hand files to other apps: use Save GPX.'; return; }
       var x = xFile('gpx'); navigator.share({ files: [new File([x.text], x.name, { type: x.type })], title: xName() }).catch(function (e) { if (e && e.name !== 'AbortError') $('xNote').textContent = 'Sharing did not work here: use Save GPX.'; });
     };
   }

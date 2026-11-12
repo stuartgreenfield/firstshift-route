@@ -167,7 +167,7 @@
     /* choosing an inventory applies it at once; Undo puts your own table back */
     $('slPreset').onchange = function () {
       var k = this.value; if (!k || !PRESETS[k]) return;
-      E.undo = E.rows.map(function (r) { return r.slice(); });
+      E.undo = (E.rows || []).map(function (r) { return r.slice(); });
       E.rows = PRESETS[k].rows.map(function (r) { return r.slice(); }); table(); save('preset');
       $('slUse').hidden = false; $('slUse').textContent = 'Undo: put my ' + E.undo.length + ' sails back';
     };

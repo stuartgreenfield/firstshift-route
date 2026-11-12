@@ -79,3 +79,11 @@ The build fetched the areas one after another. With ECMWF's servers slow (13 to 
 
 ## F28 Fastnet routes pinned to the edge of the forecast data; untidy warning box (12 Nov 10:58)
 The Fastnet page only held forecasts in a corridor about 35 nm wide round the rhumb line, in a box ending at 10 37W, one degree west of the Rock; with today's wind the best routes wanted more room. The Fastnet and Cervantes pages are now whole sea areas, and every area is wider: Fastnet 48 00N to 52 48N, 12 30W to 0 18W; Cervantes 48 54N to 51 12N, 2 48W to 1 12E; English Channel to 6 30W and 2 30E; Celtic Sea to 12 00W; Southern North Sea to 55 00N and 6 30E; Irish Sea to 56 00N and 8 00W; Biscay to 10 30W. The edge warning moves from the red error banner into the checks list, and the banner now wraps its text with the buttons beneath.
+
+The parallel build (run 43202938532, 12 Nov 10:43) finished: every area in 8 to 19 minutes, published at 11:32.
+
+## F29 Traffic separation schemes missing off the Netherlands (12 Nov 11:18) - fixed
+Stuart: some TSS look missing off Holland. OpenStreetMap holds the Dutch separation zones but almost none of the lane edges, so the schemes looked like scattered strips. The weekly chart data job now also takes Rijkswaterstaat's official set, Verkeersscheidingsstelsel Noordzee, from PDOK (CC0): 55 separation zones, 10 precautionary areas, 4 areas to avoid, 2 inshore zones, and the lane and deep-water route boundary lines (drawn as solid edges; they include Dover, Sunk, Humber, Jade and Elbe too). Reporting system limits, channel centre lines, turning circles and wind farm clearways are left out. Credited on the terms page and in Settings.
+
+## F30 Button run: every control tapped on a phone and a computer (12 Nov 12:00)
+A test taps all 211 buttons, links and lists in turn and records whether anything happens. Nothing did nothing. Faults found and fixed: Open in chart app failed on a browser without a share sheet (now says to use Save GPX); the sail inventory preset and its Undo failed if used before the sails table had loaded; the course edit bar's Undo and Done failed if pressed outside editing. Controls inside lists that redraw themselves (model lists, sail rows, themes) are not followed by the test and were checked by hand flows instead.
