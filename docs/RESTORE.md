@@ -1,6 +1,6 @@
 # Going back to an earlier Route
 
-Every change to Route is saved on GitHub (stuartgreenfield/firstshift-route, branch main), so any earlier version can be put back. Named restore points:
+Every change to Route is saved on GitHub (stuartgreenfield/firstshift-route, branch main), so any earlier version can be put back. Named restore points (kept as branches of the same name on GitHub):
 
 - restore-2026-11-12-0850: with the set-up card and the "Can you trust it?" checks.
 - restore-2026-11-12-0745: known good before the set-up card (start days, edge warning, separate race and start buttons, Help ?).
