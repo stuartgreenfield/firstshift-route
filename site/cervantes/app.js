@@ -1526,12 +1526,37 @@
       var v = Z[y * nx + x], o = ((ny - 1 - y) * nx + x) * 4, col;
       if (v === 999) col = out;
       else if (v === 2) col = land;
-      else if (v > 0) col = ((x > 0 && z(y, x - 1) <= 0) || (x < nx - 1 && z(y, x + 1) <= 0) || (y > 0 && z(y - 1, x) <= 0) || (y < ny - 1 && z(y + 1, x) <= 0)) ? le : land;
-      else if (-v < safety) col = ((x > 0 && -z(y, x - 1) >= safety) || (x < nx - 1 && -z(y, x + 1) >= safety) || (y > 0 && -z(y - 1, x) >= safety) || (y < ny - 1 && -z(y + 1, x) >= safety)) ? she : sh;
+      else if (v > 0) col = land;   /* edges are drawn as clean lines on top (depthLines), not as pixels */
+      else if (-v < safety) col = sh;
       else { var f = Math.min(1, -v / 60); col = [sea2[0] + (sea[0] - sea2[0]) * f, sea2[1] + (sea[1] - sea2[1]) * f, sea2[2] + (sea[2] - sea2[2]) * f]; }
       d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
     }
     g.putImageData(im, 0, 0); depthImg = c;
+    /* the coastline and the safety-depth line as vector segments (marching squares), so they stay sharp at any zoom (Stuart 12 Nov) */
+    function contour(level) {
+      var out2 = [], la0 = L.lat0, lo0 = L.lon0, dla = L.dlat, dlo = L.dlon;
+      function val(y, x) { var v = Z[y * nx + x]; return v === 999 ? -99 : v; }
+      for (var y = 0; y < ny - 1; y++) for (var x = 0; x < nx - 1; x++) {
+        var a = val(y, x), b = val(y, x + 1), c2 = val(y + 1, x + 1), d2 = val(y + 1, x), k = (a > level ? 8 : 0) | (b > level ? 4 : 0) | (c2 > level ? 2 : 0) | (d2 > level ? 1 : 0);
+        if (k === 0 || k === 15) continue;
+        var e = function (p, q, py, px, qy, qx) { var f = (level - p) / (q - p); return [lo0 + (px + (qx - px) * f) * dlo, la0 + (py + (qy - py) * f) * dla]; };
+        var T = e(a, b, y, x, y, x + 1), R2 = e(b, c2, y, x + 1, y + 1, x + 1), B = e(d2, c2, y + 1, x, y + 1, x + 1), Lf = e(a, d2, y, x, y + 1, x), segs;
+        switch (k) { case 1: case 14: segs = [Lf, B]; break; case 2: case 13: segs = [B, R2]; break; case 3: case 12: segs = [Lf, R2]; break; case 4: case 11: segs = [T, R2]; break;
+          case 5: segs = [Lf, T, B, R2]; break; case 6: case 9: segs = [T, B]; break; case 7: case 8: segs = [Lf, T]; break; case 10: segs = [Lf, B, T, R2]; break; }
+        for (var i = 0; i < segs.length; i += 2) out2.push(segs[i][0], segs[i][1], segs[i + 1][0], segs[i + 1][1]);
+      }
+      return new Float32Array(out2);
+    }
+    depthLines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null };
+  }
+  var depthLines = null;
+  function drawDepthLines() {
+    if (!depthLines) return; var lo0 = LO(0), lo1 = LO(W), la1 = LA(0), la0 = LA(H), kx = K * view.s, ox = W / 2 - view.lo * kx, sy = view.s, oy = H / 2 + view.la * sy;
+    function strokeSegs(a, colour, w) { if (!a) return; ctx.beginPath(); for (var i = 0; i < a.length; i += 4) { var x1 = a[i], y1 = a[i + 1], x2 = a[i + 2], y2 = a[i + 3]; if ((x1 < lo0 && x2 < lo0) || (x1 > lo1 && x2 > lo1) || (y1 < la0 && y2 < la0) || (y1 > la1 && y2 > la1)) continue; ctx.moveTo(x1 * kx + ox, oy - y1 * sy); ctx.lineTo(x2 * kx + ox, oy - y2 * sy); } ctx.strokeStyle = colour; ctx.lineWidth = w; ctx.stroke(); }
+    ctx.save(); ctx.lineCap = 'round';
+    strokeSegs(depthLines.safe, css['--shoaledge'], 1.1);
+    strokeSegs(depthLines.coast, css['--landedge'], 1.3);
+    ctx.restore();
   }
   var coastBits = null;
   function coastLand(la, lo) { var C = meta.coast; if (!coastBits) return false; var y = Math.round((la - C.lat0) / C.dlat), x = Math.round((lo - C.lon0) / C.dlon); if (y < 0 || x < 0 || y >= C.ny || x >= C.nx) return false; var i = y * C.nx + x; return (coastBits[i >> 3] >> (7 - (i & 7))) & 1; }
@@ -1541,6 +1566,7 @@
     if (S.big) { drawBig(); return; }
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
     if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
+    try { drawDepthLines(); } catch (e) {}
     grid();
     if (S.show.band) bandEdge();
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
