@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>FirstShift Route</title>
 <link rel="manifest" href="/route.webmanifest">
 <meta name="theme-color" content="#0B1B30">
@@ -333,6 +333,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 /* iPhone Safari will not shrink a select below its longest option: give the set-up fields a hard width so the sheet never scrolls sideways */
 .wizstep select,.wizstep input[type=text],.wizstep input[type=number]{width:100%;max-width:100%;box-sizing:border-box}.wizstep .row>label{flex:0 0 110px;min-width:0}.wizstep .row>select,.wizstep .row>input[type=text],.wizstep .row>input[type=number]{flex:1 1 0;width:0}.wizstep .row>.note{flex:1 1 100%}
 #wiz,#wizBody{overflow-x:hidden;max-width:100vw}
+/* iPhone Safari zooms into any field with text under 16 px and leaves the page shifted: keep fields at 16 px on touch screens */
+@media (pointer:coarse){input,select,textarea{font-size:16px!important}}
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
