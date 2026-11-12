@@ -428,13 +428,13 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
       <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><div class="tw"><table id="aisTable"></table></div></div>
-      <p class="note">Every boat you are racing, sailing your chosen route at its own TCF from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
+      <p class="note">Every boat you are racing, sailing your chosen route at its own TCC from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
       <p class="note warnt" id="fleetEmpty" hidden>No entry list for this race yet. Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>
       <h4 class="xh">Boats you are racing</h4>
       <div id="mfList"></div>
-      <div class="mfadd"><input id="mfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="mfTcc" type="number" inputmode="decimal" step="0.001" min="0.5" max="2" placeholder="TCF" aria-label="IRC TCF"><button class="btn" id="mfAdd">Add</button></div>
-      <details class="sltext"><summary>Paste an entry list</summary><p class="note">One boat per line: name and TCF, for example <i>Jolly Jack, 1.021</i>. Copy it from the race entry list or a spreadsheet.</p><textarea id="mfPaste" spellcheck="false" style="min-height:120px"></textarea><button class="btn" id="mfPasteGo">Add these boats</button></details>
+      <div class="mfadd"><input id="mfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="mfTcc" type="number" inputmode="decimal" step="0.001" min="0.5" max="2" placeholder="TCC" aria-label="IRC TCC"><button class="btn" id="mfAdd">Add</button></div>
+      <details class="sltext"><summary>Paste an entry list</summary><p class="note">One boat per line: name and TCC, for example <i>Jolly Jack, 1.021</i>. Copy it from the race entry list or a spreadsheet.</p><textarea id="mfPaste" spellcheck="false" style="min-height:120px"></textarea><button class="btn" id="mfPasteGo">Add these boats</button></details>
     </div>
     <div class="pbody" id="t-data" hidden>
       <p class="note" id="dataNote"></p>
@@ -505,13 +505,13 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <div class="row"><label for="myBoat">My boats</label><select id="myBoat"><option value="">Not saved yet</option></select><button class="btn" id="boatSave">Save boat</button><button class="btn" id="boatDel" hidden>Delete</button></div>
       <div class="row"><label for="boatName">Boat name</label><input type="text" id="boatName" placeholder="Your boat" autocomplete="off"></div>
       <h3>Boat speed from</h3>
-      <div class="seg" id="srcSeg" role="group" aria-label="Boat speed from"><button data-src="type" aria-pressed="true">Boat type</button><button data-src="tcc" aria-pressed="false">TCF only</button><button data-src="polar" aria-pressed="false">Own polar</button></div>
-      <div class="row"><label for="tcc">IRC TCF</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"><select id="boatPick" aria-label="Fill TCF from a race entry"><option value="">or fill from an entry…</option></select></div>
+      <div class="seg" id="srcSeg" role="group" aria-label="Boat speed from"><button data-src="type" aria-pressed="true">Boat type</button><button data-src="tcc" aria-pressed="false">TCC only</button><button data-src="polar" aria-pressed="false">Own polar</button></div>
+      <div class="row"><label for="tcc">IRC TCC</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"><select id="boatPick" aria-label="Fill TCC from a race entry"><option value="">or fill from an entry…</option></select></div>
       <div id="srcType">
         <div class="row"><label for="boatType">Boat type</label><select id="boatType"></select></div>
         <p class="note" id="typeEg"></p>
       </div>
-      <p class="note" id="srcTccNote" hidden>FirstShift's generic polar, scaled so the boat sails at its TCF. Use Boat type or Own polar for a truer shape.</p>
+      <p class="note" id="srcTccNote" hidden>FirstShift's generic polar, scaled so the boat sails at its TCC. Use Boat type or Own polar for a truer shape.</p>
       <div id="srcPolar" hidden>
         <div class="row"><label for="polarFile">Load your polar</label><input type="file" id="polarFile" accept=".pol,.txt,.csv,.tsv,.json,.xml"></div>
         <p class="note">Your own data: ORC rating data (JSON) or the polar table copied from your ORC certificate, an Expedition, B&amp;G, OpenCPN or qtVlm polar, or any table with TWA down and TWS across. Paste it below or load the file; edit any number in the table.</p>
