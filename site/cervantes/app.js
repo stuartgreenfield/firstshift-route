@@ -1163,7 +1163,9 @@
     $('sessYes').onclick = function () { b.hidden = true; S.resume = null; sessDrop(); startChosen(false); S.routes = []; S.sel = null; run(); };
   }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
-  function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); c.textContent = S.startChosen || store('fs-autostart') === '1' ? (v ? 'Start ' + clockAbs(v) + ' UTC' : 'Start: tap to choose') : 'Start: tap to choose'; }
+  function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var ok = (S.startChosen || store('fs-autostart') === '1') && v, d = new Date(v * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+    c.innerHTML = '<span class="stl">Start' + (ok ? '<i class="utc"> UTC</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
+    c.title = ok ? 'Class start ' + clockAbs(v) + ' UTC: tap to change' : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
   function wizCourseChosen(fromEditor) { var fresh = !WIZ.on || S.drawnNew; S.drawnNew = false; if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor && !fresh ? 4 : 1); return true; }   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
@@ -1645,6 +1647,7 @@
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
     $('sayStop').onclick = sayStop;
     $('helpBtn').onclick = function () { $('help').hidden = false; };
+    if ($('setHelp')) $('setHelp').onclick = function () { $('sheetX').click(); $('help').hidden = false; };   /* on phones Help lives in Settings, to give the race name room (Stuart 12 Nov) */
     $('helpX').onclick = function () { sayStop(); $('help').hidden = true; };
   }
   /* ---------- route export: GPX and KML (planning aid, not for navigation) ---------- */
