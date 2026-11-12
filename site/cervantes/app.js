@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.6.4';
+  var VERSION = 'FirstShift Route v0.6.5';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.6.4 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.6.5 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -810,6 +810,14 @@
     $('shareBox').onclick = function (e) { if (e.target === $('shareBox')) $('shareBox').hidden = true; };
     $('shareSys').onclick = function () { var url = $('shareUrl').value; if (navigator.share) { navigator.share({ title: 'FirstShift Route: ' + meta.course.name, text: 'Open the same race in Route:', url: url }).catch(function () {}); return; } $('shareCopy').click(); };
     $('shareCopy').onclick = function () { var url = $('shareUrl').value; var ok = function () { $('shareCopy').textContent = 'Copied'; setTimeout(function () { $('shareCopy').textContent = 'Copy link'; }, 1500); }; if (navigator.clipboard) navigator.clipboard.writeText(url).then(ok, function () { $('shareUrl').select(); }); else $('shareUrl').select(); };
+  }
+  /* a newer Route on the server: say so, one tap to load it (Stuart 12 Nov: the Home Screen app has no reload button) */
+  function updCheck() {
+    if (!navigator.onLine || document.hidden) return;
+    fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return;
+      var b = $('updBar'); if (!b) return; b.textContent = 'Route v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
+    }).catch(function () {});
   }
   function crewText() {
     var c = meta.course, s = S.sel, lines = ['FirstShift Route: ' + c.name, 'Start ' + clockAbs(+$('startSel').value) + ' UTC'];
@@ -1761,6 +1769,7 @@
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
     $('sayStop').onclick = sayStop;
     $('helpBtn').onclick = function () { $('help').hidden = false; };
+    if ($('updBar')) { $('updBar').onclick = function () { try { sessSave(); } catch (e) {} location.reload(); }; setTimeout(updCheck, 8000); setInterval(updCheck, 5 * 60000); document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(updCheck, 1500); }); }
     if ($('editFab')) $('editFab').onclick = function () { startEdit(courseCopy()); };   /* drag the marks straight on the chart; Done re-routes */
     var suT = 0; document.addEventListener('change', function () { clearTimeout(suT); suT = setTimeout(function () { try { setupRender(); } catch (e) {} }, 300); }, true);   /* the set-up card follows every change */
     /* Help is a round ? on the chart, bottom right, the same on every screen (Stuart 12 Nov) */
