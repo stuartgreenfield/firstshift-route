@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Follow the boat · FirstShift Route</title>
+<meta name="theme-color" content="#0B1B30">
+<link rel="icon" type="image/png" sizes="192x192" href="/brand/route-icon-192.png">
+<link rel="apple-touch-icon" href="/brand/route-apple-touch-icon.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#06111A;--panel:#182D40;--ink:#E2EBF0;--muted:#9AAEBB;--brand:#6FA9E0;--route:#FF4FB4;--line:#2E4860}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;display:flex;flex-direction:column}
+header{border-top:3px solid var(--route);display:flex;align-items:center;gap:12px;padding:10px max(14px,env(safe-area-inset-left,0px));background:var(--panel)}
+header img{height:30px}header h1{margin:0;font:600 19px/1.1 "Space Grotesk",system-ui,sans-serif}
+header .sub{color:var(--muted);font-size:13px}
+#map{flex:1;min-height:300px}
+.info{padding:10px max(14px,env(safe-area-inset-left,0px));background:var(--panel);display:flex;gap:18px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.info div{display:grid}.info span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.info b{font:500 16px ui-monospace,Menlo,monospace}
+form{padding:24px max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px;max-width:420px}
+input{font:16px Inter,system-ui,sans-serif;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:#223B53;color:var(--ink);text-transform:uppercase;letter-spacing:.1em}
+button{font:600 15px Inter,system-ui,sans-serif;padding:10px 14px;border-radius:9px;border:0;background:var(--brand);color:#06111A;cursor:pointer}
+.note{color:var(--muted);font-size:13px}.err{color:#F0A43A}
+.leaflet-container{background:#0b2236}
+</style>
+</head>
+<body>
+<header><img src="/brand/sails-dark.svg" alt="FirstShift"><div><h1 id="title">Follow the boat</h1><div class="sub" id="sub">FirstShift Route</div></div></header>
+<form id="ask" hidden><label for="code">The boat's six-letter code</label><input id="code" maxlength="6" autocomplete="off" placeholder="ABC234"><button>Follow</button><p class="note">The crew share the code with family and friends. Only people with the code can see the boat.</p><p class="err" id="err"></p></form>
+<div id="map" hidden></div>
+<div class="info" id="info" hidden><div><span>Last position</span><b id="iAt">-</b></div><div><span>Speed</span><b id="iSog">-</b></div><div><span>Planned finish</span><b id="iFin">-</b></div><div><span>Updated</span><b id="iUp">-</b></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); }, q = new URLSearchParams(location.search), code = (q.get('boat') || '').toUpperCase(), map, track, route, boat, fitted = false;
+  function when(ms) { var d = new Date(ms); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  function ago(ms) { var m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'just now' : m < 90 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; }
+  if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { $('ask').hidden = false; $('ask').onsubmit = function (e) { e.preventDefault(); var c = $('code').value.trim().toUpperCase(); if (/^[A-HJ-NP-Z2-9]{6}$/.test(c)) location.search = '?boat=' + c; else $('err').textContent = 'A code is six letters and numbers.'; }; return; }
+  $('map').hidden = false; $('info').hidden = false;
+  map = L.map('map', { zoomControl: true }).setView([50.6, -2], 7);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 13, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+  function load() {
+    fetch('/api/track/' + code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error) { $('sub').textContent = j.error; return; }
+      $('title').textContent = j.name || 'Follow the boat'; $('sub').textContent = 'FirstShift Route · updates every two minutes';
+      var pts = (j.track || []).map(function (p) { return [p[1], p[2]]; });
+      if (track) track.remove(); if (route) route.remove(); if (boat) boat.remove();
+      if (j.route && j.route.path && j.route.path.length) route = L.polyline(j.route.path, { color: '#FF4FB4', weight: 2, dashArray: '6 6', opacity: 0.8 }).addTo(map).bindTooltip('Planned route' + (j.route.name ? ': ' + j.route.name : ''));
+      if (pts.length) { track = L.polyline(pts, { color: '#6FA9E0', weight: 3 }).addTo(map); var last = j.track[j.track.length - 1]; boat = L.circleMarker([last[1], last[2]], { radius: 8, color: '#fff', weight: 2, fillColor: '#FF4FB4', fillOpacity: 1 }).addTo(map);
+        $('iAt').textContent = when(last[0] * 1000) + ' (' + ago(last[0] * 1000) + ')'; $('iSog').textContent = last[3] != null ? last[3].toFixed(1) + ' kn' : '-'; }
+      $('iFin').textContent = j.route && j.route.finish ? when(j.route.finish * 1000) : '-'; $('iUp').textContent = ago(j.at);
+      if (!fitted) { var all = pts.concat(j.route && j.route.path ? j.route.path : []); if (all.length) map.fitBounds(L.latLngBounds(all).pad(0.15)); fitted = true; }
+    }).catch(function () { $('sub').textContent = 'No connection: trying again shortly.'; });
+  }
+  load(); setInterval(load, 120000);
+})();
+</script>
+</body>
+</html>
