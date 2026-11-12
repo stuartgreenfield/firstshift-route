@@ -67,3 +67,6 @@ Stuart's screenshot: the TCC accepted only 0.8 to 1.8, and the refusal was a sma
 
 ## F24 A drawn course routed along the edge of the forecast data (12 Nov 07:34) - fixed, new area building
 Stuart's screenshot: routes zig-zagged along 49 00N. At 06:55 I had let drawn courses use the Fastnet page's forecasts, but that page's data stops at 49 00N, and the router treats the edge as a wall. The Fastnet page is withdrawn from drawn courses; a proper Celtic Sea and Western Approaches area (48 18N to 52 18N, 10 48W to 2 00W, from Ushant and north Brittany to the south coast of Ireland, out past Fastnet Rock) is added to the forecast build; and Route now warns, in the run note and a red banner, whenever routes run along the edge of a forecast area.
+
+## F25 Start day list stopped after 36 hours (12 Nov 07:38) - fixed
+Stuart: the day list should show all dates and say when a day is outside the forecasts. Start choices were capped at 36 hours ahead, a limit from when forecasts ran two days; they now run to six hours before the longest forecast ends (about 9.5 days). After the forecast days the list carries 90 more days under "Later: no forecast yet". A later start shows an amber notice, is kept (even after closing Route), and routes itself once the forecasts reach it.

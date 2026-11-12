@@ -230,9 +230,9 @@
     var bySt = {};
     meta.fleet.forEach(function (f) { if (!f.irc || !f.start) return; (bySt[f.start] = bySt[f.start] || {}); f.cls.forEach(function (c) { bySt[f.start][c] = 1; }); });
     if (meta.live) {
-      // live forecasts: start any hour from the next one to 36 hours ahead
+      // live forecasts: start any hour from the next one to six hours before the longest forecast ends (it was 36 h when forecasts ran 2 days; now up to 10)
       var first = Math.max(meta.course.window[0] + 1, Math.ceil((Date.now() / 1000 - T0) / 3600));
-      for (var hh = first; hh <= Math.min(first + 36, HMAX() - 6); hh++) { var ep = T0 + hh * 3600; starts.push(ep); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + ep + '">' + clockAbs(ep) + ' UTC</option>'); }
+      for (var hh = first; hh <= HMAX() - 6; hh++) { var ep = T0 + hh * 3600; starts.push(ep); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + ep + '">' + clockAbs(ep) + ' UTC</option>'); }
     } else Object.keys(bySt).sort().forEach(function (s) { starts.push(+s); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + s + '">' + clockAbs(+s).slice(4) + ' · ' + Object.keys(bySt[s]).sort().join(', ') + '</option>'); });
     $('startSel').value = String(starts[0]);
     S.tmin = (starts[0] - T0) / 3600; S.tmax = Math.min(HMAX(), S.tmin + 26);
@@ -1062,18 +1062,26 @@
   function startDayList() { var r = startRange(), out = []; if (!r) return out; for (var t = Math.floor(r[0] / 86400) * 86400; t <= r[1]; t += 86400) out.push({ v: t, k: new Date(t * 1000).toUTCString().slice(0, 11) }); return out; }
   function hhmm(ep) { return new Date(ep * 1000).toUTCString().slice(17, 22); }
   function exactEpoch(dayV, tm) { var m = /^(\d{1,2}):(\d{2})/.exec(tm || ''); if (!m) return NaN; return +dayV + (+m[1]) * 3600 + (+m[2]) * 60; }
-  function startCheck(ep) { var r = startRange(); if (!r || !(ep === ep)) return 'Enter a time, for example 10:20.'; if (ep < r[0] - 3600 || ep > r[1]) return 'Starts can be from ' + clockAbs(r[0]) + ' to ' + clockAbs(r[1]) + ' UTC with these forecasts.'; return ''; }
+  function futureKey() { return 'fs-future-' + HERE; }
+  function futureGet() { try { var o = JSON.parse(store(futureKey()) || 'null'); return o && o.rk === raceKey() ? o : null; } catch (e) { return null; } }
+  function futureSet(ep) { store(futureKey(), JSON.stringify({ rk: raceKey(), ep: ep })); }
+  function futureDrop() { try { localStorage.removeItem(futureKey()); } catch (e) {} }
+  function beyond(ep) { var r = startRange(); return !!(r && ep > r[1]); }
+  function startCheck(ep) { var r = startRange(); if (!r || !(ep === ep)) return 'Enter a time, for example 10:20.'; if (ep > r[1]) return ''; if (ep < r[0] - 3600) return 'Starts can be from ' + clockAbs(r[0]) + ' to ' + clockAbs(r[1]) + ' UTC with these forecasts.'; return ''; }
   function setStart(ep) {
     var v = String(Math.round(ep)), sel = $('startSel');
     if (![].some.call(sel.options, function (o) { return o.value === v; })) { var o = document.createElement('option'); o.value = v; o.textContent = clockAbs(+v) + ' (exact)'; var after = [].filter.call(sel.options, function (x) { return +x.value < +v; }).pop(); if (after) after.after(o); else sel.prepend(o); }
     sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  function startPickerHtml(id, cur) { var days = startDayList(), cd = Math.floor(cur / 86400) * 86400; return '<div class="row"><label for="' + id + 'Day">Day</label><select id="' + id + 'Day">' + days.map(function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; }).join('') + '</select></div><div class="row"><label for="' + id + 'Time">Time (UTC)</label><input type="time" id="' + id + 'Time" step="60" value="' + hhmm(cur) + '" required></div><p class="note" id="' + id + 'Err" style="color:var(--warn)"></p>'; }
+  function laterDays(r) { var out = [], t0 = Math.floor(r[1] / 86400) * 86400 + 86400; for (var t = t0; t < t0 + 90 * 86400; t += 86400) { var dd = new Date(t * 1000); out.push({ v: t, k: dd.toUTCString().slice(0, 11) + (dd.getUTCFullYear() !== new Date().getUTCFullYear() ? ' ' + dd.getUTCFullYear() : '') }); } return out; }
+  function startPickerHtml(id, cur) { var days = startDayList(), r = startRange(), fu = futureGet(); if (fu) cur = fu.ep; var cd = Math.floor(cur / 86400) * 86400, opt = function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; };
+    return '<div class="row"><label for="' + id + 'Day">Day</label><select id="' + id + 'Day"><optgroup label="Forecasts ready">' + days.map(opt).join('') + '</optgroup>' + (r ? '<optgroup label="Later: no forecast yet">' + laterDays(r).map(opt).join('') + '</optgroup>' : '') + '</select></div><div class="row"><label for="' + id + 'Time">Time (UTC)</label><input type="time" id="' + id + 'Time" step="60" value="' + hhmm(cur) + '" required></div><p class="note" id="' + id + 'Err" style="color:var(--warn)"></p>'; }
   function startPickerRead(id) { var ep = exactEpoch($(id + 'Day').value, $(id + 'Time').value), e = startCheck(ep); $(id + 'Err').textContent = e; return e ? NaN : ep; }
   /* Will the forecasts last the race? Each wind model's last hour against a rough finish time (course length at about
      5.5 knots times the TCC). A model that ends early hands over to the longer ones; only when every model has ended
      can Route not finish the race. */
-  function fitHtml(startEp, c) {
+  function beyondHtml(ep) { var r = startRange(); return '<div class="fitbox later"><b>Beyond the forecasts.</b> The forecasts reach ' + clockAbs(r[1]) + ' UTC; this start is ' + clockAbs(ep) + ' UTC. Route keeps the start and works out the routes once the forecasts reach it, about ten days before. Until then there is nothing to route.</div>'; }
+  function fitHtml(startEp, c) { if (beyond(+startEp)) return beyondHtml(+startEp);
     c = c || meta.course; var st = (+startEp - T0) / 3600, nm = courseNm(c), tcc = +$('tcc').value || 1, est = nm / (5.5 * tcc), fin = st + est;
     var ms = selectedModels(); if (!ms.length) ms = meta.layers.filter(function (L) { return L.kind === 'wind'; }).map(function (L) { return L.id; });
     var ends = ms.map(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return { id: id, end: h && h.length ? h[h.length - 1] : 0 }; }).sort(function (a, b) { return b.end - a.end; });
@@ -1163,7 +1171,7 @@
     $('sessYes').onclick = function () { b.hidden = true; S.resume = null; sessDrop(); startChosen(false); S.routes = []; S.sel = null; run(); };
   }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
-  function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var ok = (S.startChosen || store('fs-autostart') === '1') && v, d = new Date(v * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+  function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date(v * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
     c.innerHTML = '<span class="stl">Start' + (ok ? '<i class="utc"> UTC</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
     c.title = ok ? 'Class start ' + clockAbs(v) + ' UTC: tap to change' : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
   function wizCourseChosen(fromEditor) { var fresh = !WIZ.on || S.drawnNew; S.drawnNew = false; if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor && !fresh ? 4 : 1); return true; }   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
@@ -1248,7 +1256,7 @@
       if (window.FSSails) { if ($('wzSails').value) FSSails.usePreset($('wzSails').value); if ($('wzReef').checked !== FSSails.summary().reef) FSSails.reefs($('wzReef').checked); }
       $('boatSave').click(); store('fs-boatset', '1'); wizShow(3); return;
     }
-    if (n === 3) { var ep3 = startPickerRead('wz'); if (!(ep3 === ep3)) return; setStart(ep3); startChosen(); wizShow(4); return; }
+    if (n === 3) { var ep3 = startPickerRead('wz'); if (!(ep3 === ep3)) return; if (beyond(ep3)) { futureSet(ep3); startChosen(); chipStart(); } else { futureDrop(); setStart(ep3); startChosen(); } wizShow(4); return; }
     if (n === 4) { var t = $('wzMfPaste').value; if (t.trim()) { $('mfPaste').value = t; $('mfPasteGo').click(); } wizShow(5); return; }
     if (n === 5) { wizClose(true); return; }
   }
@@ -1402,7 +1410,7 @@
       var pts = p.map(function (q, i) { return { name: q.name || (i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i), lat: q.lat, lon: q.lon, side: i > 0 && i < p.length - 1 ? (q.side || 'port') : undefined }; });
       var c = { name: S.edit.name || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
       if ($('edDay') && !(startPickerRead('ed') === startPickerRead('ed'))) { busy('Check the start time.'); setTimeout(function () { busy(''); }, 2000); return; }
-      var stv = $('edStart').value, keepId = S.myId; S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); startChosen(); S.newDone = true; meta.course.race.id = rec.id;
+      var stv = $('edStart').value, keepId = S.myId, later = beyond(+stv); if (later) { stv = String((startRange() || [0, 0])[1]); } S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); startChosen(); S.newDone = true; meta.course.race.id = rec.id; if (later) { futureSet(+$('edStart').value); chipStart(); } else futureDrop();
       $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…');
       var issue = courseIssue(meta.course), reg = issue ? regionFor(c) : null;
       if (reg && reg.id !== HERE) {   /* outside this page's forecasts but inside a whole-area page: keep the course there and open it */
@@ -1454,6 +1462,7 @@
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
     if (startGate()) { busy(''); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); wizShow(1); } return; }
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
+    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' UTC is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' UTC. Route will work out the routes once the forecasts reach the start, about ten days before. Choose an earlier start to route now.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
     S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
