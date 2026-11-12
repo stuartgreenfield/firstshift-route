@@ -327,7 +327,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.bar .clock{overflow:hidden}.clock{min-width:0;font-size:13px;line-height:1.2}.clock .ckd{display:block;font-size:11px;color:var(--muted)}.clock .ckt{font-size:16px}.clock small{font-size:10.5px}.clock .ckl{display:none}.clock .cks{display:inline}
   .now{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 6px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:8.5px;letter-spacing:.04em;white-space:nowrap;overflow:hidden}}
 @media (max-width:360px){.bar{gap:6px 6px}.pgrp{gap:3px}.mobbtn{padding:0 8px}}
-@media (max-width:380px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:0}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
+@media (max-width:400px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:0}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
 
 /* phone on its side: a short screen, so everything compact and the chart as big as possible */
 @media (orientation:landscape) and (max-height:500px){
@@ -432,6 +432,18 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .wzrace,.wzboat{display:grid;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}.wzboat{border-bottom:0}
 .wzk{font:600 10.5px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.wzrace b{font:600 17px/1.2 var(--f-head)}
 #wzMore summary{cursor:pointer;color:var(--brand);font-weight:500;padding:4px 0}
+
+/* real time now, above the slider (Stuart 12 Nov): UTC, local with an hour offset, race time live */
+.tzrow{grid-column:1/-1;display:flex;gap:8px;align-items:center;justify-content:space-between;min-width:0;font:500 12.5px var(--f-data);color:var(--muted);white-space:nowrap;overflow:hidden}
+.tzrow b{color:var(--ink);font-weight:600}.tzrow i{font-style:normal}.tzl{display:flex;align-items:center;gap:6px}
+.tzb{width:28px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--soft,var(--bg));color:var(--ink);font:700 15px var(--f-body);line-height:1;cursor:pointer;padding:0}
+.tzr b.soon{color:var(--warn)}
+@media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.bar .tzrow,.bar.fh .tzrow{grid-row:2}.bar #time,.bar.fh #time{grid-column:1/-1;grid-row:3}.bar .now,.bar.fh .now{grid-row:4}}
+@media (min-width:900px), (orientation:landscape) and (max-height:500px){.bar .tzrow{grid-row:1}.bar>*:not(.tzrow){grid-row:2}}
+@media (min-width:900px) and (max-width:1199px), (orientation:landscape) and (max-height:500px){.bar .now{grid-row:3}}
+.tzrow{width:100%;contain:inline-size}.tzrow em{font-style:normal}
+@media (max-width:520px){.tzrow{font-size:11.5px;gap:4px}.tzw{display:none}.tzb{width:24px;height:24px}.tzl{gap:4px}}
+@media (max-width:380px){.tzrow{font-size:10.5px}.tzb{width:22px}}
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
@@ -550,6 +562,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   <div class="bar">
     <button class="mobbtn" id="mobBtn" aria-label="Man overboard: press and hold" title="Man overboard: press and hold for one second">MOB</button>
     <div class="pgrp"><button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button><button class="spd" id="spdBtn" aria-label="Replay speed" title="Replay speed: tap to change">3h/s</button><button class="spd livebtn" id="liveBtn" aria-label="Live GPS" aria-pressed="false" title="Live GPS: the boat from this phone's GPS against the plan">GPS</button><button class="spd fol" id="followBtn" aria-label="Follow the boat" aria-pressed="true" title="Follow the boat"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"/><path d="M12 7l3.5 9-3.5-2-3.5 2z" fill="currentColor"/></svg></button></div>
+    <div class="tzrow" id="tzRow" aria-live="off"><span class="tzu">UTC <b id="tzUtc">--:--:--</b></span><span class="tzl"><button class="tzb" id="tzMinus" aria-label="Local time one hour earlier">−</button><span><em class="tzw">Local </em><i id="tzOff">UTC+0</i> <b id="tzLoc">--:--</b></span><button class="tzb" id="tzPlus" aria-label="Local time one hour later">+</button></span><span class="tzr" id="tzRace"></span></div>
     <input type="range" id="time" min="0" max="1000" value="0" aria-label="Race time">
     <div class="clock" id="clock">--</div>
     <div class="now" id="now"></div>
@@ -605,7 +618,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.8.6</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.8.7</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>

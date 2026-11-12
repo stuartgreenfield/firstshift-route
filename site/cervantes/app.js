@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.8.6';
+  var VERSION = 'FirstShift Route v0.8.7';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -219,7 +219,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.8.6 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.8.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1678,6 +1678,23 @@
   function cardModels() { if ($('models') && $('models').children.length) return selectedModels(); return (meta.layers || []).filter(function (l) { return l.kind === 'wind' && l.id !== 'mog' && l.id !== 'arpege'; }).map(function (l) { return l.id; }); }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
 
+  /* ---------- real time now (Stuart 12 Nov): UTC, local at a chosen offset, and race time from the class start ---------- */
+  (function () {
+    var off = (function () { var v = store('fs-tz'); return v != null && v !== '' && !isNaN(+v) ? +v : -new Date().getTimezoneOffset() / 60; })();
+    var p2 = function (n) { return ('0' + n).slice(-2); }, hm = function (m) { m = Math.max(0, Math.floor(m)); return Math.floor(m / 60) + 'h ' + p2(m % 60); };
+    function tick() {
+      if (!$('tzUtc')) return; var now = Date.now(), d = new Date(now), l = new Date(now + off * 3600000);
+      $('tzUtc').textContent = p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()) + ':' + p2(d.getUTCSeconds());
+      $('tzOff').textContent = 'UTC' + (off >= 0 ? '+' : '−') + Math.abs(off); $('tzLoc').textContent = p2(l.getUTCHours()) + ':' + p2(l.getUTCMinutes());
+      var st = $('startSel') ? +$('startSel').value : 0, fu = null; try { fu = meta ? futureGet() : null; } catch (e) {} if (fu && fu.ep) st = fu.ep;
+      if (!st) { $('tzRace').innerHTML = ''; return; }
+      var sec = Math.round(st - now / 1000);
+      var nar = innerWidth <= 520; $('tzRace').innerHTML = sec > 0 ? (nar ? 'Start ' : 'Start in ') + '<b' + (sec <= 600 ? ' class="soon"' : '') + '>' + (sec <= 600 ? Math.floor(sec / 60) + ':' + p2(sec % 60) : sec < 86400 ? hm(sec / 60) : Math.floor(sec / 86400) + 'd ' + hm((sec % 86400) / 60)) + '</b>' : 'Race <b>' + hm(-sec / 60) + '</b>';
+    }
+    function set(v) { off = Math.max(-12, Math.min(14, v)); store('fs-tz', String(off)); tick(); }
+    if ($('tzMinus')) { $('tzMinus').onclick = function () { set(off - 1); }; $('tzPlus').onclick = function () { set(off + 1); }; }
+    tick(); setInterval(tick, 1000);
+  })();
   /* ---------- Live GPS (Stuart 12 Nov): the boat from this phone's GPS against the chosen route; how far off, ahead or behind, the way back ---------- */
   var LIVE = { mini: store('fs-livemini') === '1', on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 24 * 3600000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
   function liveSet() { ['gpsMode', 'xteLim', 'behLim'].forEach(function (id) { var v = store('fs-' + id); if (v != null && $(id)) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); if (id === 'gpsMode' && LIVE.on) { liveStop(true); liveStart(); } }; }); var ls = store('fs-liveSound'); if (ls != null) $('liveSound').checked = ls === '1'; $('liveSound').onchange = function () { store('fs-liveSound', this.checked ? '1' : '0'); }; }
