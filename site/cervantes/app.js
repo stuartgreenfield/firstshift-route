@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.9.2';
+  var VERSION = 'FirstShift Route v0.9.3';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -38,7 +38,7 @@
 
   /* phones: From here sits beside Play in the bottom bar */
   (function () { var mq = matchMedia('(max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px)'), fh = $('fromHere'), home = fh.parentNode, next = fh.nextSibling;
-    function place() { var bar = document.querySelector('.bar'); if (mq.matches) { bar.insertBefore(fh, $('time')); bar.classList.add('fh'); } else if (fh.parentNode !== home) { home.insertBefore(fh, next); bar.classList.remove('fh'); } }
+    function place() { var ori = $('oriBtn'); if (mq.matches) { if (fh.parentNode !== ori.parentNode) ori.parentNode.insertBefore(fh, ori); fh.classList.add('fabhelp', 'fabhere'); fh.classList.remove('ib'); } else if (fh.parentNode !== home) { home.insertBefore(fh, next); fh.classList.remove('fabhelp', 'fabhere'); fh.classList.add('ib'); } }   /* phones: From here is a round button on the chart, so the bar keeps full-size buttons */
     place(); if (mq.addEventListener) mq.addEventListener('change', place); })();
   /* ---------- offline: keep the app, forecasts and routes on the device (sw.js) ---------- */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { try { navigator.serviceWorker.register('sw.js'); } catch (e) {} }
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.9.2 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.9.3 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2600,9 +2600,9 @@
       if (pos && !pos.done && pos.i != null && S.legs && S.legs.length) {
         var q = p[pos.i + 1] || p[pos.i], lg = S.legs[Math.min(q.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a;
         var vmc = q.bsp * Math.cos((q.hdg - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
-        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + (q.twa < 0 ? 'S' : 'P')) + kv('TWS', q.tws.toFixed(1)) + kv('VMG mark', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
-      } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'TWA', 'TWS', 'VMG mark', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
-      else h = ['Hdg', 'BSP', 'TWA', 'TWS', 'VMG mark', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
+        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + (q.twa < 0 ? 'S' : 'P')) + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
+      } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
+      else h = ['Hdg', 'BSP', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
     }
     $('now').innerHTML = h; followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
   }
@@ -2620,7 +2620,7 @@
     var cx = (left + right) / 2, cy = (top + bot) / 2;
     view.lo = pos.lo - (cx - W / 2) / (K * view.s); view.la = pos.la + (cy - H / 2) / view.s;
   }
-  function kv(k, v) { return '<div><span>' + k + '</span><b>' + v + '</b></div>'; }
+  function kv(k, v) { return '<div' + (k === 'VMC' ? ' title="VMC: velocity made good towards the next mark, in knots"' : '') + '><span>' + k + '</span><b>' + v + '</b></div>'; }
   function pad(x) { return String(Math.round(((x % 360) + 360) % 360)).padStart(3, '0'); }
   var playing = false, lastTs = 0;
   function togglePlay() { playing = !playing; $('playIcon').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>'; $('play').setAttribute('aria-label', playing ? 'Pause' : 'Play'); if (playing) { lastTs = 0; if (+$('time').value >= 1000) setTime(S.tmin || 5); requestAnimationFrame(tick); } }
