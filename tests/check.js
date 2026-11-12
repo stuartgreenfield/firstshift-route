@@ -93,14 +93,15 @@ async function waitRoutes(p, ms) {
     try {
       await p.waitForSelector('#wiz:not([hidden])', { timeout: 60000 });
       const i1 = await snap(p, dn, 'setup-1');
-      await p.fill('#wzName', 'Check Boat'); await p.fill('#wzTcc', '1.050'); await p.click('#wizNext');
+      await p.fill('#wzName', 'Check Boat'); await p.fill('#wzTcc', '1.050'); await p.click('#wzRace');   /* step 1 is race and boat; Change race opens the list */
       await p.waitForTimeout(300); const s2 = await p.evaluate(() => !document.getElementById('races').hidden);
       await p.evaluate(() => document.querySelector('[data-race="myth"]').click()); await p.waitForTimeout(600);
+      await p.click('#wizNext'); await p.waitForTimeout(300);
       const s3 = await p.evaluate(() => document.getElementById('wizH').textContent); await p.click('#wizNext'); await p.click('#wizNext');
       const i5 = await snap(p, dn, 'setup-5-check');
       const blocked = await p.evaluate(() => document.getElementById('wizNext').disabled);
       await p.click('#wizNext'); const r = await waitRoutes(p, 240000);
-      rec(dn, 'Set-up', 'first-time guided set-up to routes', s2 && /3 of 5/.test(s3) && !blocked && r.ok, (r.ok ? r.n + ' routes' : r.note) + '; ' + i1 + ', ' + i5);
+      rec(dn, 'Set-up', 'first-time guided set-up to routes', s2 && /2 of 4/.test(s3) && !blocked && r.ok, (r.ok ? r.n + ' routes' : r.note) + '; ' + i1 + ', ' + i5);
     } catch (e) { rec(dn, 'Set-up', 'first-time guided set-up to routes', false, e.message.split('\n')[0]); }
     rec(dn, 'Set-up', 'no script errors', !errs.length, errs.slice(0, 2).join(' / '));
     await ctx.close();
