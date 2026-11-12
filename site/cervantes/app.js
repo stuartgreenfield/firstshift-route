@@ -1171,7 +1171,7 @@
     $('sessYes').onclick = function () { b.hidden = true; S.resume = null; sessDrop(); startChosen(false); S.routes = []; S.sel = null; run(); };
   }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
-  function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date(v * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+  function chipStart() { setTimeout(function () { try { setupRender(); } catch (e) {} }, 0); var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date(v * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
     c.innerHTML = '<span class="stl">Start' + (ok ? '<i class="utc"> UTC</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
     c.title = ok ? 'Class start ' + clockAbs(v) + ' UTC: tap to change' : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
   function wizCourseChosen(fromEditor) { var fresh = !WIZ.on || S.drawnNew; S.drawnNew = false; if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor && !fresh ? 4 : 1); return true; }   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
@@ -1428,6 +1428,44 @@
     S.routes.forEach(function (r) { var k = 0, side = ''; (r.r.path || []).forEach(function (q) { var la = q.la, lo = q.lo; var sd = la - s < mla ? 'south' : n - la < mla ? 'north' : lo - w < mlo ? 'west' : e - lo < mlo ? 'east' : ''; if (sd) { k++; side = sd; } }); if (k >= 4 && !hit) hit = side; });
     return hit ? 'Warning: routes run along the ' + hit + ' edge of this forecast area (' + (hit === 'south' ? dm(s, 'NS') : hit === 'north' ? dm(n, 'NS') : hit === 'west' ? dm(w, 'EW') : dm(e, 'EW')) + '). The best route probably lies outside it, so treat these routes with care.' : '';
   }
+  /* the set-up card (Stuart 12 Nov, wireframe A): Course, Boat, Start, Forecasts, each ticked or flagged, and one Route button */
+  function setupRows() {
+    var c = meta.course, rows = [], iss = courseIssue(c);
+    rows.push({ k: 'course', t: 'Course', ok: !iss, s: iss ? iss : c.name + ' · ' + courseNm(c) + ' nm · ' + (c.marks || []).length + ' mark' + ((c.marks || []).length === 1 ? '' : 's') });
+    var bs = boatIsSet(); rows.push({ k: 'boat', t: 'Boat', ok: bs, s: bs ? ($('boatName').value || 'My boat') + ' · TCC ' + (+$('tcc').value || 1).toFixed(3) + ' · ' + ($('boatType').selectedOptions[0] ? $('boatType').selectedOptions[0].textContent.split(',')[0] : '') : 'Set up your boat: name, type and TCC' });
+    var fu = futureGet(), st = +$('startSel').value, chosen = S.startChosen || store('fs-autostart') === '1';
+    rows.push({ k: 'start', t: 'Start', ok: chosen && !fu, s: fu ? clockAbs(fu.ep) + ' UTC: beyond the forecasts' : chosen && st ? clockAbs(st) + ' UTC' : 'Choose your class start (UTC)' });
+    var ms = selectedModels(), est = (st ? (st - T0) / 3600 : 0) + courseNm(c) / (5.5 * (+$('tcc').value || 1)), cover = ms.filter(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return h && h.length && h[h.length - 1] >= est; }).length;
+    rows.push({ k: 'fc', t: 'Forecasts', ok: ms.length > 0 && cover > 0, s: !ms.length ? 'Tick at least one forecast model' : ms.length + ' model' + (ms.length === 1 ? '' : 's') + ' · ' + (cover === ms.length ? 'all reach the finish' : cover ? cover + ' reach the finish, the rest hand over' : 'none reaches the finish') });
+    return rows;
+  }
+  function setupRender() {
+    var el = $('setupCard'); if (!el || !meta) return; var rows; try { rows = setupRows(); } catch (e) { return; }
+    var ready = rows.filter(function (r) { return r.ok; }).length, all = ready === rows.length, has = S.routes && S.routes.length;
+    var open = S.suOpen || !all || !has;   /* routed and all ready: one line, tap to open */
+    if (!open) { el.innerHTML = '<button class="srow" id="suOpen"><span class="sic">✓</span><span class="stx"><b>Set-up: all 4 ready</b><span>' + wizEsc(rows.map(function (r) { return r.s.split(' · ')[0]; }).join(' · ')) + '</span></span><span class="sgo">Show</span></button>'; $('suOpen').onclick = function () { S.suOpen = true; setupRender(); }; return; }
+    el.innerHTML = '<div class="shd"><b>Race set-up</b><span>' + ready + ' of 4 ready' + (all && has ? ' · <a href="#" id="suHide">Hide</a>' : '') + '</span></div>' + rows.map(function (r) { return '<button class="srow' + (r.ok ? '' : ' warn') + '" data-su="' + r.k + '"><span class="sic">' + (r.ok ? '✓' : '!') + '</span><span class="stx"><b>' + r.t + '</b><span>' + wizEsc(r.s) + '</span></span><span class="sgo">' + (r.ok ? 'Change' : 'Set') + '</span></button>'; }).join('') +
+      '<button class="sroute" id="suRoute"' + (all ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : 'Route (' + rows.filter(function (r) { return !r.ok; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
+    [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function () { var k = b.dataset.su;
+      if (k === 'course') { $('raceBtn').onclick({ stopPropagation: function () {} }); }
+      else if (k === 'boat') wizOpen(1);
+      else if (k === 'start') $('startChip').click();
+      else { $('setBtn').click(); var t = document.querySelector('.stabs .tab[data-s="fc"]'); if (t) t.click(); } }; });
+    $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; run(); };
+    if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
+  }
+  /* after routing: can you trust it? (Stuart 12 Nov) */
+  function checksRender() {
+    var el = $('checks'); if (!el) return; if (!S.routes || !S.routes.length) { el.innerHTML = ''; return; }
+    var ck = [], part = S.routes.filter(function (s) { return s.r.partial; }).length;
+    ck.push(part ? [0, 'The forecasts end before the finish on ' + (part === S.routes.length ? 'every route' : part + ' of ' + S.routes.length + ' routes') + ': choose an earlier start or longer models'] : [1, 'Every model used reaches the finish']);
+    var edge = edgeHit(); ck.push(edge ? [0, 'Routes run along the edge of the forecast area: the best route may lie outside it'] : [1, 'Course and routes inside the forecast area, clear of its edges']);
+    var own = S.routes.filter(function (s) { return !s.r.partial && !s.combined && s.id !== 'chain'; }).map(function (s) { return s.r.finish; });
+    if (own.length > 1) { var sp = Math.max.apply(null, own) - Math.min.apply(null, own), dur = Math.min.apply(null, own) - (S.start ? S.start.t : 0); ck.push(sp > Math.max(1, dur * 0.08) ? [0, 'Models disagree by ' + fmtH(sp) + ' on the finish: compare the routes before you commit'] : [1, 'Models agree within ' + fmtH(sp) + ' on the finish']); }
+    ck.push([1, 'Boat: ' + ($('boatName').value || 'My boat') + ', TCC ' + (+$('tcc').value || 1).toFixed(3) + ', sailing at ' + Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3 || 100) + '% of the polar']);
+    ck.push(nextMeta || S.sessStale ? [0, 'A newer forecast is out: Route again to use it'] : [1, 'Forecast run ' + (meta.run || '') + ', the newest on the server']);
+    el.innerHTML = '<h4>Can you trust it?</h4>' + ck.map(function (c) { return '<div class="ck' + (c[0] ? '' : ' w') + '"><i>' + (c[0] ? '✓' : '!') + '</i><span>' + wizEsc(c[1]) + '</span></div>'; }).join('');
+  }
   function selectedModels() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return c.checked && !c.disabled; }).map(function (c) { return c.getAttribute('data-m'); }); }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
   function loadPre() {
@@ -1597,6 +1635,7 @@
     var comb = S.routes.find(function (s) { return s.combined; });
     var fastT = Math.min.apply(null, S.routes.filter(function (s) { return !s.r.partial; }).map(function (s) { return s.r.finish; }).concat([Infinity]));
     $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + '</em>') + '</div>'; }).join('');
+    try { checksRender(); setupRender(); } catch (e) {}
     $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
   }
   function sailsList() { return FSRouter.parseCrossover($('sails').value); }
@@ -1664,6 +1703,8 @@
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
     $('sayStop').onclick = sayStop;
     $('helpBtn').onclick = function () { $('help').hidden = false; };
+    if ($('editFab')) $('editFab').onclick = function () { startEdit(courseCopy()); };   /* drag the marks straight on the chart; Done re-routes */
+    var suT = 0; document.addEventListener('change', function () { clearTimeout(suT); suT = setTimeout(function () { try { setupRender(); } catch (e) {} }, 300); }, true);   /* the set-up card follows every change */
     /* Help is a round ? on the chart, bottom right, the same on every screen (Stuart 12 Nov) */
     $('helpX').onclick = function () { sayStop(); $('help').hidden = true; };
   }

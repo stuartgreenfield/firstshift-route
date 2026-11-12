@@ -350,8 +350,22 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px), (orientation:landscape) and (max-height:500px){}
 @media (orientation:landscape) and (max-height:500px){.brand{min-width:70px!important;flex:1 1 auto}.stbtn .stl{display:none}.stbtn{height:38px;padding:2px 6px}.lead{max-width:calc(100% - 228px)!important;min-width:0}.logobox{width:40px!important;height:40px!important}}
 .fabhelp{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:52px;z-index:3;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.3);color:var(--ink);cursor:pointer;padding:0}
+.fabedit{bottom:104px}
 .fabhelp svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .fitbox.later{border:2px solid var(--warn);border-radius:12px;padding:10px 12px;margin:8px 0;line-height:1.45}.fitbox.later b{color:var(--warn)}
+.setup{display:grid;gap:8px;margin:0 0 12px}
+.setup .shd{display:flex;justify-content:space-between;align-items:baseline}.setup .shd b{font:600 17px var(--f-head)}.setup .shd span{font-size:12px;color:var(--muted)}
+.setup .srow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--glass);border:1px solid var(--line);color:var(--ink);text-align:left;font:inherit;cursor:pointer;width:100%}
+.setup .srow.warn{border:2px solid var(--warn)}
+.setup .sic{flex:none;width:26px;height:26px;border-radius:13px;display:grid;place-items:center;font-weight:700;background:#4CC38A;color:#0E1C2D}
+.setup .srow.warn .sic{background:var(--warn)}
+.setup .stx{flex:1;min-width:0}.setup .stx b{display:block;font-size:15px}.setup .stx span{display:block;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.setup .srow.warn .stx span{color:var(--warn)}
+.setup .sgo{flex:none;color:var(--brand);font-size:14px}
+.setup .sroute{height:50px;border-radius:14px;border:0;background:var(--brand);color:#0E1C2D;font:600 17px var(--f-body);cursor:pointer}
+.setup .sroute[disabled]{background:var(--line);color:var(--muted);cursor:default}
+.checks{display:grid;gap:5px;margin:10px 0;font-size:14px}.checks h4{margin:4px 0;font:600 12px var(--f-body);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.checks .ck{display:flex;gap:8px;align-items:flex-start}.checks .ck i{font-style:normal;font-weight:700;color:#4CC38A;flex:none;width:14px}.checks .ck.w i{color:var(--warn)}
 .stbtn{flex:none;display:grid;align-content:center;justify-items:start;gap:1px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:4px 10px;height:52px;cursor:pointer;text-align:left;color:var(--brand);font:600 12px/1.15 var(--f-data);pointer-events:auto}
 .stbtn .stl{font:600 10px/1 var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 .stbtn .stv{white-space:nowrap}
@@ -386,6 +400,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 <div class="app" id="app">
   <div class="chart">
     <canvas id="map" aria-label="Chart with routes, wind and depth"></canvas>
+    <button class="fabhelp fabedit" id="editFab" title="Edit the course on the chart" aria-label="Edit the course on the chart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>
     <button class="fabhelp" id="helpBtn" title="Help" aria-label="Help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.8c0 1.7-2.4 2.2-2.4 3.6"/><circle cx="12" cy="17" r=".6"/></svg></button>
     <div class="modemenu" id="spdMenu" hidden role="menu" aria-label="Replay speed"></div>
     <div class="cpawarn" id="cpaWarn" hidden></div>
@@ -422,8 +437,10 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <button class="close" id="panelX" aria-label="Close results">×</button>
     </div>
     <div class="pbody" id="t-decision">
+      <div class="setup" id="setupCard" aria-label="Race set-up"></div>
       <div class="rerow"><button class="btn" id="run" title="Work the routes out again with the current settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>Route again</button><span class="note">Routes by itself when it opens, when new forecasts arrive and when you close Settings after a change.</span></div>
       <div class="finbox" id="finBox" aria-label="Finish times"></div>
+      <div class="checks" id="checks" aria-label="Can you trust these routes?"></div>
       <p class="note" id="decNote"></p>
       <div class="tw"><table id="matrix"></table></div>
       <h4 class="xh">Compare the routes</h4>
