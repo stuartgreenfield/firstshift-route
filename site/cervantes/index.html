@@ -335,6 +335,14 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 #wiz,#wizBody{overflow-x:hidden;max-width:100vw}
 /* iPhone Safari zooms into any field with text under 16 px and leaves the page shifted: keep fields at 16 px on touch screens */
 @media (pointer:coarse){input,select,textarea{font-size:16px!important}}
+/* the set-up drops down from the header, with the chart still showing below: part of the tool, not a separate page (Stuart 12 Nov) */
+#wiz{background:transparent;pointer-events:none;justify-content:flex-start;align-items:flex-start}
+#wiz .in{pointer-events:auto;height:auto;max-height:calc(100% - env(safe-area-inset-top,0px) - 150px);margin:calc(env(safe-area-inset-top,0px) + 66px) 0 0 max(10px,env(safe-area-inset-left,0px));width:min(440px,calc(100% - 20px));border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);padding-top:0;padding-bottom:0;overflow:hidden;animation:wizdrop .18s ease-out}
+#wiz .sbody{flex:1 1 auto;overflow-y:auto;min-height:0}
+@keyframes wizdrop{from{transform:translateY(-10px);opacity:0}to{transform:none;opacity:1}}
+.wzrace,.wzboat{display:grid;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}.wzboat{border-bottom:0}
+.wzk{font:600 10.5px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.wzrace b{font:600 17px/1.2 var(--f-head)}
+#wzMore summary{cursor:pointer;color:var(--brand);font-weight:500;padding:4px 0}
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>

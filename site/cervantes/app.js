@@ -894,7 +894,7 @@
   function lastSet(o) { if (S.booting) return; var old = lastGet() || {}, same = old.race === o.race && old.my === o.my; o.start = o.start || (same ? old.start : null); o.chosen = same ? !!old.chosen : false; if (!same) { S.startChosen = false; } store('fs-last-' + HERE, JSON.stringify(o)); chipStart(); }
   function openMy(id, boot) {
     var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
-    if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '3'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
+    if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
     if (courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
     S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
@@ -915,7 +915,7 @@
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
       setMyRaces(myRaces().filter(function (x) { return x.id !== b.dataset.del; })); if (S.myId === b.dataset.del) S.myId = null; racesSheet(); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-race]'), function (b) { b.onclick = function () {
-      var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { try { sessionStorage.setItem('fs-wiz', '3'); } catch (e) {} location.href = '../' + pg + '/?race=' + encodeURIComponent(id); return; }
+      var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + pg + '/?race=' + encodeURIComponent(id); return; }
       S.myId = null; applyRace(id); $('races').hidden = true; if (wizCourseChosen(false)) return; if (!courseIssue(meta.course)) { S.from = null; run(); } };
     });
   }
@@ -947,7 +947,7 @@
     return '<div class="fit ' + (ok ? (tight ? 'tight' : 'ok') : 'no') + '"><b>' + (ok ? (tight ? 'Close: the race should just fit the forecasts.' : 'The forecasts cover the race.') : 'The race may not finish before the forecasts end.') + '</b> ' + nm + ' nm, roughly ' + Math.round(est) + ' h at your rating (a rough guide: upwind in a blow takes much longer), so a finish around ' + clockAbs(T0 + fin * 3600) + ' UTC. The longest forecast runs to ' + clockAbs(T0 + last * 3600) + ' UTC.' + (ok ? ' Route confirms it when it routes.' : ' Choose an earlier start, or wait for a later forecast run: Route will say if it cannot finish.') + '<details><summary>Each forecast</summary><ul>' + rows + '</ul><p class="note">Forecasts are published for 2 to 5 days ahead here; the global models go further and longer runs are coming.</p></details></div>';
   }
   /* ---------- guided set-up: boat, race, start, fleet, check, route; in the order a navigator prepares a race ---------- */
-  var WIZ = { on: false, step: 0 }, WIZN = ['Your boat', 'The race', 'The start', 'Boats you are racing', 'Check and route'];
+  var WIZ = { on: false, step: 0 }, WIZN = ['Race and boat', 'Choose the race', 'The start', 'Boats you are racing', 'Check and route'], WIZD = [0, 1, 1, 2, 3, 4];   /* five screens, four steps: the race list is part of step 1 (Stuart 12 Nov: race and boat first, then the start) */
   function wizSave() { try { sessionStorage.setItem('fs-wiz', WIZ.on ? String(WIZ.step) : ''); } catch (e) {} }
   function boatIsSet() { return store('fs-boatset') === '1' || Object.keys(boats()).length > 0 || !!BC.code; }
   function boatWarn() { $('boatWarn').hidden = boatIsSet() || WIZ.on; }
@@ -970,30 +970,37 @@
   function startGate() { return store('fs-autostart') !== '1' && !S.startChosen; }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
   function chipStart() { var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); c.textContent = S.startChosen || store('fs-autostart') === '1' ? (v ? 'Start ' + clockAbs(v) + ' UTC' : 'Start: tap to choose') : 'Start: tap to choose'; }
-  function wizCourseChosen(fromEditor) { if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor ? 4 : 3); return true; }
+  function wizCourseChosen(fromEditor) { if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); } wizShow(fromEditor ? 4 : 1); return true; }
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
     WIZ.step = n; wizSave();
-    $('wizDots').innerHTML = WIZN.map(function (t, i) { return '<i class="' + (i + 1 === n ? 'on' : i + 1 < n ? 'done' : '') + '" title="' + t + '"></i>'; }).join('');
-    if (n === 2) { $('wiz').hidden = true; racesSheet(); $('races').hidden = false; $('wizBar').hidden = false; $('wizBarT').textContent = 'Step 2 of 5: choose a race, open one of yours, or New course'; return; }
+    var dn = WIZD[n]; $('wizDots').innerHTML = [1, 2, 3, 4].map(function (i) { return '<i class="' + (i === dn ? 'on' : i < dn ? 'done' : '') + '"></i>'; }).join('');
+    if (n === 2) { $('wiz').hidden = true; racesSheet(); $('races').hidden = false; $('wizBar').hidden = false; $('wizBarT').textContent = 'Step 1 of 4: choose a race, open one of yours, or New course'; return; }
     $('wizBar').hidden = true; $('races').hidden = true; $('wiz').hidden = false;
-    $('wizH').textContent = 'Step ' + n + ' of 5: ' + WIZN[n - 1];
+    $('wizH').textContent = 'Step ' + dn + ' of 4: ' + WIZN[n - 1];
     $('wizBack').hidden = n === 1; $('wizNext').textContent = n === 5 ? 'Route it' : n === 4 ? 'Next (or skip)' : 'Next'; $('wizNext').disabled = false; $('wizHint').textContent = '';
     var h = '<div class="wizstep">', B = $('wizBody');
     if (n === 1) {
-      var bl = Object.keys(boats()).sort();
-      h += '<h3>Your boat</h3><p class="wlead">Done once: Route keeps it on this device, and a boat code shares it with the crew.</p>' +
-        (bl.length ? '<div class="row"><label for="wzMy">Saved boats</label><select id="wzMy"><option value="">Choose…</option>' + bl.map(function (x) { return '<option>' + wizEsc(x) + '</option>'; }).join('') + '</select></div>' : '') +
-        '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc($('boatName').value) + '" placeholder="For example Morning After" autocomplete="off"></div>' +
+      var bl = Object.keys(boats()).sort(), cur = $('boatName').value, known = bl.indexOf(cur) >= 0, c1 = meta.course, r1 = c1.race || {};
+      h += '<div class="wzrace"><span class="wzk">Race</span><b>' + wizEsc(c1.name) + '</b><span class="note">' + courseNm(c1) + ' nm' + (r1.date2027 ? ' · ' + wizEsc(raceReady(r1, true)) : '') + '</span>' +
+        '<div class="xrow"><button class="btn" id="wzRace">Change race</button><button class="btn" id="wzNew">New course</button></div></div>' +
+        '<div class="wzboat"><span class="wzk">Boat</span>' +
+        '<div class="row"><select id="wzMy" aria-label="Your boat">' + bl.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + wizEsc(x) + '</option>'; }).join('') + '<option value=""' + (known ? '' : ' selected') + '>' + (bl.length ? 'A new boat…' : 'Your boat') + '</option></select></div>' +
+        (known ? '<p class="note">IRC TCC ' + (+$('tcc').value).toFixed(3) + ', ' + wizEsc($('boatType').options[$('boatType').selectedIndex].text) + ', ' + (window.FSSails ? FSSails.summary().sails : 0) + ' sails</p>' : '') +
+        '<details id="wzMore"' + (known ? '' : ' open') + '><summary>' + (known ? 'Change the boat details' : 'Boat details') + '</summary>' +
+        '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc(known ? cur : '') + '" placeholder="For example Morning After" autocomplete="off"></div>' +
         '<div class="row"><label for="wzType">Boat type</label><select id="wzType">' + $('boatType').innerHTML + '</select></div>' +
         '<div class="row"><label for="wzTcc">IRC TCC</label><input type="number" id="wzTcc" step="0.001" min="0.8" max="1.8" inputmode="decimal" value="' + wizEsc($('tcc').value) + '"></div>' +
         '<div class="row"><label for="wzPct">Your speed</label><input type="number" id="wzPct" min="80" max="110" step="1" inputmode="numeric" value="' + Math.round((+$('tuUp').value + +$('tuReach').value + +$('tuRun').value) / 3) + '"><span class="note">% of the polar you expect to sail at (95 is typical for a well-sailed race)</span></div>' +
         '<div class="row"><label for="wzSails">Sails</label><select id="wzSails"><option value="">Keep my sails (' + (window.FSSails ? FSSails.summary().sails : 0) + ')</option><option value="asym">Asymmetric kites on a bowsprit</option><option value="sym">Symmetric spinnaker on a pole</option><option value="white">White sails only</option></select></div>' +
         '<label class="row" style="gap:8px"><input type="checkbox" id="wzReef"' + (window.FSSails && FSSails.summary().reef ? ' checked' : '') + '> Tell me when to reef</label>' +
-        '<p class="note">Your own polar file, exact sail ranges and reef points: Settings, Boat and Settings, Sails, any time.</p>';
+        '<p class="note">Kept on this device; a boat code shares it with the crew. Your own polar file, exact sail ranges and reef points: Settings, any time.</p></details></div>';
       B.innerHTML = h + '</div>';
       $('wzType').value = $('boatType').value;
-      if ($('wzMy')) $('wzMy').onchange = function () { if (!this.value) return; $('myBoat').value = this.value; $('myBoat').dispatchEvent(new Event('change')); store('fs-boatset', '1'); wizShow(1); };
+      $('wzMy').onchange = function () { if (!this.value) { $('wzMore').open = true; $('wzName').value = ''; $('wzName').focus(); return; } $('myBoat').value = this.value; $('myBoat').dispatchEvent(new Event('change')); store('fs-boatset', '1'); wizShow(1); };
+      $('wzRace').onclick = function () { wizShow(2); };
+      $('wzNew').onclick = function () { $('wiz').hidden = true; newCourse(); };
+      $('wizNext').textContent = 'Next: the start';
     } else if (n === 3) {
       var cur = +$('startSel').value;
       h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
@@ -1042,7 +1049,7 @@
       $('tcc').value = tc.toFixed(3); $('tcc').dispatchEvent(new Event('input'));
       if (pc >= 80 && pc <= 110) ['tuUp', 'tuReach', 'tuRun'].forEach(function (id) { $(id).value = pc; $(id).oninput && $(id).oninput(); });
       if (window.FSSails) { if ($('wzSails').value) FSSails.usePreset($('wzSails').value); if ($('wzReef').checked !== FSSails.summary().reef) FSSails.reefs($('wzReef').checked); }
-      $('boatSave').click(); store('fs-boatset', '1'); wizShow(2); return;
+      $('boatSave').click(); store('fs-boatset', '1'); wizShow(3); return;
     }
     if (n === 3) { var ep3 = startPickerRead('wz'); if (!(ep3 === ep3)) return; setStart(ep3); startChosen(); wizShow(4); return; }
     if (n === 4) { var t = $('wzMfPaste').value; if (t.trim()) { $('mfPaste').value = t; $('mfPasteGo').click(); } wizShow(5); return; }
@@ -1050,7 +1057,7 @@
   }
   function wizInit() {
     $('wizX').onclick = function () { wizClose(false); };
-    $('wizBack').onclick = function () { if (WIZ.step > 1) wizShow(WIZ.step - 1); };
+    $('wizBack').onclick = function () { if (WIZ.step > 1) wizShow(WIZ.step === 3 ? 1 : WIZ.step - 1); };
     $('wizNext').onclick = wizNext;
     $('wizBarBack').onclick = function () { wizShow(1); };
     $('boatWarn').onclick = function () { wizOpen(1); };
@@ -1061,7 +1068,7 @@
   /* after the race list loads: resume a set-up that moved to another forecast page, or start one for a first-time user */
   function wizBoot(qs) {
     var st = 0; try { st = +(sessionStorage.getItem('fs-wiz') || 0); } catch (e) {}
-    if (st) { WIZ.on = true; S.wizHold = true; setTimeout(function () { wizShow((st === 2 || st === 3) && (qs.get('race') || qs.get('my')) ? 3 : st); }, 300); return; }
+    if (st) { WIZ.on = true; S.wizHold = true; setTimeout(function () { wizShow((st <= 3) && (qs.get('race') || qs.get('my')) ? 1 : st); }, 300); return; }
     if (!store('fs-wizdone') && !qs.get('course') && !qs.get('my') && !qs.get('race') && !boatIsSet()) setTimeout(function () { wizOpen(1); }, 300);
   }
   var REGIONS = [];
@@ -1224,7 +1231,7 @@
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
-    if (startGate()) { busy(''); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); wizShow(3); } return; }
+    if (startGate()) { busy(''); if (!WIZ.on) { WIZ.on = true; S.wizHold = true; boatWarn(); wizShow(1); } return; }
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
