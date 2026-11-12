@@ -3,7 +3,7 @@ Runs on GitHub Actions every six hours; also runs on a laptop. Usage: python3 sc
 import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area', 'irishsea-area']
-SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet']
+SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet', 'mars']
 
 def cycles(lag_h=7, n=4):
     """Latest 00/06/12/18 UTC cycles that should be published by now, newest first."""
@@ -23,6 +23,7 @@ for race in RACES:
     hrs = int(st['course'].get('hours', 48)) + 6
     env = dict(os.environ, FS_DATA=data, FS_BOX=f"{b['s']},{b['n']},{b['w']},{b['e']}", FS_HOURS=str(hrs))
     def one(src):
+        if src == 'mars' and (b['s'] > 50.0 or b['n'] < 48.6 or b['w'] > -1.2 or b['e'] < -3.3): return   # the 250 m model only covers the western Channel
         for i, c in enumerate(cyc):
             if src in ('ecmwf', 'ecwav', 'ecmet') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             out = os.path.join(data, src + '.npz')
@@ -32,7 +33,7 @@ for race in RACES:
                 r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=dict(env, FS_RUN=c), capture_output=True, text=True, timeout=1500)
             except subprocess.TimeoutExpired:
                 log[f'{race}:{src}'] = f'{c} timed out'; continue
-            if r.returncode == 0 and good(out, 30 + 6 * i):
+            if r.returncode == 0 and good(out, (12 if src == 'mars' else 30) + 6 * i):
                 log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time())); break
             log[f'{race}:{src}'] = f'{c} failed: {(r.stderr or r.stdout)[-200:]}'
         else:   # no cycle worked: leave nothing behind, so the router simply goes without this source this time

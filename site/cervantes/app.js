@@ -83,9 +83,9 @@
 
   /* ---------- data plans ---------- */
   var PLANS = {
-    full: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'full', mog: 'full', icon: 'full', arome: 'full', arpege: 'full', nwscur: 'full', ibicur: 'full', nwswav: 'full', ecwav: 'full', ecmet: 'full', emodnet: 'full' },
-    coastal: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'off', mog: 'off', icon: 'full', arome: 'full', arpege: 'off', nwscur: 'full', ibicur: 'off', nwswav: 'lite', ecwav: 'off', ecmet: 'full', emodnet: 'full' },
-    lite: { ukv: 'lite', ecmwf: 'lite', gfs: 'lite', aifs: 'off', mog: 'off', icon: 'lite', arome: 'lite', arpege: 'off', nwscur: 'lite', ibicur: 'off', nwswav: 'off', ecwav: 'full', ecmet: 'lite', emodnet: 'lite' }
+    full: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'full', mog: 'full', icon: 'full', arome: 'full', arpege: 'full', nwscur: 'full', ibicur: 'full', nwswav: 'full', ecwav: 'full', ecmet: 'full', mars: 'full', emodnet: 'full' },
+    coastal: { ukv: 'full', ecmwf: 'full', gfs: 'full', aifs: 'off', mog: 'off', icon: 'full', arome: 'full', arpege: 'off', nwscur: 'full', ibicur: 'off', nwswav: 'lite', ecwav: 'off', ecmet: 'full', mars: 'full', emodnet: 'full' },
+    lite: { ukv: 'lite', ecmwf: 'lite', gfs: 'lite', aifs: 'off', mog: 'off', icon: 'lite', arome: 'lite', arpege: 'off', nwscur: 'lite', ibicur: 'off', nwswav: 'off', ecwav: 'full', ecmet: 'lite', mars: 'lite', emodnet: 'lite' }
   };
   function applyPlan(p) { S.choice = Object.assign({}, PLANS[p]); S.plan = p; store('fs-plan', p); [].forEach.call($('plans').children, function (b) { b.setAttribute('aria-pressed', b.dataset.plan === p); }); dataTable(); }
   function layer(id) { return meta.layers.find(function (l) { return l.id === id; }); }

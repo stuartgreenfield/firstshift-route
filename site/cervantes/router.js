@@ -123,7 +123,8 @@
     };
   }
   function tideSampler(P, id) {
-    var f = id && P.tide[id];
+    var f = id && P.tide[id], m = id && id !== 'mars' && P.tide.mars;   /* the 500 m Ifremer streams first where they cover, then the chosen model */
+    if (m && f) { var base = tideSampler(P, id); return function (la, lo, t) { var h = m.hours; if (!h || t <= h[h.length - 1]) { var u = m.sample('u', la, lo, t), v = m.sample('v', la, lo, t); if (u === u && v === v) return [u / KN, v / KN]; } return base(la, lo, t); }; }
     return function (la, lo, t) { if (!f) return [0, 0]; var u = f.sample('u', la, lo, t), v = f.sample('v', la, lo, t); return [u === u ? u / KN : 0, v === v ? v / KN : 0]; };
   }
   function waveSampler(P, id) {

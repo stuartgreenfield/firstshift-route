@@ -82,7 +82,7 @@ for k, name, note, sp, ev in [('ukv', 'Met Office UKV', 'UK 2 km model, hourly',
                                ('icon', 'DWD ICON-EU', 'Europe 7 km model, hourly to 78 h', 2, 3),
                                ('arome', 'Meteo-France AROME', 'France 2.5 km model, hourly to 48 h', 3, 3), ('arpege', 'Meteo-France ARPEGE', 'Europe 0.1° model, hourly to 102 h', 1, 3)]:
     add('wind', k, name, note, ['u', 'v'], dict(u=0.01, v=0.01), sp, ev)
-for k, name, note in [('nwscur', 'Copernicus NW Shelf', 'tidal streams, 1.5 km hourly'), ('ibicur', 'Copernicus Iberia-Biscay-Ireland', 'tidal streams, 3 km hourly')]:
+for k, name, note in [('nwscur', 'Copernicus NW Shelf', 'tidal streams, 1.5 km hourly'), ('ibicur', 'Copernicus Iberia-Biscay-Ireland', 'tidal streams, 3 km hourly'), ('mars', 'Ifremer MARS2D', 'tidal streams round the Channel Islands and Cherbourg, 500 m hourly (Licence Ouverte)')]:
     add('tide', k, name, note, ['u', 'v'], dict(u=0.001, v=0.001), 2, 1)
 for k, name, note, sp in [('nwswav', 'Copernicus NW Shelf waves', 'height, direction, period; 1.5 km hourly', 3), ('ecwav', 'ECMWF waves', '0.25°, 3-hourly', 1)]:
     z = load(k)

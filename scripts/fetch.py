@@ -307,6 +307,25 @@ if __name__ == '__main__':
             S, D, h, g = metoffice('uk-deterministic-2km' if s == 'ukv' else 'global-deterministic-10km')
             u, v, la, lo = regrid_mo(S, D, g, 0.02 if s == 'ukv' else 0.1)
             save(s, u=u, v=v, hours=h, lat=la, lon=lo)
+        elif s == 'mars':   # Ifremer MARS2D western Channel, 250 m tidal streams (Licence Ouverte), read at 500 m round the Channel Islands and Cherbourg
+            import netCDF4
+            ds = netCDF4.Dataset('https://tds1.ifremer.fr/thredds/dodsC/MARC-MANW250-L1_MARS2D-FOR_FULL_TIME_SERIE')
+            tv = ds.variables['time']; n = tv.shape[0]; tt = tv[n - 600:]
+            tsec = netCDF4.num2date(tt, tv.units, only_use_cftime_datetimes=False)
+            tsec = np.array([np.datetime64(x.strftime('%Y-%m-%dT%H:%M:%S')).astype('datetime64[s]').astype(float) for x in tsec])
+            want = [T0 + h * 3600 for h in HOURS]; idx = []; hrs = []
+            for h, w in zip(HOURS, want):
+                k = int(np.argmin(np.abs(tsec - w)))
+                if abs(tsec[k] - w) < 600: idx.append(n - 600 + k); hrs.append(h)
+            la_all = ds.variables['latitude'][:, 0]; lo_all = ds.variables['longitude'][0, :]
+            b = dict(s=max(BOX['s'], 48.6), n=min(BOX['n'], 50.0), w=max(BOX['w'], -3.3), e=min(BOX['e'], -1.2))
+            iy = np.where((la_all >= b['s']) & (la_all <= b['n']))[0][::2]; ix = np.where((lo_all >= b['w']) & (lo_all <= b['e']))[0][::2]
+            if not len(idx) or not len(iy) or not len(ix): raise SystemExit('mars: no overlap with this area or time')
+            U = []; V = []
+            for k in idx:
+                u = ds.variables['U'][k, iy[0]:iy[-1] + 1:2, ix[0]:ix[-1] + 1:2]; v = ds.variables['V'][k, iy[0]:iy[-1] + 1:2, ix[0]:ix[-1] + 1:2]
+                U.append(np.ma.filled(u.astype('f4'), np.nan)); V.append(np.ma.filled(v.astype('f4'), np.nan)); print('mars', k, end=' | ', flush=True)
+            save(s, u=np.array(U), v=np.array(V), hours=np.array(hrs), lat=np.asarray(la_all[iy], 'f8'), lon=np.asarray(lo_all[ix], 'f8'))
         elif s in SOURCES:
             url, vs = SOURCES[s]; o, h, la, lo = zarr(url, vs)
             if s.endswith('cur'): save(s, u=o['uo'], v=o['vo'], hours=h, lat=la, lon=lo)
