@@ -43,3 +43,6 @@ The router's true wind angle is heading minus wind direction, so a negative angl
 
 ## F16 Layer switches stopped working (12 Nov, about 00:00 to 00:25) - fixed
 Adding the isochrones switch broke the if/else in the Layers panel, so ticking wind, tide and the other layers threw an error. Live for about 25 minutes.
+
+## F17 Clock showed Thu 1 Jan 00:00 (12 Nov) - fixed
+Saved settings (a saved race or the boat code) put back a start time that had passed. It was no longer in the start list, so the list went blank and Route read the start as 0: 1 January 1970, a Thursday. Saved choices that no longer exist are now skipped, and routing never starts from a blank list.
