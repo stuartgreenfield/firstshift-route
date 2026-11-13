@@ -6,6 +6,8 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 13 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 20:42 | First-time user guide: step-by-step walk-through, Level 1 getting going the basic way, Level 2 connecting to the boat, Level 3 building polar accuracy and sending back to the boat and other systems such as Expedition and Adrena; as help logic trees and on-screen managed walk-throughs | On the Navigate to-do list |
+| 20:20 | Questions: how to delete or file old tracks so they leave the screen; did we build dragging info boxes? | Answered: Clear track wipes the green trail, logs have Show or Hide track and Delete. Move panels built in v0.7.10. To do: File this track and Hide all tracks. Question 3 not received |
 | 20:10 | "Go on to next to do list": help pages with screen pictures for each feature; router and two-way data tables | Built in Navigate v0.7.13: 18 Navigate help topics, each with a screen picture and Listen. Doc "Navigate: boat data, gateways and two-way links" written from the makers' manuals: Zeus 2 takes next mark, waypoints and XTE via an NMEA 2000 gateway such as YDWG-02, not routes. NKE Box Wi-Fi added to the gateway list. Two-way switch still to build, then dock test |
 | 20:08 | Google verification: will complete later, cannot get through verification now | Waiting on Stuart: Play Console identity verification. Then register com.firstshift.navigate and com.firstshift.polarlive with the release key (SHA-256 715b8503…180e70) and the signed ownership APK. UK enforcement is expected in 2027 |
 | 19:37 | Trader or non-trader in Play Console? | Advised trader (Navigate is to be sold); contact details shown to EU users, so business details where possible; can be changed later |
