@@ -2,7 +2,7 @@
 importScripts('router.js', 'engine.js');
 var P = FSRouter.emptyPack();
 function polarFrom(o) { var pol = o.polar && o.polar.v ? o.polar : FSPolar.startFromTcc(o.tcc || 1); return FSRouter.polarTable(pol, o.minTwa); }
-function samplers(o) { var s = FSRouter.adjust({ wind: FSRouter.windSampler(P, o.models), tide: FSRouter.tideSampler(P, o.tide), wave: o.wave ? FSRouter.waveSampler(P, o.wave) : null, speed: polarFrom(o), sea: o.sea }, o.adj); if (o.tideWind !== false && o.tide) s.wind = FSRouter.waterWind(s.wind, s.tide); return s; }
+function samplers(o) { var s = FSRouter.adjust({ wind: FSRouter.windSampler(P, o.models, o.blend), tide: FSRouter.tideSampler(P, o.tide), wave: o.wave ? FSRouter.waveSampler(P, o.wave) : null, speed: polarFrom(o), sea: o.sea }, o.adj); if (o.tideWind !== false && o.tide) s.wind = FSRouter.waterWind(s.wind, s.tide); return s; }
 onmessage = function (e) {
   var m = e.data;
   try {

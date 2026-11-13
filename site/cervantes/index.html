@@ -1,6 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>FirstShift Route</title>
+<link rel="stylesheet" href="fsui.css">
 <link rel="manifest" href="/route.webmanifest">
 <meta name="theme-color" content="#0B1B30">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -624,7 +625,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.10.0</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.11.0</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -632,6 +633,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <button class="tab" data-s="course" aria-selected="false">Course</button>
       <button class="tab" data-s="sails" aria-selected="false">Sails</button>
       <button class="tab" data-s="display" aria-selected="false">Display</button>
+      <button class="tab" data-s="mine" aria-selected="false">My set-up</button>
     </div>
     <div class="sbody" id="s-boat">
       <div class="row"><label for="myBoat">My boats</label><select id="myBoat"><option value="">Not saved yet</option></select><button class="btn" id="boatSave">Save boat</button><button class="btn" id="boatDel" hidden>Delete</button></div>
@@ -750,6 +752,7 @@ A4, 125, 180, 18, 60</textarea>
         <textarea id="mains" spellcheck="false" style="min-height:120px"># no reefs set</textarea>
       </details>
     </div>
+    <div class="sbody" id="s-mine" hidden></div>
     <div class="sbody" id="s-display" hidden>
       <h3>AIS</h3>
       <p class="aiswarn"><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Free online AIS (not for navigation)</option></select></div>
@@ -773,6 +776,7 @@ A4, 125, 180, 18, 60</textarea>
   </div>
 </div>
 
+<script src="fscore.js"></script>
 <script src="router.js"></script>
 <script src="engine.js"></script>
 <script src="boat.js"></script>
@@ -780,3 +784,9 @@ A4, 125, 180, 18, 60</textarea>
 <script src="sails.js"></script>
 <script src="qr.js"></script>
 <script src="app.js"></script>
+<script src="fsset.js"></script>
+<script src="fsprefs.js"></script>
+<script src="fsoff.js"></script>
+<script src="fsdrag.js"></script>
+<script src="fswind.js"></script>
+<script src="fshelp.js"></script>

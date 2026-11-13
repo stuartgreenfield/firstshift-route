@@ -39,6 +39,7 @@
       var lo = 0, hi = n - 1; while (hi - lo > 1) { var m = (lo + hi) >> 1; if (h[m] <= t) lo = m; else hi = m; }
       return [lo, hi, (t - h[lo]) / (h[hi] - h[lo])];
     };
+    self.edgeNm = function (la, lo) { if (L.rows) return 99; var fy = (la - L.lat0) / L.dlat, fx = (lo - L.lon0) / L.dlon; return Math.min(Math.min(fy, L.ny - 1 - fy) * Math.abs(L.dlat) * 60, Math.min(fx, L.nx - 1 - fx) * Math.abs(L.dlon) * 60 * Math.cos(la * Math.PI / 180)); };   /* distance to the edge of this model's area, nm */
     /* bilinear in space, linear in time; NaN corners are skipped (coastal cells) */
     self.sample = function (k, la, lo, t) {
       var I = self.idx(la, lo); if (!I) return NaN;
@@ -81,7 +82,7 @@
   }
 
   /* wind sampler for one model or the mean of several; returns [tws kn, twd deg from] */
-  function windSampler(P, ids) {
+  function windSampler(P, ids, blend) {
     if (ids[0] === 'chain') {   /* finest first: at each point and hour, the highest-resolution model that covers it, then the next (NavimetriX-style hand-over) */
       var ch = ids.slice(1).map(function (i) { return P.wind[i]; }).filter(Boolean), fb = windSampler(P, ids.slice(1));
       return function (la, lo, t) {
@@ -91,6 +92,20 @@
     }
     var fs = ids.map(function (i) { return P.wind[i] || (P.ens && P.ens[i]); }).filter(Boolean), all = Object.keys(P.wind).map(function (k) { return P.wind[k]; });
     function live(f, t) { var h = f.hours; return !h || h.length < 2 || t <= h[h.length - 1] + 1; }
+    /* Smooth blend. Wind speed is the average of each model's speed, not the length of the
+       averaged arrow, so models that disagree on direction do not make a weaker wind. A model fades out over the last three hours
+       of its forecast and over the last 10 nm inside the edge of its area, and the other models fade in, instead of a jump. */
+    function wOf(f, la, lo, t) { var h = f.hours, wt = !h || h.length < 2 ? 1 : Math.max(0, Math.min(1, (h[h.length - 1] + 1 - t) / 3)); if (!wt) return 0; var e = f.edgeNm ? f.edgeNm(la, lo) : 99; return wt * Math.max(0, Math.min(1, e / 10)); }
+    var std = null;
+    function blended(la, lo, t) {
+      var u = 0, v = 0, sp = 0, W = 0, m = 0;
+      for (var i = 0; i < fs.length; i++) { var w = wOf(fs[i], la, lo, t); if (!w) continue; var a = fs[i].sample('u', la, lo, t), b = fs[i].sample('v', la, lo, t); if (a !== a || b !== b) continue; u += a * w; v += b * w; sp += Math.sqrt(a * a + b * b) * w; W += w; if (w > m) m = w; }
+      if (m < 1) for (var j = 0; j < all.length; j++) { if (fs.indexOf(all[j]) >= 0) continue; var w2 = (1 - m) * wOf(all[j], la, lo, t); if (!w2) continue; var a2 = all[j].sample('u', la, lo, t), b2 = all[j].sample('v', la, lo, t); if (a2 !== a2 || b2 !== b2) continue; u += a2 * w2; v += b2 * w2; sp += Math.sqrt(a2 * a2 + b2 * b2) * w2; W += w2; }
+      if (!W) return std(la, lo, t);
+      u /= W; v /= W; sp /= W;
+      return [sp / KN, (Math.atan2(-u, -v) / R + 360) % 360];
+    }
+    if (blend) { std = windSampler(P, ids, false); return blended; }
     return function (la, lo, t) {
       var u = 0, v = 0, n = 0, use = fs.filter(function (f) { return live(f, t); });
       if (!use.length) use = all.filter(function (f) { return live(f, t); });   /* hand-over: past a model's last hour, the other models carry on */
@@ -110,7 +125,8 @@
     /* an area drawn on the chart: full change inside it, fading to none 3 nm beyond its edge */
     var B = a.box, wt = function () { return 1; };
     if (B) wt = function (la, lo) { var k0 = Math.cos(la * R), dy = Math.max(B.s - la, 0, la - B.n) * 60, dx = Math.max(B.w - lo, 0, lo - B.e) * 60 * k0, dd = Math.sqrt(dx * dx + dy * dy); return dd <= 0 ? 1 : Math.max(0, 1 - dd / 3); };
-    if (d || k !== 1 || tw) smp.wind = function (la, lo, t) { var f = wt(la, lo); if (!f) return w(la, lo, t); var W = w(la, lo, t - tw * f); return [W[0] * (1 + (k - 1) * f), (W[1] + d * f + 360) % 360]; };
+    var U = a.until, tf = function (t) { return U == null ? 1 : t <= U ? 1 : Math.max(0, 1 - (t - U) / 2); };   /* a wind given by hand holds until a set time, then fades back to the forecast over two hours */
+    if (d || k !== 1 || tw) smp.wind = function (la, lo, t) { var f = wt(la, lo) * tf(t); if (!f) return w(la, lo, t); var W = w(la, lo, t - tw * f); return [W[0] * (1 + (k - 1) * f), (W[1] + d * f + 360) % 360]; };
     if (kc !== 1 || tc) smp.tide = function (la, lo, t) { var f = wt(la, lo); if (!f) return c(la, lo, t); var C = c(la, lo, t - tc * f), m = 1 + (kc - 1) * f; return [C[0] * m, C[1] * m]; };
     return smp;
   }

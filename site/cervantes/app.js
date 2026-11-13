@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.10.0';
+  var VERSION = 'FirstShift Route v0.11.0';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -9,7 +9,7 @@
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
   /* ---------- colours ---------- */
-  function readCss() { var cs = getComputedStyle(document.documentElement); ['--sea', '--sea2', '--land', '--landedge', '--shoal', '--shoaledge', '--route', '--wind', '--tide', '--ink', '--muted', '--panel', '--ghost', '--out', '--m1', '--m2', '--m3', '--m4', '--m5', '--m6', '--m7', '--m8'].forEach(function (k) { css[k] = cs.getPropertyValue(k).trim(); }); }
+  function readCss() { var cs = getComputedStyle(document.documentElement); ['--brand', '--sea', '--sea2', '--land', '--landedge', '--shoal', '--shoaledge', '--route', '--wind', '--tide', '--ink', '--muted', '--panel', '--ghost', '--out', '--m1', '--m2', '--m3', '--m4', '--m5', '--m6', '--m7', '--m8'].forEach(function (k) { css[k] = cs.getPropertyValue(k).trim(); }); }
   /* screen: follow the device, light, dark, or night red; the Night button flips between night and the last day setting */
   var dayMode = 'auto';
   var MODEICON = { dark: '<svg viewBox="0 0 24 24"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg>',
@@ -220,7 +220,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.10.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.11.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -498,16 +498,16 @@
   /* ---------- routing ---------- */
   function opts(models) {
     var spec = boatSpec(), b = FSBoat.resolve(spec), pol = b.pol;
-    return { models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
+    return { blend: store('nav-blend') === '1', models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
       sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, nogo: nogoRings(), maxHours: HMAX() + 2, tackS: +$('tackS').value, gybeS: +$('gybeS').value, adj: adjVals(), tideWind: $('tideWind') ? $('tideWind').checked : true };
   }
   /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
   var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60]];
   function adjBox() { var v = ($('adjBox') || {}).value; if (!v || $('adjWhere').value !== 'box') return null; var q = v.split(',').map(Number); return q.length === 4 && q.every(function (x) { return x === x; }) ? { s: q[0], n: q[1], w: q[2], e: q[3] } : null; }
-  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } return a; }
+  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } if (a) { var un = +(store('nav-adj-until') || 0); if (un) a.until = un; } return a; }
   function adjInit() {
     ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
-    $('adjReset').onclick = function () { ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); adjPill(); };
+    $('adjReset').onclick = function () { store('nav-adj-until', ''); ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); adjPill(); };
     $('adjPillX').onclick = function () { $('adjReset').onclick(); busy('Back to the forecast: routing again…'); S.from = null; run(); };
     var boxTxt = function () { var b = adjBox(), on = $('adjWhere').value === 'box'; $('adjBoxRow').hidden = $('adjBoxNote').hidden = !on; $('adjBoxTxt').textContent = b ? dm(b.s, 'NS') + ' to ' + dm(b.n, 'NS') + ', ' + dm(b.w, 'EW') + ' to ' + dm(b.e, 'EW') : 'No area yet: changes are not used until you draw one.'; adjPill(); draw(); };
     $('adjWhere').onchange = boxTxt; $('adjBox').addEventListener('change', boxTxt);
@@ -689,6 +689,7 @@
       lat0: la0 + (la1 - la0) * ((i + 1) / 7), lon0: lo0 + (lo1 - lo0) * ((i * 3 + 1) % 7) / 7 }); });
     return AIS.fleet = f;
   }
+  function aisDry(la, lo) { if (coastLand(la, lo)) return true; try { if (P.depth) { var z = P.depth.nearest('z', la, lo); if (z === z && z > -2) return true; } } catch (e) {} return false; }   /* land, or water under 2 m, by the coastline and the seabed depth */
   function aisEmulate() {   // positions at the replay time, encoded as !AIVDM and decoded back through the engine
     var f = aisFleet(); if (!f) return;
     if (AIS.lastT != null && Math.abs(S.t - AIS.lastT) > 0.25) Object.keys(AIS.tg.t).forEach(function (m) { AIS.tg.t[m].track = []; }); AIS.lastT = S.t;
@@ -697,10 +698,10 @@
       var x = Object.assign({}, b);
       if (b.kind === 'race') {
         var tt = t0 + (S.t - t0) * b.pace, a = posAt(ts, p, tt); if (!a) return; var j = Math.min(p.length - 2, a.i || 0), h = hdgAt(p, a.k), q = p[j + 1];
-        x.lat = a.la + Math.sin((h - 90) * R) * 0 + Math.cos((h + 90) * R) * b.side / 60; x.lon = a.lo + Math.sin((h + 90) * R) * b.side / 60 / k; x.sog = (q.bsp || 6) * b.pace; x.cog = h; x.hdg = h;
+        var fs = [1, 0.6, 0.3, 0.1, 0, -0.3, -0.6, -1], wet = false; for (var fi = 0; fi < fs.length; fi++) { x.lat = a.la + Math.cos((h + 90) * R) * b.side * fs[fi] / 60; x.lon = a.lo + Math.sin((h + 90) * R) * b.side * fs[fi] / 60 / k; x.lat = Math.round(x.lat * 6e5) / 6e5; x.lon = Math.round(x.lon * 6e5) / 6e5; if (!aisDry(x.lat, x.lon)) { wet = true; break; } } if (!wet) { if (AIS.tg.t[b.mmsi]) delete AIS.tg.t[b.mmsi]; return; }   /* a pretend race boat never sits on land: closer to the route until it is in the water */ x.sog = (q.bsp || 6) * b.pace; x.cog = h; x.hdg = h;
       } else {
         var d = ((S.t - t0) * b.sog) % 120 - 60; x.lat = b.lat0 + Math.cos(b.cog * R) * d / 60; x.lon = b.lon0 + Math.sin(b.cog * R) * d / 60 / k; x.hdg = b.cog;
-        if (coastLand(x.lat, x.lon)) { if (AIS.tg.t[b.mmsi]) delete AIS.tg.t[b.mmsi]; return; }   /* a pretend ship never sails across land */
+        if (aisDry(x.lat, x.lon)) { if (AIS.tg.t[b.mmsi]) delete AIS.tg.t[b.mmsi]; return; }   /* a pretend ship never sails across land */
       }
       lines = lines.concat(FSAIS.encodePosition(x));
       if (!AIS.tg.t[b.mmsi] || !AIS.tg.t[b.mmsi].name) lines = lines.concat(FSAIS.encodeStatic(x, i));
@@ -1042,7 +1043,7 @@
     var brg = FSRouter.brg(pos.la, pos.lo, at[0], at[1]), off = Math.abs(((brg - twd + 540) % 360) - 180), up = off < 70, down = off > 115; if (!up && !down) return;
     var b = FSRouter.bestVmg(speedFn(opts(s.models)), tws, up), a = b[0]; if (!a) return;
     var k = Math.cos(at[0] * R), L = 25, mx = X(at[1]), my = Y(at[0]);
-    ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 1.6; ctx.setLineDash([8, 5]); ctx.font = '600 10px Inter, sans-serif';
+    ctx.save(); ctx.strokeStyle = document.documentElement.hasAttribute('data-night') ? '#9A2A1A' : (css['--brand'] || '#6FA9E0'); ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 1.6; ctx.setLineDash([8, 5]);   /* Route's laylines dim red at night (Stuart 13 Nov) */ ctx.font = '600 10px Inter, sans-serif';
     [[-1, 'starboard'], [1, 'port']].forEach(function (sd) {
       var hdg = (twd + sd[0] * (up ? a : a) + 360) % 360, back = (hdg + 180) % 360;   // the boat's heading on this tack, and the line back from the mark
       var ex = at[1] + Math.sin(back * R) * L / 60 / k, ey = at[0] + Math.cos(back * R) * L / 60;
@@ -1254,7 +1255,7 @@
     return ghosts().then(function () { show(); if (o.t != null) try { setTime(Math.max(S.tmin, Math.min(S.tmax, sh(o.t)))); } catch (e) {} });
   }
   function sessAsk() {
-    var b = $('sessBox'); if (!b) return; b.hidden = false;
+    var b = $('sessBox'); if (!b) return; if (window.__navQuiet && window.__navQuiet()) { b.hidden = true; return; }   /* reopening on the water carries straight on, no question */ b.hidden = false;
     $('sessNo').onclick = function () { b.hidden = true; };
     $('sessYes').onclick = function () { b.hidden = true; S.resume = null; sessDrop(); startChosen(false); S.routes = []; S.sel = null; run(); };
   }
@@ -1617,6 +1618,26 @@
   window.__fsLine = function () { return LIVE.calc && LIVE.calc.pre ? LIVE.calc.pre.line : null; };   /* for the automatic tests */
   window.__fsScr = function (la, lo) { var r = $('map').getBoundingClientRect(), x = X(lo), y = Y(la); if (ORI.ang) { var a = -ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; x = ORI.cx + dx * Math.cos(a) - dy * Math.sin(a); y = ORI.cy + dx * Math.sin(a) + dy * Math.cos(a); } return [r.left + x, r.top + y, ORI.mode, Math.round(ORI.ang)]; };   /* for the automatic tests: where a position shows on a turned chart */
   window.__fsCourseFull = function () { var t = Date.now(); VIA.key = null; var f = courseFull(meta.course); return { ms: Date.now() - t, pts: f.map(function (q) { return [+q.lat.toFixed(4), +q.lon.toFixed(4), q.via ? (q.auto ? 'auto' : q.must ? 'must' : 'via') : q.name]; }), land: f.slice(1).map(function (b, i) { return crossesLand(f[i], b); }) }; };   /* for the automatic tests */
+  window.__navFc = function () { return { P: P, T0: T0, sel: S.sel ? { id: S.sel.id, name: S.sel.name, models: S.sel.models, path: S.sel.r && S.sel.r.path, finish: S.sel.r && S.sel.r.finish, from: S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : null } : null, routes: (S.routes || []).map(function (s) { return { id: s.id, name: s.name, models: s.models }; }), running: !!S.running, ms: selectedModels(), choice: Object.assign({}, S.choice), built: meta && (meta.built || meta.t0), layers: meta && meta.layers, adj: adjVals(), short: short, lname: function (id) { var l = layer(id); return l ? l.name : short(id); } }; };   /* the forecast and routes, for the wind check */
+  window.__navPick = function (id) { var r = (S.routes || []).filter(function (s) { return s.id === id; })[0]; if (!r) return false; S.sel = r; ghosts().then(function () { matrix(); plan(); fleetTable(); update(); }); return true; };
+  window.__navReroute = function (la, lo) { if (S.running) return 'busy'; var t = (Date.now() / 1000 - T0) / 3600; if (t > HMAX() - 1 || !inData({ lat: la, lon: lo })) return 'outside'; S.from = { lat: la, lon: lo, t: t, gps: true }; run(); return 'ok'; };
+  window.__navAdjust = function (wdir, wspd) { [['adjWdir', wdir], ['adjWspd', wspd]].forEach(function (x) { var el = $(x[0]); if (!el) return; el.value = x[1]; if (el.oninput) el.oninput(); }); adjPill(); };
+  window.__navCourse = function () { var c = meta && meta.course; if (!c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
+  window.__navUp = function (x, y, fn) { upright(x, y, fn); };
+  window.__navFollow = function (on) { if (on == null) return follow; followSet(!!on); };
+  window.__navScale = function (nm) { view.s = Math.max(20, Math.min(20000, H * 0.22 / (nm / 60))); followSet(true); draw(); };   /* the boat and the next mark on screen */
+  window.__navPanelMin = function () { if (!wide()) closePanel(); };
+  window.__navLiveOn = function (mini) { if (!LIVE.on) liveStart(); if (mini && !LIVE.mini) { LIVE.mini = true; LIVE.big = false; store('fs-livemini', '1'); if (LIVE.fix) liveShow(); } };
+  window.__navAisCheck = function (steps) { if (!S.sel) return null; var t0 = S.t, src = AIS.src, n = 0, dry = 0, bad = []; AIS.src = 'test'; AIS.fleet = null; AIS.tg = new FSAIS.Targets(); var a = S.start.t, b = S.sel.r.finish; for (var i = 0; i <= steps; i++) { S.t = a + (b - a) * i / steps; aisEmulate(); Object.keys(AIS.tg.t).forEach(function (m) { var x = AIS.tg.t[m]; if (x.lat == null || x.at < aisNowMs() - 1000) return; n++; if (aisDry(x.lat, x.lon)) { dry++; if (bad.length < 5) bad.push([x.name, x.lat.toFixed(4), x.lon.toFixed(4)]); } }); } S.t = t0; AIS.src = src; AIS.tg = new FSAIS.Targets(); AIS.fleet = null; return { n: n, dry: dry, bad: bad }; };   /* for the automatic tests */
+  window.__navViewGet = function () { return { la: view.la, lo: view.lo, s: view.s, follow: follow }; };   /* reopen where it left off */
+  window.__navViewSet = function (v) { if (!v || !(v.s > 0)) return; view.la = v.la; view.lo = v.lo; view.s = v.s; if (v.follow != null) followSet(!!v.follow); draw(); };
+  window.__navLiveState = function () { return { on: !!LIVE.on, mini: !!LIVE.mini, big: !!LIVE.big }; };
+  window.__navLiveRestore = function (st) { if (!st || !st.on || LIVE.on) return; LIVE.mini = !!st.mini; liveStart(); if (st.big) { LIVE.big = true; } };
+  window.__navLand = function (la, lo) { return !!coastLand(la, lo); };
+  window.__navShowLay = function () { return !!S.show.lay; };
+  window.__navXY = function (la, lo) { var r = cv.getBoundingClientRect(); return [r.left + X(lo), r.top + Y(la)]; };   /* for the automatic tests (north up) */   /* Route's Laylines box also switches the plotter's laylines */
+  window.__navDry = function (la, lo) { return aisDry(la, lo); };   /* land or under 2 m, for the practice boat */   /* laylines stop at the land */
+  window.__navLayers = function (st) { if (!st) return { show: Object.assign({}, S.show), hid: S.routes.map(function (r) { return [r.id, !!r.hidden]; }) }; Object.keys(st.show || {}).forEach(function (k) { S.show[k] = !!st.show[k]; }); if (st.only) S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); else if (st.hid) { var m = {}; st.hid.forEach(function (h) { m[h[0]] = h[1]; }); S.routes.forEach(function (r) { if (r.id in m) r.hidden = m[r.id]; }); } if ($('layers') && !$('layers').hidden) layersPop(); draw(); };   /* Deck and Nav views */
   window.__fsEditPts = function () { var r = $('map').getBoundingClientRect(); return S.edit ? S.edit.pts.map(function (q) { return [r.left + X(q.lon), r.top + Y(q.lat), q.name || '']; }) : null; };   /* for the automatic tests */
   function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
@@ -1971,7 +1992,8 @@
     var f = LIVE.fix, c = LIVE.calc || {};
     if (!LIVE.on && LIVE.trail.length < 2 && !store(lineKey())) return;
     ctx.save();
-    if (LIVE.trail.length > 1) { ctx.strokeStyle = '#4CC38A'; ctx.globalAlpha = 0.8; ctx.lineWidth = 2; ctx.beginPath(); LIVE.trail.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.stroke(); ctx.globalAlpha = 1; }
+    var nNight = document.documentElement.hasAttribute('data-night');   /* the boat's track and mark dimmed at night (Stuart 13 Nov) */
+    if (LIVE.trail.length > 1) { ctx.strokeStyle = nNight ? '#6A1410' : '#4CC38A'; ctx.globalAlpha = nNight ? 0.6 : 0.8; ctx.lineWidth = nNight ? 1.5 : 2; ctx.beginPath(); LIVE.trail.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.stroke(); ctx.globalAlpha = 1; }
     if (!LIVE.on || !f) { ctx.restore(); return; }
     var x = X(f.lo), y = Y(f.la);
     var lnd = lineGet(); if (lnd.boat || lnd.pin) { ctx.save(); ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ['boat', 'pin'].forEach(function (k) { var q = lnd[k]; if (!q) return; ctx.beginPath(); ctx.arc(X(q[1]), Y(q[0]), 5, 0, 7); ctx.fill(); ctx.fillText(k === 'boat' ? 'BOAT' : 'PIN', X(q[1]) + 8, Y(q[0]) - 6); });
@@ -1980,7 +2002,7 @@
     if (c.plan) { ctx.strokeStyle = css['--ink']; ctx.setLineDash([3, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.plan.lo), Y(c.plan.la)); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(c.plan.lo), Y(c.plan.la), 7, 0, 7); ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.font = '600 10px Inter, sans-serif'; ctx.fillText('PLAN NOW', X(c.plan.lo) + 10, Y(c.plan.la) + 4); }
     if (c.rejoin) { ctx.strokeStyle = css['--warn']; ctx.setLineDash([7, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.rejoin.lo), Y(c.rejoin.la)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css['--warn']; ctx.beginPath(); ctx.arc(X(c.rejoin.lo), Y(c.rejoin.la), 4.5, 0, 7); ctx.fill(); }
     if (f.acc && f.acc > 30) { ctx.globalAlpha = 0.15; ctx.fillStyle = '#4CC38A'; ctx.beginPath(); ctx.arc(x, y, Math.max(6, f.acc / 1852 / 60 * view.s), 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
-    triMark(x, y, f.cog != null && f.sog > 0.5 ? f.cog : 0, 12, css['--panel'], '#4CC38A', 3);
+    triMark(x, y, f.cog != null && f.sog > 0.5 ? f.cog : 0, 12, css['--panel'], nNight ? '#9A2A1A' : '#4CC38A', nNight ? 2 : 3);
     ctx.restore();
   }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
@@ -2006,6 +2028,7 @@
   }
   function earlyPre() { if (startGate() || S.wizHold || courseIssue(meta.course)) return; var h = preEntry(false); if (h && !S.routes.length) { try { usePre(h, true); } catch (e) {} } }
   function show() {
+    setTimeout(function () { if (window.__navAfterRoutes) try { window.__navAfterRoutes(); } catch (e) {} }, 0);   /* Deck view keeps only the chosen route after new routes */
     busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
     var maxT = Math.max.apply(null, S.routes.map(function (s) { return s.r.finish; }));
     S.tmin = Math.min(S.start.t, (starts[0] - T0) / 3600); S.tmax = Math.min(HMAX(), maxT + 1);
@@ -2151,10 +2174,10 @@
     var best = S.routes.find(function (s) { return s.best; }), fins = S.routes.map(function (s) { return s.r.finish; }), spread = Math.max.apply(null, fins) - Math.min.apply(null, fins);
     var comb = S.routes.find(function (s) { return s.combined; });
     var fastT = Math.min.apply(null, S.routes.filter(function (s) { return !s.r.partial; }).map(function (s) { return s.r.finish; }).concat([Infinity]));
-    $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + '</em>') + '</div>'; }).join('');
+    $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '" data-id="' + s.id + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + '</em>') + '</div>'; }).join('');
     try { checksRender(); setupRender(); } catch (e) {}
     try { liveAfterRoute(); if (LIVE.on && LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}
-    $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
+    $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (!best ? 'chosen' : best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
   }
   function sailsList() { return FSRouter.parseCrossover($('sails').value); }
   function mainsList() { return FSRouter.parseCrossover($('mains').value); }
@@ -2189,7 +2212,7 @@
     ['Live GPS while racing', 'Tap GPS by the timeline. Route shows the boat from this phone\'s own GPS, no boat wifi needed, with a long track behind it: tap the track for the time, SOG and COG there. It compares the boat with the chosen route: off track left or right, ahead or behind the plan, and the course and distance to where the plan says you should be now. Catch the plan gives the course to steer, speed and time to be level with the plan again, using the wind, tide and your polar now; if you cannot catch it, Back on the track gives the soonest way back onto the planned track. Re-route works out a fresh route from the boat and says how its finish compares. Big shows large numbers for the cockpit; Chart comes back. MIN shrinks the window to a small GPS live pill, green within your alert limits and orange past one, with off track and the minutes; tap the pill to open the window again. The round i on the window explains every figure and button. Set the alerts and the battery mode in Settings, Course, While racing. Keep the screen on: a web page cannot follow the GPS in the background. Heading is the GPS course over the ground. Not for navigation.'],
     ['Setting up a race', 'The first time, Route takes you through five steps: your boat, the race, the start, the boats you are racing, then a check card before it routes. After that, tap the race name at the top to set up the next race the same way. A new course drawn outside this page\'s forecasts moves to the area page that covers it. Until your boat is set up, an orange note says Route is using a generic boat.'],
     ['Routing while racing', 'Press From here: Route finds the boat by the phone or tablet GPS and routes from there, from now. If there is no GPS, tap the chart where the boat is. To keep the route fresh, Settings, Course, While racing: choose Every 10, 20 or 30 minutes and Route routes again from the new position on that timer while the screen is on.'],
-    ['Route to any point', 'Tap the water anywhere on the chart (click on a computer) and choose Route here from the boat: Route works out the routes from where the boat is at the slider time to that point, in every model. Useful for a waypoint, a tidal gate or a what-if. Route again goes back to the course.'],
+    ['Route to any point', 'Tap the water anywhere on the chart (click on a computer). The boat is here: route the rest of the race takes that spot as the boat\'s position now (or at the slider time when you are looking ahead) and routes the rest of the race from it, in every model, with all the figures. Route to here (what if) works out the routes from where the boat is at the slider time to that point: useful for a waypoint, a tidal gate or a what-if. Route again goes back to the course.'],
     ['Family and friends', 'Settings, Course, While racing: tick Let family and friends follow the boat, then Send the follow link. While Route is open on a crew phone with a boat code, it sends the boat\'s GPS position every five minutes and the chosen route. The link opens a simple map with the track so far, the planned route and the finish time. Only people with the code can see it.'],
     ['Isochrones', 'Layers, Isochrones of the chosen route. Each line is how far the boat could have got by that hour, sailing its fastest in every direction from the start or the last mark. The line nearest the slider time is drawn brighter, and every sixth hour is labelled. Where the lines bunch up, the boat is slow; where they bulge, the wind or tide is helping.'],
     ['Follow the boat', 'The button with the boat in a frame, beside the replay speed. When it is lit, moving the time slider or playing the race keeps the boat in the middle of the chart. Drag the chart to look elsewhere and it switches off; tap it to follow again.'],
@@ -2198,6 +2221,9 @@
     ['If you think the forecast is wrong', 'Settings, Boat, below the tuning sliders. Shift the wind direction, change its strength, or make a front arrive earlier or later. You can do the same for the tide if you know the area better than the model. To change only part of the race, set Where to an area, tap Draw the area and tap two opposite corners on the chart: the change applies inside it and fades out over 3 nm. Close Settings and Route works it out again; Back to the forecast undoes it.'],
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
+    ['Forecast models and resolution', 'Resolution is the size of the grid a model works on: the finer it is, the more of the coast it sees. UKV and AROME, at 2 to 2.5 km, see headlands, the Solent and sea breezes, but run only about two days ahead. ICON-EU at 7 km and ARPEGE at 11 km reach three to four days. The global models, ECMWF, AIFS and GFS, come at a quarter of a degree, about 28 km by 18 km here: they cannot see local effects, but they are the best guide to the big picture beyond two days. How often a model gives a value matters too: AIFS gives one only every 6 hours, so it smooths out shifts. When the models disagree, check how old each run is, trust the fine models near the coast and in the first day, and treat light winds with care, because a knot either way changes the time a lot. The list below gives the grid and time step for each source.'],
+    ['Move the GPS window', 'Settings, My set-up, Move panels. A grip appears on the GPS window: drag it where it suits you, then Done. Positions are kept for each screen size and orientation and go into My defaults. Reset positions puts them back.'],
+    ['How old is each forecast', 'Under each finish time, and beside each model in Settings, Forecasts, is the time of the model run and how old it is. Runs of different ages can disagree for that reason alone. Leave out model runs older than, in Settings, Forecasts, drops stale runs from the routing; the newest runs always stay in, and ticking a model again keeps it.'],
     ['Ask Route', 'In the Plan tab, Ask Route answers set questions from the chosen route at the replay time: the next mark, the next tack or gybe, the next sail change, the biggest wind shift in the next 12 hours, and what the tide is doing. Read it out speaks the answer.'],
     ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],
     ['AIS', 'Settings, Display, AIS. Test fleet shows emulated race boats and ships to try the screens; Live online shows real AIS from shore stations when you have signal. The Fleet tab lists every target with range, bearing, CPA and time to CPA; a target inside the CPA alarm flashes red and beeps.'],
@@ -2739,7 +2765,7 @@
       if (pos && !pos.done && pos.i != null && S.legs && S.legs.length) {
         var q = p[pos.i + 1] || p[pos.i], lg = S.legs[Math.min(q.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a;
         var vmc = q.bsp * Math.cos((q.hdg - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
-        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + (q.twa < 0 ? 'S' : 'P')) + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
+        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + '°<i class="nside ' + (q.twa < 0 ? 's">STBD' : 'p">PORT') + '</i>') + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + ' m' : '-');
       } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
       else h = ['Hdg', 'BSP', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
     }
@@ -2753,11 +2779,13 @@
     if (!follow || !W || S.edit) return;   /* editing a course: the chart stays where it is */
     var pos; if (LIVE.on && LIVE.fix) pos = { la: LIVE.fix.la, lo: LIVE.fix.lo };   /* live GPS: follow the real boat */
     else { if (!S.sel) return; var p = S.sel.r.path; pos = posAt(tsOf(p), p, S.t); if (!pos) pos = { la: p[0].la, lo: p[0].lo }; }
-    var top = 70, bot = H, bar = document.querySelector('.bar'), pn = $('panel'), cr = cv.getBoundingClientRect();
+    var top = (window.__navTop && window.__navTop()) || 70, bot = H, bar = document.querySelector('.bar'), pn = $('panel'), cr = cv.getBoundingClientRect();
     [bar, !wide() && pn && !pn.hidden && !pn.classList.contains('collapsed') ? pn : null, LIVE.on && !$('liveBox').hidden ? $('liveBox') : null].forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (r.height && r.top > cr.top + top && r.left < cr.left + W / 2 && r.right > cr.left + W / 2) bot = Math.min(bot, r.top - cr.top); });
     var left = 0, right = W; if (wide() && pn && !pn.hidden) { var r2 = pn.getBoundingClientRect(); if (r2.left - cr.left > W / 2) right = r2.left - cr.left; else if (r2.right - cr.left < W / 2) left = r2.right - cr.left; }
     var cx = (left + right) / 2, cy = (top + bot) / 2;
+    var fa = null; try { fa = window.__navFollowAdj ? window.__navFollowAdj(pos, right - left, bot - top, view.s) : null; } catch (e) {} if (fa && fa.s > 0) view.s = Math.max(20, Math.min(20000, fa.s));   /* look ahead and auto zoom */
     view.lo = pos.lo - (cx - W / 2) / (K * view.s); view.la = pos.la + (cy - H / 2) / view.s;
+    if (fa && fa.ahead) { view.la += fa.ahead[0] / view.s; view.lo += fa.ahead[1] / (K * view.s); }
   }
   function kv(k, v) { return '<div' + (k === 'VMC' ? ' title="VMC: velocity made good towards the next mark, in knots"' : '') + '><span>' + k + '</span><b>' + v + '</b></div>'; }
   function pad(x) { return String(Math.round(((x % 360) + 360) % 360)).padStart(3, '0'); }
@@ -2805,6 +2833,7 @@
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
     if (S.edit) { editTap(x, y); return; }
+    if (!S.adjDraw && !S.mobTap && meta && meta.course && $('fromHere').getAttribute('aria-pressed') !== 'true') { var pm = null; realMarks(meta.course).forEach(function (m) { if (!m.side) return; var mx = X(m.lon) + 11, my = Y(m.lat) - 2; if (x >= mx - 6 && x <= mx + 66 && y >= my - 8 && y <= my + 22) pm = m; }); if (pm) { startEdit(courseCopy()); var ix = -1; S.edit.pts.forEach(function (q, i) { if (ix < 0 && Math.abs(q.lat - pm.lat) < 1e-6 && Math.abs(q.lon - pm.lon) < 1e-6) ix = i; }); if (ix > 0) { markCard(ix); busy('Choose which side to leave ' + (pm.name || 'the mark') + ', then Done, then Save and route.'); setTimeout(function () { busy(''); }, 6000); } return; } }   /* tap the PORT or STBD tag to change the rounding side */
     if (S.adjDraw) {   /* drawing the area for a forecast override: two opposite corners */
       S.adjDraw.push([LA(y), LO(x)]);
       if (S.adjDraw.length < 2) { busy('Now tap the opposite corner'); draw(); return; }
@@ -2854,7 +2883,7 @@
       var lg = S.legs[Math.min(best.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a, o = opts(bs.models), spd = speedFn(o);
       var tgt = spd(best.tws, best.twa), sf = FSRouter.seaFactor(best.hs, best.wd, best.hdg, o.sea);
       var bu = FSRouter.bestVmg(spd, best.tws, true), bdn = FSRouter.bestVmg(spd, best.tws, false);
-      rows.push('<b style="color:' + col(bs) + '">' + (bs.combined ? 'Combined' : short(bs.id)) + ' route, ' + clockH(best.t).slice(4) + '</b>');
+      var rStart = rows.length; rows.push('<b style="color:' + col(bs) + '">' + clockH(best.t).slice(4) + ' UTC · ' + (bs.combined ? 'Combined' : bs.name || short(bs.id)) + '</b>');   /* on a route the box starts with the time and the model */
       rows.push(r2('Heading', pad(best.hdg) + '\u00b0 · TWA ' + Math.abs(Math.round(best.twa)) + '\u00b0 ' + (best.twa < 0 ? 'stbd' : 'port')));
       var lw = steerOff(best); if (lw) rows.push(r2('Steer', pad((best.hdg + lw + 360) % 360) + '\u00b0 (leeway ' + Math.abs(lw).toFixed(1) + '\u00b0)'));
       rows.push(r2('Boat speed', best.bsp.toFixed(1) + ' kn' + (sf < 0.995 || sf > 1.005 ? ' (sea ' + (sf >= 1 ? '+' : '') + Math.round((sf - 1) * 100) + '%)' : '')));
@@ -2866,15 +2895,18 @@
       rows.push(r2(Math.abs(best.twa) < 90 ? 'Upwind target' : 'Downwind target', Math.abs(best.twa) < 90 ? bu[0] + '\u00b0 · ' + bu[1].toFixed(1) + ' kn · VMG ' + bu[2].toFixed(1) : bdn[0] + '\u00b0 · ' + bdn[1].toFixed(1) + ' kn · VMG ' + bdn[2].toFixed(1)));
       var sl = FSRouter.sailFor(best, sailsList()), rf = reefOf(best); if (sl || rf) rows.push(r2('Sail', (sl || '-') + (rf ? ', ' + rf.toLowerCase() : '')));
       if (best.tack) rows.push(r2('Manoeuvre', Math.abs(best.twa) > 90 ? 'gybe' : 'tack'));
+      rows = rows.splice(rStart).concat(rows);
     }
+    cv.style.cursor = best ? 'default' : '';
     var near = null, nd = docked ? 16 : 10;
     ((S.show.ghosts && S.ghostXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ' if on your route (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
     ((S.show.real && S.realXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ', real position (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
     if (near) rows.push('<b>' + near + '</b>');
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
-    if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.push('<div class="xrow" style="margin-top:6px"><button class="btn" id="tipRoute">Route here from the boat</button></div>');
+    if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.splice(rows.length ? 1 : 0, 0, '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>');
     $('tipBody').innerHTML = rows.join(''); tip.hidden = false; tip.classList.toggle('docked', !!docked);
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
+    if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
     else { tip.style.left = ''; tip.style.top = ''; dot(la, lo, 5, 'transparent', css['--ink']); }
   }
