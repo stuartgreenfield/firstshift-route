@@ -1,6 +1,6 @@
 # FirstShift Route: handover (updated 11 Nov 2026, 14:10)
 
-Live: https://firstshift-route.pages.dev/cervantes/ and /fastnet/ (v0.5.0). Repo: github.com/stuartgreenfield/firstshift-route (main).
+Live: https://firstshift-route.pages.dev/cervantes/ and /fastnet/ (v0.11.0 since 13 Nov 2026, 23:17). Repo: github.com/stuartgreenfield/firstshift-route (main).
 
 ## How it runs
 - forecast.yml, four times a day (01:17, 07:17, 13:17, 19:17 UTC, back-up at :47): fetch.py downloads the models, build.py builds packs for each race in the command (cervantes fastnet channel-area northsea-area), publishes site/ to the 'site' branch (Cloudflare Pages), then preroute.js routes each race for the standard settings for the next 6 start hours and publishes again.
