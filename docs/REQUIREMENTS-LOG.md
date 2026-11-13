@@ -3,6 +3,15 @@
 Every requirement Stuart has asked for, newest first, with its status. Kept in the repository (docs/), on Stuart's Mac (FirstShift tools site/routing/) and summarised in the routing doc ("Requirements: running list").
 Status: Built · Partly built · To build · Researching · Later.
 
+## 13 November 2026
+| Time | Requirement | Status |
+| --- | --- | --- |
+| 09:21 | GPS source: toggle boat GPS or phone GPS; if one is lost, switch to the other automatically with a brief alarm as it changes, then confirm data is running. Show data arriving by animating the FirstShift sail logo (a ring going round it) instead of the old moving bar (Navigate) | To build |
+| 09:14 | Helm view: a drop-down on each big figure to choose what it shows (Navigate) | To build |
+| 09:13 | Simulated AIS test fleet must never place targets on land | To build: check each test target against the land and depth data, in Route and Navigate |
+| 09:13 | Build a Starlink interface (Navigate) | To research then build: what the dish can give the app on board (connection up or down, speed, outages ahead, position) |
+| 09:04 | Navigate step 7, plotter: Navigate's own plotter screen first (BTW, DTW, ETA, VMC, XTE, laylines with tide, time to layline); sending the route to the Zeus later | Building |
+
 ## 11 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
