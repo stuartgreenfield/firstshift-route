@@ -6,6 +6,7 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 13 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 17:20 | Running demo feeds, the boat sails at 8 degrees TWA: make the demo make sense | Done in Navigate v0.7.10: the practice boat now sails in the routed forecast wind where it is, with small shifts and gusts (it used a made-up south-westerly), and never closer than 42 degrees to the wind; dead to windward it beats on the tack nearer the next point |
 | 17:13 | Go: carry on down the list | Done in Navigate v0.7.10: model run time and age shown with each finish time and in Settings, Forecasts, with an option to leave out runs older than a set age (never the newest); move the panels by a grip, positions kept for each screen size and orientation and in My defaults, Reset positions. Still to check: the time interpolation and hand-over maths between models. Route catch-up: run ages |
 | 16:49 | The TWA display uses an S instead of a number in the helm view and the strip at the top | Done in Navigate v0.7.9: the S and P meant starboard and port; TWA and AWA now show degrees, with starboard or port in words beneath in the helm view and a small STBD or PORT tag in the strips, green and red by day, dim red at night. Route catch-up: the same in Route's strip |
 | 16:49 | Can you communicate with the Mac now? | Yes: the link is back and the Claude, CLAUDE COWORK and iCloud folders are reachable |
