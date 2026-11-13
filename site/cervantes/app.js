@@ -111,10 +111,12 @@
     $('newDataBtn').onclick = function () {
       if (S.sessStale && !nextMeta && !S.running) { S.sessStale = false; $('newData').hidden = true; $('newDataBtn').textContent = 'New data: update routing'; run(); return; }
       if (!nextMeta || S.running) return;
-      var m = nextMeta, raceId = meta.course && meta.course.race ? meta.course.race.id : null; nextMeta = null;
+      var m = nextMeta, cur = meta.course; nextMeta = null;
       $('newData').hidden = true; busy('Downloading the new forecast…');
       meta = m; T0 = m.t0; meta.course0 = m.course; S.loaded = {}; S.gotAt = {}; S.ov = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = [];
-      if (raceId) applyRace(raceId);
+      /* keep the course on screen, whatever it is: a RORC race, its marks as set, or your own course (found 13 Nov: an own course
+         jumped back to the area's default race whenever a new forecast came in). Only the forecast window comes from the new pack. */
+      if (cur) meta.course = Object.assign({}, cur, { band: m.course && m.course.band || cur.band, window: m.course && m.course.window || cur.window });
       var st = (+$('startSel').value - T0) / 3600; S.tmin = Math.min(st, S.tmin - 0); S.tmax = Math.min(HMAX(), S.tmax);
       loadPre().then(function () { earlyPre(); return download(); }).then(function () { chip(); dataTable(); run(); }).catch(function (e) { busy(''); $('dlNote').textContent = e.message; });
     };
