@@ -6,6 +6,8 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 13 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 14:42 | If the forecast wind is well off, a way to enter the wind speed and direction by hand and re-route with it | Partly there: Settings, Forecasts has wind direction, strength and timing adjustments for the whole race or a drawn area, and Navigate's wind check (step 4) offers Correct, which applies the boat's measured difference and re-routes. To build: a plain "The wind is really ___° ___ kn" entry beside the wind check, applied for a chosen number of hours and then blended back to the forecast, then a re-route; also in Route for crews without instruments |
+| 14:40 | Are menus meant to close by themselves after a few moments? | Answered: only in clear screen; after MENU the menus come back and clear again after a minute without a tap on the controls; on a phone a tap on the chart also folds Route's panel. To add: a setting for that time (Off, 1, 3 or 5 minutes) |
 | 14:30 | Boat link menu needs to be more obvious and in the main Settings | Done in v0.7.6: a large "Boat link and data sources" button at the top of Settings showing the link state; the strip still opens it too |
 | 14:26 | Pills and panels movable around the screen by holding and dragging, finger or mouse | To build: drag by a grip on the GPS pill, plotter bar, instrument strip and helm boxes; positions kept per screen size and saved with My defaults; a Reset positions button |
 | 14:13 | "Route here from the boat" box is under other menus and cannot be used on Android | Fixed in v0.7.6: the tap box sits above the strip and plotter bar and scrolls if long |
