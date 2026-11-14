@@ -44,6 +44,19 @@
   /* ------------------------------------------------ store */
   function newStore() { return { v: 1, cells: {}, accepted: 0, seen: 0, rejected: {} }; }
   function cellKey(cond, sea, tws, twa) { return cond + '|' + sea + '|' + tws + '|' + twa; }
+  /* sailing sessions in a cell (14 Nov 2026, review finding 13): points more than 6 hours apart start a new session, so proof can
+     ask for separate outings rather than calendar days (one overnight race spans two dates) */
+  var SESSION_GAP = 6 * 3600;
+  function addSession(c, t) {
+    var S = c.s || (c.s = []), last = S[S.length - 1];
+    if (last && t - last[1] < SESSION_GAP && t >= last[0]) { last[1] = Math.max(last[1], t); last[2]++; }
+    else { S.push([t, t, 1]); if (S.length > 60) S.shift(); }
+  }
+  function sessionsOf(list, minPts) {
+    var a = list.slice().sort(function (x, y) { return x[0] - y[0]; }), out = [];
+    a.forEach(function (x) { var l = out[out.length - 1]; if (l && x[0] - l[1] < SESSION_GAP) { l[1] = Math.max(l[1], x[1]); l[2] += x[2]; } else out.push(x.slice()); });
+    return out.filter(function (x) { return x[2] >= minPts; }).length;
+  }
   function addTo(c, bspBin, tack, bsp) {
     c.n++; c.h[bspBin] = (c.h[bspBin] || 0) + 1;
     if (tack < 0) { c.pn++; c.ps += bsp; } else { c.sn++; c.ss += bsp; }
@@ -57,6 +70,7 @@
       for (var h in src.h) c.h[h] = (c.h[h] || 0) + src.h[h];
       if (src.d) { c.d = c.d || {}; for (var dd in src.d) c.d[dd] = (c.d[dd] || 0) + src.d[dd]; }
       if (src.f) c.f = c.f ? Math.min(c.f, src.f) : src.f; if (src.l) c.l = Math.max(c.l || 0, src.l);
+      if (src.s) c.s = (c.s || []).concat(src.s);
     }
     out.accepted += b.accepted; out.seen += b.seen;
     for (k in b.rejected) out.rejected[k] = (out.rejected[k] || 0) + b.rejected[k];
@@ -113,6 +127,7 @@
     addTo(c, bb, sign, mb);
     if (!c.d) c.d = {}; var dy = new Date(s.t * 1000).toISOString().slice(0, 10); c.d[dy] = (c.d[dy] || 0) + 1;
     c.f = c.f ? Math.min(c.f, s.t) : s.t; c.l = Math.max(c.l || 0, s.t);
+    addSession(c, s.t);
     S.accepted++;
     return 'accepted';
   };
@@ -161,9 +176,9 @@
       var p = k.split('|');
       if (!pick(p[0], q.cond) || !pick(p[1], q.sea)) continue;
       var id = p[2] + '|' + p[3], m = merged[id], c = store.cells[k];
-      if (!m) m = merged[id] = { n: 0, h: {}, d: {}, f: 0, l: 0 };
+      if (!m) m = merged[id] = { n: 0, h: {}, d: {}, f: 0, l: 0, s: [] };
       m.n += c.n; for (var b in c.h) m.h[b] = (m.h[b] || 0) + c.h[b];
-      for (var dd in (c.d || {})) m.d[dd] = 1; if (c.f) m.f = m.f ? Math.min(m.f, c.f) : c.f; if (c.l) m.l = Math.max(m.l, c.l);
+      if (c.s) m.s = m.s.concat(c.s); for (var dd in (c.d || {})) m.d[dd] = 1; if (c.f) m.f = m.f ? Math.min(m.f, c.f) : c.f; if (c.l) m.l = Math.max(m.l, c.l);
     }
     var twsSet = {}, twaSet = {};
     Object.keys(merged).forEach(function (id) { var a = id.split('|'); twsSet[a[0]] = 1; twaSet[a[1]] = 1; });
@@ -173,21 +188,24 @@
     for (x = twaMin; x <= twaMax; x += o.binTwa) twa.push(x);
     var tmin = tws[0], tmax = tws[tws.length - 1]; tws = [];
     for (x = tmin; x <= tmax; x += o.binTws) tws.push(x);
-    var v = [], flag = [], mins = [], days = [], span = [];
+    var v = [], flag = [], mins = [], days = [], span = [], sess = [], sd = [], neff = [];
     tws.forEach(function (w) {
-      var rv = [], rf = [], rm = [], rd = [], rs = [];
+      var rv = [], rf = [], rm = [], rd = [], rs = [], rss = [], rsd = [], rn = [];
       twa.forEach(function (a) {
         var m = merged[w + '|' + a], ok = m && m.n >= o.minPoints;
         rv.push(ok ? pct(m.h, m.n, P, o.binBsp, o.maxOverMedian, o.minUnderMedian) : null);
         rf.push(ok ? 'm' : '');
         rm.push(m ? m.n * o.stepSec / 60 : 0);
         rd.push(m ? Object.keys(m.d).length : 0); rs.push(m && m.f ? (m.l - m.f) / 3600 : 0);
+        rss.push(m && m.s && m.s.length ? sessionsOf(m.s, Math.ceil(180 / o.stepSec)) : m ? Object.keys(m.d).length : 0);   /* sessions of 3 min or more */
+        if (m) { var su = 0, sq = 0; for (var hb in m.h) { var x = hb * o.binBsp; su += x * m.h[hb]; sq += x * x * m.h[hb]; } var mu = su / m.n; rsd.push(Math.sqrt(Math.max(0, sq / m.n - mu * mu))); } else rsd.push(null);
+        rn.push(m ? m.n * o.stepSec / 60 : 0);   /* independent values: about one per minute of steady sailing, because windows overlap and gusts and wave sets last a minute or more */
       });
-      v.push(rv); flag.push(rf); mins.push(rm); days.push(rd); span.push(rs);
+      v.push(rv); flag.push(rf); mins.push(rm); days.push(rd); span.push(rs); sess.push(rss); sd.push(rsd); neff.push(rn);
     });
     fillGaps(v, flag, o.maxGapCells);
     if (q.smooth !== false) v = v.map(function (r) { return r.map(function (x, j) { return x != null && j > 0 && j < r.length - 1 && r[j - 1] != null && r[j + 1] != null ? (r[j - 1] + 2 * x + r[j + 1]) / 4 : x; }); });
-    return { tws: tws, twa: twa, v: v, flag: flag, mins: mins, days: days, span: span, percentile: P };
+    return { tws: tws, twa: twa, v: v, flag: flag, mins: mins, days: days, span: span, sess: sess, sd: sd, neff: neff, percentile: P };
   }
 
   /* Fill only between measured neighbours, never beyond them. */
