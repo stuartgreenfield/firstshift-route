@@ -1,0 +1,89 @@
+/* FirstShift Route: styles for the newer screens (shared with Navigate, 13 Nov 2026) */
+.nrnote{font-size:13px;color:var(--brand);margin:4px 0;min-height:1em}
+/* clear screen: just the chart, MOB and MENU */
+.navmenub{display:none;min-width:64px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--brand);color:var(--panel);font:700 13px var(--f-data);letter-spacing:.06em;cursor:pointer}
+.fabhelp.navclearb{bottom:208px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.navclearb svg{width:18px;height:18px}
+.navclearb span{font:700 9px var(--f-data);letter-spacing:.04em;line-height:1}
+body.navclear #panel,body.navclear .top,body.navclear #navClearBtn,body.navclear #editFab,body.navclear #helpBtn,body.navclear #boatWarn,body.navclear .cbanner{display:none!important}
+body.navclear .bar{display:flex;justify-content:space-between;align-items:center}
+body.navclear .bar>*{display:none!important}
+body.navclear .bar>.mobbtn,body.navclear .bar>.navmenub{display:block!important}
+body.navclear .prog{top:calc(env(safe-area-inset-top,0px) + 60px)}
+.navtoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(92vw,460px);padding:10px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font:500 14px var(--f-body);box-shadow:0 8px 24px rgba(0,0,0,.35);text-align:center}
+.navtoast{white-space:pre-line}
+/* the plotter bar never runs under the bottom menu: it fits the chart and scrolls inside (Stuart 13 Nov) */
+/* clear screen: no blue strip, a small MOB and MENU floating over the chart (Stuart 13 Nov) */
+body.navclear .app{grid-template-rows:minmax(0,1fr) 0 0}
+body.navclear .bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:transparent!important;border:0!important;padding:0 max(10px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));pointer-events:none}
+body.navclear .bar>.mobbtn,body.navclear .bar>.navmenub{pointer-events:auto;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+body.navclear .bar>.mobbtn{width:auto;min-width:52px;height:40px;font-size:12px}
+body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px;opacity:.9}
+body.navclear .livebox{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+body.navtip .livebox{visibility:hidden}
+:root[data-night] .navtoast{border-color:#3A0A08}
+:root[data-night] .navmenub{background:#2A0302;color:#B4231B;border-color:#6A0F0B}
+/* the chart's information box (tap on the chart) sits above the strip and plotter bar, so its buttons can be used (Stuart 13 Nov, Android) */
+.tip.docked{z-index:26;max-height:calc(100% - 130px);overflow-y:auto;overscroll-behavior:contain}
+/* Help: forecast models guide, one block per source so it reads on a phone */
+.navmodels{margin:8px 0}
+.navmodels h4{margin:12px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--brand,var(--ink))}
+.navmodels dl{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+.navmodels .nm{border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.navmodels dt{font-weight:700;font-size:13px}
+.navmodels dd{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.navmodels dd.nmg{font-family:var(--f-data);color:var(--ink)}
+.navsetlink,.navprefs{flex-shrink:0;height:auto!important}
+/* My defaults card in Settings */
+.navprefs{border:1px solid var(--line);border-radius:10px;margin:0 0 12px;background:var(--panel)}
+.navprefs summary{cursor:pointer;padding:10px 12px;display:flex;flex-direction:column;gap:2px;list-style:none}
+.navprefs summary::-webkit-details-marker{display:none}
+.navprefs summary b{font-size:15px}
+.navprefs summary small{font-size:12px;color:var(--muted)}
+.navprefs[open] summary{border-bottom:1px solid var(--line)}
+.navprefs .npbody{padding:4px 12px 12px}
+.navprefs h4{margin:12px 0 4px;font-size:13px}
+.navprefs .xrow{flex-wrap:wrap}
+.navprefs select,.navprefs input[type=text]{min-height:40px;min-width:0;flex:1 1 160px;font:inherit;color:var(--ink);background:var(--bg,var(--panel));border:1px solid var(--line);border-radius:8px;padding:0 8px}
+.navprefs .nprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.navprefs .npask{border:1px solid var(--brand,var(--line));border-radius:8px;padding:8px 10px;margin-top:10px}
+.navprefs .npask p{margin:0 0 6px;font-size:13px}
+/* the tap box never runs off the chart: it scrolls, and its buttons sit near the top */
+#tip.docked{max-height:calc(100% - 96px);overflow-y:auto}
+/* wind entered by hand */
+.nrman{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:4px 0 10px}
+.nrman label{font-weight:700;font-size:13px}
+.nrmanrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
+.nrmanrow input{width:72px;min-height:40px;font:600 16px var(--f-data);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 8px}
+/* Ready for offline */
+.navoff .nook{color:#2E9E6A;font-weight:700;font-size:13px;margin:6px 0}
+html[data-night] .navoff .nook{color:#9A2A1A}
+/* TWA side in words, not S or P (Stuart 13 Nov) */
+.nside{font:700 9px var(--f-body);font-style:normal;letter-spacing:.04em;margin-left:4px;vertical-align:middle}
+.nside.s,.nsides{color:#2E9E6A}
+.nside.p,.nsidep{color:#E5484D}
+html[data-night] .nside.s,html[data-night] .nsides,html[data-night] .nside.p,html[data-night] .nsidep{color:#9A2A1A}
+/* model run ages */
+.fin .navage{display:block;font:500 10px var(--f-data);color:var(--muted);margin-top:2px}
+#models .navage{font:500 10px var(--f-data);color:var(--muted);margin-left:6px}
+.navage.old{color:#E5484D}
+html[data-night] .navage.old{color:#9A2A1A}
+.navagerow{margin:8px 0;font-size:13px}
+.navagerow select{min-height:36px;margin-left:6px;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px}
+/* moving the panels */
+.navgrip{position:fixed;z-index:60;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--brand,#5B8DEF);color:#fff;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:grab;touch-action:none;padding:0}
+.navgrip:active{cursor:grabbing}
+.navmovebar{position:fixed;z-index:61;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;max-width:calc(100% - 32px);background:var(--panel);border:1px solid var(--brand,var(--line));border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.4);font-size:13px}
+html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
+.tabsum{margin:0 0 12px;padding:8px 10px;font-size:13px;line-height:1.45;color:var(--muted);background:color-mix(in srgb,var(--line) 35%,transparent);border-radius:8px}
+#s-mine .navprefs{margin-bottom:12px}
+.setfind{position:relative;padding:8px 14px 4px}
+.setfind input{width:100%;box-sizing:border-box;min-height:40px;font:inherit;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.setfindres{position:absolute;left:14px;right:14px;top:100%;z-index:20;max-height:50vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.setfindres button{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:10px 12px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font:inherit;cursor:pointer}
+.setfindres button span{color:var(--muted);font-size:12px;white-space:nowrap}
+.setfindres .note{padding:10px 12px;margin:0}
+.sethit{outline:2px solid var(--brand,#5B8DEF);outline-offset:3px;border-radius:6px;transition:outline-color .3s}
+/* help section */
+.navhelph{margin:16px 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand,var(--ink))}
+.navhelp .hpic{display:block;max-width:100%;border:1px solid var(--line);border-radius:8px;margin-top:6px}
