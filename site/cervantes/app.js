@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.9';
+  var VERSION = 'FirstShift Route v0.12.10';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -223,7 +223,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.9 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.10 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1589,7 +1589,7 @@
   function goNew(id) { try { if (WIZ.on) sessionStorage.setItem('fs-wiz', ''); } catch (e) {} location.href = '../' + id + '/?new=1'; }
   function startEdit(c) {
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
-    S.edit = { name: c ? c.name : 'My course', pts: c ? courseFull(c).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side, via: !!p.via, must: !!p.must, auto: !!p.auto }; }) : [], closed: !!c, hist: [] };
+    S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks || []).concat([c.finish]).filter(function (p) { return !p.auto; }).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side, via: !!p.via, must: !!p.must, auto: !!p.auto }; }) : [], closed: !!c, hist: [] };
     S.edit.orig = JSON.stringify(S.edit.pts);
     if (!c) S.drawnNew = true;
     var cb = null; if (c) { cb = { s: 90, n: -90, w: 180, e: -180 }; S.edit.pts.forEach(function (q) { cb.s = Math.min(cb.s, q.lat); cb.n = Math.max(cb.n, q.lat); cb.w = Math.min(cb.w, q.lon); cb.e = Math.max(cb.e, q.lon); }); var mla = Math.max(0.08, (cb.n - cb.s) * 0.15), mlo = Math.max(0.12, (cb.e - cb.w) * 0.15); cb.s -= mla; cb.n += mla; cb.w -= mlo; cb.e += mlo; }   /* an existing course: the whole course in view */
@@ -1602,7 +1602,7 @@
   /* what has changed since editing began: moved, added or removed marks, by name */
   function editChanges() {
     if (!S.edit || !S.edit.closed || !S.edit.orig) return [];
-    var o = JSON.parse(S.edit.orig), p = S.edit.pts, out = [], nm = function (q, i, a) { return q.name || (i === 0 ? 'Start' : i === a.length - 1 ? 'Finish' : 'Mark ' + i); };
+    var o = JSON.parse(S.edit.orig), p = S.edit.pts, out = [], nm = function (q, i, a) { if (q.name) return q.name; if (i === 0) return 'Start'; if (i === a.length - 1) return 'Finish'; var n = 0; for (var j = 1; j <= i; j++) if (!!a[j].via === !!q.via) n++; return (q.via ? 'Waypoint ' : 'Mark ') + n; };   /* marks and waypoints numbered apart, so a waypoint never shifts a mark's number */
     var D = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     o.forEach(function (q, i) { var k = -1; p.forEach(function (r, j) { if (k < 0 && nm(r, j, p) === nm(q, i, o)) k = j; });
       if (k < 0) { out.push(nm(q, i, o) + ' removed'); return; }
@@ -1612,12 +1612,19 @@
     if (!out.length && JSON.stringify(o.map(function (q) { return q.name; })) !== JSON.stringify(p.map(function (q) { return q.name; }))) out.push('marks reordered');
     return out;
   }
+  /* courses saved before 14 Nov 18:30 can carry Route's own automatic waypoints as if placed by hand (Stuart: editing moved marks, would not route): offer to remove the unnamed ones */
+  function strayVias() { return S.edit ? S.edit.pts.filter(function (q, i, a) { return i > 0 && i < a.length - 1 && q.via && !q.must && !q.name; }).length : 0; }
+  function strayLink() { var k = strayVias(); return k ? ' <button class="btn" id="edStray" type="button">Remove ' + k + ' unnamed waypoint' + (k === 1 ? '' : 's') + '</button>' : ''; }
+  function strayWire() { var b = $('edStray'); if (!b) return; b.onclick = function (e) { e.stopPropagation(); editSnap(); S.edit.pts = S.edit.pts.filter(function (q, i, a) { return !(i > 0 && i < a.length - 1 && q.via && !q.must && !q.name); }); editPrompt(); draw(); }; }
   function editPrompt() {
+    editPrompt0(); strayWire();
+  }
+  function editPrompt0() {
     var n = S.edit.pts.length, ch = editChanges(); S.edit.changed = ch.length > 0;
     if ($('edGo')) $('edGo').hidden = !(S.edit.changed && n >= 2);
-    if (S.edit.changed) { $('edTxt').innerHTML = '<b class="chg">Course changed.</b> ' + (ch.length > 2 ? ch.slice(0, 2).join('; ') + ' and ' + (ch.length - 2) + ' more' : ch.join('; ')) + '. ' + (S.routes && S.routes.length ? 'The faded routes are out of date: ' : '') + 'Re-route to update.'; $('edDone').textContent = 'Course list'; $('edDone').disabled = n < 2; $('edUndo').disabled = !S.edit.hist.length; return; }
+    if (S.edit.changed) { $('edTxt').innerHTML = '<b class="chg">Course changed.</b> ' + (ch.length > 2 ? ch.slice(0, 2).join('; ') + ' and ' + (ch.length - 2) + ' more' : ch.join('; ')) + '. ' + (S.routes && S.routes.length ? 'The faded routes are out of date: ' : '') + 'Re-route to update.' + strayLink(); $('edDone').textContent = 'Course list'; $('edDone').disabled = n < 2; $('edUndo').disabled = !S.edit.hist.length; return; }
     $('edDone').textContent = 'Done';
-    $('edTxt').textContent = S.edit.closed ? 'Tap a mark to name it, set its position or delete it. Tap a leg to add a mark on it. Drag to move. ◇ are My marks: tap one to use it.' :
+    $('edTxt').innerHTML = S.edit.closed ? 'Tap a mark to name it, set its position or delete it. Tap a leg to add a mark on it. Drag to move. ◇ are My marks: tap one to use it.' + strayLink() :
       n === 0 ? 'Tap the chart to place the start, or a ◇ from My marks.' : n === 1 ? 'Tap to add each mark in order, and the finish last. Tap a mark to edit or delete it.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
     $('edDone').disabled = n < 2; $('edUndo').disabled = !(S.edit.hist.length || (!S.edit.closed && n));
   }
