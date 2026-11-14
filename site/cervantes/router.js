@@ -230,6 +230,16 @@
     var nh = Math.round(360 / hstep), H = [], sinH = [], cosH = [];
     for (var i = 0; i < nh; i++) { H.push(i * hstep); sinH.push(Math.sin(i * hstep * R)); cosH.push(Math.cos(i * hstep * R)); }
     var safety = o.safety || 0, depth = o.depth;
+    /* the true wind angles tried at each point: the grid every hstep, and the best VMG angle up and down on each side for this wind
+       speed (cached by half knot) */
+    var vmgC = {}, gridA = []; for (var ga0 = -180 + hstep; ga0 <= 180; ga0 += hstep) gridA.push(ga0);
+    function headsFor(tws, twd) {
+      var key = Math.round(tws * 2), extra = vmgC[key];
+      if (!extra) { var up = bestVmg(o.speed, key / 2, true)[0], dn = bestVmg(o.speed, key / 2, false)[0]; extra = vmgC[key] = [up, -up, dn, -dn].filter(function (x) { return x && Math.abs(x) % hstep; }); }
+      var A = gridA.concat(extra), hh = [], sn = [], cs = [], tw = [];
+      for (var j = 0; j < A.length; j++) { var h = (twd + A[j] + 720) % 360; hh.push(h); sn.push(Math.sin(h * R)); cs.push(Math.cos(h * R)); tw.push(A[j] > 180 ? A[j] - 360 : A[j]); }
+      return [hh, sn, cs, tw];
+    }
     /* no-go zones: traffic separation schemes and the sailing instructions' keep-out areas, each a ring of [lat, lon] */
     var nogo = (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; });
     function inside(ring, la, lo) { var c = false; for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) { var a = ring[i], q = ring[j]; if ((a[0] > la) !== (q[0] > la) && lo < (q[1] - a[1]) * (la - a[0]) / (q[0] - a[0]) + a[1]) c = !c; } return c; }
@@ -254,14 +264,18 @@
         for (var pi = 0; pi < pts.length; pi++) {
           var p = pts[pi], W = o.wind(p.la, p.lo, t), C = o.tide(p.la, p.lo, t), V = o.wave ? o.wave(p.la, p.lo, t) : [0, NaN];
           var tws = W[0], twd = W[1], kp = Math.cos(p.la * R); if (!(tws > 0)) calm++;
-          for (var hi = 0; hi < nh; hi++) {
-            var twa = ((H[hi] - twd + 540) % 360) - 180, s = o.speed(tws, twa);
+          /* headings relative to the wind here, every hstep of true wind angle, plus the best VMG angles up and down on each side
+             (14 Nov 2026, review finding 15): with headings fixed to north the angles on offer, and so the time, depended on the
+             wind direction against the heading grid */
+          var hl = headsFor(tws, twd), HH = hl[0], SN = hl[1], CS = hl[2], TW = hl[3];
+          for (var hi = 0; hi < HH.length; hi++) {
+            var twa = TW[hi], s = o.speed(tws, twa);
             if (s <= 0.05) continue;
-            s *= seaFactor(V[0], V[1], H[hi], o.sea);
+            s *= seaFactor(V[0], V[1], HH[hi], o.sea);
             var side = twa < 0 ? -1 : 1, lost = 0;
             if (p.side && side !== p.side) lost = Math.abs(twa) > 90 ? (o.gybeS || 0) : (o.tackS || 0);
             var run = Math.max(0, dt - lost) / 3600;
-            var dn = (s * cosH[hi] * run + C[1] * dt / 3600), de = (s * sinH[hi] * run + C[0] * dt / 3600);
+            var dn = (s * CS[hi] * run + C[1] * dt / 3600), de = (s * SN[hi] * run + C[0] * dt / 3600);
             var nla = p.la + dn / 60, nlo = p.lo + de / (60 * kp);
             var arrived = false, fr = 1;
             if (gate) {
@@ -299,7 +313,7 @@
               if (score <= bestS[sec]) { ncand++; continue; }
             }
             if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
-            var c = { la: nla, lo: nlo, par: pi, hdg: H[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
+            var c = { la: nla, lo: nlo, par: pi, hdg: HH[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
             if (arrived) { c.fr = fr; c.la = p.la + (nla - p.la) * fr; c.lo = p.lo + (nlo - p.lo) * fr; hit.push(c); } else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
           }
         }
