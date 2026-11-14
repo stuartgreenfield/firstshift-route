@@ -61,10 +61,11 @@ def grib_crop(buf, box=None):
     return v[np.ix_(iy[oy], ix[ox])].astype('f4'), lat[iy][oy], lon[ix][ox]
 
 
-def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1):
+def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1, opt=()):
+    # opt: extra fields kept only when every hour has them, so a missing one never costs the main fields (14 Nov 2026)
     base = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'
     d, r = RUN
-    out = {p: [] for p in params}; hrs = []; lat = lon = None
+    out = {p: [] for p in params}; hrs = []; lat = lon = None; extra = {p: [] for p in opt}
     for hh in [h for h in HOURS_LONG if h % step == 0 and (h <= 144 or h % 6 == 0)]:   # ECMWF: 3-hourly to 144 h, then 6-hourly to 240 h
         stem = f'{d}/{r}z/{model}/0p25/{stream}/{d}{r}0000-{hh}h-{stream if model=="ifs" else "oper"}-fc'
         try:
@@ -79,9 +80,19 @@ def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1):
             a = cached(f'{model}{stream}{d}{r}_{hh}_{p}', lambda: grib_crop(get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))[0])
             out[p].append(a)
             if lat is None: _, lat, lon = grib_crop(get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))
-        if ok: hrs.append(hh)
+        if ok:
+            hrs.append(hh)
+            for p in opt:
+                m = [x for x in idx if x.get('param') == p]
+                if not m: extra[p].append(None); continue
+                x = m[0]
+                try: extra[p].append(cached(f'{model}{stream}{d}{r}_{hh}_{p}', lambda: grib_crop(get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))[0]))
+                except Exception: extra[p].append(None)
         print(model, stream, hh, end=' | ', flush=True)
-    return {p: np.array(out[p][:len(hrs)]) for p in params}, np.array(hrs), lat, lon
+    res = {p: np.array(out[p][:len(hrs)]) for p in params}
+    for p in opt:
+        if len(extra[p]) == len(hrs) and all(a is not None for a in extra[p]): res[p] = np.array(extra[p])
+    return res, np.array(hrs), lat, lon
 
 
 def gfs():
@@ -289,13 +300,21 @@ if __name__ == '__main__':
             o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6)
             save(s, u=o['10u'], v=o['10v'], hours=h, lat=la, lon=lo)
         elif s == 'ecmet':   # ECMWF weather beyond the wind: gusts, pressure, rain, thunderstorm energy, cloud, air temperature, sea temperature
-            o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t', 'skt', 'lsm'), step=3)
+            o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))
             tp = o['tp']; rain = np.zeros_like(tp)
             if len(h) > 1:
                 dh = np.diff(h).astype(float).reshape(-1, 1, 1); rain[1:] = np.maximum(0, np.diff(tp, axis=0)) * 1000 / dh   # accumulated metres to mm an hour
                 rain[0] = rain[1]
-            sst = np.where(o['lsm'] < 0.5, o['skt'] - 273.15, np.nan)   # skin temperature over the sea is the model's sea surface temperature (14 Nov 2026, D)
-            save(s, gust=o['10fg'], msl=o['msl'] / 100, rain=rain, cape=o['mucape'], cloud=o['tcc'] * 100, temp=o['2t'] - 273.15, sst=sst, hours=h, lat=la, lon=lo)
+            more = {}
+            if 'skt' in o and 'lsm' in o:   # skin temperature over the sea is the model's sea surface temperature (14 Nov 2026, D)
+                sst = np.where(o['lsm'] < 0.2, o['skt'] - 273.15, np.nan)   # cells with more land than that read the land (2 to 8 C in November)
+                for _ in range(4):   # carry the sea value a few cells inshore, so harbours and estuaries get the nearby sea's temperature
+                    pad = np.pad(sst, ((0, 0), (1, 1), (1, 1)), constant_values=np.nan)
+                    nb = np.stack([pad[:, 1 + dy:pad.shape[1] - 1 + dy, 1 + dx:pad.shape[2] - 1 + dx] for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx])
+                    with np.errstate(all='ignore'): fill = np.nanmean(nb, axis=0)
+                    sst = np.where(np.isnan(sst), fill, sst)
+                more['sst'] = sst
+            save(s, gust=o['10fg'], msl=o['msl'] / 100, rain=rain, cape=o['mucape'], cloud=o['tcc'] * 100, temp=o['2t'] - 273.15, hours=h, lat=la, lon=lo, **more)
         elif s == 'ecwav':
             o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)
