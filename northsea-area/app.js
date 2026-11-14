@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.6';
+  var VERSION = 'FirstShift Route v0.12.7';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -222,7 +222,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.6 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -908,7 +908,7 @@
     var p = s.r.path, st = routeStats(s), cr = sailsList(), mr = mainsList(), name = s.combined ? 'The combined route' : 'The ' + short(s.id) + ' route', out = [];
     var fins = S.routes.filter(function (r) { return r.r && r.r.finish && !r.r.partial; }).map(function (r) { return r.r.finish; }), spread = fins.length > 1 ? Math.max.apply(0, fins) - Math.min.apply(0, fins) : 0;
     var pc = function (x) { return Math.round(x * 100) + ' percent'; }, comp = function (d) { return ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(((d % 360) + 360) % 360 / 45) % 8]; };
-    out.push(name + (s.r.partial ? ' runs out of forecast ' + s.r.partial.togo + ' nm short of the finish.' : ' finishes ' + clockH(s.r.finish).slice(4) + ' UTC, ' + fmtH(s.r.finish - S.start.t) + ' after the start') + ', sailing ' + Math.round(st.nm) + ' nm.' +
+    out.push(name + (s.r.partial ? ' runs out of forecast at ' + clockH(s.r.finish).slice(4) + ' UTC, ' + s.r.partial.togo + ' nm short of the finish' + (fins.length ? '; the other models carry on from there.' : '.') : ' finishes ' + clockH(s.r.finish).slice(4) + ' UTC, ' + fmtH(s.r.finish - S.start.t) + ' after the start') + ', sailing ' + Math.round(st.nm) + ' nm.' +
       ' About ' + pc(st.upP) + ' upwind, ' + pc(st.reachP) + ' reaching and ' + pc(st.downP) + ' downwind.' +
       (spread ? (spread < 2 ? ' The models agree well: their finish times sit within ' + fmtH(spread) + '.' : spread < 6 ? ' The models differ by ' + fmtH(spread) + ' on the finish, so keep an eye on which one is matching the sky.' : ' The models disagree by ' + fmtH(spread) + ' on the finish: treat the plan as a starting point and watch for the real wind.') : ''));
     var legs = [], cur = null; p.forEach(function (q, i) { if (!i) return; var L = q.leg || 0; if (!cur || cur.leg !== L) { cur = { leg: L, pts: [] }; legs.push(cur); } cur.pts.push(q); });
@@ -2102,6 +2102,8 @@
     }
   }
   var TS = typeof WeakMap === 'function' ? new WeakMap() : null;
+  /* a one-model route whose forecast stops before the finish (UKV, AROME): when it hands over to the other models (model spread test, 13 Nov) */
+  function handOver(s) { if (!s || s.combined || !s.models || s.models.length !== 1 || !s.r || s.r.partial) return null; var f = P.wind[s.models[0]]; if (!f || !f.hours || f.hours.length < 2) return null; var e = f.hours[f.hours.length - 1]; return e < s.r.finish ? e : null; }
   function tsOf(path) { if (!TS) return path.map(function (q) { return q.t; }); var a = TS.get(path); if (!a) { a = path.map(function (q) { return q.t; }); TS.set(path, a); } return a; }   /* one times array per route, not one per frame */
   /* boats you are racing, added by hand, pasted from an entry list or picked from AIS; kept on this device for each race */
   function mfKey() { return 'fs-fleet-' + raceKey(); }
@@ -2178,7 +2180,7 @@
     var mins = M.models.map(function (m, j) { return Math.min.apply(null, M.cols[j]); });
     var h = '<tr><th>Route</th><th>Finish</th>' + M.models.map(function (m) { return '<th>in ' + short(m) + '</th>'; }).join('') + '<th>Average</th><th>Worst</th></tr>';
     S.routes.forEach(function (s, i) {
-      h += '<tr class="click' + (s === S.sel ? ' sel' : '') + '" data-i="' + i + '"><td style="font-family:var(--f-body)">' + swatch(s) + (s.combined ? 'Combined' : short(s.id)) + (s.best ? ' <span class="pill">best</span>' : '') + '</td><td style="white-space:nowrap">' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm</b><br><span style="color:var(--muted)">to go</span>' : '<b>' + clockH(s.r.finish).slice(0, 3) + ' ' + clockH(s.r.finish).slice(-5) + '</b><br><span style="color:var(--muted)">' + fmtH(s.r.finish - M.start) + '</span>') + '</td>' +
+      h += '<tr class="click' + (s === S.sel ? ' sel' : '') + '" data-i="' + i + '"><td style="font-family:var(--f-body)">' + swatch(s) + (s.combined ? 'Combined' : short(s.id)) + (s.best ? ' <span class="pill">best</span>' : '') + '</td><td style="white-space:nowrap">' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm</b><br><span style="color:var(--muted)">to go: forecast ends ' + clockH(s.r.finish).slice(0, 3) + ' ' + clockH(s.r.finish).slice(-5) + '</span>' : '<b>' + clockH(s.r.finish).slice(0, 3) + ' ' + clockH(s.r.finish).slice(-5) + '</b><br><span style="color:var(--muted)">' + fmtH(s.r.finish - M.start) + '</span>' + (handOver(s) != null ? '<br><span style="color:var(--muted);font-size:11px" title="This model\'s forecast ends before the finish; the route carries on with the other models">' + short(s.id) + ' to ' + clockH(handOver(s)).slice(0, 3) + ' ' + clockH(handOver(s)).slice(-5) + ', then others</span>' : '')) + '</td>' +
         M.models.map(function (m, j) { return '<td class="' + (Math.abs(M.cols[j][i] - mins[j]) < 1e-6 ? 'best' : '') + '">' + fmtH(M.cols[j][i] - M.start) + '</td>'; }).join('') +
         '<td class="' + (s.best ? 'best' : '') + '">' + fmtH(s.mean - M.start) + '</td><td>' + fmtH(s.worst - M.start) + '</td></tr>';
     });
@@ -2187,7 +2189,7 @@
     var best = S.routes.find(function (s) { return s.best; }), fins = S.routes.map(function (s) { return s.r.finish; }), spread = Math.max.apply(null, fins) - Math.min.apply(null, fins);
     var comb = S.routes.find(function (s) { return s.combined; });
     var fastT = Math.min.apply(null, S.routes.filter(function (s) { return !s.r.partial; }).map(function (s) { return s.r.finish; }).concat([Infinity]));
-    $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '" data-id="' + s.id + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + '</em>') + '</div>'; }).join('');
+    $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '" data-id="' + s.id + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + (fastT < Infinity ? '; other models carry on to the finish' : '') + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + (handOver(s) != null ? ' · ' + short(s.id) + ' to ' + clockH(handOver(s)).slice(0, 3) + ' ' + clockH(handOver(s)).slice(-5) + ', then the other models' : '') + '</em>') + '</div>'; }).join('');
     try { checksRender(); setupRender(); } catch (e) {}
     try { liveAfterRoute(); if (LIVE.on && LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}
     $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (!best ? 'chosen' : best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
