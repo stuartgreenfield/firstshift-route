@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.0';
+  var VERSION = 'FirstShift Route v0.12.1';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -222,7 +222,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.0 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.1 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1719,7 +1719,7 @@
         if (WIZ.on || S.drawnNew) { var nw = S.drawnNew; WIZ.on = true; WIZ.step = nw ? 1 : 4; wizSave(); }   /* a new course carries on through the set-up on the area that routes it */
         busy('Opening ' + c.name + ' on the ' + reg.name + ' forecasts…'); location.href = '../' + reg.id + '/?my=' + encodeURIComponent(rec.id); return;
       }
-      if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue + (reg ? '' : ' No forecast area covers the whole course yet.'); } else { if (wizCourseChosen(true)) { busy(''); return; } S.from = null; run(); }
+      if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue + (reg ? '' : ' No forecast area covers the whole course yet.'); } else { if ((WIZ.on || S.drawnNew) && wizCourseChosen(true)) { busy(''); return; } S.from = null; run(); }   /* only a new course, or one changed during the set-up, goes back to the set-up card; Re-route and Save and route on a course already set up route at once (Stuart 14 Nov: turning a mark into a waypoint and tapping Re-route did nothing) */
   }
   /* routes that run along the edge of the forecast area are being stopped by the edge, not the weather: say so (Stuart 12 Nov) */
   function edgeHit() {

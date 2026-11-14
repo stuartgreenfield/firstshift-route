@@ -1,6 +1,6 @@
 /* FirstShift Route: Settings laid out as tabs only (Stuart 13 Nov 2026: "that menu needs a redesign to make it easier
    to understand"; chosen: tabs only, a search box, and a plain-English line for each part).
-   Tabs: Boat, Forecasts, Course, Sails, Display, My set-up. Nothing sits above the tabs.
+   Tabs: Boat, Forecasts, Course, Sails, Display, Charts (14 Nov 2026), My set-up. Nothing sits above the tabs.
    My set-up holds My defaults and named set-ups, Ready for offline, panel positions and the clear-screen timing.
    The search box finds a setting by name in any tab, opens that tab and shows the setting. */
 (function () {
@@ -13,9 +13,10 @@
     course: 'The race, its marks and keep-out areas, the safety depth, and what Route does while you race.',
     sails: 'Your sails and reefs, the wind each is for, and the crossover chart.',
     display: 'What the chart shows: wind and tide symbols, AIS, replay speed and data sources.',
+    charts: 'Where the chart comes from, how to change what it shows, and why it is not for navigation.',
     mine: 'Save the way you like Route, keep this race ready for no signal, and arrange the screen.'
   };
-  var NAME = { boat: 'Boat', fc: 'Forecasts', course: 'Course', sails: 'Sails', display: 'Display', mine: 'My set-up' };
+  var NAME = { boat: 'Boat', fc: 'Forecasts', course: 'Course', sails: 'Sails', display: 'Display', charts: 'Charts', mine: 'My set-up' };
   function tabOf(el) { var b = el && el.closest('.sbody'); return b && b.id ? b.id.replace(/^s-/, '') : null; }
   function open(tab) { var t = document.querySelector('.stabs .tab[data-s="' + tab + '"]'); if (t) t.click(); }
 

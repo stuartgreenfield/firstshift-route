@@ -39,7 +39,7 @@
       var key = offKey(url), big = /\/pack\/(?!pack\.json)/.test(url.pathname);
       var fromStore = function (why) { OFF.failed = true; return STORE.get(key).then(function (r) { if (!r) throw why || new Error('offline and not downloaded yet'); OFF.used[url.pathname] = true; offNote(); return r; }); };
       if (navigator.onLine === false) return fromStore();
-      var net = real(input, init).then(function (r) { if (!r.ok) throw new Error('server ' + r.status); var cp = r.clone(); STORE.put(key, cp).catch(function () {}); if (/pack\/pack\.json$/.test(url.pathname)) { try { localStorage.setItem('fs-offline-at', String(Date.now())); } catch (e) {} } return r; });
+      var net = real(input, init).then(function (r) { if (!r.ok && r.status >= 400 && r.status < 500) return r; if (!r.ok) throw new Error('server ' + r.status);   /* a missing file is an answer, not lost signal: before, a 404 counted as offline and the page reloaded every 30 s (14 Nov 2026) */ var cp = r.clone(); STORE.put(key, cp).catch(function () {}); if (/pack\/pack\.json$/.test(url.pathname)) { try { localStorage.setItem('fs-offline-at', String(Date.now())); } catch (e) {} } return r; });
       if (big) return net.catch(function (e) { return fromStore(e); });
       var timer = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('slow')); }, 8000); });   /* a weak signal at sea: do not wait forever for the small files */
       return Promise.race([net, timer]).catch(function (e) { return fromStore(e).catch(function () { return net; }); });
