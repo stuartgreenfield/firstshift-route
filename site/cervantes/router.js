@@ -9,7 +9,7 @@
   function Field(L, bin) {
     var self = { L: L, ny: L.ny, nx: L.nx, hours: L.hours || [0] };
     function arr(d) { return d ? { a: new Int16Array(bin, d.off * 1, d.n), s: d.scale } : null; }
-    var keys = ['u', 'v', 'hs', 'dir', 'tp', 'z', 'gust', 'msl', 'rain', 'cape', 'cloud', 'temp'], A = {};
+    var keys = ['u', 'v', 'hs', 'dir', 'tp', 'z', 'gust', 'msl', 'rain', 'cape', 'cloud', 'temp', 'sst'], A = {};
     keys.forEach(function (k) { if (L[k]) A[k] = arr(L[k]); });
     self.A = A;
     var plane = L.ny * L.nx;
@@ -136,6 +136,18 @@
       var W = wind(la, lo, t), C = tide(la, lo, t); if (!(W[0] > 0) || (!C[0] && !C[1])) return W;
       var rx = -W[0] * Math.sin(W[1] * R) - C[0], ry = -W[0] * Math.cos(W[1] * R) - C[1];
       return [Math.sqrt(rx * rx + ry * ry), (Math.atan2(-rx, -ry) / R + 360) % 360];
+    };
+  }
+  /* GRIB wind is the 10 m wind. A polar measured against masthead wind needs the wind at that height: ratio(u10, z, air, sea) from
+     the polar engine, with the forecast's 2 m air and sea temperatures when stab is on and the met layer has them (D, 14 Nov 2026;
+     docs/METHOD-WINDHEIGHT.md). The wind direction is left as it is. */
+  function heightWind(wind, P, z, ratio, stab) {
+    if (!(z > 0) || Math.abs(z - 10) < 0.01 || !ratio) return wind;
+    var m = stab !== false && P && P.met && P.met.ecmet, hasT = m && m.A && m.A.temp, hasS = m && m.A && m.A.sst;
+    return function (la, lo, t) {
+      var W = wind(la, lo, t); if (!(W[0] > 0)) return W;
+      var ta = hasT ? m.sample('temp', la, lo, t) : NaN, ts = hasS ? m.sample('sst', la, lo, t) : NaN;
+      return [W[0] * ratio(W[0], z, ta === ta ? ta : null, ts === ts ? ts : null), W[1]];
     };
   }
   function tideSampler(P, id) {
@@ -394,6 +406,6 @@
     return out;
   }
 
-  return { waterWind: waterWind, Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, adjust: adjust, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
+  return { waterWind: waterWind, heightWind: heightWind, Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, adjust: adjust, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
     seaFactor: seaFactor, SEA: SEA, route: route, sailTrack: sailTrack, markGate: markGate, dist: dist, brg: brg, sailFor: sailFor, parseCrossover: parseCrossover };
 });

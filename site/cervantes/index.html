@@ -653,6 +653,11 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
         <div class="row"><button class="btn" id="polarFromType">Start from the boat type</button><span class="note" id="polarRead"></span></div>
         <div class="pgrid" id="polarGrid"></div>
       </div>
+      <h3>Wind height</h3>
+      <div class="row"><label for="polZ">Polar wind speeds at</label><select id="polZ"><option value="10">10 m (ORC, designer, FirstShift)</option><option value="mast">The masthead</option></select></div>
+      <div class="row" id="mastRow" hidden><label for="mastZ">Wind sensor height</label><input type="number" id="mastZ" value="" min="3" max="60" step="0.5" placeholder="enter"> m above the water</div>
+      <div class="row"><label class="chk"><input type="checkbox" id="stabOn" checked> Allow for warm or cold air over the sea</label></div>
+      <p class="note" data-i>Forecast wind is the wind 10 m above the sea, the height ORC and most designers use for polars, so a 10 m polar needs no change. A polar made from your own instruments is against the masthead wind, which is stronger: about 3% to 5% at 15 to 18 m in ordinary air, 1% to 4% when the air is colder than the sea (autumn and winter), and 5% to 20% when warm air lies over a cold sea in spring and early summer, most in light winds. Choose The masthead and enter the sensor height, and Route raises the forecast wind to that height, using the ECMWF air and sea temperatures where it has them. In light stable air the raise is held to 10% at most, because neither the theory nor the forecasts are reliable there.</p>
       <h3>Tuning for the day</h3>
       <div class="row tune"><label for="tuUp">Upwind</label><input type="range" id="tuUp" min="85" max="110" step="1" value="100"><b id="tuUpV">100%</b></div>
       <div class="row tune"><label for="tuReach">Reaching</label><input type="range" id="tuReach" min="85" max="110" step="1" value="100"><b id="tuReachV">100%</b></div>
