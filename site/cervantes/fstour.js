@@ -121,11 +121,11 @@
 
   /* the how-to film (Stuart 14 Nov 19:11): a thumbnail on the landing page opens a larger player with Go to the tool and End;
      also a Watch button in Help. Navigate sets window.FSFilmCfg in navtour.js. */
-  function filmCfg() { return window.FSFilmCfg || { tool: 'Route', src: '../films/route-how-to.mp4', poster: '../films/route-how-to.jpg', len: '1 min 39 s' }; }
+  function filmCfg() { return window.FSFilmCfg || { tool: 'Route', srcs: ['https://video.wixstatic.com/video/d74d0c_b0d924a6b582446198770eb18f032e10/720p/mp4/file.mp4', '../films/route-how-to.mp4'], poster: '../films/route-how-to.jpg', len: '1 min 39 s' }; }   /* Wix streams on iPhones (it answers range requests); the copy on this site is the fallback */
   function filmOpen() {
     var c = filmCfg(), f = $('fsFilm');
     if (!f) { f = document.createElement('div'); f.id = 'fsFilm'; f.className = 'fsfilm'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', 'How to use ' + c.tool); document.body.appendChild(f); }
-    f.innerHTML = '<div class="fsfilm-in"><h3>How to use ' + c.tool + '</h3><video id="fsFilmV" controls playsinline preload="metadata" poster="' + c.poster + '"><source src="' + c.src + '" type="video/mp4"></video><p>' + c.len + ', with sound. Needs an internet connection.</p><div class="fsfilm-b"><button class="btn" type="button" data-film="end">End</button><button class="btn primary" type="button" data-film="go">Go to ' + c.tool + '</button></div></div>';
+    f.innerHTML = '<div class="fsfilm-in"><h3>How to use ' + c.tool + '</h3><video id="fsFilmV" controls playsinline preload="metadata" poster="' + c.poster + '">' + (c.srcs || [c.src]).map(function (u) { return '<source src="' + u + '" type="video/mp4">'; }).join('') + '</video><p>' + c.len + ', with sound. Needs an internet connection.</p><div class="fsfilm-b"><button class="btn" type="button" data-film="end">End</button><button class="btn primary" type="button" data-film="go">Go to ' + c.tool + '</button></div></div>';
     f.hidden = false; f.onclick = function (e) { e.stopPropagation(); var b = e.target.closest('[data-film]'); if (!b) { if (e.target === f) filmEnd(); return; } if (b.dataset.film === 'end') filmEnd(); else filmGo(); };
     var v = $('fsFilmV'); try { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
   }
