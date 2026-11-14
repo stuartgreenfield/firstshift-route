@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.firstshift.navigate",
+      "sha256_cert_fingerprints": [
+        "71:5B:85:03:85:DB:82:C7:37:73:5D:47:3B:AB:FD:96:86:C7:CA:96:97:3A:2F:5B:E7:B8:E9:27:23:18:0E:70"
+      ]
+    }
+  }
+]
