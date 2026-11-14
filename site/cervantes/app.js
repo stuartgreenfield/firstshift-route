@@ -1628,7 +1628,7 @@
   window.__navAdjust = function (wdir, wspd) { [['adjWdir', wdir], ['adjWspd', wspd]].forEach(function (x) { var el = $(x[0]); if (!el) return; el.value = x[1]; if (el.oninput) el.oninput(); }); adjPill(); };
   window.__navCourse = function () { var c = meta && meta.course; if (!c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
-  window.__fsLive = function () { return LIVE.on ? LIVE.fix : null; };   /* the phone's own GPS fix, for the basic plotter */
+  window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };   /* the phone's own GPS fix, for the basic plotter */
   window.__fsRedraw = function () { draw(); };
   window.__navFollow = function (on) { if (on == null) return follow; followSet(!!on); };
   window.__navScale = function (nm) { view.s = Math.max(20, Math.min(20000, H * 0.22 / (nm / 60))); followSet(true); draw(); };   /* the boat and the next mark on screen */

@@ -15,7 +15,7 @@
   function n360(a) { a %= 360; return a < 0 ? a + 360 : a; }
   function bear(dx, dy) { return n360(Math.atan2(dx, dy) / R); }
   function course() { try { return window.__navCourse ? window.__navCourse() : null; } catch (e) { return null; } }
-  function fix() { try { var f = window.__fsLive ? window.__fsLive() : null; return f && Date.now() - f.at < 30000 && f.acc <= 150 ? f : null; } catch (e) { return null; } }
+  function fix() { try { var f = window.__fsLiveFix ? window.__fsLiveFix() : null; return f && Date.now() - f.at < 30000 && f.acc <= 150 ? f : null; } catch (e) { return null; } }
   function points(c) { return c ? c.marks.concat([Object.assign({ finish: true }, c.finish)]) : []; }
   function prevOf(c, i) { return i > 0 ? c.marks[i - 1] : c.start; }
   /* flat frame in nautical miles about the boat: x east, y north */
