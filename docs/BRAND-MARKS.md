@@ -9,16 +9,17 @@ Stuart, 09:03: "the branding top left with Route and Navigate is not perfect cou
   - **row** (sails beside the name), used on tablets and computers.
 - `site/brand/*-mark.inc.html`: the same two drawings as the page carries them inline (inline so the colours follow
   the theme and Navigate works offline). Navigate's copy is swapped in by `tools/sync_route.py`.
-- `tools/make_marks.py`: rebuilds all four from Space Grotesk 700 (SIL Open Font Licence; the heading face both apps
-  already use), so the name is outlined and looks the same with or without web fonts.
+- `tools/make_marks.py`: rebuilds all four from Space Grotesk 600 (SIL Open Font Licence; the heading face both apps
+  already use) with fonttools and uharfbuzz, so the name is outlined and looks the same with or without web fonts.
 
 ## Drawing
 
 - The three FirstShift sails redrawn as clean strokes on the corner points measured from `sails-light.svg` (the traced
   master). Two navy, one blue, as the master. The traced file stays the master for print; this redraw is for screens,
   where the traced outline went soft at 27 px.
-- Name: Space Grotesk 700, 8 units of tracking.
-- A bar under the name in the tool's colour.
+- Name: Space Grotesk 600 with the font's own kerning (shaped by HarfBuzz) and -0.04 em tracking, the same face, weight and
+  spacing as the landing page heading, ending in its blue full stop (Stuart 09:32 and 09:35: tighter letters, the landing
+  page typeface and full stop, no underline).
 
 ## Colours (CSS variables on `.logobox`)
 
@@ -27,7 +28,6 @@ Stuart, 09:03: "the branding top left with Route and Navigate is not perfect cou
 | sails, navy (--mk-navy) | #042D5E | #FFFFFF | #C0281F |
 | sails, blue (--mk-blue) | #3574BA | #6FA9E0 | #8A1E18 |
 | name (--mk-ink) | #042D5E | #FFFFFF | #C0281F |
-| Route bar (--mk-tool) | #B0127A | #FF4FB4 | #6A0F0B |
-| Navigate bar (--mk-tool) | #0E7C86 | #3CCFD9 | #6A0F0B |
+| full stop (--mk-dot) | #3574BA | #6FA9E0 | #8A1E18 |
 
-Route's magenta is its existing tool colour. **Navigate's teal is proposed, waiting for Stuart's approval.**
+The underline in the tool colour was dropped at Stuart's word (09:35): "it does not need an underline to be a good brand mark".
