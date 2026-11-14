@@ -1719,7 +1719,7 @@
         if (WIZ.on || S.drawnNew) { var nw = S.drawnNew; WIZ.on = true; WIZ.step = nw ? 1 : 4; wizSave(); }   /* a new course carries on through the set-up on the area that routes it */
         busy('Opening ' + c.name + ' on the ' + reg.name + ' forecasts…'); location.href = '../' + reg.id + '/?my=' + encodeURIComponent(rec.id); return;
       }
-      if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue + (reg ? '' : ' No forecast area covers the whole course yet.'); } else { if (wizCourseChosen(true)) { busy(''); return; } S.from = null; run(); }
+      if (issue) { busy(''); openTab('decision'); $('runNote').textContent = issue + (reg ? '' : ' No forecast area covers the whole course yet.'); } else { if ((WIZ.on || S.drawnNew) && wizCourseChosen(true)) { busy(''); return; } S.from = null; run(); }   /* only a new course, or one changed during the set-up, goes back to the set-up card; Re-route and Save and route on a course already set up route at once (Stuart 14 Nov: turning a mark into a waypoint and tapping Re-route did nothing) */
   }
   /* routes that run along the edge of the forecast area are being stopped by the edge, not the weather: say so (Stuart 12 Nov) */
   function edgeHit() {
