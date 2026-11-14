@@ -67,6 +67,8 @@ jobs:
     timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # the newest app, not the commit the run started from (14 Nov 2026: a run that started before a release put the older app back live)
       - name: Start from what is live, so an area whose fetch failed keeps its last forecasts
         run: |
           git fetch -q origin site || true
