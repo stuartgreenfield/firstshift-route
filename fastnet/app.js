@@ -273,7 +273,7 @@
       function sendRoute() { if (!cb.checked || !BC.code || !S.sel || !S.sel.r) return; var p = S.sel.r.path, key = S.sel.id + p.length + (S.sel.r.finish || 0); if (key === lastKey) return; lastKey = key; var step = Math.max(1, Math.floor(p.length / 600)), path = p.filter(function (q, i) { return i % step === 0 || i === p.length - 1; }).map(function (q) { return [q.la, q.lo]; });
         post({ route: { name: meta.course.name, path: path, finish: S.sel.r.partial ? null : T0 + S.sel.r.finish * 3600 } }); }
       setInterval(send, 300000); setInterval(sendRoute, 60000);
-      $('shareLink').onclick = function () { if (!BC.code) { $('shareNote').textContent = 'Make or join a boat code first: tap the race name, then Boat code.'; return; } var link = location.origin + '/follow/?boat=' + BC.code, t = 'Follow ' + ($('boatName').value || 'the boat') + ' on FirstShift Route: ' + link; if (navigator.share) navigator.share({ title: 'Follow the boat', text: t }).catch(function () {}); else (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('shareNote').textContent = 'Link copied: ' + link; }, function () { $('shareNote').textContent = link; }); };
+      $('shareLink').onclick = function () { if (!BC.code) { $('shareNote').textContent = 'Make or join a boat code first: tap the race name, then Boat code.'; return; } var link = pubOrigin() + '/follow/?boat=' + BC.code, t = 'Follow ' + ($('boatName').value || 'the boat') + ' on FirstShift Route: ' + link; if (navigator.share) navigator.share({ title: 'Follow the boat', text: t }).catch(function () {}); else (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('shareNote').textContent = 'Link copied: ' + link; }, function () { $('shareNote').textContent = link; }); };
     })();
     /* while racing: once From here has a GPS fix, route again from the boat's position on a timer */
     (function () {
@@ -808,8 +808,11 @@
     };
     document.addEventListener('click', function (e) { if (!$('spdMenu').hidden && !$('spdMenu').contains(e.target)) $('spdMenu').hidden = true; }); $('speed').addEventListener('change', spdLabel); spdLabel(); $('followBtn').onclick = function () { followSet(!follow); }; followSet(follow); }
   /* ---------- send to the crew: a summary and a link that opens the same course and start in Route ---------- */
+  /* links and QR codes carry FirstShift's own address (Stuart 14 Nov, option A); the pages.dev address keeps working.
+     Navigate also runs at the pages.dev address, so its links use this too, and open in Navigate where it is installed (option C). */
+  function pubOrigin() { return /(^|\.)firstshift-route\.pages\.dev$|^route\.firstshiftsailing\.com$/.test(location.hostname) ? 'https://route.firstshiftsailing.com' : location.origin; }
   function crewLink() {
-    var c = meta.course, base = location.origin + location.pathname, st = $('startSel').value;
+    var c = meta.course, base = pubOrigin() + location.pathname, st = $('startSel').value;
     if (c.race && !c.race.custom) return base + '?race=' + encodeURIComponent(c.race.id) + '&start=' + st;
     var cc = { n: c.name, p: [c.start].concat(c.marks).concat([c.finish]).map(function (q) { return [+q.lat.toFixed(4), +q.lon.toFixed(4), q.name, q.via ? (q.must ? 'w' : 'v') : q.side ? q.side[0] : '']; }) };
     return base + '?course=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cc))))) + '&start=' + st;
@@ -1010,7 +1013,7 @@
     if ($('bcJoin')) $('bcJoin').onclick = function () { var c = $('bcIn').value.trim().toUpperCase(); if (!/^[A-HJ-NP-Z2-9]{6}$/.test(c)) { $('bcIn').focus(); return; } BC.code = c; BC.at = 0; store('fs-boatcode', c); bcPull(true).then(function (ok) { racesSheet(); if (ok) { S.from = null; run(); } }); };
     if ($('bcSync')) $('bcSync').onclick = function () { bcPull(false).then(function (ok) { return ok ? null : bcPush(); }).then(racesSheet); };
     if ($('bcLeave')) $('bcLeave').onclick = function () { BC.code = ''; store('fs-boatcode', ''); racesSheet(); };
-    if ($('bcShare')) $('bcShare').onclick = function () { var link = location.origin + location.pathname + '?boat=' + BC.code, t = 'FirstShift Route boat code ' + BC.code + ': open ' + link + ' to share our boat settings and races.'; if (navigator.share) navigator.share({ title: 'FirstShift Route boat code', text: t }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener'); };
+    if ($('bcShare')) $('bcShare').onclick = function () { var link = pubOrigin() + location.pathname + '?boat=' + BC.code, t = 'FirstShift Route boat code ' + BC.code + ': open ' + link + ' to share our boat settings and races.'; if (navigator.share) navigator.share({ title: 'FirstShift Route boat code', text: t }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener'); };
   }
   function bcInit() {
     var q = QS0.get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q)) { BC.code = q.toUpperCase(); BC.at = 0; store('fs-boatcode', BC.code); }
