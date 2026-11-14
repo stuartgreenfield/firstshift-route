@@ -672,6 +672,14 @@
   }
   function mobInit() {
     hold($('mobBtn'), 1000, mobStart);
+    /* MOB can be moved about (Stuart 14 Nov): drag it anywhere and it stays there on this device; a press and hold still sets it off */
+    (function () { var bt = $('mobBtn'), d = null, KEY = 'fs-mobpos';
+      function put(x, y) { var w = bt.offsetWidth || 34, h = bt.offsetHeight || 34; x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y)); bt.style.left = x + 'px'; bt.style.top = y + 'px'; bt.style.bottom = 'auto'; bt.classList.add('mobmoved'); return [x, y]; }
+      function load() { try { var v = JSON.parse(localStorage.getItem(KEY) || 'null'); if (v) put(v[0] * innerWidth, v[1] * innerHeight); } catch (e) {} }
+      bt.addEventListener('pointerdown', function (e) { var r = bt.getBoundingClientRect(); d = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, moved: false, id: e.pointerId }; });
+      window.addEventListener('pointermove', function (e) { if (!d || e.pointerId !== d.id) return; var dx = e.clientX - d.x, dy = e.clientY - d.y; if (!d.moved && Math.hypot(dx, dy) < 10) return; if (!d.moved) { d.moved = true; bt.dispatchEvent(new Event('pointercancel')); bt.classList.add('mobdrag'); } put(d.l + dx, d.t + dy); });
+      window.addEventListener('pointerup', function () { if (!d) return; if (d.moved) { var r = bt.getBoundingClientRect(); try { localStorage.setItem(KEY, JSON.stringify([r.left / innerWidth, r.top / innerHeight])); } catch (e) {} bt.classList.remove('mobdrag'); } d = null; });
+      window.addEventListener('resize', load); load(); })();
     /* MOB floats just above whatever sits at the bottom: the bar, or on a phone the panel sheet when it is open */
     (function () { var bar = $('bar'), pn = $('panel'); if (!bar) return;
       function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; } var lb = $('liveBox'); if (lb && !lb.hidden) { var q = lb.getBoundingClientRect(); if (q.height && q.left < 60 && q.top > innerHeight * 0.3 && q.top < top) top = q.top; }   /* and above the Live GPS pill */ document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
