@@ -236,3 +236,7 @@ Status: Built · Partly built · To build · Researching · Later.
 - Set-up sheet ran off the side on iPhone Safari: fixed.
 - "design the Home Screen box and logo ... like the other tools": icon in the tools style with Route's magenta band, iPhone and Android, app manifest. Built.
 - Finest-first model chain (idea 8): UKV, AROME, ICON, ARPEGE, then global, handing over where each ends. Built.
+
+## 14 November 2026
+
+- "C it should look at the trend and asses if over the time of the data if the probability looks like there is more proof for the new figure go with it d. Yes where the info is available do this but need to research what % change is made. Make change to Toute as well change the maths then run it against a test of other solutions found online": C, proof by trend and probability; D, wind height correction with air and sea temperature, in Route and Navigate, tested against published methods. Built on branch maths-2026-11-14 (Route v0.12.0), Navigate v0.7.18; Route publish waits for go.

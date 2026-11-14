@@ -91,8 +91,9 @@ for k, name, note, sp in [('nwswav', 'Copernicus NW Shelf waves', 'height, direc
         np.savez(f'{D}/{k}.npz', **{a: (b if a != 'hours' else b - (float(z['t0']) - T0) / 3600) for a, b in z.items()})
     add('wave', k, name, note, ['hs', 'dir', 'tp'], dict(hs=0.01, dir=0.1, tp=0.01), sp, 3)
 
-add('met', 'ecmet', 'ECMWF weather', 'gusts, pressure, rain, thunderstorm energy, cloud and air temperature; 0.25°, 3-hourly', ['gust', 'msl', 'rain', 'cape', 'cloud', 'temp'],
-    dict(gust=0.01, msl=0.1, rain=0.01, cape=1.0, cloud=1.0, temp=0.01), 1, 6)
+_m = load('ecmet')
+add('met', 'ecmet', 'ECMWF weather', 'gusts, pressure, rain, thunderstorm energy, cloud, air and sea temperature; 0.25°, 3-hourly', ['gust', 'msl', 'rain', 'cape', 'cloud', 'temp'] + (['sst'] if _m is not None and 'sst' in _m else []),
+    dict(gust=0.01, msl=0.1, rain=0.01, cape=1.0, cloud=1.0, temp=0.01, sst=0.01), 1, 6)
 
 for m in range(1, 11):   # ECMWF ensemble members: routed only when you ask for the ensemble
     add('ens', f'e{m:02d}', f'ECMWF ensemble member {m}', '0.25°, 6-hourly then 12-hourly', ['u', 'v'], dict(u=0.01, v=0.01), 1, 1)
