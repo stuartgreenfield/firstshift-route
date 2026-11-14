@@ -546,6 +546,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
         <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
+      <p class="note aisnet" id="aisNet"><b>AIS needs a data connection.</b> Route's AIS comes from the internet, so it shows targets only while this phone or tablet is online: through the boat's Wi-Fi when that has internet (Starlink, a 4G or 5G router or satellite), or through the mobile network. With no connection, no AIS targets show.</p>
       <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><p class="aiswarn" id="aisWarn" hidden><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
       <p class="note">Every boat you are racing, sailing your chosen route at its own TCC from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
       <p class="note warnt" id="fleetEmpty" hidden>No entry list for this race yet. Add the boats you are racing below, or tap Race boat on an AIS target.</p>
@@ -778,6 +779,7 @@ A4, 125, 180, 18, 60</textarea>
     <div class="sbody" id="s-mine" hidden></div>
     <div class="sbody" id="s-display" hidden>
       <h3>AIS</h3>
+      <p class="note aisnet">AIS needs a data connection: the boat's Wi-Fi when it has internet, or the mobile network.</p>
       <p class="aiswarn"><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Free online AIS (not for navigation)</option></select></div>
       <div class="row"><label for="cpaNm">CPA alarm inside</label><input type="number" id="cpaNm" value="0.5" min="0.1" max="5" step="0.1"> nm</div>
       <div class="row"><label for="tcpaMin">and within</label><input type="number" id="tcpaMin" value="15" min="2" max="60" step="1"> min</div>
