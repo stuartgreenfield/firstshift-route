@@ -6,3 +6,5 @@ site/fastnet/*.html
 site/fastnet/*.js
 site/*/pre/
 node_modules/
+check-out/
+/plotter.png
