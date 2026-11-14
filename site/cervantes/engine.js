@@ -21,7 +21,11 @@
     minPoints: 12,        // accepted points before a cell counts as measured (2 minutes)
     binTws: 2, binTwa: 5, binBsp: 0.05,
     maxGapCells: 2,
-    maxOverMedian: 1.25   // readings further above the cell median are ignored (unflagged motoring, surfing bursts)
+    maxOverMedian: 1.25,  // readings further above the cell median are ignored (unflagged motoring, surfing bursts)
+    minUnderMedian: 0.8,  // and further below it (a wrapped kite, a sail change, a hole): review finding 5, 14 Nov 2026
+    maxGapSec: 5,         // no gap longer than this inside a window (review finding 4: the coverage test could never reject)
+    maxBspCv: 0.05,       // boat speed steadiness also allowed up to 5% of the speed, so fast downwind sailing is not all thrown out (finding 14)
+    gybeHdg: 10           // on a deep run (TWA 165 or more) a change of side with a heading change of more than this in 10 s is a gybe (finding 24)
   };
   var SEAS = ['flat', 'chop', 'moderate', 'big'];
 
@@ -75,8 +79,10 @@
     S.seen++;
     /* A sign change away from the dead run is a tack or gybe. */
     var sign = s.twa < 0 ? -1 : 1, a = Math.abs(s.twa);
-    if (this.lastSign && sign !== this.lastSign && a < 165) this.lastTack = s.t;
-    if (a < 165 || !this.lastSign) this.lastSign = sign;
+    var dh = 0;
+    if (isNum(s.hdg)) { var hb = this.hdgHist || (this.hdgHist = []); hb.push([s.t, s.hdg]); while (hb.length && hb[0][0] < s.t - 10) hb.shift(); dh = Math.abs(((s.hdg - hb[0][1]) % 360 + 540) % 360 - 180); }
+    if (this.lastSign && sign !== this.lastSign && (a < 165 || dh > o.gybeHdg)) this.lastTack = s.t;
+    if (a < 165 || !this.lastSign || dh > o.gybeHdg) this.lastSign = sign;
     this.buf.push(s);
     while (this.buf.length && this.buf[0].t < s.t - o.windowSec) this.buf.shift();
     if (s.t - this.lastAccept < o.stepSec) return null;
@@ -84,7 +90,7 @@
     if (n < 2 || B[n - 1].t - B[0].t < o.windowSec * 0.9) return null;
     this.lastAccept = s.t;
     if (this.paused) return this.reject('paused');
-    if (n < (o.windowSec / Math.max(1, (B[n - 1].t - B[0].t) / (n - 1))) * o.minCoverage) return this.reject('gaps');
+    for (i = 1; i < n; i++) if (B[i].t - B[i - 1].t > o.maxGapSec) return this.reject('gaps');
     if (s.t - this.lastTack < o.settleSec) return this.reject('manoeuvre');
     for (i = 0; i < n; i++) if (B[i].rpm > 300) return this.reject('engine');
     var sb = 0, sw = 0, sa = 0, qb = 0, qw = 0, qa = 0, hs = 0, hc = 0, hn = 0;
@@ -99,7 +105,7 @@
     if (mb < o.minBsp) return this.reject('too slow');
     if (sda > o.maxTwaSd) return this.reject('angle unsteady');
     if (sdw > o.maxTwsSd) return this.reject('wind unsteady');
-    if (sdb > o.maxBspSd) return this.reject('speed unsteady');
+    if (sdb > Math.max(o.maxBspSd, o.maxBspCv * mb)) return this.reject('speed unsteady');
     if (hn > 1) { var R = Math.min(1, Math.sqrt(hs * hs + hc * hc) / hn), sdh = deg(Math.sqrt(Math.max(0, -2 * Math.log(R || 1e-9)))); if (sdh > o.maxHdgSd) return this.reject('heading unsteady'); }
     var tb = Math.round(mw / o.binTws) * o.binTws, ab = Math.round(ma / o.binTwa) * o.binTwa, bb = Math.round(mb / o.binBsp);
     var key = cellKey(this.cond, this.sea, tb, ab), c = S.cells[key];
@@ -129,12 +135,12 @@
   };
 
   /* ------------------------------------------------ polar */
-  function pct(h, n, p, binBsp, cap) {
+  function pct(h, n, p, binBsp, cap, floor) {
     var keys = Object.keys(h).map(Number).sort(function (a, b) { return a - b; }), run = 0, i2;
     if (cap) {
       var half = n / 2, med = keys[keys.length - 1];
       for (i2 = 0; i2 < keys.length; i2++) { run += h[keys[i2]]; if (run >= half) { med = keys[i2]; break; } }
-      var lim = med * cap, nk = keys.filter(function (b) { return b <= lim; }), nn = 0;
+      var lim = med * cap, low = med * (floor || 0), nk = keys.filter(function (b) { return b <= lim && b >= low; }), nn = 0;
       nk.forEach(function (b) { nn += h[b]; });
       keys = nk; n = nn; run = 0;
     }
@@ -172,7 +178,7 @@
       var rv = [], rf = [], rm = [], rd = [], rs = [];
       twa.forEach(function (a) {
         var m = merged[w + '|' + a], ok = m && m.n >= o.minPoints;
-        rv.push(ok ? pct(m.h, m.n, P, o.binBsp, o.maxOverMedian) : null);
+        rv.push(ok ? pct(m.h, m.n, P, o.binBsp, o.maxOverMedian, o.minUnderMedian) : null);
         rf.push(ok ? 'm' : '');
         rm.push(m ? m.n * o.stepSec / 60 : 0);
         rd.push(m ? Object.keys(m.d).length : 0); rs.push(m && m.f ? (m.l - m.f) / 3600 : 0);
