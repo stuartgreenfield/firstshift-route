@@ -21,7 +21,14 @@
     minPoints: 12,        // accepted points before a cell counts as measured (2 minutes)
     binTws: 2, binTwa: 5, binBsp: 0.05,
     maxGapCells: 2,
-    maxOverMedian: 1.25   // readings further above the cell median are ignored (unflagged motoring, surfing bursts)
+    maxOverMedian: 1.25,  // readings further above the cell median are ignored (unflagged motoring, surfing bursts)
+    minUnderMedian: 0.8,  // and further below it (a wrapped kite, a sail change, a hole): review finding 5, 14 Nov 2026
+    maxGapSec: 5,         // no gap longer than this inside a window (review finding 4: the coverage test could never reject)
+    maxBspCv: 0.05,       // boat speed steadiness also allowed up to 5% of the speed, so fast downwind sailing is not all thrown out (finding 14)
+    maxHeel: 30,          // mean heel over this is an overpowered boat, left out of the polar (review H, 14 Nov 2026)
+    maxHeelSd: 5,         // heel swinging more than this over the window (broaching, rolling) is left out too
+    sensorHeight: 10,     // wind sensor height above the water, m: readings are reduced to 10 m, the height of GRIB wind and ORC polars (D, 14 Nov 2026)
+    gybeHdg: 10           // on a deep run (TWA 165 or more) a change of side with a heading change of more than this in 10 s is a gybe (finding 24)
   };
   var SEAS = ['flat', 'chop', 'moderate', 'big'];
 
@@ -37,9 +44,97 @@
     return { tws: Math.sqrt(x * x + y * y), twa: deg(Math.atan2(y, x)) };
   }
 
+  /* ------------------------------------------------ wind with height over the sea (review finding 6 and D, 14 Nov 2026)
+     GRIB wind is the model's 10 m wind; a masthead sensor at 15 to 20 m sees more, how much more depending on the wind and on
+     whether the air is warmer or colder than the sea. Monin-Obukhov similarity as in the COARE 3.0 bulk algorithm (Fairall et al.
+     2003): Charnock roughness 0.011 rising to 0.018 between 10 and 18 m/s, smooth-flow term 0.11 nu/u*, stability functions
+     psiu_26 and psit_26 (Beljaars and Holtslag when stable, Kansas and convective blend when unstable). Air temperature at 2 m
+     as in a GRIB, humidity 80% unless given. No temperatures: neutral. Checked against NOAA's COARE 3.6 code: Route
+     tests/windheight.js and docs/METHOD-WINDHEIGHT.md. */
+  function psiu(z) {
+    if (z >= 0) { var dz = Math.min(50, 0.35 * z); return -(0.7 * z + 0.75 * (z - 5 / 0.35) * Math.exp(-dz) + 0.75 * 5 / 0.35); }
+    var x = Math.pow(1 - 15 * z, 0.25), pk = 2 * Math.log((1 + x) / 2) + Math.log((1 + x * x) / 2) - 2 * Math.atan(x) + 2 * Math.atan(1);
+    var y = Math.pow(1 - 10.15 * z, 1 / 3), pc = 1.5 * Math.log((1 + y + y * y) / 3) - Math.sqrt(3) * Math.atan((1 + 2 * y) / Math.sqrt(3)) + 4 * Math.atan(1) / Math.sqrt(3);
+    var f = z * z / (1 + z * z); return (1 - f) * pk + f * pc;
+  }
+  function psit(z) {
+    if (z >= 0) { var dz = Math.min(50, 0.35 * z); return -(Math.pow(1 + 0.6667 * z, 1.5) + 0.6667 * (z - 14.28) * Math.exp(-dz) + 8.525); }
+    var x = Math.sqrt(1 - 15 * z), pk = 2 * Math.log((1 + x) / 2);
+    var y = Math.pow(1 - 34.15 * z, 1 / 3), pc = 1.5 * Math.log((1 + y + y * y) / 3) - Math.sqrt(3) * Math.atan((1 + 2 * y) / Math.sqrt(3)) + 4 * Math.atan(1) / Math.sqrt(3);
+    var f = z * z / (1 + z * z); return (1 - f) * pk + f * pc;
+  }
+  function qsat(T) { return 0.622 * 6.1121 * Math.exp(17.502 * T / (T + 240.97)) / 1013; }
+  /* profile for a 10 m wind u10 (knots): returns { z0, L } so that U(z) / U(10) can be read for any height */
+  function profile(u10kn, tair, tsea, rh) {
+    var u = Math.max(0.5, u10kn * 0.514444), g = 9.81, von = 0.4, neutral = !isNum(tair) || !isNum(tsea);
+    var ta = neutral ? 15 : tair, visc = 1.326e-5 * (1 + 6.542e-3 * ta + 8.301e-6 * ta * ta - 4.84e-9 * ta * ta * ta);
+    var charn = u <= 10 ? 0.011 : u >= 18 ? 0.018 : 0.011 + 0.007 * (u - 10) / 8;
+    var usr = 0.035 * u, z0 = 1e-4, L = Infinity, i;
+    for (i = 0; i < 6; i++) { z0 = charn * usr * usr / g + 0.11 * visc / usr; usr = von * u / Math.log(10 / z0); }
+    if (neutral) return { z0: z0, L: Infinity, neutral: true };
+    var TK = ta + 273.16, Q = (isNum(rh) ? rh : 80) / 100 * qsat(ta), dt = tsea - ta - 0.0098 * 2, dq = 0.98 * qsat(tsea) - Q, zeta = 0;
+    for (i = 0; i < 10; i++) {
+      z0 = charn * usr * usr / g + 0.11 * visc / usr;
+      var z0t = Math.min(1.15e-4, 5.5e-5 * Math.pow(z0 * usr / visc, -0.6)), Lt = Math.log(2 / z0t) - psit(2 * zeta / 10);
+      var tsr = -dt * von / Lt, qsr = -dq * von / Lt;
+      zeta = von * g * 10 / TK * (tsr * (1 + 0.61 * Q) + 0.61 * TK * qsr) / (usr * usr) / (1 + 0.61 * Q);
+      zeta = Math.max(-10, Math.min(10, zeta));   /* similarity theory is not trusted far beyond this (very light stable air) */
+      usr = von * u / (Math.log(10 / z0) - psiu(zeta));
+    }
+    L = 10 / zeta;
+    return { z0: z0, L: L, zeta: zeta };
+  }
+  function ratioOf(p, z) {
+    var f = function (h) { return Math.log(h / p.z0) - (p.neutral ? 0 : psiu(h / p.L)); };
+    return f(z) / f(10);
+  }
+  /* wind at height z (m) from a 10 m wind, both in knots; clamped to 1.00 to 1.20 at masthead heights and no more than 1.10 in
+     light (under 8 kn) stable air, where neither the theory nor the forecast models are reliable (research report, section 6.2) */
+  function windRatio(u10, z, tair, tsea, rh) {
+    if (!(z > 0) || Math.abs(z - 10) < 0.01) return 1;
+    var p = profile(u10, tair, tsea, rh), r = ratioOf(p, z);
+    var hi = 1.2, lo = 1 / 1.2;
+    if (u10 < 8 && p.L > 0 && isFinite(p.L)) { hi = 1.1; lo = 1 / 1.1; }
+    if (z > 10) r = Math.min(hi, Math.max(1, r)); else r = Math.max(lo, Math.min(1, r));
+    return r;
+  }
+  function windAt(u10, z, tair, tsea, rh) { return u10 * windRatio(u10, z, tair, tsea, rh); }
+  /* the other way: the 10 m wind that gives uz (knots) at height z */
+  function windTo10(uz, z, tair, tsea, rh) {
+    if (!(z > 0) || Math.abs(z - 10) < 0.01) return uz;
+    var u = uz; for (var i = 0; i < 8; i++) u = uz / windRatio(u, z, tair, tsea, rh);
+    return u;
+  }
+
   /* ------------------------------------------------ store */
   function newStore() { return { v: 1, cells: {}, accepted: 0, seen: 0, rejected: {} }; }
   function cellKey(cond, sea, tws, twa) { return cond + '|' + sea + '|' + tws + '|' + twa; }
+  /* sailing sessions in a cell (14 Nov 2026, review finding 13): points more than 6 hours apart start a new session, so proof can
+     ask for separate outings rather than calendar days (one overnight race spans two dates) */
+  var SESSION_GAP = 6 * 3600;
+  /* each session keeps [start, end, points, sum of boat speed, sum of squares] so the trend over time can be judged (C, 14 Nov 2026);
+     sessions saved before then have only the first three */
+  function addSession(c, t, bsp) {
+    var S = c.s || (c.s = []), last = S[S.length - 1], b = isNum(bsp) ? bsp : 0;
+    if (last && t - last[1] < SESSION_GAP && t >= last[0]) { last[1] = Math.max(last[1], t); last[2]++; if (last.length > 3) { last[3] += b; last[4] += b * b; } }
+    else { S.push([t, t, 1, b, b * b]); if (S.length > 60) S.shift(); }
+  }
+  function joinSessions(list) {
+    var a = list.slice().sort(function (x, y) { return x[0] - y[0]; }), out = [];
+    a.forEach(function (x) {
+      var l = out[out.length - 1];
+      if (l && x[0] - l[1] < SESSION_GAP) { l[1] = Math.max(l[1], x[1]); l[2] += x[2]; if (l.length > 3 && x.length > 3) { l[3] += x[3]; l[4] += x[4]; } else l.length = 3; }
+      else out.push(x.slice());
+    });
+    return out;
+  }
+  function sessionsOf(list, minPts) { return joinSessions(list).filter(function (x) { return x[2] >= minPts; }).length; }
+  /* sessions with their mean speed: [{ t: mid time (s), n, m: mean boat speed, sd }] */
+  function sessionMeans(list, minPts) {
+    return joinSessions(list).filter(function (x) { return x[2] >= minPts && x.length > 4; }).map(function (x) {
+      var m = x[3] / x[2]; return { t: (x[0] + x[1]) / 2, n: x[2], m: m, sd: Math.sqrt(Math.max(0, x[4] / x[2] - m * m)) };
+    });
+  }
   function addTo(c, bspBin, tack, bsp) {
     c.n++; c.h[bspBin] = (c.h[bspBin] || 0) + 1;
     if (tack < 0) { c.pn++; c.ps += bsp; } else { c.sn++; c.ss += bsp; }
@@ -53,6 +148,7 @@
       for (var h in src.h) c.h[h] = (c.h[h] || 0) + src.h[h];
       if (src.d) { c.d = c.d || {}; for (var dd in src.d) c.d[dd] = (c.d[dd] || 0) + src.d[dd]; }
       if (src.f) c.f = c.f ? Math.min(c.f, src.f) : src.f; if (src.l) c.l = Math.max(c.l || 0, src.l);
+      if (src.s) c.s = (c.s || []).concat(src.s); if (src.hn) { c.hl = (c.hl || 0) + src.hl; c.hn = (c.hn || 0) + src.hn; }
     }
     out.accepted += b.accepted; out.seen += b.seen;
     for (k in b.rejected) out.rejected[k] = (out.rejected[k] || 0) + b.rejected[k];
@@ -65,18 +161,26 @@
     this.buf = []; this.lastTack = 0; this.lastSign = 0; this.lastAccept = -1e12;
     this.sea = 'flat'; this.cond = 'normal'; this.paused = false;
   }
-  Logger.prototype.setTags = function (t) { if (t.sea) this.sea = t.sea; if (t.cond) this.cond = t.cond; if ('paused' in t) this.paused = t.paused; };
+  Logger.prototype.setTags = function (t) { if (t.sea) this.sea = t.sea; if (t.cond) this.cond = t.cond; if ('paused' in t) this.paused = t.paused; if ('tair' in t) this.tair = t.tair; if ('tsea' in t) this.tsea = t.tsea; };
   Logger.prototype.reject = function (w) { this.store.rejected[w] = (this.store.rejected[w] || 0) + 1; return w; };
   Logger.prototype.add = function (s) {
     var o = this.o, S = this.store, i;
     if (!isNum(s.t) || !isNum(s.bsp)) return null;
     if ((!isNum(s.twa) || !isNum(s.tws)) && isNum(s.awa) && isNum(s.aws)) { var tw = trueWind(s.bsp, s.awa, s.aws); s.twa = tw.twa; s.tws = tw.tws; }
     if (!isNum(s.twa) || !isNum(s.tws)) return null;
+    /* masthead wind to 10 m, allowing for warm or cold air over the sea when the temperatures are known (from the boat, else the forecast) */
+    if (o.sensorHeight > 0 && Math.abs(o.sensorHeight - 10) > 0.01) {
+      var ta = isNum(s.tair) ? s.tair : this.tair, tsw = isNum(s.tsea) ? s.tsea : this.tsea;
+      s = Object.assign({}, s, { tws: windTo10(s.tws, o.sensorHeight, ta, tsw), twsRaw: s.tws });
+      S.ref = 10; S.zs = o.sensorHeight;
+    }
     S.seen++;
     /* A sign change away from the dead run is a tack or gybe. */
     var sign = s.twa < 0 ? -1 : 1, a = Math.abs(s.twa);
-    if (this.lastSign && sign !== this.lastSign && a < 165) this.lastTack = s.t;
-    if (a < 165 || !this.lastSign) this.lastSign = sign;
+    var dh = 0;
+    if (isNum(s.hdg)) { var hb = this.hdgHist || (this.hdgHist = []); hb.push([s.t, s.hdg]); while (hb.length && hb[0][0] < s.t - 10) hb.shift(); dh = Math.abs(((s.hdg - hb[0][1]) % 360 + 540) % 360 - 180); }
+    if (this.lastSign && sign !== this.lastSign && (a < 165 || dh > o.gybeHdg)) this.lastTack = s.t;
+    if (a < 165 || !this.lastSign || dh > o.gybeHdg) this.lastSign = sign;
     this.buf.push(s);
     while (this.buf.length && this.buf[0].t < s.t - o.windowSec) this.buf.shift();
     if (s.t - this.lastAccept < o.stepSec) return null;
@@ -84,14 +188,15 @@
     if (n < 2 || B[n - 1].t - B[0].t < o.windowSec * 0.9) return null;
     this.lastAccept = s.t;
     if (this.paused) return this.reject('paused');
-    if (n < (o.windowSec / Math.max(1, (B[n - 1].t - B[0].t) / (n - 1))) * o.minCoverage) return this.reject('gaps');
+    for (i = 1; i < n; i++) if (B[i].t - B[i - 1].t > o.maxGapSec) return this.reject('gaps');
     if (s.t - this.lastTack < o.settleSec) return this.reject('manoeuvre');
     for (i = 0; i < n; i++) if (B[i].rpm > 300) return this.reject('engine');
-    var sb = 0, sw = 0, sa = 0, qb = 0, qw = 0, qa = 0, hs = 0, hc = 0, hn = 0;
+    var sb = 0, sw = 0, sa = 0, qb = 0, qw = 0, qa = 0, hs = 0, hc = 0, hn = 0, he = 0, he2 = 0, hen = 0;
     for (i = 0; i < n; i++) {
       var A = Math.abs(B[i].twa);
       sb += B[i].bsp; sw += B[i].tws; sa += A; qb += B[i].bsp * B[i].bsp; qw += B[i].tws * B[i].tws; qa += A * A;
       if (isNum(B[i].hdg)) { hs += Math.sin(rad(B[i].hdg)); hc += Math.cos(rad(B[i].hdg)); hn++; }
+      if (isNum(B[i].heel)) { var hv = Math.abs(B[i].heel); he += hv; he2 += hv * hv; hen++; }
     }
     var mb = sb / n, mw = sw / n, ma = sa / n;
     var sdb = Math.sqrt(Math.max(0, qb / n - mb * mb)), sdw = Math.sqrt(Math.max(0, qw / n - mw * mw)), sda = Math.sqrt(Math.max(0, qa / n - ma * ma));
@@ -99,14 +204,18 @@
     if (mb < o.minBsp) return this.reject('too slow');
     if (sda > o.maxTwaSd) return this.reject('angle unsteady');
     if (sdw > o.maxTwsSd) return this.reject('wind unsteady');
-    if (sdb > o.maxBspSd) return this.reject('speed unsteady');
+    if (sdb > Math.max(o.maxBspSd, o.maxBspCv * mb)) return this.reject('speed unsteady');
     if (hn > 1) { var R = Math.min(1, Math.sqrt(hs * hs + hc * hc) / hn), sdh = deg(Math.sqrt(Math.max(0, -2 * Math.log(R || 1e-9)))); if (sdh > o.maxHdgSd) return this.reject('heading unsteady'); }
+    var mh = hen > n / 2 ? he / hen : null;
+    if (mh != null && mh > o.maxHeel) return this.reject('overpowered');
+    if (mh != null && Math.sqrt(Math.max(0, he2 / hen - mh * mh)) > o.maxHeelSd) return this.reject('heel unsteady');
     var tb = Math.round(mw / o.binTws) * o.binTws, ab = Math.round(ma / o.binTwa) * o.binTwa, bb = Math.round(mb / o.binBsp);
     var key = cellKey(this.cond, this.sea, tb, ab), c = S.cells[key];
     if (!c) c = S.cells[key] = { n: 0, h: {}, pn: 0, ps: 0, sn: 0, ss: 0 };
     addTo(c, bb, sign, mb);
     if (!c.d) c.d = {}; var dy = new Date(s.t * 1000).toISOString().slice(0, 10); c.d[dy] = (c.d[dy] || 0) + 1;
     c.f = c.f ? Math.min(c.f, s.t) : s.t; c.l = Math.max(c.l || 0, s.t);
+    addSession(c, s.t, mb); if (mh != null) { c.hl = (c.hl || 0) + mh; c.hn = (c.hn || 0) + 1; }
     S.accepted++;
     return 'accepted';
   };
@@ -129,12 +238,12 @@
   };
 
   /* ------------------------------------------------ polar */
-  function pct(h, n, p, binBsp, cap) {
+  function pct(h, n, p, binBsp, cap, floor) {
     var keys = Object.keys(h).map(Number).sort(function (a, b) { return a - b; }), run = 0, i2;
     if (cap) {
       var half = n / 2, med = keys[keys.length - 1];
       for (i2 = 0; i2 < keys.length; i2++) { run += h[keys[i2]]; if (run >= half) { med = keys[i2]; break; } }
-      var lim = med * cap, nk = keys.filter(function (b) { return b <= lim; }), nn = 0;
+      var lim = med * cap, low = med * (floor || 0), nk = keys.filter(function (b) { return b <= lim && b >= low; }), nn = 0;
       nk.forEach(function (b) { nn += h[b]; });
       keys = nk; n = nn; run = 0;
     }
@@ -155,9 +264,9 @@
       var p = k.split('|');
       if (!pick(p[0], q.cond) || !pick(p[1], q.sea)) continue;
       var id = p[2] + '|' + p[3], m = merged[id], c = store.cells[k];
-      if (!m) m = merged[id] = { n: 0, h: {}, d: {}, f: 0, l: 0 };
+      if (!m) m = merged[id] = { n: 0, h: {}, d: {}, f: 0, l: 0, s: [], hl: 0, hn: 0 };
       m.n += c.n; for (var b in c.h) m.h[b] = (m.h[b] || 0) + c.h[b];
-      for (var dd in (c.d || {})) m.d[dd] = 1; if (c.f) m.f = m.f ? Math.min(m.f, c.f) : c.f; if (c.l) m.l = Math.max(m.l, c.l);
+      if (c.s) m.s = m.s.concat(c.s); if (c.hn) { m.hl += c.hl; m.hn += c.hn; } for (var dd in (c.d || {})) m.d[dd] = 1; if (c.f) m.f = m.f ? Math.min(m.f, c.f) : c.f; if (c.l) m.l = Math.max(m.l, c.l);
     }
     var twsSet = {}, twaSet = {};
     Object.keys(merged).forEach(function (id) { var a = id.split('|'); twsSet[a[0]] = 1; twaSet[a[1]] = 1; });
@@ -167,21 +276,26 @@
     for (x = twaMin; x <= twaMax; x += o.binTwa) twa.push(x);
     var tmin = tws[0], tmax = tws[tws.length - 1]; tws = [];
     for (x = tmin; x <= tmax; x += o.binTws) tws.push(x);
-    var v = [], flag = [], mins = [], days = [], span = [];
+    var v = [], flag = [], mins = [], days = [], span = [], sess = [], sd = [], neff = [], heel = [], smean = [];
     tws.forEach(function (w) {
-      var rv = [], rf = [], rm = [], rd = [], rs = [];
+      var rv = [], rf = [], rm = [], rd = [], rs = [], rss = [], rsd = [], rn = [], rh = [], rsm = [];
       twa.forEach(function (a) {
         var m = merged[w + '|' + a], ok = m && m.n >= o.minPoints;
-        rv.push(ok ? pct(m.h, m.n, P, o.binBsp, o.maxOverMedian) : null);
+        rv.push(ok ? pct(m.h, m.n, P, o.binBsp, o.maxOverMedian, o.minUnderMedian) : null);
         rf.push(ok ? 'm' : '');
         rm.push(m ? m.n * o.stepSec / 60 : 0);
         rd.push(m ? Object.keys(m.d).length : 0); rs.push(m && m.f ? (m.l - m.f) / 3600 : 0);
+        rss.push(m && m.s && m.s.length ? sessionsOf(m.s, Math.ceil(180 / o.stepSec)) : m ? Object.keys(m.d).length : 0);   /* sessions of 3 min or more */
+        rsm.push(m && m.s && m.s.length ? sessionMeans(m.s, Math.ceil(180 / o.stepSec)) : []);
+        if (m) { var su = 0, sq = 0; for (var hb in m.h) { var x = hb * o.binBsp; su += x * m.h[hb]; sq += x * x * m.h[hb]; } var mu = su / m.n; rsd.push(Math.sqrt(Math.max(0, sq / m.n - mu * mu))); } else rsd.push(null);
+        rn.push(m ? m.n * o.stepSec / 60 : 0);
+        rh.push(m && m.hn ? +(m.hl / m.hn).toFixed(1) : null);   /* mean heel when sailing steadily in this cell */   /* independent values: about one per minute of steady sailing, because windows overlap and gusts and wave sets last a minute or more */
       });
-      v.push(rv); flag.push(rf); mins.push(rm); days.push(rd); span.push(rs);
+      v.push(rv); flag.push(rf); mins.push(rm); days.push(rd); span.push(rs); sess.push(rss); sd.push(rsd); neff.push(rn); heel.push(rh); smean.push(rsm);
     });
     fillGaps(v, flag, o.maxGapCells);
     if (q.smooth !== false) v = v.map(function (r) { return r.map(function (x, j) { return x != null && j > 0 && j < r.length - 1 && r[j - 1] != null && r[j + 1] != null ? (r[j - 1] + 2 * x + r[j + 1]) / 4 : x; }); });
-    return { tws: tws, twa: twa, v: v, flag: flag, mins: mins, days: days, span: span, percentile: P };
+    return { tws: tws, twa: twa, v: v, flag: flag, mins: mins, days: days, span: span, sess: sess, sd: sd, neff: neff, heel: heel, smean: smean, percentile: P };
   }
 
   /* Fill only between measured neighbours, never beyond them. */
@@ -526,8 +640,49 @@
     return { text: L.join('\n') + '\n', warnings: removed ? [removed + ' incomplete wind speeds or angles were left out, because PredictWind needs a value in every cell.'] : [], ext: 'pol' };
   }
 
+  /* ------------------------------------------------ how sure a learned figure is better than the one in use (C, 14 Nov 2026)
+     Stuart: "look at the trend and assess if over the time of the data the probability looks like there is more proof for the new
+     figure". The scatter has two parts: within the readings (spread x 1.25 for a median, 1.7 for a 90th percentile, over the square
+     root of the independent values, one per steady minute) and between outings (spread of the outing means over the square root of
+     their number); with one outing the second is unknown, so the first is taken 1.5 times. With three or more outings a weighted
+     straight line through the outing means over time is the trend; when its slope is more than twice its standard error the figure
+     is taken where the trend has reached by the latest outing (a new sail, a cleaner bottom), otherwise the figure over all the data.
+     p is the probability that the boat's real figure is nearer the new value than the old: Phi(|new - old| / (2 se)). */
+  function phi(x) {   /* normal cumulative distribution, Abramowitz and Stegun 7.1.26, error under 1.5e-7 */
+    var z = Math.abs(x) / Math.SQRT2, t = 1 / (1 + 0.3275911 * z), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);
+    return x >= 0 ? (1 + y) / 2 : (1 - y) / 2;
+  }
+  function evidence(L, i, j, old, percentile) {
+    var est = L.v[i][j]; if (est == null || !(old > 0)) return null;
+    var sdv = L.sd && L.sd[i][j], ne = L.neff && L.neff[i][j], c = percentile >= 75 ? 1.7 : 1.25;
+    var sew = sdv != null && ne > 0 ? c * sdv / Math.sqrt(ne) : 0.02 * est;
+    var S = (L.smean && L.smean[i][j]) || [], k = S.length, se, trend = 'too few outings to see a trend', nv = est, slope = 0;
+    if (k >= 2) {
+      var W = 0, M = 0; S.forEach(function (x) { W += x.n; M += x.n * x.m; }); M /= W;
+      var vb = 0; S.forEach(function (x) { vb += x.n * (x.m - M) * (x.m - M); }); vb = vb / W * k / (k - 1);
+      se = Math.sqrt(sew * sew + vb / k);
+      trend = 'steady over ' + k + ' outings';
+      if (k >= 3) {
+        var T = 0; S.forEach(function (x) { T += x.n * x.t; }); T /= W;
+        var sxx = 0, sxy = 0; S.forEach(function (x) { sxx += x.n * (x.t - T) * (x.t - T); sxy += x.n * (x.t - T) * (x.m - M); });
+        if (sxx > 0) {
+          slope = sxy / sxx;   /* knots per second */
+          var res = 0; S.forEach(function (x) { var e = x.m - M - slope * (x.t - T); res += x.n * e * e; });
+          var s2 = res / W * k / Math.max(1, k - 2), seSlope = Math.sqrt(s2 / sxx), last = S[k - 1].t;
+          if (Math.abs(slope) > 2 * seSlope) {
+            nv = est + slope * (last - T);
+            se = Math.sqrt(se * se + Math.pow((last - T) * seSlope, 2));
+            trend = (slope > 0 ? 'getting faster' : 'getting slower') + ' over ' + k + ' outings (' + (slope * 86400 * 30 / est * 100).toFixed(1) + '% a month)';
+          }
+        }
+      }
+    } else se = 1.5 * sew;
+    se = Math.max(se, 1e-6);
+    return { v: nv, est: est, se: se, p: phi(Math.abs(nv - old) / (2 * se)), trend: trend, outings: k, slope: slope };
+  }
+
   return {
-    defaults: DEF, seaStates: SEAS, newStore: newStore, mergeStores: mergeStores, Logger: Logger, polar: polar, resample: resample,
+    defaults: DEF, evidence: evidence, phi: phi, sessionMeans: sessionMeans, windRatio: windRatio, windAt: windAt, windTo10: windTo10, windProfile: profile, seaStates: SEAS, newStore: newStore, mergeStores: mergeStores, Logger: Logger, polar: polar, resample: resample,
     targets: targets, pctOfPolar: pctOfPolar, calibration: calibration, startupCheck: startupCheck, trueWind: trueWind, NmeaReader: NmeaReader,
     readLog: readLog, parsePolar: parsePolar, compare: compare, startFromTcc: startFromTcc, blend: blend,
     toExpedition: toExpedition, toH5000: toH5000,
