@@ -1,10 +1,11 @@
 /* Pictures for the help topics: node tests/help-shots.js [base url] [out dir]. Run against a local copy of the site. */
 const { chromium, devices } = require('playwright');
+const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); });   /* Show me round? (14 Nov): the tests answer No */
 const BASE = (process.argv[2] || 'http://localhost:8766').replace(/\/$/, ''), OUT = process.argv[3] || 'site/help';
 (async () => {
   const b = await chromium.launch();
   const ctx = await b.newContext({ ...devices['iPhone 13'], geolocation: { latitude: 50.55, longitude: -2.2 }, permissions: ['geolocation'] });
-  await ctx.addInitScript(() => { try { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-theme', 'dark'); } catch (e) {} });
+  await ctx.addInitScript(NOTOUR); await ctx.addInitScript(() => { try { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-theme', 'dark'); } catch (e) {} });
   const p = await ctx.newPage();
   await p.goto(BASE + '/channel-area/?race=myth');
   await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length > 0, null, { timeout: 300000 });
@@ -24,7 +25,7 @@ const BASE = (process.argv[2] || 'http://localhost:8766').replace(/\/$/, ''), OU
   await p.evaluate(() => document.querySelector('.stabs .tab[data-s="boat"]').click()); await p.waitForTimeout(300); await shot('boat', '#sheet');
   await p.evaluate(() => document.querySelector('.stabs .tab[data-s="course"]').click()); await p.waitForTimeout(300); await shot('course', '#sheet');
   await p.evaluate(() => document.getElementById('sheetX').click());
-  const c2 = await b.newContext({ ...devices['iPhone 13'] }); await c2.addInitScript(() => { try { localStorage.setItem('fs-theme', 'dark'); } catch (e) {} }); const p2 = await c2.newPage();
+  const c2 = await b.newContext({ ...devices['iPhone 13'] }); await c2.addInitScript(NOTOUR); await c2.addInitScript(() => { try { localStorage.setItem('fs-theme', 'dark'); } catch (e) {} }); const p2 = await c2.newPage();
   await p2.goto(BASE + '/channel-area/'); await p2.waitForSelector('#wiz:not([hidden])', { timeout: 120000 }); await p2.evaluate(() => { const s = document.getElementById('splash'); if (s) s.click(); }); await p2.waitForTimeout(900);
   await (await p2.$('#wiz')).screenshot({ path: `${OUT}/setup.png` }); console.log('setup');
   await b.close();

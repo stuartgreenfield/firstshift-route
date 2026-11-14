@@ -1,6 +1,7 @@
 /* Live GPS check: puts a simulated phone at positions whose right answers are worked out here, independently of Route's code,
    and compares Route's readings. node tests/live.js http://localhost:8767 [race ...] */
 const { chromium, devices } = require('playwright');
+const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); });   /* Show me round? (14 Nov): the tests answer No */
 const BASE = (process.argv[2] || 'http://localhost:8767').replace(/\/$/, ''), RACES = process.argv.slice(3).length ? process.argv.slice(3) : ['channel-area/?race=morgan', 'channel-area/?race=channel'];
 const R = Math.PI / 180, NM = 3440.065;
 function rhumb(a, b) { const p1 = a[0] * R, p2 = b[0] * R, dp = p2 - p1; let dl = (b[1] - a[1]) * R; if (Math.abs(dl) > Math.PI) dl -= Math.sign(dl) * 2 * Math.PI; const dq = Math.log(Math.tan(Math.PI / 4 + p2 / 2) / Math.tan(Math.PI / 4 + p1 / 2)), q = Math.abs(dq) > 1e-12 ? dp / dq : Math.cos(p1); return { nm: Math.sqrt(dp * dp + q * q * dl * dl) * NM, brg: (Math.atan2(dl, dq) / R + 360) % 360 }; }
@@ -11,7 +12,7 @@ const adiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
   const rec = (race, what, ok, got, want) => { out.push((ok ? 'PASS' : 'FAIL') + ' | ' + race + ' | ' + what + ' | Route: ' + got + ' | expected: ' + want); if (!ok) fails++; };
   for (const race of RACES) {
     const ctx = await b.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block', geolocation: { latitude: 50.7, longitude: -1.3, accuracy: 6 }, permissions: ['geolocation'] });
-    await ctx.addInitScript(() => { const x = new Date(); localStorage.setItem('fs-terms', x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-livetrail', '[]'); });
+    await ctx.addInitScript(NOTOUR); await ctx.addInitScript(() => { const x = new Date(); localStorage.setItem('fs-terms', x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-livetrail', '[]'); });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.clock.install({ time: new Date() });
     await p.goto(BASE + '/' + race); await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length > 0, null, { timeout: 180000 });

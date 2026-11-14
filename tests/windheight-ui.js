@@ -1,10 +1,11 @@
 /* D, 14 Nov 2026: Route's Boat tab wind height setting reaches the router. Run: node tests/windheight-ui.js http://localhost:8769 outdir */
 const { chromium } = require('playwright');
+const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); });   /* Show me round? (14 Nov): the tests answer No */
 const BASE = process.argv[2] || 'http://localhost:8769';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
 (async () => {
   const b = await chromium.launch(), p = await b.newPage({ viewport: { width: 1280, height: 900 } });
-  await p.addInitScript(() => { try { localStorage.setItem('fs-terms', '9999-12-31'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} });
+  await p.addInitScript(NOTOUR); await p.addInitScript(() => { try { localStorage.setItem('fs-terms', '9999-12-31'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} });
   await p.goto(BASE + '/channel-area/');
   const done = () => p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.finish && !f.running && (window.__fsDump && window.__fsDump()); }, null, { timeout: 300000 });
   await done();

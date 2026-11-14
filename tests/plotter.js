@@ -1,13 +1,14 @@
 /* Route's basic plotter (14 Nov 2026): BTW, DTW, VMC, ETA and XTE from the phone's GPS, checked against sums done here.
    Run: node tests/plotter.js http://localhost:8769 */
 const { chromium } = require('playwright');
+const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); });   /* Show me round? (14 Nov): the tests answer No */
 const BASE = process.argv[2] || 'http://localhost:8769';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
 const R = Math.PI / 180;
 (async () => {
   const b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 400, height: 860 }, serviceWorkers: 'block' });
   await ctx.route('**/*', r => { const u = r.request().url(); if (/^https?:\/\/(localhost|127\.0\.0\.1)/.test(u) || /^(data|blob):/.test(u)) return r.continue(); return r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
-  await ctx.addInitScript(() => {
+  await ctx.addInitScript(NOTOUR); await ctx.addInitScript(() => {
     if (!sessionStorage.getItem('t')) { sessionStorage.setItem('t', '1'); localStorage.clear(); const x = new Date(); localStorage.setItem('fs-terms', x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate()); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-boatset', '1'); }
     /* a boat at 50.55 N 1.70 W making 6 kn on 200 deg true */
     window.__fake = { la: 50.55, lo: -1.70, sog: 6, cog: 200 };

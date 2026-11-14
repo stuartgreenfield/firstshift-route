@@ -1,12 +1,13 @@
 /* Route catch-up checks (13 Nov 2026): the features brought over from Navigate, with no boat parts.
    Run: node tests/catchup.js http://localhost:8769 outdir */
 const { chromium } = require('playwright');
+const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); });   /* Show me round? (14 Nov): the tests answer No */
 const BASE = process.argv[2] || 'http://localhost:8769', OUT = process.argv[3] || '.';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
 const init = () => { if (sessionStorage.getItem('t')) return; sessionStorage.setItem('t', '1'); const x = new Date(); localStorage.setItem('fs-terms', x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); };
 (async () => {
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' }); await ctx.addInitScript(init);
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' }); await ctx.addInitScript(NOTOUR); await ctx.addInitScript(init);
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/channel-area/?race=morgan');
   await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running && f.routes.length > 2; }, null, { timeout: 240000 }); await p.waitForTimeout(2000);
