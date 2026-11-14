@@ -1,0 +1,519 @@
+{
+ "note": "JOG races in the FirstShift Route area, from the JOG 2027 programme (dates published; the 2027 Notice of Race is due 1 December 2026). JOG publishes courses in its sailing instructions, which are not yet in hand: coastal races are set on the day, most passage races show start and finish only, and two show the 2025 course from race reports. Positions marked approximate are approximate charted positions of the named places, for routing only: check the sailing instructions.",
+ "updated": "2026-11-14",
+ "source": "https://myjog.jog.org.uk/programme",
+ "races": [
+  {
+   "id": "jog-easter-1",
+   "org": "JOG",
+   "name": "JOG Easter Coastal Race 1",
+   "series": "Coastal Series",
+   "date2027": "2027-03-26",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+  },
+  {
+   "id": "jog-easter-2",
+   "org": "JOG",
+   "name": "JOG Easter Coastal Race 2",
+   "series": "Coastal Series",
+   "date2027": "2027-03-27",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+  },
+  {
+   "id": "jog-easter-3",
+   "org": "JOG",
+   "name": "JOG Easter Coastal Race 3",
+   "series": "Coastal Series",
+   "date2027": "2027-03-28",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+  },
+  {
+   "id": "jog-lonely-tower",
+   "org": "JOG",
+   "name": "JOG Lonely Tower",
+   "series": "Coastal Series",
+   "date2027": "2027-04-10",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+  },
+  {
+   "id": "jog-great-escape",
+   "org": "JOG",
+   "name": "JOG Great Escape",
+   "series": "Coastal Series",
+   "date2027": "2027-04-11",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+  },
+  {
+   "id": "jog-cowes-yarmouth",
+   "org": "JOG",
+   "name": "JOG Cowes to Yarmouth",
+   "series": "Coastal Series",
+   "date2027": "2027-04-24",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Yarmouth, Isle of Wight (approximate)",
+    "lat": 50.709,
+    "lon": -1.5,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-yarmouth-cowes",
+   "org": "JOG",
+   "name": "JOG Yarmouth to Cowes",
+   "series": "Coastal Series",
+   "date2027": "2027-04-25",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Yarmouth, Isle of Wight (approximate)",
+    "lat": 50.712,
+    "lon": -1.495
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-deauville",
+   "org": "JOG",
+   "name": "JOG Cowes to Deauville",
+   "series": "Offshore Series",
+   "date2027": "2027-04-30",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2025,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Between the Solent forts (2025)",
+     "lat": 50.745,
+     "lon": -1.082,
+     "side": "port",
+     "sideAssumed": true,
+     "via": true,
+     "must": true
+    }
+   ],
+   "finish": {
+    "name": "Finish, Deauville approaches, La Semoy buoy in 2025 (position approximate)",
+    "lat": 49.39,
+    "lon": 0.06,
+    "radius_nm": 1.0
+   },
+   "nm": null,
+   "source": "https://jog.org.uk/?p=6255",
+   "page": "channel-area",
+   "setNote": "2025 course from the JOG race report: committee boat start off the Royal Southern buoy, out through the Solent forts and past Bembridge, finish at La Semoy buoy. Check the 2027 sailing instructions."
+  },
+  {
+   "id": "jog-deauville-cowes",
+   "org": "JOG",
+   "name": "JOG Deauville to Cowes",
+   "series": "Offshore Series",
+   "date2027": "2027-05-02",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Deauville (approximate)",
+    "lat": 49.42,
+    "lon": 0.03
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-st-vaast",
+   "org": "JOG",
+   "name": "JOG St Vaast",
+   "series": "Offshore Series",
+   "date2027": "2027-05-21",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, St Vaast-la-Hougue approaches (approximate)",
+    "lat": 49.585,
+    "lon": -1.225,
+    "radius_nm": 1.0
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-weymouth",
+   "org": "JOG",
+   "name": "JOG Weymouth",
+   "series": "Coastal Series",
+   "date2027": "2027-06-05",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Weymouth (approximate)",
+    "lat": 50.608,
+    "lon": -2.44,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-alderney",
+   "org": "JOG",
+   "name": "JOG Alderney",
+   "series": "Offshore Series",
+   "date2027": "2027-06-25",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Braye Harbour, Alderney (approximate)",
+    "lat": 49.728,
+    "lon": -2.19,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://jog.org.uk/?p=7725",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions. In 2026 the fleet left the Solent by the Needles (JOG race report, 2 July 2026)."
+  },
+  {
+   "id": "jog-fecamp",
+   "org": "JOG",
+   "name": "JOG Fécamp",
+   "series": "Offshore Series",
+   "date2027": "2027-08-13",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Fécamp (approximate)",
+    "lat": 49.765,
+    "lon": 0.365,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-st-peter-port",
+   "org": "JOG",
+   "name": "JOG St Peter Port",
+   "series": "Offshore Series",
+   "date2027": "2027-08-27",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2025,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Casquets",
+     "lat": 49.723,
+     "lon": -2.378,
+     "side": "port",
+     "sideAssumed": true
+    }
+   ],
+   "finish": {
+    "name": "Finish, St Peter Port, Guernsey (approximate)",
+    "lat": 49.455,
+    "lon": -2.525,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://www.yachtsandyachting.com/news/289363/JOG-Nautical-Cloud-Channel-Race-to-St-Peter-Port",
+   "page": "channel-area",
+   "setNote": "2025 course from a race report: start off Gurnard, round the Casquets, finish through the Little Russell. Rounding side assumed. Check the 2027 sailing instructions."
+  },
+  {
+   "id": "jog-cherbourg",
+   "org": "JOG",
+   "name": "JOG Cherbourg (with RORC)",
+   "series": "Offshore Series",
+   "date2027": "2027-09-03",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cherbourg",
+    "lat": 49.677,
+    "lon": -1.66,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-cowes-poole",
+   "org": "JOG",
+   "name": "JOG Cowes to Poole",
+   "series": "Coastal Series",
+   "date2027": "2027-09-18",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Poole Harbour entrance (approximate)",
+    "lat": 50.68,
+    "lon": -1.948,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-poole-cowes",
+   "org": "JOG",
+   "name": "JOG Poole to Cowes",
+   "series": "Coastal Series",
+   "date2027": "2027-09-19",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Poole Harbour entrance (approximate)",
+    "lat": 50.675,
+    "lon": -1.935
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-cowes-lymington",
+   "org": "JOG",
+   "name": "JOG Cowes to Lymington",
+   "series": "Coastal Series",
+   "date2027": "2027-10-02",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Lymington approaches (approximate)",
+    "lat": 50.738,
+    "lon": -1.508,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  },
+  {
+   "id": "jog-lymington-cowes",
+   "org": "JOG",
+   "name": "JOG Lymington to Cowes",
+   "series": "Coastal Series",
+   "date2027": "2027-10-03",
+   "dateSource": "JOG 2027 programme",
+   "courseYear": 2027,
+   "courseStatus": "not-published",
+   "start": {
+    "name": "Start, off Lymington (approximate)",
+    "lat": 50.735,
+    "lon": -1.505
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Cowes (line in the sailing instructions)",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://myjog.jog.org.uk/programme",
+   "page": "channel-area",
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+  }
+ ]
+}

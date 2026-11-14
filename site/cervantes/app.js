@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.8';
+  var VERSION = 'FirstShift Route v0.12.9';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -550,13 +550,14 @@
     var B = meta.course && meta.course.band; if (!B) return !dataBox || (p.lat >= dataBox.s && p.lat <= dataBox.n && p.lon >= dataBox.w && p.lon <= dataBox.e);
     return B.some(function (b) { var k = Math.cos(p.lat * R), ax = b[1] * k, ay = b[0], bx = b[3] * k, by = b[2], px = p.lon * k, py = p.lat, dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(px - ax - t * dx, py - ay - t * dy) * 60 <= b[4] + 0.5; });
   }
+  function orgOf(r) { return (r && r.org) || 'RORC'; }
   function courseIssue(c) {
     /* a course set on the day (Channel Race, De Guingand Bowl): start and finish together and no marks yet, so there is nothing to route (Stuart 12 Nov, found by the live GPS check) */
     if (!(c.marks || []).length && FSRouter.dist(c.start.lat, c.start.lon, c.finish.lat, c.finish.lon) < 2) return 'Course set on the day: add the marks from the sailing instructions before routing. Tap the race name, then Edit this course.';
     var out = [c.start].concat(c.marks).concat([c.finish]).filter(function (p) { return !inData(p); }); return out.length ? 'Cannot route: ' + out.map(function (p) { return p.name; }).join(', ') + ' outside the forecast area on this server. The wider area comes with the next update.' : ''; }
   function warnText(r) {
     if (!r) return '';
-    var y = r.courseStatus === 'last-edition' ? 'the ' + r.courseYear + ' course (last edition)' : r.courseStatus === 'set-on-day' ? 'a course set on the day' : 'the ' + r.courseYear + ' course';
+    var y = r.courseStatus === 'last-edition' ? 'the ' + r.courseYear + ' course (last edition)' : r.courseStatus === 'set-on-day' ? 'a course set on the day' : r.courseStatus === 'not-published' ? 'the start and finish only' : 'the ' + r.courseYear + ' course';
     return r.courseStatus === 'published' ? '' : 'Showing ' + y + '. The 2027 course is not published yet and will change: check the sailing instructions.';
   }
   function applyRace(id) {
@@ -584,8 +585,10 @@
     if (f && f.lat0 != null) { var la1 = f.lat0 + f.dlat * (f.ny - 1), lo1 = f.lon0 + f.dlon * (f.nx - 1); dataBox = { s: Math.min(f.lat0, la1), n: Math.max(f.lat0, la1), w: Math.min(f.lon0, lo1), e: Math.max(f.lon0, lo1) }; }
     $('cbanner').addEventListener('click', function (e) { if (e.target.id !== 'cbannerX') this.classList.toggle('open'); });
     $('cbannerX').onclick = function () { $('cbanner').hidden = true; var r = meta.course.race; if (r) { S.bannerHidden = S.bannerHidden || {}; S.bannerHidden[r.id] = true; } };
-    fetch('../courses/rorc.json', { cache: 'no-store' }).then(function (x) { return x.json(); }).then(function (j) {
-      RACES = j.races; REGIONS = j.regions || []; $('raceSel').innerHTML = RACES.map(function (r) { return '<option value="' + r.id + '">' + r.name + (r.date2027 ? ' · ' + r.date2027.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+r.date2027.slice(5, 7) - 1] : '') + (courseIssue(r) ? ' (wider area needed)' : '') + '</option>'; }).join('');
+    Promise.all([fetch('../courses/rorc.json', { cache: 'no-store' }).then(function (x) { return x.json(); }), fetch('../courses/jog.json', { cache: 'no-store' }).then(function (x) { return x.ok ? x.json() : { races: [] }; }).catch(function () { return { races: [] }; })]).then(function (jj) {
+      var j = jj[0]; RACES = j.races.concat(jj[1].races || []); REGIONS = j.regions || [];   /* JOG races beside the RORC ones (Stuart 14 Nov) */
+      var opt = function (r) { return '<option value="' + r.id + '">' + r.name + (r.date2027 ? ' · ' + r.date2027.slice(8) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+r.date2027.slice(5, 7) - 1] : '') + (courseIssue(r) && !/set on the day/.test(courseIssue(r)) ? ' (wider area needed)' : '') + '</option>'; };
+      $('raceSel').innerHTML = ['RORC', 'JOG'].map(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); return rs.length ? '<optgroup label="' + o + ' races">' + rs.map(opt).join('') + '</optgroup>' : ''; }).join('');
       var pageOf = function (id) { var r = RACES.filter(function (x) { return x.id === id; })[0]; return r ? (r.page || r.id) : HERE; };
       var hop = function (id) { var pg = pageOf(id); if (pg === HERE) return false; location.replace('../' + pg + '/' + (pg !== id ? '?race=' + encodeURIComponent(id) : '')); return true; };   /* a race only routes on the page that holds its forecasts */
       $('raceSel').onchange = function () { if (!hop($('raceSel').value)) applyRace($('raceSel').value); };
@@ -1098,13 +1101,15 @@
   }
   function racesSheet(mode) {
     var c = meta.course, mine = myRaces(), h = '';
-    $('racesH').textContent = mode === 'new' ? 'Start new course' : mode === 'saved' ? 'Saved routes' : mode === 'rorc' ? 'RORC races' : 'Races';
+    $('racesH').textContent = mode === 'new' ? 'Start new course' : mode === 'saved' ? 'Saved routes' : mode === 'rorc' ? 'RORC races' : mode === 'jog' ? 'JOG races' : 'Races';
     if (mode === 'new') {   /* one question, then the whole area and the set-up steps */
       h = '<p class="note">The routes on the chart now are kept under Saved routes.</p>' +
         '<div class="ritem"><div><b>A RORC race</b><span class="note">Pick from the RORC course library, then the set-up steps</span></div><div class="xrow"><button class="btn primary" id="nRorc">Choose a RORC race</button></div></div>' +
+        '<div class="ritem"><div><b>A JOG race</b><span class="note">The 2027 JOG programme, then the set-up steps</span></div><div class="xrow"><button class="btn primary" id="nJog">Choose a JOG race</button></div></div>' +
         '<div class="ritem"><div><b>Draw my own course</b><span class="note">The whole forecast area opens; tap the start, the marks and the finish</span></div><div class="xrow"><button class="btn primary" id="nDraw">Draw a course</button></div></div>';
       $('raceList').innerHTML = h;
       $('nRorc').onclick = function () { archiveRoutes(); $('races').hidden = true; racesSheet('rorc'); $('races').hidden = false; };
+      $('nJog').onclick = function () { archiveRoutes(); $('races').hidden = true; racesSheet('jog'); $('races').hidden = false; };
       $('nDraw').onclick = function () { $('races').hidden = true; newCourse(); };
       return;
     }
@@ -1124,11 +1129,13 @@
         racesSheet('saved'); }; });
       return;
     }
-    h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : 'RORC course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
+    h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : orgOf(c.race) + ' course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
     var olds = oldRoutes(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(o.savedAt).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
-    h += '<h3>RORC races</h3>' + RACES.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join('');
+    var orgs = mode === 'rorc' ? ['RORC'] : mode === 'jog' ? ['JOG'] : ['RORC', 'JOG'];
+    orgs.forEach(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); if (!rs.length) return;
+    h += '<h3>' + o + ' races</h3>' + (o === 'JOG' ? '<p class="note">2027 dates from the JOG programme. JOG has not published its 2027 courses: coastal races are set on the day, and most passage races show the start and finish only.</p>' : '') + rs.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (r.series ? r.series + ' · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join(''); });
     h += bcBox();
     $('raceList').innerHTML = h; bcWire();
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
@@ -1397,6 +1404,7 @@
     $('rmNew').onclick = function () { $('raceMenu').hidden = true; racesSheet('new'); $('races').hidden = false; };
     $('rmSaved').onclick = function () { $('raceMenu').hidden = true; racesSheet('saved'); $('races').hidden = false; };
     $('rmRorc').onclick = function () { $('raceMenu').hidden = true; racesSheet('rorc'); $('races').hidden = false; };
+    if ($('rmJog')) $('rmJog').onclick = function () { $('raceMenu').hidden = true; racesSheet('jog'); $('races').hidden = false; };
     $('rmEdit').onclick = function () { $('raceMenu').hidden = true; startEdit(courseCopy()); };
     $('dataChip').addEventListener('click', function (e) { e.stopPropagation(); });
     $('racesX').onclick = function () { $('races').hidden = true; if (S.edit) { $('editBar').hidden = false; editPrompt(); draw(); } };   /* closing the course list mid-edit goes back to the edit on the chart, never to a hidden edit that stops routing (Stuart 12 Nov) */
