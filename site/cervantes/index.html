@@ -176,7 +176,7 @@ input[type=range]{width:100%;accent-color:var(--brand);height:32px}
 .sheet h2{font:600 17px var(--f-head);margin:0}
 .htopic{border-top:1px solid var(--line);padding-top:10px}.htopic h3{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 4px;font-size:15px}.htopic p{margin:0;font-size:13.5px;line-height:1.55}.htopic.on{background:var(--soft)}.say{font-size:12px;min-height:32px;padding:4px 10px}
 .shead{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
-.stabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;flex:none;scrollbar-width:none}
+.stabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;flex:none;scrollbar-width:none}
 .shead{flex:none}
 .stabs .tab{flex:none;padding:8px 12px}
 .sbody{overflow:auto;padding:14px;display:block;flex:1 1 auto}
@@ -625,7 +625,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.0</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.1</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -633,6 +633,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <button class="tab" data-s="course" aria-selected="false">Course</button>
       <button class="tab" data-s="sails" aria-selected="false">Sails</button>
       <button class="tab" data-s="display" aria-selected="false">Display</button>
+      <button class="tab" data-s="charts" aria-selected="false">Charts</button>
       <button class="tab" data-s="mine" aria-selected="false">My set-up</button>
     </div>
     <div class="sbody" id="s-boat">
@@ -756,6 +757,22 @@ A4, 125, 180, 18, 60</textarea>
         <p class="note">Mainsail, the same way.</p>
         <textarea id="mains" spellcheck="false" style="min-height:120px"># no reefs set</textarea>
       </details>
+    </div>
+    <div class="sbody" id="s-charts" hidden>
+      <h3>What the chart shows now</h3>
+      <ul class="note">
+        <li>Land and coastline, worked out from EMODnet seabed depths.</li>
+        <li>Water shallower than your safety depth (Course tab), shaded red: the routes keep out of it. Depths are EMODnet survey depths below lowest astronomical tide, with no tide height added.</li>
+        <li>Traffic separation schemes, from OpenStreetMap, Shom and Rijkswaterstaat, and lighthouses and main buoys from OpenStreetMap.</li>
+        <li>Your course, marks and waypoints, the routes, and the wind, tide and weather from the forecasts.</li>
+        <li>If you turn them on: buoys, beacons and lights from OpenSeaMap, loaded from the internet as you zoom in to a few miles across.</li>
+      </ul>
+      <h3>How to change it</h3>
+      <p class="note">Tap the layers button at the top of the screen (two stacked layers). Under <b>Chart</b>, turn the OpenSeaMap buoys, beacons and lights on or off. Under <b>Weather and race</b>, choose wind, tidal stream, traffic separation schemes, lighthouses, laylines, isochrones and the forecast weather, and which routes to show. <b>Show all</b>, <b>Just the course</b> and <b>Just the route</b> set several at once. The wind and tide symbols and AIS are in the Display tab.</p>
+      <h3>Not for navigation</h3>
+      <p class="note">This chart is not an official chart. It is drawn from free public data that may be incomplete, out of date or wrong, and it leaves out much that an official chart shows. Use it to plan and to compare routes, never to navigate: navigate with your official paper or electronic charts and your boat's own instruments.</p>
+      <h3>Coming soon: official charts from GeoGarage</h3>
+      <p class="note">Official charts from GeoGarage, from national hydrographic offices such as the UKHO, shown on this chart.</p>
     </div>
     <div class="sbody" id="s-mine" hidden></div>
     <div class="sbody" id="s-display" hidden>
