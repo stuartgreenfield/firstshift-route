@@ -253,3 +253,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 11:49 14 Nov 2026: new jobs, plan first: first-time walk-through (three levels); how-to films for Route and Navigate like Polar Live's; Substack launch articles for both; JOG race list like the RORC list.
 - 12:26 14 Nov 2026: Route v0.12.5 live (plan bar BSP and SOG, VMC over the ground, longer slider, floating MOB); Navigate v0.7.24 download.
 - 13:28 14 Nov 2026: Route v0.12.7 live (Inter bold name and marks; UKV and AROME hand-over labels); Navigate v0.7.29.
+- 13:40 14 Nov 2026: Route v0.12.8 live (help pictures for Plotter and Charts; MOB above the Live GPS pill); Navigate v0.7.30.
