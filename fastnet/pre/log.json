@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-14T20:44:33.601Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 26,
+   "note": "Routed in 17.9 s. First answer in 5.3 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 48,
+   "note": "Routed in 16.8 s. First answer in 3.8 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 70,
+   "note": "Routed in 17.4 s. First answer in 3.5 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 91,
+   "note": "Routed in 17.5 s. First answer in 3.6 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 4,
+   "s": 115,
+   "note": "Routed in 19.2 s. First answer in 3.6 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 5,
+   "s": 136,
+   "note": "Routed in 16.8 s. First answer in 3.6 s."
+  }
+ ]
+}
