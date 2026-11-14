@@ -25,6 +25,8 @@
     minUnderMedian: 0.8,  // and further below it (a wrapped kite, a sail change, a hole): review finding 5, 14 Nov 2026
     maxGapSec: 5,         // no gap longer than this inside a window (review finding 4: the coverage test could never reject)
     maxBspCv: 0.05,       // boat speed steadiness also allowed up to 5% of the speed, so fast downwind sailing is not all thrown out (finding 14)
+    maxHeel: 30,          // mean heel over this is an overpowered boat, left out of the polar (review H, 14 Nov 2026)
+    maxHeelSd: 5,         // heel swinging more than this over the window (broaching, rolling) is left out too
     gybeHdg: 10           // on a deep run (TWA 165 or more) a change of side with a heading change of more than this in 10 s is a gybe (finding 24)
   };
   var SEAS = ['flat', 'chop', 'moderate', 'big'];
@@ -70,7 +72,7 @@
       for (var h in src.h) c.h[h] = (c.h[h] || 0) + src.h[h];
       if (src.d) { c.d = c.d || {}; for (var dd in src.d) c.d[dd] = (c.d[dd] || 0) + src.d[dd]; }
       if (src.f) c.f = c.f ? Math.min(c.f, src.f) : src.f; if (src.l) c.l = Math.max(c.l || 0, src.l);
-      if (src.s) c.s = (c.s || []).concat(src.s);
+      if (src.s) c.s = (c.s || []).concat(src.s); if (src.hn) { c.hl = (c.hl || 0) + src.hl; c.hn = (c.hn || 0) + src.hn; }
     }
     out.accepted += b.accepted; out.seen += b.seen;
     for (k in b.rejected) out.rejected[k] = (out.rejected[k] || 0) + b.rejected[k];
@@ -107,11 +109,12 @@
     for (i = 1; i < n; i++) if (B[i].t - B[i - 1].t > o.maxGapSec) return this.reject('gaps');
     if (s.t - this.lastTack < o.settleSec) return this.reject('manoeuvre');
     for (i = 0; i < n; i++) if (B[i].rpm > 300) return this.reject('engine');
-    var sb = 0, sw = 0, sa = 0, qb = 0, qw = 0, qa = 0, hs = 0, hc = 0, hn = 0;
+    var sb = 0, sw = 0, sa = 0, qb = 0, qw = 0, qa = 0, hs = 0, hc = 0, hn = 0, he = 0, he2 = 0, hen = 0;
     for (i = 0; i < n; i++) {
       var A = Math.abs(B[i].twa);
       sb += B[i].bsp; sw += B[i].tws; sa += A; qb += B[i].bsp * B[i].bsp; qw += B[i].tws * B[i].tws; qa += A * A;
       if (isNum(B[i].hdg)) { hs += Math.sin(rad(B[i].hdg)); hc += Math.cos(rad(B[i].hdg)); hn++; }
+      if (isNum(B[i].heel)) { var hv = Math.abs(B[i].heel); he += hv; he2 += hv * hv; hen++; }
     }
     var mb = sb / n, mw = sw / n, ma = sa / n;
     var sdb = Math.sqrt(Math.max(0, qb / n - mb * mb)), sdw = Math.sqrt(Math.max(0, qw / n - mw * mw)), sda = Math.sqrt(Math.max(0, qa / n - ma * ma));
@@ -121,13 +124,16 @@
     if (sdw > o.maxTwsSd) return this.reject('wind unsteady');
     if (sdb > Math.max(o.maxBspSd, o.maxBspCv * mb)) return this.reject('speed unsteady');
     if (hn > 1) { var R = Math.min(1, Math.sqrt(hs * hs + hc * hc) / hn), sdh = deg(Math.sqrt(Math.max(0, -2 * Math.log(R || 1e-9)))); if (sdh > o.maxHdgSd) return this.reject('heading unsteady'); }
+    var mh = hen > n / 2 ? he / hen : null;
+    if (mh != null && mh > o.maxHeel) return this.reject('overpowered');
+    if (mh != null && Math.sqrt(Math.max(0, he2 / hen - mh * mh)) > o.maxHeelSd) return this.reject('heel unsteady');
     var tb = Math.round(mw / o.binTws) * o.binTws, ab = Math.round(ma / o.binTwa) * o.binTwa, bb = Math.round(mb / o.binBsp);
     var key = cellKey(this.cond, this.sea, tb, ab), c = S.cells[key];
     if (!c) c = S.cells[key] = { n: 0, h: {}, pn: 0, ps: 0, sn: 0, ss: 0 };
     addTo(c, bb, sign, mb);
     if (!c.d) c.d = {}; var dy = new Date(s.t * 1000).toISOString().slice(0, 10); c.d[dy] = (c.d[dy] || 0) + 1;
     c.f = c.f ? Math.min(c.f, s.t) : s.t; c.l = Math.max(c.l || 0, s.t);
-    addSession(c, s.t);
+    addSession(c, s.t); if (mh != null) { c.hl = (c.hl || 0) + mh; c.hn = (c.hn || 0) + 1; }
     S.accepted++;
     return 'accepted';
   };
@@ -176,9 +182,9 @@
       var p = k.split('|');
       if (!pick(p[0], q.cond) || !pick(p[1], q.sea)) continue;
       var id = p[2] + '|' + p[3], m = merged[id], c = store.cells[k];
-      if (!m) m = merged[id] = { n: 0, h: {}, d: {}, f: 0, l: 0, s: [] };
+      if (!m) m = merged[id] = { n: 0, h: {}, d: {}, f: 0, l: 0, s: [], hl: 0, hn: 0 };
       m.n += c.n; for (var b in c.h) m.h[b] = (m.h[b] || 0) + c.h[b];
-      if (c.s) m.s = m.s.concat(c.s); for (var dd in (c.d || {})) m.d[dd] = 1; if (c.f) m.f = m.f ? Math.min(m.f, c.f) : c.f; if (c.l) m.l = Math.max(m.l, c.l);
+      if (c.s) m.s = m.s.concat(c.s); if (c.hn) { m.hl += c.hl; m.hn += c.hn; } for (var dd in (c.d || {})) m.d[dd] = 1; if (c.f) m.f = m.f ? Math.min(m.f, c.f) : c.f; if (c.l) m.l = Math.max(m.l, c.l);
     }
     var twsSet = {}, twaSet = {};
     Object.keys(merged).forEach(function (id) { var a = id.split('|'); twsSet[a[0]] = 1; twaSet[a[1]] = 1; });
@@ -188,9 +194,9 @@
     for (x = twaMin; x <= twaMax; x += o.binTwa) twa.push(x);
     var tmin = tws[0], tmax = tws[tws.length - 1]; tws = [];
     for (x = tmin; x <= tmax; x += o.binTws) tws.push(x);
-    var v = [], flag = [], mins = [], days = [], span = [], sess = [], sd = [], neff = [];
+    var v = [], flag = [], mins = [], days = [], span = [], sess = [], sd = [], neff = [], heel = [];
     tws.forEach(function (w) {
-      var rv = [], rf = [], rm = [], rd = [], rs = [], rss = [], rsd = [], rn = [];
+      var rv = [], rf = [], rm = [], rd = [], rs = [], rss = [], rsd = [], rn = [], rh = [];
       twa.forEach(function (a) {
         var m = merged[w + '|' + a], ok = m && m.n >= o.minPoints;
         rv.push(ok ? pct(m.h, m.n, P, o.binBsp, o.maxOverMedian, o.minUnderMedian) : null);
@@ -199,13 +205,14 @@
         rd.push(m ? Object.keys(m.d).length : 0); rs.push(m && m.f ? (m.l - m.f) / 3600 : 0);
         rss.push(m && m.s && m.s.length ? sessionsOf(m.s, Math.ceil(180 / o.stepSec)) : m ? Object.keys(m.d).length : 0);   /* sessions of 3 min or more */
         if (m) { var su = 0, sq = 0; for (var hb in m.h) { var x = hb * o.binBsp; su += x * m.h[hb]; sq += x * x * m.h[hb]; } var mu = su / m.n; rsd.push(Math.sqrt(Math.max(0, sq / m.n - mu * mu))); } else rsd.push(null);
-        rn.push(m ? m.n * o.stepSec / 60 : 0);   /* independent values: about one per minute of steady sailing, because windows overlap and gusts and wave sets last a minute or more */
+        rn.push(m ? m.n * o.stepSec / 60 : 0);
+        rh.push(m && m.hn ? +(m.hl / m.hn).toFixed(1) : null);   /* mean heel when sailing steadily in this cell */   /* independent values: about one per minute of steady sailing, because windows overlap and gusts and wave sets last a minute or more */
       });
-      v.push(rv); flag.push(rf); mins.push(rm); days.push(rd); span.push(rs); sess.push(rss); sd.push(rsd); neff.push(rn);
+      v.push(rv); flag.push(rf); mins.push(rm); days.push(rd); span.push(rs); sess.push(rss); sd.push(rsd); neff.push(rn); heel.push(rh);
     });
     fillGaps(v, flag, o.maxGapCells);
     if (q.smooth !== false) v = v.map(function (r) { return r.map(function (x, j) { return x != null && j > 0 && j < r.length - 1 && r[j - 1] != null && r[j + 1] != null ? (r[j - 1] + 2 * x + r[j + 1]) / 4 : x; }); });
-    return { tws: tws, twa: twa, v: v, flag: flag, mins: mins, days: days, span: span, sess: sess, sd: sd, neff: neff, percentile: P };
+    return { tws: tws, twa: twa, v: v, flag: flag, mins: mins, days: days, span: span, sess: sess, sd: sd, neff: neff, heel: heel, percentile: P };
   }
 
   /* Fill only between measured neighbours, never beyond them. */

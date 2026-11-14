@@ -20,4 +20,13 @@ ok(v20 > 5.5, 'a cell\'s low percentile ignores readings below 0.8 of its median
 let gy = 0; const st2 = F.newStore(), L2 = new F.Logger(st2);
 for (let i = 0; i < 400; i++) { const after = i >= 200, r = L2.add({ t: 1e9 + i, bsp: 7, tws: 15, twa: after ? -172 : 172, hdg: after ? 46 + Math.min(16, i - 200) * 0 : 30 }); if (after && i < 260 && r === 'accepted') gy++; }
 ok(gy === 0 && (st2.rejected.manoeuvre || 0) > 0, 'nothing is learned in the minute after a deep gybe', gy + ' accepted, ' + (st2.rejected.manoeuvre || 0) + ' left out as manoeuvre');
+/* H: heel in each cell, overpowered and rolling left out (14 Nov 2026) */
+const hOk = run(i => ({ t: 1e9 + i, bsp: 7, tws: 16, twa: 50, hdg: 200, heel: 22 + (i % 2 ? 0.5 : -0.5) }), 600);
+const hOver = run(i => ({ t: 1e9 + i, bsp: 7, tws: 16, twa: 50, hdg: 200, heel: 34 }), 600);
+const hRoll = run(i => ({ t: 1e9 + i, bsp: 7, tws: 16, twa: 50, hdg: 200, heel: 20 + ((i % 8) < 4 ? 8 : -8) }), 600);
+ok(hOk.a > 40 && hOver.a === 0 && hRoll.a === 0, 'overpowered (34 deg) and rolling (+-8 deg) sailing is left out; steady 22 deg is kept', [hOk.a, hOver.a + ' ' + JSON.stringify(hOver.st.rejected), hRoll.a].join(', '));
+const ph = F.polar(hOk.st, { percentile: 90 }), hh = ph.heel[ph.tws.indexOf(16)][ph.twa.indexOf(50)];
+ok(Math.abs(hh - 22) < 0.3, 'each cell keeps the heel the boat carried', hh + ' deg');
+const noH = F.polar(full.st, { percentile: 90 });
+ok(noH.heel.every(r => r.every(x => x == null)), 'without heel data the cells simply have none');
 console.log(pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0);
