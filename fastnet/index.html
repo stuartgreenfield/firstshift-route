@@ -173,6 +173,8 @@ input[type=range]{width:100%;accent-color:var(--brand);height:32px}
 .now{grid-column:1/-1;display:flex;gap:4px 18px;overflow-x:auto;scrollbar-width:none}
 .now div{display:grid;flex:none}
 @media (max-width:899px){.now .nside{font-size:0;margin-left:1px}.now .nside::before{content:attr(data-s);font-size:10px}.now .unit{display:none}}
+.now .unit{font-style:normal}
+@media (max-width:360px){.bar .now{gap:2px 3px;padding-left:13px}.bar .now b{font-size:11.5px!important;letter-spacing:-.03em}.bar .now span{font-size:9px}}
 /* the strip is the plan at the slider time, not live readings (Stuart 14 Nov): a small PLAN tag at its left */
 .now{position:relative;padding-left:16px}.now::before{content:'PLAN';position:absolute;left:0;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:center;width:12px;font:700 9px/1 var(--f-data);letter-spacing:.12em;color:var(--brand,#3574BA);white-space:nowrap;display:flex;justify-content:center}
 .now span{font:500 10.5px var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -341,7 +343,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .edpt{border-top:1px solid var(--line);padding:8px 0;display:grid;gap:6px}.edhd{display:flex;justify-content:space-between;align-items:center;gap:8px}.edbtn{display:flex;gap:4px}.edbtn .btn{min-height:32px;padding:2px 10px}.edgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:6px}.edgrid input{min-width:0}.sheet .edgrid input.bad{border-color:#ff3b30;box-shadow:0 0 0 1px #ff3b30}.edadd{min-height:30px;padding:2px 10px;font-size:12px;justify-self:start;margin:2px 0}
 @media (max-width:520px){.edgrid{grid-template-columns:1fr 1fr}.edgrid input:first-child{grid-column:1/-1}}
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.bar .clock{overflow:hidden}.clock{min-width:0;font-size:13px;line-height:1.2}.clock .ckd{display:block;font-size:11px;color:var(--muted)}.clock .ckt{font-size:16px}.clock small{font-size:10.5px}.clock .ckl{display:none}.clock .cks{display:inline}
-  .now{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px 6px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden}}
+  .now{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:2px 6px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden}}
 @media (max-width:360px){.bar{gap:6px 6px}.pgrp{gap:3px}.mobbtn{padding:0 8px}}
 @media (max-width:400px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:44px}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
 
@@ -361,7 +363,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .fit{margin:10px 0 0;padding:9px 11px;border-radius:9px;border:1px solid var(--good);background:color-mix(in srgb,var(--good) 10%,var(--panel));font-size:13px;line-height:1.4}.fit.tight{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}.fit.no{border-color:#E5484D;background:color-mix(in srgb,#E5484D 12%,var(--panel))}.fit ul{margin:4px 0 0;padding-left:18px}.fit summary{cursor:pointer;margin-top:4px;font-weight:600}
 @media (min-width:900px), (orientation:landscape) and (max-height:500px){.now div{width:4.4em;overflow:hidden}.now div:first-child{width:6em}.now{flex:none}.bar .clock{width:11.5em;overflow:hidden}}
 /* wide layout without room for all seven readings beside the slider (landscape phones, small laptops, tablets): readings get their own row */
-@media (min-width:900px), (orientation:landscape) and (max-height:500px){.bar{grid-template-columns:auto minmax(160px,1fr) auto}.bar .pgrp,.bar #time,.bar .clock{grid-row:2}.bar .now{grid-column:1/-1;grid-row:3;max-width:860px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0 8px;overflow:hidden}.bar .now div,.bar .now div:first-child{width:auto;min-width:0}.bar .now b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}
+@media (min-width:900px), (orientation:landscape) and (max-height:500px){.bar{grid-template-columns:auto minmax(160px,1fr) auto}.bar .pgrp,.bar #time,.bar .clock{grid-row:2}.bar .now{grid-column:1/-1;grid-row:3;max-width:860px;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:0 8px;overflow:hidden}.bar .now div,.bar .now div:first-child{width:auto;min-width:0}.bar .now b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}
 .hpic{display:block;max-width:min(100%,320px);height:auto;margin:8px 0 4px;border-radius:10px;border:1px solid var(--line,#2a3a4f)}
 .newdata.moment{white-space:normal;max-width:min(92vw,520px);z-index:9;font-size:13px}.newdata.moment #momentTxt{white-space:pre-line}
 .prog.mini{left:auto;right:var(--gut,12px);transform:none;top:calc(env(safe-area-inset-top,0px) + 150px);width:min(230px,48vw);padding:6px 9px;opacity:.92}.prog.mini #pgD{display:none}.prog.mini .pg-t{font-size:12px}
@@ -641,7 +643,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.5</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.6</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>

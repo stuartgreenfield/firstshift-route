@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.5';
+  var VERSION = 'FirstShift Route v0.12.6';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -222,7 +222,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.5 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.6 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2781,9 +2781,9 @@
         /* the plan over the ground, tide included, as the route is sailed (Stuart 14 Nov: BSP and SOG, VMC over the ground) */
         var gx = q.bsp * Math.sin(q.hdg * R) + (q.cu || 0), gy = q.bsp * Math.cos(q.hdg * R) + (q.cv || 0), sog = Math.hypot(gx, gy), cog = Math.atan2(gx, gy) / R;
         var vmc = sog * Math.cos((cog - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
-        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('SOG', sog.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + '°<i class="nside ' + (q.twa < 0 ? 's" data-s="S">STBD' : 'p" data-s="P">PORT') + '</i>') + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + '<i class="unit"> m</i>' : '-');
-      } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'SOG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
-      else h = ['Hdg', 'BSP', 'SOG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
+        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('SOG', sog.toFixed(1)) + kv('COG', pad((cog + 360) % 360) + '°') + kv('TWA', Math.abs(Math.round(q.twa)) + '°<i class="nside ' + (q.twa < 0 ? 's" data-s="S">STBD' : 'p" data-s="P">PORT') + '</i>') + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + '<i class="unit"> m</i>' : '-');
+      } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
+      else h = ['Hdg', 'BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
     }
     $('now').innerHTML = h; followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
   }
@@ -2803,7 +2803,7 @@
     view.lo = pos.lo - (cx - W / 2) / (K * view.s); view.la = pos.la + (cy - H / 2) / view.s;
     if (fa && fa.ahead) { view.la += fa.ahead[0] / view.s; view.lo += fa.ahead[1] / (K * view.s); }
   }
-  var KVT = { Hdg: 'Plan: heading to steer', BSP: 'Plan: boat speed through the water, from the polar', SOG: 'Plan: speed over the ground, tide included', TWA: 'Plan: true wind angle, from the forecast', TWS: 'Plan: true wind speed, from the forecast', VMC: 'Plan: velocity made good towards the next mark, over the ground, in knots', Sail: 'Plan: sail', Sea: 'Plan: significant wave height, from the forecast' };
+  var KVT = { Hdg: 'Plan: heading to steer', BSP: 'Plan: boat speed through the water, from the polar', SOG: 'Plan: speed over the ground, tide included', COG: 'Plan: course over the ground, tide included', TWA: 'Plan: true wind angle, from the forecast', TWS: 'Plan: true wind speed, from the forecast', VMC: 'Plan: velocity made good towards the next mark, over the ground, in knots', Sail: 'Plan: sail', Sea: 'Plan: significant wave height, from the forecast' };
   function kv(k, v) { return '<div' + (KVT[k] ? ' title="' + KVT[k] + '"' : '') + '><span>' + k + '</span><b>' + v + '</b></div>'; }
   function pad(x) { return String(Math.round(((x % 360) + 360) % 360)).padStart(3, '0'); }
   var playing = false, lastTs = 0;
