@@ -265,3 +265,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 18:36 14 Nov 2026: Stuart "Go": Route v0.12.10 and Navigate v0.7.32 published (rollback restore-2026-11-14-1836, site-restore-2026-11-14-1836).
 - 19:00 14 Nov 2026: v0.12.11: on an existing course a tap on open water adds no mark and a tap on a leg asks (Add a mark here); tour keeps the menus up while open. editauto 13 passed; check 233/235 (server-only items).
 - 19:45 14 Nov 2026: all checks passed (Stuart 18:59 "Wait and let me know when everything is checked then go live"): Route v0.12.11 and Navigate v0.7.33 published (rollback restore-2026-11-14-1945, site-restore-2026-11-14-1945).
+- 20:12 14 Nov 2026: Stuart "Ok go with all fixes and the new elements": Route v0.12.12 (films on the landing page and in Help, films hosted in /films) and Navigate v0.7.34 published (rollback restore-2026-11-14-2012, site-restore-2026-11-14-2012); Wix Phone tools and Android tools cards get Watch the film.
