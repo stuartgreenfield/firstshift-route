@@ -87,3 +87,27 @@ html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
 /* help section */
 .navhelph{margin:16px 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand,var(--ink))}
 .navhelp .hpic{display:block;max-width:100%;border:1px solid var(--line);border-radius:8px;margin-top:6px}
+/* Route's basic plotter (fsplot.js, 14 Nov 2026) */
+.rplotbar{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:5;width:min(calc(100% - 20px),520px);padding:6px 8px 4px;border-radius:12px;border:1px solid var(--line);background:var(--glass,rgba(16,30,48,.92));box-shadow:0 6px 24px rgba(0,0,0,.35);max-height:calc(100% - env(safe-area-inset-top,0px) - 74px);overflow-y:auto}
+.rphead{display:flex;align-items:center;gap:6px}
+.rpname{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;background:none;border:0;color:var(--ink);font:inherit;cursor:pointer;padding:0}
+.rpname b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rpname small{font-size:11px;color:var(--muted)}
+.rpname em{font:600 10px var(--f-body);font-style:normal;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rpline{font:600 15px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rpnav{flex:none;min-width:44px;min-height:40px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--brand);font:700 20px var(--f-data);cursor:pointer}
+.rpnav.rpmin{font:700 11px var(--f-data);letter-spacing:.06em}
+.rpgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 6px;margin-top:4px}
+.rpl{display:flex;flex-direction:column;align-items:center;min-width:0;padding:2px 0}
+.rpl span{font:600 10px var(--f-data);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.rpl b{font:600 20px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rpl i{font-style:normal;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rpl.bad b{color:#FF6B6B}
+.rpfoot{margin:2px 0 0;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rplotbar.mini{padding:3px 6px}
+.rplotb[aria-pressed="true"]{background:var(--brand);color:var(--panel)}
+@media (min-width:900px){.rplotbar{left:auto;right:var(--gutR,10px);transform:none;width:460px}}
+@media (max-width:600px){.rpnav{min-height:34px;min-width:40px;font-size:18px}.rpname b{font-size:14px}.rpl span{font-size:9px}.rpl b{font-size:18px}}
+:root[data-night] .rpl b,:root[data-night] .rpname b,:root[data-night] .rpline{color:#E0322A}
+:root[data-night] .rplotb[aria-pressed="true"]{background:#3A0A08!important;color:#E0322A!important}
+img.hpic:not([src]){display:none}
