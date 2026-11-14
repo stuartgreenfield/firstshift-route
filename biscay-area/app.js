@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.10';
+  var VERSION = 'FirstShift Route v0.12.11';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -223,7 +223,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.10 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.11 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -670,6 +670,10 @@
     btn.addEventListener('pointerdown', start); ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (n) { btn.addEventListener(n, stop); });
     btn.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
   }
+  /* the plan bar on a narrow phone: a long figure ("Code 0", "125° P") shrinks to fit its cell instead of being cut off (Stuart's list, 14 Nov) */
+  (function () { var now = $('now'); if (!now || !window.MutationObserver) return; var busyFit = false;
+    function fit() { if (busyFit) return; busyFit = true; [].forEach.call(now.querySelectorAll('b'), function (b) { b.style.fontSize = ''; var cw = b.clientWidth, sw = b.scrollWidth; if (cw && sw > cw + 1) { var f = parseFloat(getComputedStyle(b).fontSize); b.style.fontSize = Math.max(9, Math.floor(f * cw / sw * 10) / 10) + 'px'; } }); busyFit = false; }
+    new MutationObserver(function () { if (!busyFit) requestAnimationFrame(fit); }).observe(now, { childList: true, subtree: true, characterData: true }); window.addEventListener('resize', fit); })();
   function mobInit() {
     hold($('mobBtn'), 1000, mobStart);
     /* MOB can be moved about (Stuart 14 Nov): drag it anywhere and it stays there on this device; a press and hold still sets it off */
@@ -1624,7 +1628,7 @@
     if ($('edGo')) $('edGo').hidden = !(S.edit.changed && n >= 2);
     if (S.edit.changed) { $('edTxt').innerHTML = '<b class="chg">Course changed.</b> ' + (ch.length > 2 ? ch.slice(0, 2).join('; ') + ' and ' + (ch.length - 2) + ' more' : ch.join('; ')) + '. ' + (S.routes && S.routes.length ? 'The faded routes are out of date: ' : '') + 'Re-route to update.' + strayLink(); $('edDone').textContent = 'Course list'; $('edDone').disabled = n < 2; $('edUndo').disabled = !S.edit.hist.length; return; }
     $('edDone').textContent = 'Done';
-    $('edTxt').innerHTML = S.edit.closed ? 'Tap a mark to name it, set its position or delete it. Tap a leg to add a mark on it. Drag to move. ◇ are My marks: tap one to use it.' + strayLink() :
+    $('edTxt').innerHTML = S.edit.closed ? 'Tap a mark to name it, set its position or delete it. Tap a leg, then Add a mark here, to add one. Drag a mark to move it. ◇ are My marks: tap one to use it.' + strayLink() :
       n === 0 ? 'Tap the chart to place the start, or a ◇ from My marks.' : n === 1 ? 'Tap to add each mark in order, and the finish last. Tap a mark to edit or delete it.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
     $('edDone').disabled = n < 2; $('edUndo').disabled = !(S.edit.hist.length || (!S.edit.closed && n));
   }
@@ -1641,9 +1645,19 @@
     var mm = myMarkHit(x, y), q, la, lo;
     if (mm) q = { lat: mm.lat, lon: mm.lon, name: mm.name, side: 'port' };
     else { la = LA(y); lo = LO(x); if (!editOk(la, lo)) return; q = { lat: +la.toFixed(5), lon: +lo.toFixed(5) }; }
-    var leg = legHit(x, y), p = S.edit.pts; editSnap();
+    var leg = legHit(x, y), p = S.edit.pts;
+    if (S.edit.closed && !mm) {   /* an existing course: a tap never adds a mark by itself (Stuart 14 Nov 18:48: taps to move the chart were adding Mark 2, Mark 3 ...) */
+      if (leg > 0) { addAsk(x, y, leg, q); return; }
+      busy('Tap a leg to add a mark there, or drag a mark to move it.'); setTimeout(function () { busy(''); }, 2200); return;
+    }
+    editSnap();
     if (leg > 0) p.splice(leg, 0, q); else if (S.edit.closed && p.length >= 2) p.splice(p.length - 1, 0, q); else p.push(q);
     editPrompt(); draw();
+  }
+  function addAsk(x, y, leg, q) {   /* a small button at the tap: Add a mark here; any other tap closes it */
+    var b = $('addPop'); if (!b) { b = document.createElement('button'); b.id = 'addPop'; b.type = 'button'; b.className = 'btn primary'; b.style.cssText = 'position:fixed;z-index:40;transform:translate(-50%,-130%);white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)'; document.body.appendChild(b); document.addEventListener('pointerdown', function (e) { if (e.target !== b) b.hidden = true; }, true); }
+    var r = $('map').getBoundingClientRect(); b.textContent = '＋ Add a mark here'; b.style.left = (r.left + x) + 'px'; b.style.top = (r.top + y) + 'px'; b.hidden = false;
+    b.onclick = function (e) { e.stopPropagation(); b.hidden = true; if (!S.edit) return; editSnap(); S.edit.pts.splice(leg, 0, q); editPrompt(); draw(); };
   }
   window.__fsRoutes = function () { return (S.routes || []).map(function (r) { var p = r.r.path, w = 180, iw = 0; p.forEach(function (q, i) { if (q.lo < w) { w = q.lo; iw = i; } }); return { id: r.id, name: r.name, n: p.length, end: [p[p.length - 1].la, p[p.length - 1].lo], west: [p[iw].la, w, iw, p[iw].leg], legs: S.legs && S.legs.map(function (l) { return l.name; }) }; }); };
   window.__fsNear = function (la, lo, r) { var s = S.routes && S.routes[0]; if (!s) return null; return s.r.path.map(function (q, i) { return [i, +q.la.toFixed(3), +q.lo.toFixed(3), q.leg, q.t ? new Date(q.t * 1000).toISOString().slice(5, 16) : '']; }).filter(function (q) { return Math.abs(q[1] - la) < r && Math.abs(q[2] - lo) < r * 1.6; }); };

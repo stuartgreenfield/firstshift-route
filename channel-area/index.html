@@ -344,7 +344,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .edpt{border-top:1px solid var(--line);padding:8px 0;display:grid;gap:6px}.edhd{display:flex;justify-content:space-between;align-items:center;gap:8px}.edbtn{display:flex;gap:4px}.edbtn .btn{min-height:32px;padding:2px 10px}.edgrid{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:6px}.edgrid input{min-width:0}.sheet .edgrid input.bad{border-color:#ff3b30;box-shadow:0 0 0 1px #ff3b30}.edadd{min-height:30px;padding:2px 10px;font-size:12px;justify-self:start;margin:2px 0}
 @media (max-width:520px){.edgrid{grid-template-columns:1fr 1fr}.edgrid input:first-child{grid-column:1/-1}}
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.bar .clock{overflow:hidden}.clock{min-width:0;font-size:13px;line-height:1.2}.clock .ckd{display:block;font-size:11px;color:var(--muted)}.clock .ckt{font-size:16px}.clock small{font-size:10.5px}.clock .ckl{display:none}.clock .cks{display:inline}
-  .now{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:2px 6px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden}}
+  .now{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,3fr) minmax(0,3fr) minmax(0,4fr) minmax(0,5fr) minmax(0,3fr) minmax(0,3fr) minmax(0,6fr) minmax(0,3fr);gap:2px 5px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden}}
 @media (max-width:360px){.bar{gap:6px 6px}.pgrp{gap:3px}.mobbtn{padding:0 8px}}
 @media (max-width:400px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:44px}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
 
@@ -648,7 +648,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.10</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.11</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
