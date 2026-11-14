@@ -18,6 +18,18 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   let e = await pts(); ok(e.length === 3, 'the editor shows only the course\'s own points', e.map(q => q[2]).join(' / '));
   const q = e.find(x => /Casquets/.test(x[2]));
   await p.mouse.move(q[0], q[1]); await p.mouse.down(); for (let i = 1; i <= 10; i++) { await p.mouse.move(q[0] - i * 3, q[1] + i * 2); await p.waitForTimeout(30); } await p.mouse.up(); await p.waitForTimeout(800);
+  // taps on an existing course: water adds nothing; a leg asks first
+  const before = (await pts()).length; const mid = await p.evaluate(() => { const e = window.__fsEditPts(); return [(e[0][0] + e[1][0]) / 2, (e[0][1] + e[1][1]) / 2]; });
+  await p.mouse.click(mid[0] + 140, mid[1] - 120); await p.waitForTimeout(600);
+  ok((await pts()).length === before, 'a tap on open water adds no mark', (await pts()).length + ' points');
+  const pp = await pts(); const lg = [(pp[1][0] + pp[2][0]) / 2, (pp[1][1] + pp[2][1]) / 2];
+  await p.mouse.click(lg[0], lg[1]); await p.waitForTimeout(500);
+  const ask = await p.evaluate(() => { const b = document.getElementById('addPop'); return b && !b.hidden; });
+  ok(ask && (await pts()).length === before, 'a tap on a leg asks first: Add a mark here', String(ask));
+  await p.click('#addPop'); await p.waitForTimeout(500);
+  ok((await pts()).length === before + 1, 'Add a mark here adds one mark on that leg', (await pts()).length + ' points');
+  await p.evaluate(() => document.getElementById('edUndo').click()); await p.waitForTimeout(400);
+  ok((await pts()).length === before, 'Undo takes it off again');
   let t = await txt(); ok(/^Course changed\. Casquets moved [\d.]+ nm \w+\. /.test(t), 'moving one mark reports only that mark', t);
   await p.click('#edGo'); await p.waitForTimeout(3000); await routed();
   let r = await p.evaluate(() => JSON.parse(localStorage.getItem('fs-myraces') || '[]').map(x => x.course.marks.length));
