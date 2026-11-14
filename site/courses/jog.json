@@ -1,5 +1,5 @@
 {
- "note": "JOG races in the FirstShift Route area, from the JOG 2027 programme (dates published; the 2027 Notice of Race is due 1 December 2026). JOG publishes courses in its sailing instructions, which are not yet in hand: coastal races are set on the day, most passage races show start and finish only, and two show the 2025 course from race reports. Positions marked approximate are approximate charted positions of the named places, for routing only: check the sailing instructions.",
+ "note": "JOG races in the FirstShift Route area, from the JOG 2027 programme (dates published; the 2027 Notice of Race is due 1 December 2026). JOG publishes courses in its sailing instructions, which are not yet in hand: coastal races are set on the day, most passage races show start and finish only, and two show the 2025 course from race reports. Positions marked approximate are approximate charted positions of the named places, for routing only: check the sailing instructions. Distances are JOG's 2026 figures from the 2026 Notice of Race. Solent mark positions are from JOG's Solent race mark list (23 February 2026). JOG publishes each race's sailing instructions on its website at least seven days before the start (Notice of Race 3.1).",
  "updated": "2026-11-14",
  "source": "https://myjog.jog.org.uk/programme",
  "races": [
@@ -102,10 +102,11 @@
     "lon": -1.3051,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 35,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-great-escape",
@@ -128,10 +129,11 @@
     "lon": -1.3051,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 25,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course."
+   "setNote": "JOG sets the course on the day from its Solent race marks. Enter it under Course, Edit this course.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-cowes-yarmouth",
@@ -154,10 +156,11 @@
     "lon": -1.5,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 35,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-yarmouth-cowes",
@@ -180,10 +183,11 @@
     "lon": -1.3051,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 25,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-deauville",
@@ -195,15 +199,15 @@
    "courseYear": 2025,
    "courseStatus": "last-year",
    "start": {
-    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
-    "lat": 50.7769,
-    "lon": -1.3051
+    "name": "Start, off the Royal Southern buoy (JOG 4S; 2025 start, line in the sailing instructions)",
+    "lat": 50.81433,
+    "lon": -1.25717
    },
    "marks": [
     {
-     "name": "Between the Solent forts (2025)",
-     "lat": 50.745,
-     "lon": -1.082,
+     "name": "Between No Man's Land and Horse Sand forts (2025)",
+     "lat": 50.74509,
+     "lon": -1.08366,
      "side": "port",
      "sideAssumed": true,
      "via": true,
@@ -216,10 +220,11 @@
     "lon": 0.06,
     "radius_nm": 1.0
    },
-   "nm": null,
+   "nm": 100,
    "source": "https://jog.org.uk/?p=6255",
    "page": "channel-area",
-   "setNote": "2025 course from the JOG race report: committee boat start off the Royal Southern buoy, out through the Solent forts and past Bembridge, finish at La Semoy buoy. Check the 2027 sailing instructions."
+   "setNote": "2025 course from the JOG race report (jog.org.uk, 27 May 2025): committee boat start off the Royal Southern buoy, out between the Solent forts and past Bembridge, finish at La Semoy buoy. Mark positions from the JOG Solent race mark list 2026. Check the 2027 sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-deauville-cowes",
@@ -268,10 +273,11 @@
     "lon": -1.225,
     "radius_nm": 1.0
    },
-   "nm": null,
+   "nm": 76,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-weymouth",
@@ -294,10 +300,11 @@
     "lon": -2.44,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 46,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. In 2026 the race was Cowes to Weymouth and Portland, 46 nm (Notice of Race). Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-alderney",
@@ -320,10 +327,11 @@
     "lon": -2.19,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 74,
    "source": "https://jog.org.uk/?p=7725",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions. In 2026 the fleet left the Solent by the Needles (JOG race report, 2 July 2026)."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions. In 2026 the fleet left the Solent by the Needles (JOG race report, 2 July 2026).",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-fecamp",
@@ -361,9 +369,9 @@
    "courseYear": 2025,
    "courseStatus": "last-year",
    "start": {
-    "name": "Start, off Cowes (JOG sets the line in the sailing instructions)",
-    "lat": 50.7769,
-    "lon": -1.3051
+    "name": "Start, off Gurnard (2025 start, line in the sailing instructions)",
+    "lat": 50.77033,
+    "lon": -1.314
    },
    "marks": [
     {
@@ -380,10 +388,11 @@
     "lon": -2.525,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 100,
    "source": "https://www.yachtsandyachting.com/news/289363/JOG-Nautical-Cloud-Channel-Race-to-St-Peter-Port",
    "page": "channel-area",
-   "setNote": "2025 course from a race report: start off Gurnard, round the Casquets, finish through the Little Russell. Rounding side assumed. Check the 2027 sailing instructions."
+   "setNote": "2025 course from a race report: start off Gurnard, round the Casquets, finish through the Little Russell. Rounding side assumed. Check the 2027 sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-cherbourg",
@@ -406,10 +415,11 @@
     "lon": -1.66,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 75,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-cowes-poole",
@@ -432,10 +442,11 @@
     "lon": -1.948,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 50,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-poole-cowes",
@@ -458,10 +469,11 @@
     "lon": -1.3051,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 24,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-cowes-lymington",
@@ -484,10 +496,11 @@
     "lon": -1.508,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 25,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   },
   {
    "id": "jog-lymington-cowes",
@@ -510,10 +523,11 @@
     "lon": -1.3051,
     "radius_nm": 0.4
    },
-   "nm": null,
+   "nm": 20,
    "source": "https://myjog.jog.org.uk/programme",
    "page": "channel-area",
-   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions."
+   "setNote": "JOG has not published this course: start and finish only. Add the marks from the sailing instructions.",
+   "nmSource": "2026 distance, JOG Notice of Race 2026 (issued 11 June 2026)"
   }
  ]
 }

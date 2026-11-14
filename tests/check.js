@@ -11,8 +11,8 @@ const DEV = [
   ['Pixel 7', devices['Pixel 7']], ['Pixel 7 on its side', devices['Pixel 7 landscape']], ['iPad', devices['iPad (gen 7)']], ['iPad on its side', devices['iPad (gen 7) landscape']],
   ['Galaxy Tab S4', devices['Galaxy Tab S4']], ['Computer', { viewport: { width: 1440, height: 860 } }], ['Small laptop', { viewport: { width: 1280, height: 720 } }]
 ].filter(d => d[1]);
-const TERMS = () => { const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); };
-const DONE = () => { const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); };
+const TERMS = () => { const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); };   /* Show me round? (14 Nov): the checks answer No */
+const DONE = () => { const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); };
 function rec(dev, area, name, ok, note, img) { R.push({ dev, area, name, ok: !!ok, note: note || '', img: img || '' }); console.log((ok ? 'PASS ' : 'FAIL ') + dev + ' | ' + area + ' | ' + name + (note ? ' | ' + note : '')); }
 async function snap(p, dev, what) { const f = (++shot).toString().padStart(3, '0') + '-' + (dev + '-' + what).replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.png'; await p.screenshot({ path: path.join(OUT, f) }); return f; }
 async function layout(p) {
