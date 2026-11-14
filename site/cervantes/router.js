@@ -263,7 +263,7 @@
             var run = Math.max(0, dt - lost) / 3600;
             var dn = (s * cosH[hi] * run + C[1] * dt / 3600), de = (s * sinH[hi] * run + C[0] * dt / 3600);
             var nla = p.la + dn / 60, nlo = p.lo + de / (60 * kp);
-            var arrived = false;
+            var arrived = false, fr = 1;
             if (gate) {
               arrived = crosses4(p.la, p.lo, nla, nlo, ga, gb);
               /* only a crossing that goes round the mark the right way counts: anticlockwise for a mark left to port, clockwise to starboard.
@@ -281,7 +281,11 @@
               var k = Math.cos(tgt[0] * R), ax = (p.lo - tgt[1]) * 60 * k, ay = (p.la - tgt[0]) * 60, bx = (nlo - tgt[1]) * 60 * k, by = (nla - tgt[0]) * 60;
               var dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy + 1e-12)));
               arrived = Math.hypot(ax + u * dx, ay + u * dy) <= (leg.r || 0.5);
+              /* when in the step the boat first comes within the radius (13 Nov 2026, review finding 1) */
+              if (arrived) { var rr = leg.r || 0.5, qa = dx * dx + dy * dy, qb = 2 * (ax * dx + ay * dy), qc = ax * ax + ay * ay - rr * rr; fr = qc <= 0 || qa < 1e-12 ? 0 : Math.max(0, Math.min(1, (-qb - Math.sqrt(Math.max(0, qb * qb - 4 * qa * qc))) / (2 * qa))); }
             }
+            /* gate: the fraction of the step at which the boat's track crosses the gate line */
+            if (arrived && gate) { var gk2 = Math.cos(ga[0] * R), px = p.lo * gk2, py = p.la, rx = (nlo - p.lo) * gk2, ry = nla - p.la, sx = (gb[1] - ga[1]) * gk2, sy = gb[0] - ga[0], den = rx * sy - ry * sx; fr = Math.abs(den) < 1e-15 ? 1 : Math.max(0, Math.min(1, ((ga[1] * gk2 - px) * sy - (ga[0] - py) * sx) / den)); }
             var sec = 0, score = 0;
             if (!arrived) {   /* prune as we go: keep only the best point in each bearing sector from the leg origin, and test the water only for a new best */
               var bx2 = (nlo - oLo) * kO, by2 = nla - oLa, bb = (Math.atan2(bx2, by2) / R + 360) % 360;
@@ -296,13 +300,18 @@
             }
             if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
             var c = { la: nla, lo: nlo, par: pi, hdg: H[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
-            if (arrived) hit.push(c); else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
+            if (arrived) { c.fr = fr; c.la = p.la + (nla - p.la) * fr; c.lo = p.lo + (nlo - p.lo) * fr; hit.push(c); } else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
           }
         }
         t += dt / 3600;
         if (hit.length) {
-          hist.push({ pts: hit, t: t, leg: li }); arrivals.push({ name: leg.name, t: t });
-          pts = hit.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
+          /* the mark is rounded (or the finish reached) at the moment the first boat crosses, not at the end of the step: the leg
+             is timed from there and the next leg starts from that point (13 Nov 2026, review finding 1: up to a whole step late before,
+             and the next leg started up to a step's sailing beyond the mark) */
+          var first = hit.reduce(function (a, c) { return c.fr < a.fr ? c : a; }, hit[0]), tArr = t - dt / 3600 + first.fr * dt / 3600;
+          t = tArr;
+          hist.push({ pts: [first], t: tArr, leg: li }); arrivals.push({ name: leg.name, t: tArr });
+          pts = [{ la: first.la, lo: first.lo, side: first.side, par: 0 }];
           done = true; break;
         }
         if (!ncand && calm === pts.length && pts.length) {   /* no wind anywhere on the front: the forecasts have run out before the finish */
