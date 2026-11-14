@@ -375,6 +375,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .splash.out{opacity:0;pointer-events:none}
 .splash.terms .sp-go{display:none}
 .splash.terms .sp-tour{display:none}
+.splash.terms .sp-film{display:none}
 .splash.terms .sp-txt{max-height:100%;overflow-y:auto;padding-top:calc(16px + env(safe-area-inset-top,0px))}
 @media (max-height:740px){.splash.terms .sp-txt>p,.splash.terms .sp-mail{display:none}.splash.terms h1{font-size:64px}}
 .sp-terms{background:rgba(2,22,48,.94);border:1px solid #6FA9E0;border-radius:14px;padding:14px 16px;display:grid;gap:10px;color:#fff;font:400 14px/1.5 var(--f-body)}
@@ -476,6 +477,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span></h1>
   <p>Free race routing for offshore sailors. Eight forecast models, tidal streams, sea state and your own sail crossovers, worked through on your phone, tablet or computer. The route, the plan and the crew brief, ready before you slip the lines.</p>
   <span class="sp-mail" id="spMail">firstshiftsailing.com<br>stuart@greenfield.co.uk</span><span class="sp-go">Tap to start · planning aid, not for navigation</span>
+  <button class="sp-film" id="spFilm" type="button" aria-label="Watch the two-minute film: how to use Route"><img src="../films/route-how-to.jpg" alt="" width="160" height="90"><span><b>Watch: how to use Route</b><i>2 minutes, with sound</i></span></button>
   <div class="sp-tour" id="spTour"><b>Show me round?</b><button class="btn primary" type="button" id="spTourYes">Yes</button><button class="btn ghost" type="button" id="spTourNo">No</button></div>
   <div class="sp-terms" id="spTerms" hidden role="alertdialog" aria-label="Before you use Route"><b>Before you use Route</b><p>Route is a planning aid, not for navigation. Its forecasts, tidal streams, depths and routes come from computer models and can be wrong, late or incomplete. Check official charts, the sailing instructions and the latest forecasts, and keep a proper lookout. The skipper alone is responsible for the safety of the boat and crew. You use Route at your own risk.</p><div class="sp-tb"><a href="../help/terms.html">Full terms and data sources</a><div class="sp-tb2"><button class="btn" id="spAgreeTour" type="button">I understand, show me round</button><button class="btn primary" id="spAgree">I understand</button></div></div></div></div></div>
 <div class="app" id="app">
@@ -648,7 +650,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.11</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.12</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>

@@ -39,7 +39,10 @@
     '.fst-flash{animation:fstf 1.6s ease 2}@keyframes fstf{50%{background:rgba(242,178,51,.28)}}' +
     '.fst-try{border:2px solid #F2B233;border-radius:12px;padding:12px 14px;margin:0 0 14px;background:rgba(242,178,51,.10)}.fst-try h3{margin:0 0 6px}.fst-try p{margin:0 0 8px}' +
     '.sp-tour{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;font:400 15px/1.4 var(--f-body,system-ui)}.sp-tour b{font-weight:600;margin-right:4px}.sp-tour .btn{min-height:42px}.sp-tour .btn.ghost{background:transparent;border:1px solid #6FA9E0;color:#fff}' +
-    '.sp-terms .sp-tb2{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}';
+    '.sp-terms .sp-tb2{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}' +
+    '.sp-film{display:flex;gap:12px;align-items:center;margin-top:14px;padding:6px 14px 6px 6px;background:rgba(255,255,255,.08);border:1px solid rgba(111,169,224,.55);border-radius:12px;color:#fff;cursor:pointer;text-align:left;font:inherit;max-width:100%}.sp-film img{width:120px;height:68px;object-fit:cover;border-radius:8px;flex:none;background:#000}.sp-film span{display:grid;gap:2px;min-width:0}.sp-film b{font:600 15px/1.25 var(--f-head,system-ui)}.sp-film i{font-style:normal;font-size:13px;color:#B9CFE6}.sp-film img+span::before{content:"";}' +
+    '.fsfilm{position:fixed;inset:0;z-index:400;background:rgba(2,10,20,.86);display:flex;align-items:center;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}.fsfilm[hidden]{display:none}' +
+    '.fsfilm-in{width:min(960px,100%);display:grid;gap:10px}.fsfilm video{width:100%;max-height:calc(100vh - 120px);background:#000;border-radius:12px}.fsfilm-b{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}.fsfilm-b .btn{min-height:44px}.fsfilm h3{margin:0;color:#fff;font:600 17px/1.3 var(--f-head,system-ui)}.fsfilm p{margin:0;color:#B9CFE6;font-size:13px}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   var T = { on: false, lv: null, i: 0, root: null, paused: false };
@@ -115,13 +118,30 @@
   }
   window.FSTour = { start: chooser, level: startLevel, end: end, levels: levels };
 
+
+  /* the how-to film (Stuart 14 Nov 19:11): a thumbnail on the landing page opens a larger player with Go to the tool and End;
+     also a Watch button in Help. Navigate sets window.FSFilmCfg in navtour.js. */
+  function filmCfg() { return window.FSFilmCfg || { tool: 'Route', src: '../films/route-how-to.mp4', poster: '../films/route-how-to.jpg', len: '1 min 39 s' }; }
+  function filmOpen() {
+    var c = filmCfg(), f = $('fsFilm');
+    if (!f) { f = document.createElement('div'); f.id = 'fsFilm'; f.className = 'fsfilm'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', 'How to use ' + c.tool); document.body.appendChild(f); }
+    f.innerHTML = '<div class="fsfilm-in"><h3>How to use ' + c.tool + '</h3><video id="fsFilmV" controls playsinline preload="metadata" poster="' + c.poster + '"><source src="' + c.src + '" type="video/mp4"></video><p>' + c.len + ', with sound. Needs an internet connection.</p><div class="fsfilm-b"><button class="btn" type="button" data-film="end">End</button><button class="btn primary" type="button" data-film="go">Go to ' + c.tool + '</button></div></div>';
+    f.hidden = false; f.onclick = function (e) { e.stopPropagation(); var b = e.target.closest('[data-film]'); if (!b) { if (e.target === f) filmEnd(); return; } if (b.dataset.film === 'end') filmEnd(); else filmGo(); };
+    var v = $('fsFilmV'); try { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
+  }
+  function filmEnd() { var f = $('fsFilm'), v = $('fsFilmV'); if (v) try { v.pause(); } catch (e) {} if (f) f.hidden = true; }
+  function filmGo() { filmEnd(); var sp = $('splash'); if (sp && !sp.hidden && !sp.classList.contains('terms')) { var n = $('spTourNo'); if (n) n.click(); } var h = $('help'); if (h && !h.hidden) h.hidden = true; }
+  window.FSFilm = { open: filmOpen, end: filmEnd };
+  function filmWire() { var b = $('spFilm'); if (!b) return; var c = filmCfg(); b.addEventListener('click', function (e) { e.stopPropagation(); filmOpen(); }); var im = b.querySelector('img'); if (im) im.src = c.poster; var t = b.querySelector('b'); if (t) t.textContent = 'Watch: how to use ' + c.tool; b.setAttribute('aria-label', 'Watch the two-minute film: how to use ' + c.tool); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(filmWire, 0); }); else setTimeout(filmWire, 0);
   /* Help: "Try it safely first" highlighted at the very top, with the tour button */
   function tryBox() {
     var h = $('help'), list = $('helpList'); if (!h || !list || $('fsTry')) return !!$('fsTry');
     var d = document.createElement('section'); d.id = 'fsTry'; d.className = 'fst-try';
-    d.innerHTML = '<h3>Try it safely first</h3>' + tryText() + '<button class="btn primary" type="button" id="fsTryTour">Show me round</button>';
+    d.innerHTML = '<h3>Try it safely first</h3>' + tryText() + '<div class="xrow" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" id="fsTryTour">Show me round</button><button class="btn" type="button" id="fsTryFilm">Watch the 2-minute film</button></div>';
     var anchor = $('navHelp') || list; anchor.parentNode.insertBefore(d, anchor);
     $('fsTryTour').onclick = function () { $('help').hidden = true; chooser(); };
+    $('fsTryFilm').onclick = function () { filmOpen(); };
     return true;
   }
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) setTimeout(function () { tryBox(); var d = $('fsTry'); if (d && $('navHelp') && d.nextElementSibling !== $('navHelp')) $('navHelp').parentNode.insertBefore(d, $('navHelp')); }, 80); }, true);
