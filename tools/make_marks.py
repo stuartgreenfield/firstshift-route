@@ -1,12 +1,12 @@
 """Builds the Route and Navigate marks (Stuart 14 Nov 2026, DISCUSSION 114).
 
 The three FirstShift sails redrawn as clean strokes over the traced master, and the tool's name as outlined
-Space Grotesk 600 with the landing page's tracking and blue full stop, so the mark is crisp and identical with or without web fonts. Two layouts in each file:
+Inter 700 (Stuart 14 Nov, option D) with the landing page's tracking and blue full stop, so the mark is crisp and identical with or without web fonts. Two layouts in each file:
 'stack' (sails over the name, for the phone's small square) and 'row' (sails beside the name, wider screens).
 Colours come from CSS variables with light-theme fallbacks, so the inlined copy follows light, dark and night.
 
 Writes site/brand/route-mark.svg, navigate-mark.svg (the masters) and site/brand/<tool>-mark.inc.html (the
-two inline svgs the page carries). Run: python3 tools/make_marks.py space-grotesk-latin-600-normal.woff (needs fonttools and uharfbuzz)
+two inline svgs the page carries). Run: python3 tools/make_marks.py inter-latin-700-normal.woff (needs fonttools and uharfbuzz)
 """
 import sys, os, re
 from fontTools.ttLib import TTFont
@@ -19,7 +19,7 @@ import uharfbuzz as hb
 import io
 _b = io.BytesIO(); _t = TTFont(sys.argv[1]); _t.flavor = None; _t.save(_b)   # HarfBuzz reads plain TrueType, not woff
 HBF = hb.Font(hb.Face(hb.Blob(_b.getvalue())))
-TRACK = -40  # font units per letter: -0.04 em, as the landing page heading (letter-spacing:-.04em)
+TRACK = -0.04 * f['head'].unitsPerEm  # -0.04 em per letter, as the landing page heading (letter-spacing:-.04em)
 def outline(text):
     """The name plus a full stop, shaped with the font's own kerning (HarfBuzz) and the landing page's tracking.
     Returns draw(x0, base, s) -> (name path, dot path), the width in font units and the cap height."""
@@ -62,7 +62,7 @@ for key, (name, light, dark) in TOOLS.items():
     row = f'{sg2}<path d="{a2}" {INK}/><path d="{d2}" {DOT}/>'
     desc = (f'FirstShift {name}: the sails and the name. Two layouts, stack (120 x 100) and row ({W} x 60). '
             'Colours: --mk-navy, --mk-blue, --mk-ink and --mk-dot (the full stop, as the landing page); fallbacks are the light theme. '
-            'Made by tools/make_marks.py from Space Grotesk 600 with the font kerning and -0.04 em tracking, as the landing page heading (SIL Open Font Licence).')
+            'Made by tools/make_marks.py from Inter 700 with the font kerning and -0.04 em tracking, as the landing page heading (SIL Open Font Licence).')
     master = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {120 + 20 + W} 100" width="{120 + 20 + W}" height="100">'
               f'<title>FirstShift {name}</title><desc>{desc}</desc>'
               f'<svg id="{key}-stack" x="0" y="0" width="120" height="100" viewBox="0 0 120 100">{stack}</svg>'
