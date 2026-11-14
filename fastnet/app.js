@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.13';
+  var VERSION = 'FirstShift Route v0.12.14';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -223,7 +223,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.13 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.14 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -592,10 +592,10 @@
       $('raceSel').innerHTML = ['RORC', 'JOG'].map(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); return rs.length ? '<optgroup label="' + o + ' races">' + rs.map(opt).join('') + '</optgroup>' : ''; }).join('');
       var pageOf = function (id) { var r = RACES.filter(function (x) { return x.id === id; })[0]; return r ? (r.page || r.id) : HERE; };
       var hop = function (id) { var pg = pageOf(id); if (pg === HERE) return false; location.replace('../' + pg + '/' + (pg !== id ? '?race=' + encodeURIComponent(id) : '')); return true; };   /* a race only routes on the page that holds its forecasts */
-      $('raceSel').onchange = function () { if (!hop($('raceSel').value)) applyRace($('raceSel').value); };
+      $('raceSel').onchange = function () { S.myId = null; if (!hop($('raceSel').value)) applyRace($('raceSel').value); };
       var home = meta.course0 ? meta.course0.raceId : meta.course.raceId; home = home || 'cervantes'; var want = home === 'cervantes' ? (store('fs-race') || home) : home; if (!RACES.some(function (r) { return r.id === want; })) want = home;
       var qr = QS0.get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
-      if (want !== home && hop(want)) return;
+      if (want !== home && !QS0.get('my') && hop(want)) return;   /* a saved course in the address opens that course, not the last RORC race (Stuart 14 Nov: an edited course came back with no marks) */
       var lastBoot = LAST0; $('raceSel').value = want; applyRace(want);
       if (!RACES.some(function (r) { return r.id === want; })) { var c0 = meta.course; $('raceTitle').textContent = c0.name + ' · ' + c0.start.name.replace(/^Start,\s*/, '') + ' to ' + c0.finish.name.replace(/^Finish,\s*/, ''); setShort(c0.name.replace(/^English /, '').replace(/^Southern /, '')); }
       var qs = QS0, my = qs.get('my'), last = lastBoot;
@@ -1424,7 +1424,7 @@
     $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };
     $('edUndo').onclick = function () { if (!S.edit) return; if ($('markPop')) $('markPop').hidden = true; if (S.edit.hist.length) S.edit.pts = JSON.parse(S.edit.hist.pop()); else S.edit.pts.pop(); editPrompt(); draw(); };
     $('edCancel').onclick = function () { if ($('markPop')) $('markPop').hidden = true; S.edit = null; $('editBar').hidden = true; draw(); if (QS0.get('new') && !S.newDone) { S.newDone = true; run(); } };
-    $('edGo').onclick = function () { if (!S.edit || S.edit.pts.length < 2) return; if ($('markPop')) $('markPop').hidden = true; var bad = S.edit.pts.filter(function (q) { return !editOk(q.lat, q.lon); }); if (bad.length) return; $('editBar').hidden = true; editCommit($('startSel').value); };
+    $('edGo').onclick = function () { if (!S.edit || S.edit.pts.length < 2) return; if ($('markPop')) $('markPop').hidden = true; var o0 = S.edit.orig ? JSON.parse(S.edit.orig) : [], same = function (q) { return o0.some(function (r) { return Math.abs(r.lat - q.lat) < 1e-6 && Math.abs(r.lon - q.lon) < 1e-6; }); }; var bad = S.edit.pts.filter(function (q) { return !same(q) && !editOk(q.lat, q.lon, q.name); }); if (bad.length) return;   /* only new or moved points are checked: a published finish or rock that sits on a land square of the depth chart (St Malo, Fastnet Rock) must not stop the course saving (Stuart 14 Nov: edited courses would not save or route) */ $('editBar').hidden = true; editCommit($('startSel').value); };
     $('edDone').onclick = function () { if (!S.edit || S.edit.pts.length < 2) return; if ($('markPop')) $('markPop').hidden = true; editForm(); };
 
   }
@@ -1593,6 +1593,7 @@
   function goNew(id) { try { if (WIZ.on) sessionStorage.setItem('fs-wiz', ''); } catch (e) {} location.href = '../' + id + '/?new=1'; }
   function startEdit(c) {
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
+    if (!c || !(meta.course.race && meta.course.race.custom)) S.myId = null;   /* Stuart 14 Nov "loses the courses": a new course or an edited RORC or JOG race used to be saved over the My race opened before */
     S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks || []).concat([c.finish]).filter(function (p) { return !p.auto; }).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side, via: !!p.via, must: !!p.must, auto: !!p.auto }; }) : [], closed: !!c, hist: [] };
     S.edit.orig = JSON.stringify(S.edit.pts);
     if (!c) S.drawnNew = true;
@@ -1632,11 +1633,11 @@
       n === 0 ? 'Tap the chart to place the start, or a ◇ from My marks.' : n === 1 ? 'Tap to add each mark in order, and the finish last. Tap a mark to edit or delete it.' : n + ' points. Tap to add more, or Done: the last point is the finish.';
     $('edDone').disabled = n < 2; $('edUndo').disabled = !(S.edit.hist.length || (!S.edit.closed && n));
   }
-  function editOk(la, lo) {
+  function editOk(la, lo, nm) {
     if (la < 35.5 || la > 61.5 || lo < -15 || lo > 12) { busy('Outside the routing area: cannot route there.'); setTimeout(function () { busy(''); }, 2500); return false; }
     var inAny = REGIONS.some(function (g) { var b = g.region; return READY[g.id] && la >= b.s && la <= b.n && lo >= b.w && lo <= b.e; });
     if (REGIONS.length && !inAny) { busy('Outside every forecast area (the dashed boxes): Route cannot route there yet.'); setTimeout(function () { busy(''); }, 3500); return false; }   /* any area will do: on saving, Route opens the course on the area that covers it */
-    var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy('That is land. Choose open water.'); setTimeout(function () { busy(''); }, 2000); return false; }
+    var z = P.depth ? P.depth.nearest('z', la, lo) : NaN; if (z > 0) { busy((nm ? nm + ' is' : 'That is') + ' on land. Choose open water.'); setTimeout(function () { busy(''); }, 4000); return false; }
     return true;
   }
   function editTap(x, y) {
@@ -1689,6 +1690,7 @@
   window.__navXY = function (la, lo) { var r = cv.getBoundingClientRect(); return [r.left + X(lo), r.top + Y(la)]; };   /* for the automatic tests (north up) */   /* Route's Laylines box also switches the plotter's laylines */
   window.__navDry = function (la, lo) { return aisDry(la, lo); };   /* land or under 2 m, for the practice boat */   /* laylines stop at the land */
   window.__navLayers = function (st) { if (!st) return { show: Object.assign({}, S.show), hid: S.routes.map(function (r) { return [r.id, !!r.hidden]; }) }; Object.keys(st.show || {}).forEach(function (k) { S.show[k] = !!st.show[k]; }); if (st.only) S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); else if (st.hid) { var m = {}; st.hid.forEach(function (h) { m[h[0]] = h[1]; }); S.routes.forEach(function (r) { if (r.id in m) r.hidden = m[r.id]; }); } if ($('layers') && !$('layers').hidden) layersPop(); draw(); };   /* Deck and Nav views */
+  window.__fsEditDepth = function () { return S.edit ? S.edit.pts.map(function (q) { return [q.name || '', q.lat, q.lon, P.depth ? P.depth.nearest('z', q.lat, q.lon) : null]; }) : null; };   /* for the automatic tests: depth under each point (above 0 is land) */
   window.__fsEditPts = function () { var r = $('map').getBoundingClientRect(); return S.edit ? S.edit.pts.map(function (q) { return [r.left + X(q.lon), r.top + Y(q.lat), q.name || '']; }) : null; };   /* for the automatic tests */
   function editHit(x, y) { var p = S.edit && S.edit.pts, best = -1, bd = 18; if (!p) return -1; p.forEach(function (q, i) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = i; } }); return best; }
   function editDraw() {
@@ -2493,6 +2495,7 @@
     el.hidden = !on.length; if (on.length) el.textContent = on.map(function (k) { return CHARTS[k].credit; }).join(' · ') + ' · Not for navigation';
   }
   chartCredit();
+  window.__fsView = function () { return { s: view.s, lo: view.lo, la: view.la, fingers: ptrs.size }; };   /* for the automatic tests */
   window.__fsCharts = function () { return { log: chartLog, tiles: Object.keys(TILES).length, z: Object.keys(CHARTS).map(function (k) { return k + ':' + tileZoom(CHARTS[k]); }) }; };
   function drawDepthLines() {
     if (!depthLines) return; var lo0 = LO(0), lo1 = LO(W), la1 = LA(0), la0 = LA(H), kx = K * view.s, ox = W / 2 - view.lo * kx, sy = view.s, oy = H / 2 + view.la * sy;
@@ -2855,7 +2858,7 @@
   cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(evx(e), evy(e), e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
   function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(20000, view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
   cv.addEventListener('dblclick', function () { fit(); draw(); });
-  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
+  cv.addEventListener('pointerdown', function (e) { if (e.isPrimary) { ptrs.clear(); pmid = null; S.drag = null; }   /* the first finger down starts a new gesture: a finger whose lift was never reported (Stuart 14 Nov 20:42, Android tablet: pinch stopped working) must not leave the chart thinking three fingers are down */ try { cv.setPointerCapture(e.pointerId); } catch (er) {} ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
   /* two fingers move the chart as well as zoom it, like a map app (Stuart 12 Nov): read both fingers together once a frame */
   var pairRaf = 0;
   function pairNow() { var v = Array.from(ptrs.values()); return { x: (v[0][0] + v[1][0]) / 2, y: (v[0][1] + v[1][1]) / 2, d: Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]) }; }
@@ -2868,12 +2871,32 @@
     pmid = q;
   }
   cv.addEventListener('pointermove', function (e) {
+    if (tp) return;
     if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse' && ($('tip').hidden || !$('tip').classList.contains('docked'))) hover(evx(e), evy(e), false); return; }   /* a tip pinned by a click stays until closed */
     var prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [evx(e), evy(e)]);
     if (S.drag != null && ptrs.size === 1) { var dq = S.edit.pts[S.drag]; dq.lat = +LA(evy(e)).toFixed(5); dq.lon = +LO(evx(e)).toFixed(5); moved = 99; draw(); return; }
     if (ptrs.size === 1) { var dx = evx(e) - prev[0], dy = evy(e) - prev[1]; moved += Math.abs(dx) + Math.abs(dy); if (moved > 6) { if (follow) followSet(false); view.lo -= dx / (K * view.s); view.la += dy / view.s; draw(); if (e.pointerType === 'mouse') $('tip').hidden = true; } return; }
     moved = 99; if (!pmid) { pmid = pairNow(); return; } if (!pairRaf) pairRaf = requestAnimationFrame(pairApply);   /* both fingers together, once a frame */
   });
+  /* two fingers anywhere over the chart pinch it, even when one lands on a label, the GPS bar or a button lying over the chart
+     (Stuart 14 Nov 21:16: "Pinch fails a lot on Route on Android"); panels, lists and sheets keep their own scrolling */
+  var tp = null;
+  function overChart(t) { var el = t.target; if (!el || !el.closest || el.closest('.sheet, #panel, input, select, textarea, #fsTour, #fs-film-modal, #fsFilm')) return false; var r = cv.getBoundingClientRect(); return t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom; }
+  function pairT(ts) { var r = cv.getBoundingClientRect(), a = ts[0], b2 = ts[1]; return { x: (a.clientX + b2.clientX) / 2 - r.left, y: (a.clientY + b2.clientY) / 2 - r.top, d: Math.hypot(a.clientX - b2.clientX, a.clientY - b2.clientY) }; }
+  document.addEventListener('touchstart', function (e) {
+    tp = null; if (e.touches.length !== 2) return;
+    var t0 = e.touches[0], t1 = e.touches[1]; if (t0.target === cv && t1.target === cv) return;   /* both on the chart: the pointer code has it */
+    if (!overChart(t0) || !overChart(t1)) return;
+    tp = pairT(e.touches); ptrs.clear(); pmid = null; S.drag = null; moved = 99;
+  }, { passive: true, capture: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!tp || e.touches.length !== 2) return; if (e.cancelable) e.preventDefault();
+    var q = pairT(e.touches); if (follow) followSet(false);
+    view.lo -= (q.x - tp.x) / (K * view.s); view.la += (q.y - tp.y) / view.s;
+    if (tp.d > 0 && q.d > 0) zoomAt(q.x, q.y, q.d / tp.d); else draw(); tp = q;
+  }, { passive: false, capture: true });
+  document.addEventListener('touchend', function (e) { if (e.touches.length < 2) tp = null; }, { capture: true });
+  document.addEventListener('touchcancel', function () { tp = null; }, { capture: true });
   /* iPhone and iPad Safari: take the pinch from its own gesture events and stop it zooming the whole page */
   var iosG = 'ongesturestart' in window, gScale = 1, gMid = null, pmid = null;
   cv.addEventListener('touchmove', function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
@@ -2887,6 +2910,7 @@
     if (S.drag != null && moved < 6) { var ti = S.drag; S.drag = null; S.edit.hist.pop(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; markCard(ti); draw(); return; }   /* a tap on a mark, not a drag: open its card */
     if (S.drag != null) { var dq = S.edit.pts[S.drag]; if (!editOk(dq.lat, dq.lon)) { Object.assign(dq, S.dragFrom); S.edit.hist.pop(); } S.drag = null; editPrompt(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; draw(); return; } if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(evx(e), evy(e), e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
   cv.addEventListener('pointercancel', function (e) { ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
+  cv.addEventListener('lostpointercapture', function (e) { ptrs.delete(e.pointerId); pmid = null; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
     if (S.edit) { editTap(x, y); return; }
