@@ -255,3 +255,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 13:28 14 Nov 2026: Route v0.12.7 live (Inter bold name and marks; UKV and AROME hand-over labels); Navigate v0.7.29.
 - 13:40 14 Nov 2026: Route v0.12.8 live (help pictures for Plotter and Charts; MOB above the Live GPS pill); Navigate v0.7.30.
 - 13:50 14 Nov 2026: Polar Live v0.11.3 built with the shared engine (not live; waiting for go, and D and C answers).
+- 13:52 14 Nov 2026: first-time walk-through to show the test modes (practice) prominently, in the landing-page journey set-up and as a highlighted help item (to plan with job 1).
