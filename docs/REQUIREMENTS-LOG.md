@@ -251,3 +251,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 10:37 14 Nov 2026: options A and C live: route.firstshiftsailing.com for share links and QR codes; Navigate v0.7.21 opens shared links.
 - 11:41 14 Nov 2026: Route v0.12.4 live (compact logo below 1280 px so Settings keeps its place); Navigate v0.7.23 download.
 - 11:49 14 Nov 2026: new jobs, plan first: first-time walk-through (three levels); how-to films for Route and Navigate like Polar Live's; Substack launch articles for both; JOG race list like the RORC list.
+- 12:26 14 Nov 2026: Route v0.12.5 live (plan bar BSP and SOG, VMC over the ground, longer slider, floating MOB); Navigate v0.7.24 download.
