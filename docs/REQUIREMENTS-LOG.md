@@ -254,3 +254,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 12:26 14 Nov 2026: Route v0.12.5 live (plan bar BSP and SOG, VMC over the ground, longer slider, floating MOB); Navigate v0.7.24 download.
 - 13:28 14 Nov 2026: Route v0.12.7 live (Inter bold name and marks; UKV and AROME hand-over labels); Navigate v0.7.29.
 - 13:40 14 Nov 2026: Route v0.12.8 live (help pictures for Plotter and Charts; MOB above the Live GPS pill); Navigate v0.7.30.
+- 13:50 14 Nov 2026: Polar Live v0.11.3 built with the shared engine (not live; waiting for go, and D and C answers).
