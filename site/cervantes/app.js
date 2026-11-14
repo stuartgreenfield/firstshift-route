@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.7';
+  var VERSION = 'FirstShift Route v0.12.8';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -222,7 +222,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.7 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.8 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -670,7 +670,7 @@
     hold($('mobBtn'), 1000, mobStart);
     /* MOB floats just above whatever sits at the bottom: the bar, or on a phone the panel sheet when it is open */
     (function () { var bar = $('bar'), pn = $('panel'); if (!bar) return;
-      function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; } document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
+      function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; } var lb = $('liveBox'); if (lb && !lb.hidden) { var q = lb.getBoundingClientRect(); if (q.height && q.left < 60 && q.top > innerHeight * 0.3 && q.top < top) top = q.top; }   /* and above the Live GPS pill */ document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
       bh(); window.addEventListener('resize', bh); if (window.ResizeObserver) { var ro = new ResizeObserver(bh); ro.observe(bar); if (pn) ro.observe(pn); } setInterval(bh, 700); })();
     hold($('mobEnd'), 1500, mobEnd);
     $('mobCentre').onclick = function (e) { e.stopPropagation(); var m = mobGet(); if (!m) return; var small = $('mob').classList.toggle('small'); this.textContent = small ? 'Full panel' : 'Show on chart'; if (small) { view.la = m.lat; view.lo = m.lon; view.s = Math.max(view.s, 4000); } closePanel(); draw(); };
