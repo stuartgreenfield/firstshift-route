@@ -243,3 +243,6 @@ Status: Built · Partly built · To build · Researching · Later.
 
 - "Sensor height 12m publish 12": Route v0.12.0 live 05:58 14 Nov 2026; rollback restore-2026-11-14-0555 and site-restore-2026-11-14-0555.
 - "go" 08:08: Route v0.12.1 live (Re-route after editing a course routes at once; missing file no longer counts as offline; Charts tab). Rollback restore-2026-11-14-0810 and site-restore-2026-11-14-0810.
+- 09:03 14 Nov 2026: "the deck and nav butons are really small can you have a look and do a litle redesign. the branding top left with Route and Navigate is not perfect could you design the icon as 2 vector svg files and load". Done in the working copy: site/brand/route-mark.svg and navigate-mark.svg (made by tools/make_marks.py; see docs/BRAND-MARKS.md), inlined top left in Route and Navigate; Navigate's DECK/NAV switch rebuilt side by side at 12 to 13 px. Route not live until Stuart says go.
+- 09:05 14 Nov 2026: "yes do it all": Navigate's PLOT bar falls back to the phone's GPS; AIS note in Route's next release; Navigate v0.7.20.
+- 09:06 14 Nov 2026: "put 'beta' on the navigate card on the website please". Live 09:20 on /android-tools.
