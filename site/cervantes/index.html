@@ -278,6 +278,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .lead{display:flex;gap:8px;min-width:0;pointer-events:none}.lead>*{pointer-events:auto}
 .logobox{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:10px;background:var(--glass);border:1px solid var(--line)}
 .logobox .logo{height:34px;width:auto}
+.logobox{flex-direction:column;gap:1px}.logobox .logo{height:27px}.tname{font:700 11px/1 var(--f-head);letter-spacing:.02em;color:var(--ink);white-space:nowrap;text-decoration:none}.logobox{text-decoration:none}   /* the tool's name under the sails (Stuart 14 Nov: so there is no confusion between the tools) */
 .brand{align-content:center}
 .lg-d{display:none}
 :root[data-theme="dark"] .lg-l{display:none}:root[data-theme="dark"] .lg-d{display:inline}
@@ -289,7 +290,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 /* phones: the Route button says Route in words; From here moves down beside Play, so the header keeps the logo and race name */
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){
   
-  .brand .chip{display:none}.brand{padding:6px 8px;height:44px;display:flex;align-items:center}.logobox{width:44px;height:44px}.logobox .logo{height:28px}.lead{gap:5px;min-width:0;flex:1 1 auto}
+  .brand .chip{display:none}.brand{padding:6px 8px;height:44px;display:flex;align-items:center}.logobox{width:44px;height:44px}.logobox .logo{height:22px}.tname{font-size:9.5px}.lead{gap:5px;min-width:0;flex:1 1 auto}
   .bar.fh{grid-template-columns:auto auto minmax(0,1fr) auto}
   .bar #fromHere{height:44px;min-width:44px;background:var(--soft)}
 }
@@ -384,7 +385,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .stchip{display:block;font:600 11px/1.3 var(--f-data);color:var(--brand);background:none;border:0;padding:0;margin:1px 0;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
 .stchip.ask{color:var(--warn)}
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px), (orientation:landscape) and (max-height:500px){}
-@media (orientation:landscape) and (max-height:500px){.brand{min-width:70px!important;flex:1 1 auto}.stbtn .stl{display:none}.stbtn{height:38px;padding:2px 6px}.lead{max-width:calc(100% - 228px)!important;min-width:0}.logobox{width:40px!important;height:40px!important}}
+@media (orientation:landscape) and (max-height:500px){.brand{min-width:70px!important;flex:1 1 auto}.stbtn .stl{display:none}.stbtn{height:38px;padding:2px 6px}.lead{max-width:calc(100% - 228px)!important;min-width:0}.logobox{width:40px!important;height:40px!important}.logobox .logo{height:20px!important}.tname{font-size:8.5px}}
 .fabhelp{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:52px;z-index:3;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.3);color:var(--ink);cursor:pointer;padding:0}
 .fabedit{bottom:104px}
 .fabhelp svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
@@ -418,7 +419,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.stbtn{height:44px;padding:3px 7px;font-size:11px}.stbtn .stl{font-size:10.5px}}
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){#raceBtn{overflow:hidden;min-width:56px}.rshort{position:relative;padding-right:13px;max-width:100%;box-sizing:border-box;white-space:normal!important;display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.12!important;font-size:13px!important;word-break:normal;overflow-wrap:normal}.rshort::after{position:absolute!important;right:0;top:50%;margin:-2px 0 0!important}}
 @media (max-width:420px){.stbtn{padding:3px 6px}.stbtn .stv{font-size:10.5px}.stbtn .stl i{font-style:normal}}
-@media (max-width:360px){.stbtn{padding:3px 4px}.stbtn .stv{font-size:9.5px;letter-spacing:-.02em}.stbtn .utc{display:none}.logobox{width:38px!important}.logobox .logo{height:24px!important}.lead{gap:4px!important}}
+@media (max-width:360px){.stbtn{padding:3px 4px}.stbtn .stv{font-size:9.5px;letter-spacing:-.02em}.stbtn .utc{display:none}.logobox{width:38px!important}.logobox .logo{height:19px!important}.tname{font-size:8.5px}.lead{gap:4px!important}}
 @media (orientation:landscape) and (max-height:500px){.stbtn{height:38px;padding:2px 6px;font-size:10.5px}}
 
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.brand{flex-direction:column;align-items:flex-start;justify-content:center;gap:0}.brand .stchip{font-size:10.5px;max-width:46vw}}
@@ -473,7 +474,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="editbar" id="editBar" hidden><span id="edTxt"></span><div class="xrow"><button class="btn" id="edUndo">Undo</button><button class="btn amberb" id="edGo" hidden>Re-route</button><button class="btn primary" id="edDone">Done</button><button class="btn" id="edCancel">Cancel</button></div></div>
 
     <div class="top">
-      <div class="lead"><a class="logobox" href="https://firstshiftsailing.com" target="_blank" rel="noopener" title="FirstShift: Yacht Racing Intelligence, firstshiftsailing.com" aria-label="FirstShift website, opens in a new window"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"></a><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><b id="raceShort" class="rshort"></b><span class="offb" id="offBadge" hidden>Offline</span><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div><button class="stbtn" id="startChip" title="Class start: tap to change"><span class="stl">Start</span><span class="stv">tap to choose</span></button></div>
+      <div class="lead"><a class="logobox" href="https://firstshiftsailing.com" target="_blank" rel="noopener" title="FirstShift: Yacht Racing Intelligence, firstshiftsailing.com" aria-label="FirstShift website, opens in a new window"><img class="logo lg-l" src="../brand/sails-light.svg" alt="FirstShift"><img class="logo lg-d" src="../brand/sails-dark.svg" alt="FirstShift"><span class="tname">Route</span></a><div class="brand" id="raceBtn" role="button" tabindex="0" title="Races: switch race, your own races, new course"><b id="raceTitle" data-short="Cervantes">Cervantes Trophy · Cowes to Le Havre</b><b id="raceShort" class="rshort"></b><span class="offb" id="offBadge" hidden>Offline</span><button class="chip" id="dataChip" title="Forecast data on this device">Loading forecasts…</button></div><button class="stbtn" id="startChip" title="Class start: tap to change"><span class="stl">Start</span><span class="stv">tap to choose</span></button></div>
       <div class="tools">
         <button class="ib" id="fromHere" aria-pressed="false" title="Route from a point: then tap the chart"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">From here</span></button>
         <button class="ib" id="layersBtn" aria-expanded="false" title="What the chart shows"><svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5z"/><path d="m2 13 10 5 10-5"/></svg><span class="lbl">Layers</span></button>
