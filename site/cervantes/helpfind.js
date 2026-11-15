@@ -18,6 +18,14 @@
     { id: 'polar', name: 'Polars and the log', blurb: 'Learning polars, sails, the race log', titles: ['Polars', 'Log and debrief'], re: /polar|log\b|debrief/i },
     { id: 'more', name: 'More', blurb: 'Everything else', titles: [], re: /$^/ }
   ];
+  /* help logic trees (first-time guide, Stuart 14 Nov): "What do you want to do?", each a path of topics in order */
+  var PATHS = [
+    { id: 'p1', name: 'Plan a race', steps: ['What Route does', 'Try it safely first', 'Setting up a race', 'Your boat', 'Your sails and reefs', 'New forecasts', 'Routes', 'Play the race', 'Plan', 'Send to the crew'] },
+    { id: 'p2', name: 'Race with this phone', steps: ['Live GPS while racing', 'Basic plotter', 'Routing while racing', 'Route from where you are', 'Clear screen', 'Man overboard'] },
+    { id: 'p3', name: 'Connect to the boat', steps: ['Connect to the boat', 'Data sources and GPS', 'The instrument strip', 'Settings: Instruments', 'Helm view', 'The plotter', 'Alarms'] },
+    { id: 'p4', name: 'Sail faster', steps: ['Polars', 'Your sails and reefs', 'Steer to stay on the route', 'Log and debrief'] },
+    { id: 'p5', name: 'The forecast looks wrong', steps: ['If you think the forecast is wrong', 'Wind by hand', 'Wind check and wind by hand', 'Forecast models: ages and blending', 'How old is each forecast'] }
+  ];
   var V = { view: 'home', sec: null, i: -1, q: '', list: [] }, playing = null, built = false;
   function title(d) { var h = d.querySelector('h3'); return h && h.firstChild ? String(h.firstChild.textContent).trim() : ''; }
   function slug(t) { return String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
@@ -48,7 +56,7 @@
       '.hflist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.hflist button{width:100%;text-align:left;display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--panel,#fff);color:var(--ink,#000);font:inherit;cursor:pointer;min-height:56px}' +
       '.hflist .hfmini{width:72px;height:48px;object-fit:cover;object-position:top;border-radius:6px;flex:none;background:var(--line,#ccc)}.hflist b{display:block;font-size:14px}.hflist span{display:block;font-size:12px;color:var(--muted,#667);margin-top:2px}' +
       '.hftopic h2{margin:0;font-size:20px}.hftext{font-size:15px;line-height:1.55}.hftext p{margin:0 0 10px}.hftext img{display:none}.hfplay{min-height:44px;min-width:110px;font-weight:700}.hfplay[aria-pressed=true]{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important}' +
-      '.hfpn{display:flex;justify-content:space-between;gap:8px}.hfpn .btn{min-height:44px;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hfnote{font-size:12px;color:var(--muted,#667);margin:0}#help mark.hfq{background:#fde68a;color:#111;border-radius:2px}';
+      '.hfpn{display:flex;justify-content:space-between;gap:8px}.hfpn .btn{min-height:44px;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hfpaths{display:flex;flex-direction:column;gap:6px}.hfpaths>div{display:flex;flex-wrap:wrap;gap:6px}.hfpath{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--brand,#3b82f6);background:none;color:var(--ink,#000);font-weight:600;font-size:13px;cursor:pointer}.hfnote{font-size:12px;color:var(--muted,#667);margin:0}#help mark.hfq{background:#fde68a;color:#111;border-radius:2px}';
     document.head.appendChild(s);
   }
   /* ---- read aloud: Emma's recording when there is one for this exact text, else the phone's own female British voice ---- */
@@ -73,8 +81,13 @@
     var vw = $('hfView'); if (!vw) return; stop(); var all = grouped(), h = '';
     if (V.view === 'home') {
       h = '<div class="hfsearch"><input type="search" id="hfQ" placeholder="Search Help, for example polar, tide, MOB" aria-label="Search Help" enterkeyhint="search" value="' + esc(V.q) + '"><button class="btn primary" type="button" id="hfGo">Search</button></div>' +
-        '<div class="hfcards">' + SECTIONS.filter(function (s) { return s.items.length; }).map(function (s) { return '<button class="hfcard" type="button" data-sec="' + s.id + '">' + img(secPic(s), s.name, 'hfth') + '<b>' + esc(s.name) + '</b><span>' + esc(s.blurb) + ' · ' + s.items.length + ' topic' + (s.items.length === 1 ? '' : 's') + '</span></button>'; }).join('') + '</div>' +
+        paths() + '<div class="hfcards">' + SECTIONS.filter(function (s) { return s.items.length; }).map(function (s) { return '<button class="hfcard" type="button" data-sec="' + s.id + '">' + img(secPic(s), s.name, 'hfth') + '<b>' + esc(s.name) + '</b><span>' + esc(s.blurb) + ' · ' + s.items.length + ' topic' + (s.items.length === 1 ? '' : 's') + '</span></button>'; }).join('') + '</div>' +
         ($('tourListen') || document.querySelector('#help [data-tour]') ? '' : '');
+    } else if (V.view === 'path') {
+      var pa = PATHS.filter(function (x) { return x.id === V.path; })[0], items = pa ? pa.steps.map(function (t) { return all.filter(function (x) { return x.t === t; })[0]; }).filter(Boolean) : [];
+      V.list = items.map(function (x) { return x.s; });
+      h = '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><span class="hfcrumb">' + esc(pa ? pa.name : '') + '</span></div><p class="hfnote">Step by step, in this order.</p>' +
+        '<ul class="hflist">' + items.map(function (tp, i) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + (i + 1) + '. ' + esc(tp.t) + '</b><span>' + esc(first(tp.text)) + '</span></div></button></li>'; }).join('') + '</ul>';
     } else if (V.view === 'sec') {
       var s = SECTIONS.filter(function (x) { return x.id === V.sec; })[0];
       h = '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><span class="hfcrumb">' + esc(s.name) + '</span></div>' + img(secPic(s), s.name, 'hfhero') +
@@ -90,9 +103,9 @@
         '<ul class="hflist">' + hits.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t).replace(re, '<mark class="hfq">$1</mark>') + '</b><span>' + line(tp) + '</span></div></button></li>'; }).join('') + '</ul>';
     } else {
       var tp = all.filter(function (x) { return x.s === V.t; })[0]; if (!tp) { V.view = 'home'; return render(); }
-      var list = V.from === 'find' ? V.list : tp.sec.items.map(function (x) { return x.s; }), k = list.indexOf(tp.s), pv = all.filter(function (x) { return x.s === list[k - 1]; })[0], nx = all.filter(function (x) { return x.s === list[k + 1]; })[0];
+      var list = V.from === 'find' || V.from === 'path' ? V.list : tp.sec.items.map(function (x) { return x.s; }), k = list.indexOf(tp.s), pv = all.filter(function (x) { return x.s === list[k - 1]; })[0], nx = all.filter(function (x) { return x.s === list[k + 1]; })[0];
       var body = tp.el.cloneNode(true); [].forEach.call(body.querySelectorAll('h3,h2,button.say,[data-nsay],img.hpic,img[data-pic]'), function (x) { x.remove(); });
-      h = '<div class="hfnav"><button class="btn" type="button" data-go="' + (V.from === 'find' ? 'find' : 'sec') + '">‹ ' + (V.from === 'find' ? 'Results' : esc(tp.sec.name)) + '</button></div>' +
+      h = '<div class="hfnav"><button class="btn" type="button" data-go="' + (V.from === 'find' ? 'find' : V.from === 'path' ? 'path' : 'sec') + '">‹ ' + (V.from === 'find' ? 'Results' : V.from === 'path' ? esc((PATHS.filter(function (x) { return x.id === V.path; })[0] || {}).name || 'Back') : esc(tp.sec.name)) + '</button></div>' +
         '<article class="hftopic"><h2>' + esc(tp.t) + '</h2></article>' + img(picOf(tp), 'Screen picture: ' + tp.t, 'hfhero') +
         '<div><button class="btn hfplay" type="button" id="hfPlay" aria-pressed="false">▶ Play</button></div><div class="hftext" id="hfText"></div>' +
         '<div class="hfpn">' + (pv ? '<button class="btn" type="button" data-t="' + pv.s + '">‹ ' + esc(pv.t) + '</button>' : '<span></span>') + (nx ? '<button class="btn" type="button" data-t="' + nx.s + '">' + esc(nx.t) + ' ›</button>' : '') + '</div>';
@@ -102,6 +115,7 @@
     var q = $('hfQ'); if (q) { q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); find(q.value); } }); q.addEventListener('input', function () { clearTimeout(q.__t); var v = q.value; q.__t = setTimeout(function () { find(v, true); }, 350); }); if (V.view === 'find') { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} } }
     var g = $('hfGo'); if (g) g.onclick = function () { find($('hfQ').value); };
   }
+  function paths() { var all = topics().map(function (x) { return x.t; }); var ok = PATHS.filter(function (pa) { return pa.steps.filter(function (t) { return all.indexOf(t) >= 0; }).length >= 3; }); if (!ok.length) return ''; return '<div class="hfpaths"><b>What do you want to do?</b><div>' + ok.map(function (pa) { return '<button class="hfpath" type="button" data-path="' + pa.id + '">' + esc(pa.name) + '</button>'; }).join('') + '</div></div>'; }
   function find(q, typing) { V.q = q || ''; if (!V.q.trim() || V.q.trim().length < 2) { if (V.view !== 'home') { V.view = 'home'; render(); } return; } V.view = 'find'; render(); if (!typing) { var x = $('hfQ'); if (x) x.blur(); } }
   function go(view, extra) { for (var k in extra) V[k] = extra[k]; V.view = view; render(); }
   function build() {
@@ -109,9 +123,10 @@
     css(); help.classList.add('hfon');
     var vw = $('hfView'); if (!vw) { vw = document.createElement('div'); vw.id = 'hfView'; body.insertBefore(vw, body.firstChild);
       vw.addEventListener('click', function (e) {
-        var c = e.target.closest('[data-sec],[data-t],[data-go]'); if (!c) return;
+        var c = e.target.closest('[data-sec],[data-t],[data-go],[data-path]'); if (!c) return;
+        if (c.dataset.path) { go('path', { path: c.dataset.path }); return; }
         if (c.dataset.sec) go('sec', { sec: c.dataset.sec });
-        else if (c.dataset.t) go('topic', { t: c.dataset.t, from: V.view === 'find' ? 'find' : V.view === 'topic' ? V.from : 'sec' });
+        else if (c.dataset.t) go('topic', { t: c.dataset.t, from: V.view === 'find' ? 'find' : V.view === 'path' ? 'path' : V.view === 'topic' ? V.from : 'sec' });
         else if (c.dataset.go === 'sec') { var tp = grouped().filter(function (x) { return x.s === V.t; })[0]; go('sec', { sec: tp ? tp.sec.id : V.sec }); }
         else go(c.dataset.go, {});
       });
