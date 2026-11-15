@@ -596,11 +596,13 @@
   /* the height the polar's wind speeds refer to: 10 m (ORC, designers, FirstShift and Navigate's learned polars) or the masthead (D, 14 Nov 2026) */
   function polZ() { var z = $('polZ') && $('polZ').value === 'mast' ? +$('mastZ').value : 10; return z > 0 ? z : 10; }
   /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
-  var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60]];
+  var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60], ['adjTdir', 'tdir', '°', 1]];
   function adjBox() { var v = ($('adjBox') || {}).value; if (!v || $('adjWhere').value !== 'box') return null; var q = v.split(',').map(Number); return q.length === 4 && q.every(function (x) { return x === x; }) ? { s: q[0], n: q[1], w: q[2], e: q[3] } : null; }
-  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } if (a) { var un = +(store('nav-adj-until') || 0); if (un) a.until = un; } return a; }
+  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } if (a) { var un = +(store('nav-adj-until') || 0); if (un) a.until = un; } var lg = legTide(); if (lg) { a = a || {}; a.legs = lg; } return a; }
+  /* a Solent race's tide by hand for each leg (Stuart 15 Nov 11:30): a box round each leg, padded 0.15 nm */
+  function legTide() { var c = meta && meta.course, L = c && c.legTide; if (!L || !L.some(function (q) { return q && (q.p || q.d); })) return null; var pp = [c.start].concat(c.marks || []).concat([c.finish]), out = []; for (var i = 1; i < pp.length; i++) { var q = L[i - 1]; if (!q || !(q.p || q.d) || !pp[i - 1] || !pp[i]) continue; var a0 = pp[i - 1], b0 = pp[i], pd = 0.15 / 60, pl = pd / Math.cos(a0.lat * Math.PI / 180); out.push({ box: { s: Math.min(a0.lat, b0.lat) - pd, n: Math.max(a0.lat, b0.lat) + pd, w: Math.min(a0.lon, b0.lon) - pl, e: Math.max(a0.lon, b0.lon) + pl }, tspd: q.p || 0, tdir: q.d || 0 }); } return out.length ? out : null; }
   function adjInit() {
-    ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
+    ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'tdir' && v ? (v > 0 ? ' clockwise' : ' anticlockwise') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
     $('adjReset').onclick = function () { store('nav-adj-until', ''); ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); adjPill(); };
     $('adjPillX').onclick = function () { $('adjReset').onclick(); busy('Back to the forecast: routing again…'); S.from = null; run(); };
     var boxTxt = function () { var b = adjBox(), on = $('adjWhere').value === 'box'; $('adjBoxRow').hidden = $('adjBoxNote').hidden = !on; $('adjBoxTxt').textContent = b ? dm(b.s, 'NS') + ' to ' + dm(b.n, 'NS') + ', ' + dm(b.w, 'EW') + ' to ' + dm(b.e, 'EW') : 'No area yet: changes are not used until you draw one.'; adjPill(); draw(); };
@@ -612,7 +614,8 @@
   /* a note on the chart whenever the forecast has been changed, with one tap back to the forecast as published */
   function adjPill() {
     var a = adjVals(), t = [];
-    if (a) ADJ.forEach(function (x) { var v = +$(x[0]).value; if (v) t.push(({ wdir: 'wind ', wspd: 'wind ', wtime: 'wind ', tspd: 'tide ', ttime: 'tide ' })[x[1]] + $(x[0] + 'V').textContent); });
+    if (a) ADJ.forEach(function (x) { var v = +$(x[0]).value; if (v) t.push(({ wdir: 'wind ', wspd: 'wind ', wtime: 'wind ', tspd: 'tide ', ttime: 'tide ', tdir: 'tide ' })[x[1]] + $(x[0] + 'V').textContent); });
+    if (a && a.legs) t.push('tide on ' + a.legs.length + ' leg' + (a.legs.length === 1 ? '' : 's'));
     $('adjPill').hidden = !a; $('adjPillTxt').textContent = 'Forecast changed' + (a && a.box ? ' in your area' : '') + ': ' + t.join(', ');
   }
   function HMAX() { var w = (meta.course0 || meta.course).window; return w ? w[1] : 48; }
@@ -655,7 +658,7 @@
     applyCourseObj(r);
   }
   function applyCourseObj(r) {
-    var keep = meta.course0 || (meta.course0 = meta.course); meta.course = { name: r.name, start: r.start, marks: r.marks.map(function (m) { return Object.assign({}, m); }), finish: r.finish, band: keep.band, window: keep.window, race: r };
+    var keep = meta.course0 || (meta.course0 = meta.course); meta.course = { name: r.name, start: r.start, marks: r.marks.map(function (m) { return Object.assign({}, m); }), finish: r.finish, band: keep.band, window: keep.window, race: r, legTide: r.legTide || null };   /* a Solent race keeps its tide by leg */
     $('raceTitle').textContent = r.name + ' · ' + r.start.name.replace(/^Start,\s*/, '').replace(/^RYS line,\s*/, '') + ' to ' + r.finish.name.replace(/^Finish,\s*/, '');
     setShort(r.name.replace(/^Rolex\s+/, '').replace(/\s+(Trophy\s+)?Race$/, '').replace(/\s+Trophy$/, ''));
     var w = warnText(r); $('courseWarn').hidden = !w; $('courseWarn').textContent = w + (r.setNote ? ' ' + r.setNote : '');
@@ -1182,7 +1185,7 @@
   }
   function courseCopy() { var c = meta.course; return { name: c.name, start: Object.assign({}, c.start), marks: c.marks.map(function (m) { return m.via ? { name: m.name, lat: m.lat, lon: m.lon, via: true, must: !!m.must } : { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: Object.assign({}, c.finish) }; }
   function courseNm(c) { var p = [c.start].concat(c.marks).concat([c.finish]), d = 0; for (var i = 1; i < p.length; i++) d += FSRouter.dist(p[i - 1].lat, p[i - 1].lon, p[i].lat, p[i].lon); return Math.round(d); }
-  function asRace(c, id) { return { id: id || 'my', custom: true, courseStatus: 'published', name: c.name, start: c.start, marks: c.marks, finish: Object.assign({ radius_nm: 0.4 }, c.finish), nm: courseNm(c) }; }
+  function asRace(c, id) { return { id: id || 'my', custom: true, courseStatus: 'published', name: c.name, start: c.start, marks: c.marks, finish: Object.assign({ radius_nm: 0.4 }, c.finish), nm: courseNm(c), legTide: c.legTide || null }; }
   function saveMyRace(name) {
     var a = myRaces(), c = courseCopy(); c.name = name || c.name;
     var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var set = snapSettings(); set.__src = src && src.src;
@@ -2278,6 +2281,7 @@
   }
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
+    try { adjPill(); } catch (e) {}   /* the chart note follows the race's own tide by leg too */
     if (S.edit && $('races').hidden) { $('editBar').hidden = false; editPrompt(); draw(); busy('The course is still being edited: tap Done, then Save and route. Or Cancel.'); setTimeout(function () { busy(''); }, 4000); }   /* a hidden edit would block routing with no sign why */
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
     if (startGate()) { busy(''); if (S.card || ($('sheet') && !$('sheet').hidden) || !$('wiz').hidden) return; showCard(); return; }   /* never jump to the card while the boat, forecasts or start are being edited */   /* start not chosen: the set-up card says so */

@@ -134,7 +134,7 @@
       return [Math.sqrt(u * u + v * v) / KN, (Math.atan2(-u, -v) / R + 360) % 360];
     };
   }
-  /* user overrides when the forecast looks wrong: wind veer (deg, + = clockwise), strength (%), timing (h, + = later); tide strength (%), timing (h) */
+  /* user overrides when the forecast looks wrong: wind veer (deg, + = clockwise), strength (%), timing (h, + = later); tide strength (%), timing (h), direction (deg, + = clockwise); per-leg tide on a Solent race */
   function adjust(smp, a) {
     if (!a) return smp;
     var w = smp.wind, c = smp.tide, d = a.wdir || 0, k = 1 + (a.wspd || 0) / 100, tw = a.wtime || 0, kc = 1 + (a.tspd || 0) / 100, tc = a.ttime || 0;
@@ -143,7 +143,16 @@
     if (B) wt = function (la, lo) { var k0 = Math.cos(la * R), dy = Math.max(B.s - la, 0, la - B.n) * 60, dx = Math.max(B.w - lo, 0, lo - B.e) * 60 * k0, dd = Math.sqrt(dx * dx + dy * dy); return dd <= 0 ? 1 : Math.max(0, 1 - dd / 3); };
     var U = a.until, tf = function (t) { return U == null ? 1 : t <= U ? 1 : Math.max(0, 1 - (t - U) / 2); };   /* a wind given by hand holds until a set time, then fades back to the forecast over two hours */
     if (d || k !== 1 || tw) smp.wind = function (la, lo, t) { var f = wt(la, lo) * tf(t); if (!f) return w(la, lo, t); var W = w(la, lo, t - tw * f); return [W[0] * (1 + (k - 1) * f), (W[1] + d * f + 360) % 360]; };
-    if (kc !== 1 || tc) smp.tide = function (la, lo, t) { var f = wt(la, lo); if (!f) return c(la, lo, t); var C = c(la, lo, t - tc * f), m = 1 + (kc - 1) * f; return [C[0] * m, C[1] * m]; };
+    /* tide by hand (Stuart 15 Nov 11:30): its direction turned too (tdir, degrees, + = clockwise), and on a Solent race a strength and
+       direction for each leg (legs: a box round the leg, full inside, fading to none 0.3 nm beyond it), on top of the whole-race change */
+    var td = a.tdir || 0, LG = (a.legs || []).filter(function (q) { return q && q.box && ((q.tspd || 0) || (q.tdir || 0)); });
+    var rot = function (C, deg, m) { if (!deg) return [C[0] * m, C[1] * m]; var r = deg * R, cs = Math.cos(r), sn = Math.sin(r); return [(C[0] * cs + C[1] * sn) * m, (-C[0] * sn + C[1] * cs) * m]; };
+    var legW = function (B2, la, lo) { var k0 = Math.cos(la * R), dy = Math.max(B2.s - la, 0, la - B2.n) * 60, dx = Math.max(B2.w - lo, 0, lo - B2.e) * 60 * k0, dd = Math.sqrt(dx * dx + dy * dy); return dd <= 0 ? 1 : Math.max(0, 1 - dd / 0.3); };
+    if (kc !== 1 || tc || td || LG.length) smp.tide = function (la, lo, t) {
+      var f = wt(la, lo), C = f ? rot(c(la, lo, t - tc * f), td * f, 1 + (kc - 1) * f) : c(la, lo, t);
+      if (LG.length) { var best = null, bw = 0; for (var i = 0; i < LG.length; i++) { var w2 = legW(LG[i].box, la, lo); if (w2 > bw) { bw = w2; best = LG[i]; } } if (best) C = rot(C, (best.tdir || 0) * bw, 1 + (best.tspd || 0) / 100 * bw); }
+      return C;
+    };
     return smp;
   }
   /* the wind the boat feels is the wind over the water, not over the ground: a tide running with the wind takes strength out of it and one running against it adds strength, and a cross-tide shifts it */

@@ -160,12 +160,14 @@
     var c = build(), shl = c.err ? [] : shallowMarks(c);
     if (shl.length) h += '<p class="note" id="solShallow"><b>Inshore marks.</b> The depth data reads shallower than ' + d + ' m at ' + esc(shl.join(', ')) + '. So the boat can reach them, within 0.4 nm of these marks the routes may use any water below chart datum (and leave a start the data shows as shore). Check the depth on the day.</p>';
     h += '<p class="note ' + (c.err ? 'solerr' : '') + '" id="solMsg">' + (c.err ? esc(c.err) : 'Ready: ' + (c.marks.length) + ' marks, about ' + nm(c) + ' nm.') + '</p>';
-    if (!c.err) { var pp = [c.start].concat(c.marks).concat([c.finish]), lt = '<table class="soltab"><thead><tr><th>Leg</th><th>To</th><th>°T</th><th>nm</th></tr></thead><tbody>';
-      for (var li = 1; li < pp.length; li++) { var a0 = pp[li - 1], q0 = pp[li], dx = (q0.lon - a0.lon) * Math.cos((a0.lat + q0.lat) / 2 * R) * 60, dy = (q0.lat - a0.lat) * 60; lt += '<tr><td>' + li + '</td><td>' + esc(q0.name.replace(/^Finish, /, 'Finish: ')) + (q0.side ? ' <small>(' + q0.side + ')</small>' : '') + '</td><td>' + ('00' + Math.round((Math.atan2(dx, dy) / R + 360) % 360)).slice(-3) + '</td><td>' + Math.hypot(dx, dy).toFixed(1) + '</td></tr>'; }
+    if (!c.err) { var pp = [c.start].concat(c.marks).concat([c.finish]), lt = '<table class="soltab"><thead><tr><th>Leg</th><th>To</th><th>°T</th><th>nm</th><th title="Tide strength on this leg, against the forecast">Tide</th><th title="Turn the tide on this leg, + clockwise">Tide °</th></tr></thead><tbody>', LT = B.legTide || [];
+      for (var li = 1; li < pp.length; li++) { var a0 = pp[li - 1], q0 = pp[li], dx = (q0.lon - a0.lon) * Math.cos((a0.lat + q0.lat) / 2 * R) * 60, dy = (q0.lat - a0.lat) * 60; lt += '<tr><td>' + li + '</td><td>' + esc(q0.name.replace(/^Finish, /, 'Finish: ')) + (q0.side ? ' <small>(' + q0.side + ')</small>' : '') + '</td><td>' + ('00' + Math.round((Math.atan2(dx, dy) / R + 360) % 360)).slice(-3) + '</td><td>' + Math.hypot(dx, dy).toFixed(1) + '</td><td>' + legSel(li, 'p', LT[li - 1]) + '</td><td>' + legSel(li, 'd', LT[li - 1]) + '</td></tr>'; }
       h += '<h3>Legs</h3><div style="overflow-x:auto">' + lt + '</tbody></table></div>'; }
     h += '<div class="xrow"><button class="btn primary" id="solGo"' + (c.err ? ' disabled' : '') + '>Route this race</button><button class="btn" id="solClear">Start again</button></div>';
     b.innerHTML = h; wire();
   }
+  /* tide by hand for each leg (Stuart 15 Nov 11:30): strength against the forecast, and a turn of its direction, kept with the race */
+  function legSel(li, k, q) { var v = q && q[k] || 0, opts = k === 'p' ? [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50] : [-60, -45, -30, -15, 0, 15, 30, 45, 60]; return '<select class="soltide" data-leg="' + li + '" data-k="' + k + '" aria-label="Leg ' + li + (k === 'p' ? ' tide strength' : ' tide direction') + '">' + opts.map(function (o) { return '<option value="' + o + '"' + (o === v ? ' selected' : '') + '>' + (o > 0 ? '+' : '') + o + (k === 'p' ? '%' : '°') + '</option>'; }).join('') + '</select>'; }
   function shallowMarks(c) {
     var D = null; try { D = window.__navFc && window.__navFc() && window.__navFc().P.depth; } catch (e) {} if (!D) return [];
     var safe = window.__fsDepth ? window.__fsDepth() : 3, out = [];
@@ -203,7 +205,8 @@
     });
     on('solBoardGo', 'onclick', function () { var r = parseBoard($('solBoard').value), n = $('solBoardNote'); if (r.marks.length) { B.marks = r.marks; saveB(); render(); redraw(); n = $('solBoardNote'); } n.textContent = (r.marks.length ? r.marks.length + ' marks set.' : 'No mark codes found.') + (r.bad.length ? ' Not on the list: ' + r.bad.join(', ') + '.' : ''); });
     on('solClear', 'onclick', function () { B = { type: B.type, name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } }; saveB(); render(); redraw(); });
-    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax();
+    [].forEach.call(document.querySelectorAll('#solSheet select.soltide'), function (el) { el.onchange = function () { var L = B.legTide = B.legTide || []; var i = +el.dataset.leg - 1; L[i] = L[i] || {}; L[i][el.dataset.k] = +el.value; sv(BKEY, B); }; });
+    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
       var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
       if (c.name.indexOf(ds) < 0) c.name = (c.name + ' ' + ds).slice(0, 70);   /* Stuart 15 Nov J Q&A: the race date added to the name in My races */ $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
   }
