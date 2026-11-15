@@ -60,7 +60,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const r = st.r; const want = (() => { const la0 = 50 + 46.22 / 60, lo0 = -(1 + 18.84 / 60), dy = (50.70 - la0) * 60, dx = (-1.40 - lo0) * 60 * Math.cos((la0 + 50.70) / 2 * Math.PI / 180); return { nm: Math.hypot(dx, dy), brg: (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360 }; })();
   ok(r && Math.abs(r.nm - want.nm) < 0.03 && Math.abs(r.brg - want.brg) < 1.5, 'bearing and distance', r && r.brg.toFixed(1) + '° ' + r.nm.toFixed(2) + ' nm (expected ' + want.brg.toFixed(1) + '° ' + want.nm.toFixed(2) + ')');
   ok(r && r.tws > 0 && r.bsp > 0 && r.sog > 0 && r.hours > 0 && /kn from/.test(st.box) && /Boat speed/.test(st.box) && /VMC/.test(st.box), 'wind, polar boat speed, VMC and time from the forecasts and your polar', st.box.slice(0, 160));
-  ok(r && /^(beat|run|fetch|reach)$/.test(r.kind) && (r.tack ? /with (tacks|gybes)/.test(st.box) && r.other != null : true), 'says fetch, reach, beat or run; on a beat or run, both headings and the time with tacks or gybes', r && r.kind + (r.tack ? ' ' + Math.round(r.hdg) + '/' + Math.round(r.other) : ''));
+  ok(r && /^(beat|run|fetch|reach)$/.test(r.kind) && (r.tack ? /Includes \d+ (tack|gybe)/.test(st.box) && r.other != null : true), 'says fetch, reach, beat or run; on a beat or run, both headings and the time with tacks or gybes', r && r.kind + (r.tack ? ' ' + Math.round(r.hdg) + '/' + Math.round(r.other) : ''));
   ok(r && r.tide != null && /Tide .* kn to/.test(st.box), 'the tide along the line', (st.box.match(/Tide[^]*?(?=Crosses|Save|$)/) || [''])[0].slice(0, 80));
   // a beat: measure straight into the wind
   const beat = await p.evaluate(() => { const m = window.__fsMeasure(50.70, -1.45, 50.70, -1.45 + 0.001); const w = m.twd; const la1 = 50.70 + 2 * Math.cos(w * Math.PI / 180) / 60, lo1 = -1.45 + 2 * Math.sin(w * Math.PI / 180) / 60 / Math.cos(50.7 * Math.PI / 180); return window.__fsMeasure(50.70, -1.45, la1, lo1); });
@@ -68,6 +68,11 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   // shallow water: across the Shingles
   const sh = await p.evaluate(() => window.__fsMeasure(50.6950, -1.6100, 50.6700, -1.5700).shallow);
   ok(sh === true, 'a line across the Shingles bank warns of shallow water');
+  const lt = await p.evaluate(() => [...document.querySelectorAll('.fsmlater tr')].map(r => r.textContent));
+  ok(lt.length === 4 && /\+1 h/.test(lt[1]) && /\+3 h/.test(lt[3]), 'the same leg at +1, +2 and +3 hours, with wind, tide along, VMC and time', lt.slice(1).join(' | '));
+  const bt = await p.evaluate(() => { const m = window.__fsMeasure(50.70, -1.45, 50.70, -1.4499); const w = m.twd; return window.FSWpt.measure({ la: 50.70, lo: -1.45 }, { la: 50.70 + 2 * Math.cos(w * Math.PI / 180) / 60, lo: -1.45 + 2 * Math.sin(w * Math.PI / 180) / 60 / Math.cos(50.7 * Math.PI / 180) }); });
+  const btxt = await p.evaluate(() => document.getElementById('fsMeas').textContent);
+  ok(bt.nTurns >= 1 && bt.turnS === 60 && Math.abs(bt.hoursAll - bt.hours - bt.nTurns * 60 / 3600) < 1e-9 && /Includes \d+ tacks? at 60 s each/.test(btxt), 'a beat counts its tacks at the Course tab tack loss (60 s each)', bt.nTurns + ' tacks, ' + (bt.hours * 60).toFixed(1) + ' min plus ' + bt.nTurns + ' min');
   await p.screenshot({ path: OUT + '/wpt-measure.png' });
   await p.click('#fsRulerBtn'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => !window.FSWpt.state().ruler && document.getElementById('fsMeas').hidden), 'ruler off clears the line');

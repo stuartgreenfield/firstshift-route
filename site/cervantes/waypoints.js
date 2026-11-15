@@ -86,10 +86,14 @@
     cv.addEventListener('pointerup', function (e) { if (!RU || !down || e.pointerId !== down.id) return; stop(e); var moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) >= 6; down = null; if (!moved && M && !M.b) { M.tapFirst = true; toast('From here: now tap where to measure to.'); } else calc(); }, true);
     ['click', 'dblclick'].forEach(function (k) { cv.addEventListener(k, function (e) { if (RU) stop(e); }, true); });
   }
+  /* tacks or gybes on a beat or run: about one every 15 minutes, at least one, each costing the Course tab's tack or gybe loss */
+  function turns(r) { if (!r || !r.tack || r.hours == null) return r; var sec = +(document.getElementById(r.kind === 'beat' ? 'tackS' : 'gybeS') || {}).value; if (!(sec >= 0)) sec = r.kind === 'beat' ? 60 : 40; r.turnS = sec; r.nTurns = Math.max(1, Math.round(r.hours * 4)); r.hoursAll = r.hours + r.nTurns * sec / 3600; return r; }
   function hm(h) { if (h == null || h !== h) return '--'; var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + ('0' + m % 60).slice(-2); }
   function d3(v) { return ('00' + Math.round((v % 360 + 360) % 360)).slice(-3) + '°'; }
   function calc() {
-    if (!M || !M.b || !window.__fsMeasure) return; var r = M.r = window.__fsMeasure(M.a.la, M.a.lo, M.b.la, M.b.lo); redraw();
+    if (!M || !M.b || !window.__fsMeasure) return; var r = M.r = turns(window.__fsMeasure(M.a.la, M.a.lo, M.b.la, M.b.lo)); redraw();
+    /* the same leg later: +1, +2 and +3 hours from the time on the slider (Stuart 15 Nov K Q&A), so the turn of the tide shows */
+    var later = [1, 2, 3].map(function (k) { try { return turns(window.__fsMeasure(M.a.la, M.a.lo, M.b.la, M.b.lo, r.t + k)); } catch (e) { return null; } });
     var bx = $('fsMeas'); if (!bx) { bx = document.createElement('div'); bx.id = 'fsMeas'; bx.className = 'fsmeas'; bx.setAttribute('role', 'status'); (document.querySelector('.app>.chart') || document.body).appendChild(bx); }
     var t = new Date(r.at * 1000), rows = [];
     rows.push('<b>' + d3(r.brg) + 'T · ' + (r.nm < 10 ? r.nm.toFixed(2) : r.nm.toFixed(1)) + ' nm</b>' + (M.a.what ? ' from ' + esc(M.a.what) : '') + (M.b.what ? ' to ' + esc(M.b.what) : ''));
@@ -98,12 +102,14 @@
       if (r.hdg != null) {
         var kindTxt = r.kind === 'beat' ? 'BEAT' : r.kind === 'run' && r.tack ? 'RUN (gybing)' : r.kind === 'fetch' ? 'FETCH' : r.kind === 'reach' ? 'REACH' : 'RUN';
         rows.push('<b>' + kindTxt + '</b>: ' + (r.tack ? 'best VMG on ' + d3(r.hdg) + ' and ' + d3(r.other) + ', TWA ' + Math.abs(Math.round(r.twa)) + '°' : 'steer ' + d3(r.hdg) + ', TWA ' + Math.abs(Math.round(r.twa)) + '° ' + (r.twa < 0 ? 'port' : 'stbd')));
-        rows.push('Boat speed ' + (r.bsp != null ? r.bsp.toFixed(1) : '--') + ' kn (polar) · VMC ' + (r.sog != null ? r.sog.toFixed(1) : '--') + ' kn · time ' + hm(r.hours) + (r.tack ? ' with ' + (r.kind === 'beat' ? 'tacks' : 'gybes') + ', no allowance for each one' : ''));
+        rows.push('Boat speed ' + (r.bsp != null ? r.bsp.toFixed(1) : '--') + ' kn (polar) · VMC ' + (r.sog != null ? r.sog.toFixed(1) : '--') + ' kn · time ' + hm(r.tack && r.hoursAll != null ? r.hoursAll : r.hours));
+        if (r.tack && r.nTurns) rows.push('Includes ' + r.nTurns + ' ' + (r.kind === 'beat' ? 'tack' : 'gybe') + (r.nTurns > 1 ? 's' : '') + ' at ' + r.turnS + ' s each (about one every 15 minutes; the loss is set in the Course tab)');
         if (r.sail) rows.push('Sail: ' + esc(r.sail));
       }
     } else rows.push('No forecast wind here at this time.');
     if (r.tide != null) rows.push('Tide ' + r.tide.toFixed(1) + ' kn to ' + d3(r.tideTo) + ': ' + (Math.abs(r.tideAlong) < 0.1 ? 'across the line' : (r.tideAlong > 0 ? '+' : '') + r.tideAlong.toFixed(1) + ' kn along it') + (r.sog != null ? ' (in the VMC above)' : ''));
     if (r.shallow) rows.push('<b class="fsmwarn">Crosses water shallower than your safety depth.</b>');
+    if (later.some(function (x) { return x && x.tws != null; })) rows.push('<table class="fsmlater"><tr><th>Later</th><th>Wind</th><th>Tide along</th><th>VMC</th><th>Time</th></tr>' + later.map(function (x, k) { if (!x) return ''; var tt = new Date(x.at * 1000); return '<tr><td>+' + (k + 1) + ' h ' + ('0' + tt.getUTCHours()).slice(-2) + ':' + ('0' + tt.getUTCMinutes()).slice(-2) + '</td><td>' + (x.tws != null ? x.tws.toFixed(0) + ' kn ' + d3(x.twd) : '--') + '</td><td>' + (x.tideAlong != null ? (x.tideAlong > 0 ? '+' : '') + x.tideAlong.toFixed(1) + ' kn' : '--') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) + ' kn' : '--') + '</td><td>' + hm(x.tack && x.hoursAll != null ? x.hoursAll : x.hours) + '</td></tr>'; }).join('') + '</table>');
     bx.innerHTML = '<button class="close" type="button" aria-label="Close the measurement">×</button>' + rows.map(function (h) { return '<div>' + h + '</div>'; }).join('') + '<div class="xrow"><button class="btn" type="button" data-m="save">Save the end as a waypoint</button><button class="btn" type="button" data-m="off">Ruler off</button></div>';
     bx.hidden = false; bx.querySelector('.close').onclick = function () { bx.hidden = true; M = null; redraw(); };
     bx.querySelector('[data-m="off"]').onclick = function () { ruler(false); };
@@ -114,7 +120,7 @@
   var sel = [];   /* a course being built: indexes into the list, with sides */
   function css() {
     if ($('wptCss')) return; var s = document.createElement('style'); s.id = 'wptCss';
-    s.textContent = '.fsmeas{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:6;width:min(calc(100% - 24px),520px);background:var(--panel);color:var(--ink);border:2px solid #7c3aed;border-radius:12px;padding:10px 36px 8px 12px;font-size:13px;display:flex;flex-direction:column;gap:3px;box-shadow:0 4px 16px rgba(0,0,0,.35)}.fsmeas[hidden]{display:none}.fsmeas .close{position:absolute;right:6px;top:4px}.fsmwarn{color:#dc2626}' +
+    s.textContent = '.fsmeas{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:6;width:min(calc(100% - 24px),520px);background:var(--panel);color:var(--ink);border:2px solid #7c3aed;border-radius:12px;padding:10px 36px 8px 12px;font-size:13px;display:flex;flex-direction:column;gap:3px;box-shadow:0 4px 16px rgba(0,0,0,.35)}.fsmeas[hidden]{display:none}.fsmeas .close{position:absolute;right:6px;top:4px}.fsmwarn{color:#dc2626}.fsmlater{border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;margin-top:4px}.fsmlater th,.fsmlater td{padding:1px 8px 1px 0;text-align:left}.fsmlater th{color:var(--muted);font-weight:600}' +
       '.fsrulerb{right:max(64px,calc(env(safe-area-inset-right,0px) + 52px))!important;bottom:104px!important}.fsrulerb[aria-pressed="true"]{background:#7c3aed!important;color:#fff!important;border-color:#7c3aed!important}body.fsruler #map{cursor:crosshair}' +
       '.wptrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line)}.wptrow b{flex:1 1 160px;min-width:0}.wptrow small{color:var(--muted);flex-basis:100%}.wptform{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px;margin:8px 0}.wptform input,.wptform select,.wptform textarea{width:100%;box-sizing:border-box;font:inherit}.wptcourse{background:var(--bg);border-radius:10px;padding:8px;margin:8px 0}';
     document.head.appendChild(s);
