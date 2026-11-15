@@ -52,7 +52,13 @@
       var x0 = X(M.a.lo), y0 = Y(M.a.la), x1 = X(M.b.lo), y1 = Y(M.b.la);
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.stroke(); ctx.lineWidth = 2.5; ctx.setLineDash([8, 5]); ctx.strokeStyle = M.r && M.r.shallow ? '#dc2626' : '#7c3aed'; ctx.stroke(); ctx.setLineDash([]);
       [[x0, y0], [x1, y1]].forEach(function (q) { ctx.beginPath(); ctx.arc(q[0], q[1], 5, 0, 2 * Math.PI); ctx.fillStyle = '#7c3aed'; ctx.fill(); });
-    }
+      /* bearing and distance on the chart by the moving end, updated as the finger moves (Stuart 15 Nov 20:26) */
+      if (M.r && M.r.nm != null) {
+        var txt = ('00' + Math.round(M.r.brg) % 360).slice(-3) + '°T  ' + (M.r.nm < 0.1 ? Math.round(M.r.nm * 1852) + ' m' : M.r.nm < 10 ? M.r.nm.toFixed(2) + ' nm' : M.r.nm.toFixed(1) + ' nm');
+        ctx.font = '700 14px Inter, system-ui, sans-serif'; var tw = ctx.measureText(txt).width, lx = Math.min(x1 + 14, (ctx.canvas.width / (window.devicePixelRatio || 1)) - tw - 16), ly = Math.max(y1 - 14, 22);
+        ctx.fillStyle = 'rgba(17,24,39,.82)'; ctx.fillRect(lx - 6, ly - 16, tw + 12, 22); ctx.fillStyle = M.r.shallow ? '#fca5a5' : '#fff'; ctx.fillText(txt, lx, ly);
+      }
+    } else if (M && M.a) { var xa = X(M.a.lo), ya = Y(M.a.la); ctx.beginPath(); ctx.arc(xa, ya, 6, 0, 2 * Math.PI); ctx.fillStyle = '#7c3aed'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); }   /* the first point, before the drag */
   }
   /* the tap box: save this point, or measure from it */
   function tipExtra(body, la, lo) {
