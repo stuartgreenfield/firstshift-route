@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.16';
+  var VERSION = 'FirstShift Route v0.12.17';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -227,7 +227,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.16 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.17 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1885,6 +1885,9 @@
   })();
   /* ---------- Live GPS (Stuart 12 Nov): the boat from this phone's GPS against the chosen route; how far off, ahead or behind, the way back ---------- */
   var LIVE = { mini: store('fs-livemini') === '1', on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 24 * 3600000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
+  /* dead reckoning when the GPS is lost (Stuart 15 Nov 2026, 09:13: "quite an important feature"): on by default */
+  function drOn() { return !$('drOn') || $('drOn').checked; }
+  (function () { var v = store('fs-drOn'); if ($('drOn')) { if (v != null) $('drOn').checked = v === '1'; $('drOn').onchange = function () { store('fs-drOn', $('drOn').checked ? '1' : '0'); if (!$('drOn').checked && LIVE.fix && LIVE.fix.dr) drEnd(null); }; } })();
   function liveSet() { ['gpsMode', 'xteLim', 'behLim'].forEach(function (id) { var v = store('fs-' + id); if (v != null && $(id)) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); if (id === 'gpsMode' && LIVE.on) { liveStop(true); liveStart(); } }; }); var ls = store('fs-liveSound'); if (ls != null) $('liveSound').checked = ls === '1'; $('liveSound').onchange = function () { store('fs-liveSound', this.checked ? '1' : '0'); }; }
   function liveWake() { try { if (LIVE.on && $('gpsMode').value === 'screen' && navigator.wakeLock && !LIVE.wake) navigator.wakeLock.request('screen').then(function (w) { LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () {}); } catch (e) {} }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) liveWake(); });
@@ -1896,9 +1899,10 @@
       $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
     if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
     else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    clearInterval(LIVE.drTimer); LIVE.drTimer = setInterval(drTick, 1000);
   }
   function liveStop(keep) {
-    if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null;
+    if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; clearInterval(LIVE.drTimer); LIVE.drTimer = null; LIVE.real = null; LIVE.drTrack = [];
     if (LIVE.wake) { try { LIVE.wake.release(); } catch (e) {} LIVE.wake = null; }
     if (keep) return; LIVE.on = false; LIVE.fix = null; LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; draw();
   }
@@ -1906,6 +1910,8 @@
     var c = g.coords, f = { la: c.latitude, lo: c.longitude, acc: c.accuracy, at: Date.now(), sog: c.speed != null && c.speed >= 0 ? c.speed * 1.94384 : null, cog: c.heading != null && c.heading === c.heading ? c.heading : null }, pv = LIVE.fix;
     if (pv && (f.sog == null || f.cog == null)) { var r = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dtH = (f.at - pv.at) / 3600000; if (dtH > 2 / 3600 && r.nm > 0.005 && r.nm / dtH < 40) { if (f.sog == null) f.sog = r.nm / dtH; if (f.cog == null) f.cog = r.brg; } }   /* a GPS jump is not boat speed */
     if (f.sog != null && f.sog > 40) f.sog = null;
+    if (pv && pv.dr) { pv = LIVE.real; if (pv && (f.sog == null || f.cog == null)) { var r2 = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dt2 = (f.at - pv.at) / 3600000; if (dt2 > 0 && r2.nm / dt2 < 40) { if (f.sog == null) f.sog = r2.nm / dt2; if (f.cog == null) f.cog = r2.brg; } } if (f.acc <= 150) drEnd(f); }
+    if (f.acc <= 150) LIVE.real = f;
     LIVE.fix = f;
     if (f.acc > 150) { LIVE.calc = null; liveShow(); draw(); return; }   /* rough network position: no tail, no plan sums */
     /* the long tail: a point every 10 s (or 50 m), about 8 hours, kept on the phone so it survives closing Route */
@@ -1914,6 +1920,42 @@
       if (!LIVE.saved || f.at - LIVE.saved > 60000) { LIVE.saved = f.at; store('fs-livetrail', JSON.stringify(LIVE.trail)); } }
     try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();
   }
+  /* ---- dead reckoning: no GPS fix for DRT seconds, so the boat carries on from the last good fix ----
+     Velocity: Navigate's instruments (true heading and log speed, window.__navDR) with the forecast tidal stream added, while they
+     are fresh; otherwise the last course and speed over the ground from the GPS (which already includes the tide). The circle of
+     doubt grows with the distance run: 0.05 nm plus 10% of it. Nothing is added to the GPS trail; the reckoned track is kept apart. */
+  function drAfter() { return ($('gpsMode') && $('gpsMode').value === 'battery' ? 45 : 10) * 1000; }
+  function drVel(la, lo) {
+    var nv = null; try { nv = window.__navDR ? window.__navDR() : null; } catch (e) {}
+    if (nv && nv.bsp >= 0 && nv.hdg === nv.hdg) {
+      var tu = 0, tv = 0, src = 'boat heading and log';
+      try { var ts = $('tideSel') && $('tideSel').value; if (ts && P.tide[ts]) { var td = FSRouter.tideSampler(P, ts)(la, lo, (Date.now() / 1000 - T0) / 3600); if (td && td[0] === td[0]) { tu = td[0]; tv = td[1]; src += ' plus forecast tide'; } } } catch (e) {}
+      var vx = nv.bsp * Math.sin(nv.hdg * R) + tu, vy = nv.bsp * Math.cos(nv.hdg * R) + tv;
+      return { sog: Math.hypot(vx, vy), cog: (Math.atan2(vx, vy) / R + 360) % 360, src: src };
+    }
+    var r = LIVE.real; if (r && r.sog != null && r.cog != null) return { sog: r.sog, cog: r.cog, src: 'last GPS course and speed' };
+    return null;
+  }
+  function drTick() {
+    if (!LIVE.on) return; var r = LIVE.real, now = Date.now();
+    if (!r || !drOn() || now - r.at < drAfter()) { if (LIVE.fix && LIVE.fix.dr && r && now - r.at < drAfter()) drEnd(null); return; }
+    var p = LIVE.fix && LIVE.fix.dr ? LIVE.fix : r, dt = (now - (p.dr ? p.at : r.at)) / 3600000, v = drVel(p.la, p.lo);
+    var la = p.la, lo = p.lo, run = p.dr ? p.run : 0;
+    if (v && v.sog > 0.05) { var d = v.sog * dt; la = p.la + d * Math.cos(v.cog * R) / 60; lo = p.lo + d * Math.sin(v.cog * R) / (60 * Math.cos(p.la * R)); run += d; }
+    var f = { la: la, lo: lo, at: now, acc: 5, sog: v ? v.sog : null, cog: v ? v.cog : null, dr: true, since: r.at, run: run, rad: 0.05 + 0.1 * run, src: v ? v.src : 'no speed known: holding the last position' };
+    if (!p.dr) { LIVE.drTrack = [[r.la, r.lo]]; LIVE.drStart = r.at; try { liveBeep(); } catch (e) {} }
+    LIVE.drTrack.push([la, lo]); if (LIVE.drTrack.length > 4000) LIVE.drTrack.shift();
+    LIVE.fix = f; try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();
+  }
+  function drEnd(real) {   /* GPS back (real) or reckoning switched off (null) */
+    var d = LIVE.fix; if (!d || !d.dr) return;
+    if (real) { var e = rhumb({ lat: d.la, lon: d.lo }, { lat: real.la, lon: real.lo }), mins = Math.round((Date.now() - d.since) / 60000);
+      LIVE.drMsg = 'GPS back after ' + (mins < 1 ? 'under a minute' : mins + ' min') + '. The reckoning was ' + (e.nm < 0.1 ? Math.round(e.nm * 1852) + ' m' : e.nm.toFixed(2) + ' nm') + ' out, ' + ('00' + Math.round(e.brg)).slice(-3) + '°T of the true position.';
+      LIVE.drLast = { err: e.nm, brg: e.brg, mins: mins, at: Date.now() }; try { liveBeep(); } catch (x) {} setTimeout(function () { LIVE.drMsg = null; if (LIVE.fix) liveShow(); }, 20000);
+    } else { LIVE.fix = LIVE.real; }
+    LIVE.drTrack = [];
+  }
+  window.__fsDR = function () { var f = LIVE.fix; return { on: drOn(), active: !!(f && f.dr), fix: f && f.dr ? { la: f.la, lo: f.lo, sog: f.sog, cog: f.cog, run: f.run, rad: f.rad, src: f.src, since: f.since } : null, last: LIVE.drLast || null, msg: LIVE.drMsg || null }; };   /* for Navigate and the automatic tests */
   /* the heading that makes good bearing B through the water and tide, and the speed over the ground it gives; on a beat or a run, the best VMG */
   function liveSteer(B, tws, twd, cu, cv, spd) {
     var best = null, vmg = null;
@@ -1982,11 +2024,21 @@
       '<p><b>Catch plan:</b> the course to steer, speed over the ground and time to be level with the plan again, from the wind, tide and your polar now. <b>Back on track:</b> when you cannot catch it, the soonest way back onto the planned track. The amber dashed line on the chart shows it.</p>' +
       '<p><b>Orange:</b> an alert limit is passed: off track by more than ' + (xl ? xl + ' nm' : 'the limit (off)') + ' or behind by more than ' + (bl ? bl + ' min' : 'the limit (off)') + '. It sounds once as it goes over. Change the limits, or set 0 to turn one off, in Settings, Course, While racing.</p>' +
       '<p><b>Green trail:</b> where the boat has been; tap it for time, SOG and COG. <b>GPS ±:</b> how sure the phone is of its position.</p>' +
+      '<p><b>Dead reckoning:</b> if the GPS stops for 10 seconds, the boat carries on along its last course and speed, drawn amber and dashed with a circle of doubt, and DR ± says how far out it may be. Turn it off in Settings, Course, While racing.</p>' +
       '<p><b>Buttons:</b> <b>MIN</b> shrinks this window to a small GPS live pill: its dot and border are green within your limits and orange past one, with off track and the minutes; tap the pill (Open) for this window again. <b>Big</b> shows the figures large for the cockpit; Chart comes back. <b>Re-route</b> works out a fresh route from the boat and says how its finish compares with the plan; it then becomes the plan. <b>Stop</b> turns the GPS off (the trail stays on the chart). <b>Clear track</b> wipes the trail. <b>i</b> opens or closes these notes.</p>' +
       '<p><b>Before the start:</b> To the start (course and distance to the start position in the course) and Gun in (the countdown to your class start). <b>Ping boat</b> and <b>Ping pin</b> store each end of the line from this phone\'s GPS as you pass it; then Route shows the distance to the line (OVER if you are on the course side), the time to reach it at your speed towards it, the <b>time to burn</b> (countdown less time to the line; negative means you will be late), and the <b>favoured end</b> in metres from the forecast wind at the gun. Clear line starts again. Ahead, behind and the alerts begin at the gun.</p>' +
       '<p>Keep Route open with the screen on. Not for navigation.</p><button class="btn" id="lvInfoX">Close</button></div>';
   }
   function liveShow() {
+    liveShow0(); var f = LIVE.fix, b = $('liveBox'); if (!b) return; var old = b.querySelector('.lvdr'); if (old) old.remove();
+    var h = '';
+    if (f && f.dr) { var s = Math.round((Date.now() - f.since) / 1000), age = s >= 3600 ? Math.floor(s / 3600) + 'h ' + ('0' + Math.floor(s % 3600 / 60)).slice(-2) : Math.floor(s / 60) + ' min ' + ('0' + s % 60).slice(-2) + ' s';
+      h = '<div class="lvl lvdr lvwarn" role="alert"><b>DEAD RECKONING: no GPS for ' + age + '.</b> Carrying on ' + (f.cog != null && f.sog > 0.05 ? ('00' + Math.round(f.cog)).slice(-3) + '°T at ' + f.sog.toFixed(1) + ' kn, from the ' + f.src : f.src) + '. Position good to about ' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '. <button class="btn" id="drStop">Stop dead reckoning</button></div>'; }
+    else if (LIVE.drMsg) h = '<div class="lvl lvdr">' + LIVE.drMsg + '</div>';
+    if (h) { b.hidden = false; b.insertAdjacentHTML('afterbegin', h); var sb = $('drStop'); if (sb) sb.onclick = function () { if ($('drOn')) { $('drOn').checked = false; $('drOn').onchange(); } liveShow(); draw(); }; }
+    b.classList.toggle('drmode', !!(f && f.dr));
+  }
+  function liveShow0() {
     var c = LIVE.calc, f = LIVE.fix; if (!f) return;
     var n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return ('00' + Math.round((x + 360) % 360) % 360).slice(-3) + '°T'; }, mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h ' + ('0' + a % 60).slice(-2) : a + ' min'; };
     if (f.acc > 150) {   /* not a GPS fix: a computer (or a phone indoors) placing itself by Wi-Fi or the network. Do not race on it. */
@@ -2003,7 +2055,7 @@
       $('liveBox').innerHTML = '<div class="lvg"><div><small>SOG</small><b>' + sog + '</b></div><div><small>COG</small><b>' + cog + '</b></div><div style="grid-column:span 2"><small>' + (ln.d != null ? (ln.over ? 'Over the line' : 'To the line') : 'To the start') + '</small><b' + (ln.over ? ' class="lvwarn"' : '') + '>' + ts2.replace(' to line', '') + '</b></div></div>' +
         '<div class="lvl">Gun in <b>' + gun + '</b> · ' + wizEsc(pr.name) + (ln.d != null ? '' : ': course and distance to the start position in the course') + '.</div>' + lineTxt +
         '<div class="lvx"><button class="btn" id="lnBoat">Ping boat' + (ln.boat ? ' ✓' : '') + '</button><button class="btn" id="lnPin">Ping pin' + (ln.pin ? ' ✓' : '') + '</button>' + (ln.boat || ln.pin ? '<button class="btn" id="lnClr">Clear line</button>' : '') + '</div>' + (LIVE.info ? liveInfo() : '') +
-        '<div class="lvx"><button class="btn lvmin" id="lvMin" aria-label="Minimise to a small pill" title="Minimise to a small pill">MIN</button><button class="btn primary" id="lvBig">Big</button><button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">GPS ±' + Math.round(f.acc || 0) + ' m</span></div>';
+        '<div class="lvx"><button class="btn lvmin" id="lvMin" aria-label="Minimise to a small pill" title="Minimise to a small pill">MIN</button><button class="btn primary" id="lvBig">Big</button><button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">' + (f.dr ? '<b class="lvwarn">DR ±' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '</b>' : 'GPS ±' + Math.round(f.acc || 0) + ' m') + '</span></div>';
       $('lvMin').onclick = function () { LIVE.mini = true; LIVE.info = false; store('fs-livemini', '1'); liveShow(); followBoat(); draw(); }; $('lvInfo').onclick = function () { LIVE.info = !LIVE.info; liveShow(); }; if ($('lvInfoX')) $('lvInfoX').onclick = function () { LIVE.info = false; liveShow(); };
       $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; $('lvBig').onclick = function () { LIVE.big = true; liveShow(); };
       $('lnBoat').onclick = function () { linePing('boat'); }; $('lnPin').onclick = function () { linePing('pin'); }; if ($('lnClr')) $('lnClr').onclick = function () { store(lineKey(), ''); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); };
@@ -2029,7 +2081,7 @@
     var rjs = rj ? (rj.kind === 'catch' ? 'Catch plan: ' : 'Back on track: ') + '<b>' + p3(rj.steer) + '</b> · ' + n1(rj.sog) + ' kn · ' + n1(rj.nm) + ' nm · ' + mm(rj.nm / rj.sog * 60) + (rj.kind === 'catch' ? '' : ' · ' + mm(rj.lost * 60) + ' behind') + (rj.tack ? ' · beat/run' : '') : (S.sel && xte && xte.d <= 0.1 && c.ahead >= -1 ? 'On plan' : S.sel ? 'No straight way back: re-route' : 'Route the race to compare with a plan');
     $('liveBox').innerHTML = '<div class="lvg"><div><small>SOG</small><b>' + sog + '</b></div><div><small>COG</small><b>' + cog + '</b></div><div><small>Off track</small><b' + (offX ? ' class="lvwarn"' : '') + '>' + xs + '</b></div><div><small>Plan</small><b' + (offB ? ' class="lvwarn"' : '') + '>' + as + '</b></div></div>' +
       '<div class="lvl">To plan now: <b>' + tp + '</b> · ' + rjs + '</div>' + (LIVE.cmp ? '<div class="lvl">' + LIVE.cmp + '</div>' : '') +
-      (LIVE.info ? liveInfo() : '') + '<div class="lvx"><button class="btn lvmin" id="lvMin" aria-label="Minimise to a small pill" title="Minimise to a small pill">MIN</button><button class="btn primary" id="lvBig">Big</button>' + (S.sel ? '<button class="btn" id="lvRe">Re-route</button>' : '') + '<button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">GPS ±' + Math.round(f.acc || 0) + ' m</span></div>';
+      (LIVE.info ? liveInfo() : '') + '<div class="lvx"><button class="btn lvmin" id="lvMin" aria-label="Minimise to a small pill" title="Minimise to a small pill">MIN</button><button class="btn primary" id="lvBig">Big</button>' + (S.sel ? '<button class="btn" id="lvRe">Re-route</button>' : '') + '<button class="btn" id="lvStop">Stop</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">' + (f.dr ? '<b class="lvwarn">DR ±' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '</b>' : 'GPS ±' + Math.round(f.acc || 0) + ' m') + '</span></div>';
     $('lvBig').onclick = function () { LIVE.big = true; liveShow(); }; $('lvMin').onclick = function () { LIVE.mini = true; LIVE.info = false; store('fs-livemini', '1'); liveShow(); followBoat(); draw(); }; $('lvInfo').onclick = function () { LIVE.info = !LIVE.info; liveShow(); }; if ($('lvInfoX')) $('lvInfoX').onclick = function () { LIVE.info = false; liveShow(); }; $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; if ($('lvRe')) $('lvRe').onclick = liveReroute;
     $('liveBig').hidden = !LIVE.big; $('liveBig').classList.toggle('alarm', alarm);
     if (LIVE.big) {
@@ -2059,6 +2111,10 @@
     var nNight = document.documentElement.hasAttribute('data-night');   /* the boat's track and mark dimmed at night (Stuart 13 Nov) */
     if (LIVE.trail.length > 1) { ctx.strokeStyle = nNight ? '#6A1410' : '#4CC38A'; ctx.globalAlpha = nNight ? 0.6 : 0.8; ctx.lineWidth = nNight ? 1.5 : 2; ctx.beginPath(); LIVE.trail.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.stroke(); ctx.globalAlpha = 1; }
     if (!LIVE.on || !f) { ctx.restore(); return; }
+    if (f.dr) {   /* the reckoned track dashed, the boat hollow, and the circle of doubt */
+      var dt0 = LIVE.drTrack || []; if (dt0.length > 1) { ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = nNight ? '#8A2A20' : '#F2B233'; ctx.lineWidth = 2; ctx.beginPath(); dt0.forEach(function (q, i) { if (i) ctx.lineTo(X(q[1]), Y(q[0])); else ctx.moveTo(X(q[1]), Y(q[0])); }); ctx.stroke(); ctx.restore(); }
+      var rpx = Math.max(10, f.rad / 60 * view.s); ctx.save(); ctx.beginPath(); ctx.arc(X(f.lo), Y(f.la), rpx, 0, 2 * Math.PI); ctx.fillStyle = nNight ? 'rgba(138,42,32,.12)' : 'rgba(242,178,51,.14)'; ctx.fill(); ctx.setLineDash([4, 4]); ctx.strokeStyle = nNight ? '#8A2A20' : '#F2B233'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+    }
     var x = X(f.lo), y = Y(f.la);
     var lnd = lineGet(); if (lnd.boat || lnd.pin) { ctx.save(); ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ['boat', 'pin'].forEach(function (k) { var q = lnd[k]; if (!q) return; ctx.beginPath(); ctx.arc(X(q[1]), Y(q[0]), 5, 0, 7); ctx.fill(); ctx.fillText(k === 'boat' ? 'BOAT' : 'PIN', X(q[1]) + 8, Y(q[0]) - 6); });
       if (lnd.boat && lnd.pin) { ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(lnd.boat[1]), Y(lnd.boat[0])); ctx.lineTo(X(lnd.pin[1]), Y(lnd.pin[0])); ctx.stroke(); var lf = c.pre && c.pre.line && c.pre.line.fav; if (lf) { var q2 = lnd[lf]; ctx.fillText('FAVOURED', X(q2[1]) + 8, Y(q2[0]) + 8); } } ctx.restore(); }
@@ -2066,7 +2122,8 @@
     if (c.plan) { ctx.strokeStyle = css['--ink']; ctx.setLineDash([3, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.plan.lo), Y(c.plan.la)); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(c.plan.lo), Y(c.plan.la), 7, 0, 7); ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.font = '600 10px Inter, sans-serif'; ctx.fillText('PLAN NOW', X(c.plan.lo) + 10, Y(c.plan.la) + 4); }
     if (c.rejoin) { ctx.strokeStyle = css['--warn']; ctx.setLineDash([7, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.rejoin.lo), Y(c.rejoin.la)); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = css['--warn']; ctx.beginPath(); ctx.arc(X(c.rejoin.lo), Y(c.rejoin.la), 4.5, 0, 7); ctx.fill(); }
     if (f.acc && f.acc > 30) { ctx.globalAlpha = 0.15; ctx.fillStyle = '#4CC38A'; ctx.beginPath(); ctx.arc(x, y, Math.max(6, f.acc / 1852 / 60 * view.s), 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
-    triMark(x, y, f.cog != null && f.sog > 0.5 ? f.cog : 0, 12, css['--panel'], nNight ? '#9A2A1A' : '#4CC38A', nNight ? 2 : 3);
+    if (f.dr) ctx.setLineDash([3, 3]);   /* the reckoned boat: amber and dashed, not the green GPS boat */
+    triMark(x, y, f.cog != null && f.sog > 0.5 ? f.cog : 0, 12, css['--panel'], f.dr ? (nNight ? '#8A2A20' : '#F2B233') : nNight ? '#9A2A1A' : '#4CC38A', nNight ? 2 : 3); ctx.setLineDash([]);
     ctx.restore();
   }
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */

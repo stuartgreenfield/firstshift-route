@@ -652,7 +652,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.16</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.17</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -734,6 +734,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <p class="note" data-i>Routes also keep this far from water shallower than the safety depth, because the seabed depths are averages over about 115 m and a rock or the edge of a bank can sit inside a square that reads deep. Near the start, each mark and the finish (0.4 nm) only the safety depth applies, so they can still be reached. Routes always follow the depth squares, whichever chart view you choose.</p>
       <h3>While racing</h3>
       <div class="row"><label for="gpsMode">Live GPS</label><select id="gpsMode"><option value="screen">Keep screen on, every second</option><option value="battery">Save battery, every 20 seconds</option></select></div>
+      <div class="row"><label for="drOn" class="chk"><input type="checkbox" id="drOn" checked> Dead reckoning when GPS is lost</label></div>
+      <p class="note" data-i>If no GPS fix arrives for 10 seconds (45 seconds in Save battery mode), the boat carries on along its last course and speed, drawn hollow with a widening circle of doubt, and a warning says how long it has been. In Navigate the boat's own heading and log speed are used while the instruments still send them, with the forecast tidal stream added. When the GPS comes back the boat jumps to the true position and Route says how far out the reckoning was. Not for navigation.</p>
       <div class="row"><label for="xteLim">Alert off track by (nm)</label><input type="number" id="xteLim" min="0" max="50" step="0.1" value="1.0"></div>
       <div class="row"><label for="behLim">Alert behind plan by (min)</label><input type="number" id="behLim" min="0" max="600" step="1" value="15"></div>
       <div class="row"><label class="chk"><input type="checkbox" id="liveSound" checked> Sound an alert</label></div>
