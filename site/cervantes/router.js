@@ -296,12 +296,15 @@
        as shore cannot otherwise be left. Never for a mark: the boat rounds a mark from up to 0.5 nm off, and a mark can be a rock or a
        fort (the Fastnet Rock, No Man's Land Fort), so a route must never cut across it. Everywhere else the safety depth holds, and a
        course whose marks are all in deep water routes exactly as before. */
-    var SREL = 0.4, SALL = 0.15, shAnch = [];
+    /* The start, always (Stuart 15 Nov 20:04, "Both": find a way out automatically, and if even that fails, the plain message): a start
+       or a boat position whose surroundings read shallower than the safety depth (an inshore line off Cowes at 3 to 6 m) is left through
+       any water below chart datum within SSTART nm, as boats really leave an inshore line; the app says so under the route. */
+    var SREL = 0.4, SALL = 0.15, SSTART = 1.0, shAnch = [];
     if (depth) {
       var allA = [[o.start.lat, o.start.lon]]; o.legs.forEach(function (lg) { if (lg.point) allA.push(lg.point); if (lg.gate) { allA.push(lg.gate.a); allA.push(lg.gate.b); } if (lg.at) allA.push(lg.at); });
-      allA.forEach(function (a, k) { var I = depth.idx(a[0], a[1]); if (!I || wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] !== 1) shAnch.push([a[0], a[1], k === 0]); });
+      allA.forEach(function (a, k) { var I = depth.idx(a[0], a[1]); if (k === 0 || !I || wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] !== 1) shAnch.push([a[0], a[1], k === 0, k === 0 && I && wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1]); });
     }
-    function shallowOk(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon, z = null; for (var i = 0; i < shAnch.length; i++) { var d = dist(la, lo, shAnch[i][0], shAnch[i][1]); if (d <= SALL && shAnch[i][2]) return true; if (d <= SREL) { if (z === null) z = depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; } } return false; }
+    function shallowOk(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon, z = null; for (var i = 0; i < shAnch.length; i++) { var d = dist(la, lo, shAnch[i][0], shAnch[i][1]); if (d <= SALL && shAnch[i][2] && !shAnch[i][3]) return true; if (d <= (shAnch[i][2] ? SSTART : SREL)) { if (z === null) z = depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; } } return false; }
     function nearAnchor(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon; for (var i = 0; i < anchors.length; i++) if (dist(la, lo, anchors[i][0], anchors[i][1]) <= MREL) return true; return false; }
     function wetLine(la0, lo0, la1, lo1) {
       if (nogo.length) for (var k = 1; k <= 8; k++) if (blocked(la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return false;

@@ -113,6 +113,13 @@
   /* F6 (Stuart 15 Nov 15:29, 17:10 "Plain message + depth button"): a route that cannot leave its start (no way through after 0 h) usually
      starts in water shallower than the safety depth. Say so plainly, with the charted depth there, and offer to route with a safety depth
      that the start allows. Try again alone would only repeat the same failure. */
+  /* said under the route when it leaves the start through water shallower than the safety depth (the router allows that within 1 nm of
+     the start, Stuart 15 Nov 20:04) */
+  function shallowStartNote() {
+    try { var r = S.sel && S.sel.r, safety = +$('depth').value; if (!r || !r.path || !P.depth || !(safety > 0)) return ''; var p0 = r.path[0], low = Infinity;
+      for (var i = 0; i < r.path.length && i < 40; i++) { var q = r.path[i], dd = rhumb({ lat: p0.la, lon: p0.lo }, { lat: q.la, lon: q.lo }).nm; if (dd > 1.05) break; var z = P.depth.nearest('z', q.la, q.lo); if (z === z) low = Math.min(low, -z); }
+      return low < safety ? ' Leaving the start the route crosses water about ' + Math.max(0, low).toFixed(1) + ' m deep on the chart, less than your safety depth of ' + safety.toFixed(1) + ' m: check the depth there on the tide.' : '';
+    } catch (e) { return ''; } }
   function depthOffer(e, sp) {
     var b = $('errDepth'); if (!b) return; b.hidden = true;
     if (!e || !/after 0 h/.test(e.message || '') || !sp) return;
@@ -2273,7 +2280,7 @@
     var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
-    pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
+    pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); })
     .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
