@@ -2221,7 +2221,8 @@
     LIVE.cmp = 'Fresh route from the boat: finish ' + clockAbs(T0 + S.sel.r.finish * 3600) + ' UTC, ' + (Math.abs(d) < 1 ? 'the same as the plan' : Math.abs(Math.round(d)) + ' min ' + (d < 0 ? 'earlier' : 'later') + ' than the plan') + '. It is now the plan.';
     LIVE.planFin = null; if (LIVE.fix) { try { LIVE.calc = liveCalc(LIVE.fix); } catch (e) {} liveShow(); }
   }
-  window.__fsTrail = function () { return LIVE.trail; };   /* N: tracks.js reads the trail to file it */
+  window.__fsTrail = function () { return LIVE.trail; };
+  window.__fsAstroCtx = function () { var st = meta && meta.course && meta.course.start, f = LIVE.on && LIVE.fix; return { at: (typeof T0 === 'number' ? (T0 + S.t * 3600) * 1000 : Date.now()), lat: f ? f.la : st ? st.lat : null, lon: f ? f.lo : st ? st.lon : null, where: f ? 'the boat' : st ? 'the start' : '' }; };   /* Astro (Stuart 15 Nov 11:45) */   /* N: tracks.js reads the trail to file it */
   window.__fsShowTracks = function () { return S.show.tracks !== false; };
   function liveDraw() {
     var f = LIVE.fix, c = LIVE.calc || {};
