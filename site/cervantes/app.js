@@ -48,19 +48,27 @@
     var tm = new Promise(function (_, no) { setTimeout(function () { no(new Error('slow')); }, 8000); });
     return Promise.race([Promise.all([get('router.js'), get('engine.js'), get('worker.js')]), tm]).then(function (t) { var wk = t[2].replace(/^\s*importScripts\([^)]*\);?/m, ''); return { all: t[0] + '\n;\n' + t[1] + '\n;\n' + wk, wk: wk }; });
   }
+  /* F14 (Stuart's Android tablet, 15 Nov 19:52: loading stopped at 9 of 14; "Both fixes"): a worker that is slow to answer is waited for,
+     never shut down. Routing goes ahead as soon as one worker answers, and the others join as they answer. A worker counts as failed
+     only if it reports an error, or nothing has answered in 60 s. */
   function startSet(make) {
     var set = []; for (var i = 0; i < n; i++) { try { var w = make(); w.onmessage = onMsg; set.push(w); } catch (e) { break; } }
-    return Promise.all(set.map(function (w) { return new Promise(function (ok) {
-      var done = false, fin = function (good) { if (done) return; done = true; if (!good) { try { w.terminate(); } catch (e) {} } ok(good ? w : null); };
-      w.onerror = function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); fin(false); };
-      setTimeout(function () { fin(false); }, 10000);
-      call(w, { type: 'ping' }).then(function () { fin(true); }, function () { fin(false); });
-    }); })).then(function (r) { return r.filter(Boolean); });
+    if (!set.length) return Promise.resolve([]);
+    return new Promise(function (ok) {
+      var good = [], left = set.length, over = false, end = function () { if (over) return; over = true; ok(good.slice()); };
+      set.forEach(function (w) {
+        var done = false, fin = function (g) { if (done) return; done = true; left--; if (g) { if (over) { if (workers.indexOf(w) < 0) workers.push(w); } else { good.push(w); end(); } } else { try { w.terminate(); } catch (e) {} if (!left && !over) end(); } };
+        w.onerror = function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); fin(false); };
+        call(w, { type: 'ping' }).then(function () { fin(true); }, function () { fin(false); });
+      });
+      setTimeout(end, 60000);
+    });
   }
-  function mainThread(src) {   /* the worker's own code, run on the page: same answers, but the screen waits while it routes */
-    var h = null, fake = { postMessage: function (msg) { setTimeout(function () { h({ data: msg }); }, 0); }, terminate: function () {} };
-    h = new Function('postMessage', 'importScripts', 'var onmessage;\n' + src + '\n;return onmessage;')   /* only worker.js: the page already has FSRouter and FSPolar */
-      (function (r) { setTimeout(function () { fake.onmessage({ data: r }); }, 0); }, function () {});
+  function mainThread(src) {   /* the worker's own code, run on the page: same answers, but the screen waits while it routes. It shares the page's own
+       forecasts (P) instead of keeping a second copy, which a tablet has no memory for (F14) */
+    var h = null, fake = { postMessage: function (msg) { if (msg && (msg.type === 'layer' || msg.type === 'drop')) { setTimeout(function () { fake.onmessage({ data: { id: msg.id, ok: true } }); }, 0); return; } setTimeout(function () { h({ data: msg }); }, 0); }, terminate: function () {} };
+    h = new Function('postMessage', 'importScripts', '__pageP', 'var onmessage;\n' + src.replace(/var P = FSRouter\.emptyPack\(\);/, 'var P = __pageP;') + '\n;return onmessage;')   /* only worker.js: the page already has FSRouter and FSPolar */
+      (function (r) { setTimeout(function () { fake.onmessage({ data: r }); }, 0); }, function () {}, P);
     return fake;
   }
   var wReady = wSrc().then(function (src) {
