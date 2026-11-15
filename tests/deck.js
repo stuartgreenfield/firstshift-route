@@ -34,6 +34,10 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(/DEAD RECKONING: no GPS for/.test(dr), 'GPS lost on the deck screen: the dead reckoning warning shows above the numbers', dr);
   await p.evaluate(([a, o]) => window.__gps(a, o, 7.2, 90), [la, lo]); await p.waitForTimeout(1200);
   await p.screenshot({ path: OUT + '/deck-portrait.png' });
+  const tp = await p.evaluate(() => getComputedStyle(document.querySelector('.top')).display);
+  await p.tap('#dkMenu'); await p.waitForTimeout(300); const tp2 = await p.evaluate(() => getComputedStyle(document.querySelector('.top')).display);
+  await p.tap('#dkMenu'); await p.waitForTimeout(300);
+  ok(tp === 'none' && tp2 !== 'none', 'the menus over the chart are hidden on the deck screen; MENU brings them back', tp + ' then ' + tp2);
   // pick a figure for box 4
   await p.tap('.dkbox[data-i="3"]'); await p.waitForTimeout(400);
   const groups = await p.evaluate(() => [...document.querySelectorAll('#dkPick h3')].map(h => h.textContent));

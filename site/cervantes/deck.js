@@ -92,17 +92,19 @@
       '.dkbox.good{box-shadow:inset 0 0 0 3px #16a34a}.dkbox.warn{box-shadow:inset 0 0 0 3px #d97706}.dkbox.bad{box-shadow:inset 0 0 0 3px #dc2626}' +
       '.dkpick{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.dkpick[hidden]{display:none}.dkpick .in{background:var(--panel);color:var(--ink);border-radius:14px;max-width:520px;width:100%;max-height:86vh;overflow:auto;padding:12px 14px}' +
       '.dkpick h3{margin:10px 0 6px;font-size:12px;letter-spacing:.06em;color:var(--muted)}.dkpick .g{display:flex;flex-wrap:wrap;gap:6px}.dkpick button{min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 13px var(--f-body,system-ui)}.dkpick button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}' +
-      '.fsdeckb[aria-pressed="true"]{background:var(--ink);color:var(--bg)}body.fsdeck #liveBox{display:none!important}' +
+      '.fsdeckb[aria-pressed="true"]{background:var(--ink);color:var(--bg)}body.fsdeck #liveBox{display:none!important}body.fsdeck:not(.fsdeckmenu) .top,body.fsdeck:not(.fsdeckmenu) #navStrip,body.fsdeck:not(.fsdeckmenu) .cbanner{display:none!important}.dkbar #dkMenu[aria-pressed="true"]{background:var(--ink);color:var(--bg)}' +
       '.dkbar{grid-row:1}.dkdr{grid-row:2}.dkbox[data-i="0"],.dkbox[data-i="1"]{grid-row:3}.dkbox[data-i="2"],.dkbox[data-i="3"]{grid-row:4}.dkdr{grid-column:1 / span 2;background:#b45309;color:#fff;border-radius:10px;padding:6px 10px;font:700 14px var(--f-body,system-ui)}.dkdr[hidden]{display:none}';
     document.head.appendChild(s);
   }
   function build() {
     if (el) return; css(); var app = $('app'); if (!app) return;
     el = document.createElement('div'); el.id = 'deckNums'; el.setAttribute('aria-label', 'Deck screen numbers');
-    el.innerHTML = '<div class="dkbar"><button type="button" class="dkview" id="dkView" aria-label="Change the view below"></button><span class="dkdots" id="dkDots" aria-hidden="true"></span><button type="button" id="dkExit" aria-label="Leave the deck screen">CHART ×</button></div><div class="dkdr" id="dkDr" role="alert" hidden></div>' +
+    el.innerHTML = '<div class="dkbar"><button type="button" class="dkview" id="dkView" aria-label="Change the view below"></button><span class="dkdots" id="dkDots" aria-hidden="true"></span><button type="button" id="dkMenu" aria-pressed="false" aria-label="Show the menus over the chart">MENU</button><button type="button" id="dkExit" aria-label="Leave the deck screen">CHART ×</button></div><div class="dkdr" id="dkDr" role="alert" hidden></div>' +
       [0, 1, 2, 3].map(function (i) { return '<div class="dkbox" data-i="' + i + '" role="button" tabindex="0" aria-label="Figure ' + (i + 1) + ': tap to change"><span class="dkl"></span><span class="dku"></span><span class="dkv">--</span><span class="dka"></span><span class="dkt"></span></div>'; }).join('');
     app.insertBefore(el, app.firstChild);
     $('dkView').onclick = function () { step(1); }; $('dkExit').onclick = function () { set(false); };
+    /* the menus over the chart are hidden on the deck screen (Stuart 15 Nov Q&A: "Hide them, one Menu button"); MENU brings them back */
+    $('dkMenu').onclick = function () { var m = !document.body.classList.contains('fsdeckmenu'); document.body.classList.toggle('fsdeckmenu', m); this.setAttribute('aria-pressed', String(m)); };
     [].forEach.call(el.querySelectorAll('.dkbox'), function (b) { b.onclick = function () { pick(+b.dataset.i); }; b.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(+b.dataset.i); } }; });
     swipe(el); var pn = $('panel'); if (pn) swipe(pn, true);
   }
@@ -147,7 +149,7 @@
       vs.textContent = f.show ? f.show(v) : v.toFixed(f.d == null ? 1 : f.d);
       var m = f.noavg ? null : mean(k, 0, 60000); b.querySelector('.dka').textContent = m == null ? '' : '1 min ' + (f.show ? f.show(m) : m.toFixed(f.d == null ? 1 : f.d));
       var tr = f.noavg ? 0 : trend(k); b.querySelector('.dkt').textContent = tr > 0 ? '▲' : tr < 0 ? '▼' : '';
-      var r = f.tgt ? f.tgt(v) : null; b.classList.toggle('good', r != null && r >= 1); b.classList.toggle('warn', r != null && r < 1 && r >= 0.95); b.classList.toggle('bad', r != null && r < 0.95);
+      var r = f.tgt ? f.tgt(v) : null; b.classList.toggle('good', r != null && r >= 0.98); b.classList.toggle('warn', r != null && r < 0.98 && r >= 0.90); b.classList.toggle('bad', r != null && r < 0.90);   /* Stuart 15 Nov Q&A: green from 98%, red under 90% */
     });
   }
   /* MOB stays in reach but never covers a number: on the deck screen it sits at the bottom left of the view under the numbers */
@@ -160,7 +162,7 @@
     m.style.left = (r.left + 10) + 'px'; m.style.top = 'auto'; m.style.right = 'auto'; m.style.bottom = Math.max(8, innerHeight - r.bottom + 10) + 'px';
   }
   function set(v) {
-    on = !!v; C.on = on; save(); build(); document.body.classList.toggle('fsdeck', on);
+    on = !!v; C.on = on; save(); build(); document.body.classList.toggle('fsdeck', on); document.body.classList.remove('fsdeckmenu'); if ($('dkMenu')) $('dkMenu').setAttribute('aria-pressed', 'false');
     var bt = $('fsDeckBtn'); if (bt) bt.setAttribute('aria-pressed', String(on));
     if (on) { try { if (navigator.wakeLock && !wake) navigator.wakeLock.request('screen').then(function (w) { wake = w; }).catch(function () {}); } catch (e) {} }
     else if (wake) { try { wake.release(); } catch (e) {} wake = null; }
