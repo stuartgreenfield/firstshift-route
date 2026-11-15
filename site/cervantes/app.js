@@ -2226,6 +2226,10 @@
     LIVE.planFin = null; if (LIVE.fix) { try { LIVE.calc = liveCalc(LIVE.fix); } catch (e) {} liveShow(); }
   }
   window.__fsTrail = function () { return LIVE.trail; };
+  /* tide gate (Stuart 15 Nov 11:26 to 11:39): the chosen tide model at a place and time, the AIS boats, our TCC */
+  window.__fsTideAt = function (la, lo, ep) { try { var ts = $('tideSel') && $('tideSel').value; if (!ts || !P.tide[ts]) return null; var td = FSRouter.tideSampler(P, ts)(la, lo, ((ep || Date.now() / 1000) - T0) / 3600); return td && td[0] === td[0] ? td : null; } catch (e) { return null; } };
+  window.__fsAisList = function () { try { return AIS.tg.list(); } catch (e) { return []; } };
+  window.__fsTcc = function () { var v = +($('tcc') || {}).value; return v > 0 ? v : 1; };
   window.__fsAstroCtx = function () { var st = meta && meta.course && meta.course.start, f = LIVE.on && LIVE.fix; return { at: (typeof T0 === 'number' ? (T0 + S.t * 3600) * 1000 : Date.now()), lat: f ? f.la : st ? st.lat : null, lon: f ? f.lo : st ? st.lon : null, where: f ? 'the boat' : st ? 'the start' : '' }; };   /* Astro (Stuart 15 Nov 11:45) */   /* N: tracks.js reads the trail to file it */
   window.__fsShowTracks = function () { return S.show.tracks !== false; };
   function liveDraw() {
