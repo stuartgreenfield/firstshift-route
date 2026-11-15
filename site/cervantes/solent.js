@@ -81,23 +81,26 @@
   }
 
   /* ---- building the course ---- */
-  function toPt(m, side) { var o = { name: m.code ? m.code + ' ' + (BY[m.code] ? BY[m.code].name : '') : m.name, lat: m.lat, lon: m.lon }; if (side) o.side = side; return o; }
+  function toPt(m, side) { var o = { name: m.code ? m.code + ' ' + (BY[m.code] ? BY[m.code].name : '') : m.name, lat: m.lat, lon: m.lon }; if (side) o.side = side; if (m.gate) { o.gate = m.gate; o.name = m.name; } return o; }
   function fromCode(code, side) { var m = mark(code); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: side || 'port' } : null; }
   function offset(p, brg, nm) { return { lat: p.lat + nm * Math.cos(brg * R) / 60, lon: p.lon + nm * Math.sin(brg * R) / (60 * Math.cos(p.lat * R)) }; }
   function windward() {
     var w = B.wl; if (w.wkind === 'buoy') { var m = mark(w.wcode); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : null; }
     if (!B.start || !(w.brg >= 0 && w.brg <= 360) || !(w.dist > 0)) return null; var q = offset(B.start, w.brg, w.dist); return { code: null, name: 'Windward mark, ' + ('00' + Math.round(w.brg)).slice(-3) + '°T ' + w.dist + ' nm', lat: q.lat, lon: q.lon };
   }
-  function leeward() { var w = B.wl; if (w.lkind === 'buoy') { var m = mark(w.lcode); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : null; } return B.start ? { code: B.start.code, name: 'Leeward mark (start line)', lat: B.start.lat, lon: B.start.lon } : null; }
+  function leeward() { var w = B.wl;
+    if (w.lkind === 'gate') { var g1 = mark(w.lcode), g2 = mark(w.lcode2); if (!g1 || !g2) return null; return { code: null, name: 'Leeward gate ' + g1.id + ' and ' + g2.id, lat: (g1.lat + g2.lat) / 2, lon: (g1.lon + g2.lon) / 2, gate: { a: [g1.lat, g1.lon], b: [g2.lat, g2.lon] } }; }   /* J3: a gate of two buoys; round either */
+    if (w.lkind === 'buoy') { var m = mark(w.lcode); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : null; } return B.start ? { code: B.start.code, name: 'Leeward mark (start line)', lat: B.start.lat, lon: B.start.lon } : null; }
   function build(soft) {
     if (!B.start) return soft ? null : { err: 'Choose the start: tap Start, then a mark or a point on the chart.' };
     var marks = [], fin;
     if (B.type === 'wl') {
       var W = windward(), L = leeward(); if (!W) return soft ? { start: B.start, marks: [] } : { err: B.wl.wkind === 'buoy' ? 'Type the code of the windward buoy (for example 3G).' : 'Give the windward mark a compass heading (0 to 360°T) and a distance in nm, or use the forecast wind.' };
-      if (!L) return soft ? null : { err: 'Type the code of the leeward buoy.' };
+      if (!L) return soft ? null : { err: B.wl.lkind === 'gate' ? 'Type the codes of both gate buoys.' : 'Type the code of the leeward buoy.' };
       var n = Math.max(1, Math.min(6, Math.round(B.wl.laps || 1)));
-      for (var i = 0; i < n; i++) { marks.push(toPt(W, B.wl.side)); if (i < n - 1) marks.push(toPt(L, B.wl.side)); }
-      fin = toPt(L); fin.name = 'Finish, ' + L.name;
+      var fk = B.wl.fin || 'lee';   /* J3: finish at the leeward mark or gate, at the start line, or at the windward mark */
+      if (fk === 'wind') { for (var i = 0; i < n; i++) { if (i) marks.push(toPt(L, B.wl.side)); if (i < n - 1) marks.push(toPt(W, B.wl.side)); } fin = toPt(W); fin.name = 'Finish, ' + W.name; }
+      else { for (var j = 0; j < n; j++) { marks.push(toPt(W, B.wl.side)); if (j < n - 1 || fk === 'start') marks.push(toPt(L, B.wl.side)); } if (fk === 'start') { fin = toPt(B.start); fin.name = 'Finish, start line'; } else { fin = toPt(L); fin.name = 'Finish, ' + L.name; delete fin.gate; } }
     } else {
       marks = (B.marks || []).map(function (m) { return toPt(m, m.side || 'port'); });
       if (!marks.length && !soft) return { err: 'Add at least one mark: type the codes from the course board, or tap Add mark and then the mark on the chart.' };
@@ -152,8 +155,10 @@
       h += '<h3>Windward mark</h3><div class="row"><span class="rowlbl" id="solWkL">Windward mark is</span><div class="seg" role="group" aria-labelledby="solWkL"><button type="button" data-wk="brg" aria-pressed="' + (w.wkind !== 'buoy') + '">A heading and distance</button><button type="button" data-wk="buoy" aria-pressed="' + (w.wkind === 'buoy') + '">A buoy</button></div></div>';
       if (w.wkind === 'buoy') h += '<div class="row"><label for="solWcode">Buoy code</label><input id="solWcode" size="4" maxlength="3" value="' + esc(w.wcode) + '" placeholder="3G"><span class="note">' + (mark(w.wcode) ? esc(mark(w.wcode).name) : '') + '</span></div>';
       else h += '<div class="row"><label for="solBrg">Heading from the start</label><input id="solBrg" type="number" min="0" max="360" step="1" value="' + (w.brg == null ? '' : w.brg) + '" style="width:70px"> °T <button class="btn" id="solFc">Use the forecast wind</button></div><div class="row"><label for="solDist">Distance</label><input id="solDist" type="number" min="0.2" max="10" step="0.1" value="' + w.dist + '" style="width:70px"> nm</div><p class="note" id="solFcNote"></p>';
-      h += '<h3>Leeward mark and laps</h3><div class="row"><span class="rowlbl" id="solLkL">Leeward mark is</span><div class="seg" role="group" aria-labelledby="solLkL"><button type="button" data-lk="start" aria-pressed="' + (w.lkind !== 'buoy') + '">The start line</button><button type="button" data-lk="buoy" aria-pressed="' + (w.lkind === 'buoy') + '">A buoy</button></div></div>';
+      h += '<h3>Leeward mark and laps</h3><div class="row"><span class="rowlbl" id="solLkL">Leeward mark is</span><div class="seg" role="group" aria-labelledby="solLkL"><button type="button" data-lk="start" aria-pressed="' + (w.lkind !== 'buoy') + '">The start line</button><button type="button" data-lk="buoy" aria-pressed="' + (w.lkind === 'buoy') + '">A buoy</button><button type="button" data-lk="gate" aria-pressed="' + (w.lkind === 'gate') + '">A gate</button></div></div>';
+      if (w.lkind === 'gate') h += '<div class="row"><label for="solLcode">Gate buoys</label><input id="solLcode" size="4" maxlength="3" value="' + esc(w.lcode) + '" placeholder="2C"> and <input id="solLcode2" size="4" maxlength="3" value="' + esc(w.lcode2 || '') + '" placeholder="2D"></div><p class="note">Round either buoy of the gate; the routes cross the line between them.</p>';
       if (w.lkind === 'buoy') h += '<div class="row"><label for="solLcode">Buoy code</label><input id="solLcode" size="4" maxlength="3" value="' + esc(w.lcode) + '"><span class="note">' + (mark(w.lcode) ? esc(mark(w.lcode).name) : '') + '</span></div>';
+      h += '<div class="row"><span class="rowlbl" id="solWfL">Finish at</span><div class="seg" role="group" aria-labelledby="solWfL"><button type="button" data-wf="lee" aria-pressed="' + ((w.fin || 'lee') === 'lee') + '">Leeward</button><button type="button" data-wf="start" aria-pressed="' + (w.fin === 'start') + '">Start line</button><button type="button" data-wf="wind" aria-pressed="' + (w.fin === 'wind') + '">Windward</button></div></div>';
       h += '<div class="row"><label for="solLaps">Laps (beats)</label><input id="solLaps" type="number" min="1" max="6" step="1" value="' + w.laps + '" style="width:60px"></div>';
       h += '<div class="row"><label for="solSide">Leave the marks to</label><select id="solSide"><option value="port"' + (w.side !== 'starboard' ? ' selected' : '') + '>port</option><option value="starboard"' + (w.side === 'starboard' ? ' selected' : '') + '>starboard</option></select></div><p class="note">Finish at the leeward mark after the last beat and run.</p>';
     } else {
@@ -198,6 +203,8 @@
     code('solStartCode', function (p) { B.start = p; }); code('solFinCode', function (p) { B.finish = p; });
     on('solWcode', 'onchange', function () { B.wl.wcode = this.value.trim().toUpperCase(); saveB(); render(); redraw(); });
     on('solLcode', 'onchange', function () { B.wl.lcode = this.value.trim().toUpperCase(); saveB(); render(); redraw(); });
+    on('solLcode2', 'onchange', function () { B.wl.lcode2 = this.value.trim().toUpperCase(); saveB(); render(); redraw(); });
+    [].forEach.call(q('[data-wf]'), function (e) { e.onclick = function () { B.wl.fin = e.dataset.wf; saveB(); render(); redraw(); }; });
     on('solBrg', 'onchange', function () { var v = +this.value; B.wl.brg = this.value === '' ? null : ((v % 360) + 360) % 360; saveB(); render(); redraw(); });
     on('solDist', 'onchange', function () { B.wl.dist = Math.max(0.2, Math.min(10, +this.value || 1)); saveB(); render(); redraw(); });
     on('solLaps', 'onchange', function () { B.wl.laps = Math.max(1, Math.min(6, Math.round(+this.value || 1))); saveB(); render(); redraw(); });

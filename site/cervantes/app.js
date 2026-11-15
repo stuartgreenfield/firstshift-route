@@ -627,6 +627,7 @@
     var inshore = courseNm(c) < 40;
     pts.slice(1, -1).forEach(function (m, i) {
       if (m.via) { legs.push({ name: m.name || 'Waypoint', point: [m.lat, m.lon], r: 0.3, at: [m.lat, m.lon] }); return; }
+      if (m.gate && m.gate.a && m.gate.b) { legs.push({ name: m.name, gate: { a: m.gate.a, b: m.gate.b }, dt: 180, at: [m.lat, m.lon] }); return; }   /* a leeward gate of two buoys (J3): cross the line between them */
       var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25, legNm = FSRouter.dist(pts[i].lat, pts[i].lon, m.lat, m.lon);
       /* an offshore rounding mark gets a long gate ray, so the router has to sail round it rather than past it */
       legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', inshore ? 0.15 : near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1))), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
