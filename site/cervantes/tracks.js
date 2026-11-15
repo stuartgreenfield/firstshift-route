@@ -25,6 +25,7 @@
     if (window.NativeLink && window.NativeLink.saveText) { window.NativeLink.saveText(n, g); toast('Choose where to save ' + n + '.'); return; }
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([g], { type: 'application/gpx+xml' })); a.download = n; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Saved ' + n);
   }
+  function logPdf(t) { if (!window.FSLogPdf) return; try { var n = FSLogPdf.save(t); toast(window.NativeLink ? 'Choose where to save ' + n + '.' : 'Saved ' + n); } catch (e) { toast('The log could not be made: ' + e.message); } }
   /* File track: keep it, offer the GPX, the caller clears the trail */
   function file(trail, name) {
     var p = (trail || []).filter(function (q) { return q && isFinite(q[0]) && isFinite(q[1]); });
@@ -36,20 +37,21 @@
   }
   function card(t) {
     var c = $('trkCard'); if (!c) { c = document.createElement('div'); c.id = 'trkCard'; c.className = 'trkcard'; c.setAttribute('role', 'status'); (document.querySelector('.app>.chart') || document.body).appendChild(c); }
-    c.innerHTML = '<button class="close" type="button" aria-label="Close">×</button><b>Track filed</b><span>' + esc(t.name) + ' · ' + when(t.at) + ' · ' + t.nm.toFixed(1) + ' nm. A fresh trail has started.</span><div class="xrow"><button class="btn primary" type="button" data-k="gpx">Save GPX</button><button class="btn" type="button" data-k="show">Show on chart</button></div>';
-    c.hidden = false; c.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; if (b.classList.contains('close')) c.hidden = true; else if (b.dataset.k === 'gpx') saveGpx(t); else { SHOWN[t.id] = true; c.hidden = true; redraw(); list(); } };
+    c.innerHTML = '<button class="close" type="button" aria-label="Close">×</button><b>Track filed</b><span>' + esc(t.name) + ' · ' + when(t.at) + ' · ' + t.nm.toFixed(1) + ' nm. A fresh trail has started.</span><div class="xrow"><button class="btn primary" type="button" data-k="gpx">Save GPX</button><button class="btn" type="button" data-k="log">Log (PDF)</button><button class="btn" type="button" data-k="show">Show on chart</button></div>';
+    c.hidden = false; c.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; if (b.classList.contains('close')) c.hidden = true; else if (b.dataset.k === 'gpx') saveGpx(t); else if (b.dataset.k === 'log') logPdf(t); else { SHOWN[t.id] = true; c.hidden = true; redraw(); list(); } };
     clearTimeout(c.__t); c.__t = setTimeout(function () { c.hidden = true; }, 20000);
   }
   var armed = null;
   function list() {
     var el = $('trkList'); if (!el) return; var a = load();
     if (!a.length) { el.innerHTML = '<p class="note">No tracks filed yet. Use File track in the GPS window.</p>'; return; }
-    el.innerHTML = a.map(function (t) { return '<div class="trkrow" data-id="' + t.id + '"><label><input type="checkbox" data-k="show"' + (SHOWN[t.id] ? ' checked' : '') + '> <b>' + esc(t.name) + '</b></label><span>' + when(t.at) + ' · ' + t.nm.toFixed(1) + ' nm</span><span class="trkb"><button class="btn" type="button" data-k="gpx">GPX</button><button class="btn" type="button" data-k="del">' + (armed === t.id ? 'Tap again to delete' : 'Delete') + '</button></span></div>'; }).join('');
+    el.innerHTML = a.map(function (t) { return '<div class="trkrow" data-id="' + t.id + '"><label><input type="checkbox" data-k="show"' + (SHOWN[t.id] ? ' checked' : '') + '> <b>' + esc(t.name) + '</b></label><span>' + when(t.at) + ' · ' + t.nm.toFixed(1) + ' nm</span><span class="trkb"><button class="btn" type="button" data-k="gpx">GPX</button><button class="btn" type="button" data-k="log">Log</button><button class="btn" type="button" data-k="del">' + (armed === t.id ? 'Tap again to delete' : 'Delete') + '</button></span></div>'; }).join('');
   }
   function onList(e) {
     var row = e.target.closest('.trkrow'), k = e.target.dataset.k; if (!row || !k) return; var id = row.dataset.id, a = load(), t = a.filter(function (x) { return x.id === id; })[0]; if (!t) return;
     if (k === 'show') { SHOWN[id] = e.target.checked; redraw(); return; }
     if (k === 'gpx') { saveGpx(t); return; }
+    if (k === 'log') { logPdf(t); return; }
     if (k === 'del') { if (armed !== id) { armed = id; list(); setTimeout(function () { if (armed === id) { armed = null; list(); } }, 4000); return; } armed = null; save(a.filter(function (x) { return x.id !== id; })); delete SHOWN[id]; list(); redraw(); toast('Track deleted.'); }
   }
   function redraw() { try { if (window.__fsRedraw) window.__fsRedraw(); else window.dispatchEvent(new Event('resize')); } catch (e) {} }
