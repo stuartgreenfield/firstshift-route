@@ -805,6 +805,11 @@ A4, 125, 180, 18, 60</textarea>
       <p class="note" data-i>Smooth rounds off the edges of the red shallow water so the chart is easier to read. Squares shows the depth squares exactly as the router sees them: red is shallower than your safety depth, pale red is the margin the routes also keep clear of (Course tab). Routes always follow the squares, whichever you choose.</p>
       <div class="row"><label for="zoomMax">Closest zoom</label><input type="range" id="zoomMax" min="1" max="6" step="1" value="1" style="width:160px"><b id="zoomMaxV" style="font-family:var(--f-data)"></b></div>
       <p class="note" data-i>How far you can zoom in, for example at a mark. The depth squares are about 230 m by 150 m, so closer in shows marks and buoys larger but no more depth detail.</p>
+      <h3>Racing in the Solent</h3>
+      <label class="chk"><input type="checkbox" id="solentOn"><span>Show the Solent race marks</span></label>
+      <p class="note" data-i>The JOG and SCRA Solent Area Mark Codes 2026 list (23 February 2026): 157 marks with their codes, in their colours. Tap a mark for its name, position and any notes. Most yellow race marks are laid March to November only.</p>
+      <div class="xrow"><button class="btn primary" id="solentBuild">Build a Solent race</button></div>
+      <p class="note" data-i>Pick the start on the chart, then type the marks from the course board, each to port or starboard, or tap them on the chart. Or set a windward-leeward course, the windward mark a buoy or a heading and distance from the start. The race is routed as normal, kept clear of water shallower than your safety depth, and saved in My races.</p>
       <h3>How to change it</h3>
       <p class="note">Tap the layers button at the top of the screen (two stacked layers). Under <b>Chart</b>, turn the OpenSeaMap buoys, beacons and lights on or off. Under <b>Weather and race</b>, choose wind, tidal stream, traffic separation schemes, lighthouses, laylines, isochrones and the forecast weather, and which routes to show. <b>Show all</b>, <b>Just the course</b> and <b>Just the route</b> set several at once. The wind and tide symbols and AIS are in the Display tab.</p>
       <h3>Not for navigation</h3>
@@ -852,4 +857,5 @@ A4, 125, 180, 18, 60</textarea>
 <script src="fswind.js"></script>
 <script src="fshelp.js"></script>
 <script src="fsplot.js"></script>
+<script src="solent.js"></script>
 <script src="fstour.js"></script>

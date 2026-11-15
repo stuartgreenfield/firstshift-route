@@ -289,11 +289,22 @@
       if (!wmM) { var nx0 = depth.nx, ny0 = depth.ny, cur = wm; for (var mi = 0; mi < margin; mi++) { var nxt = new Uint8Array(ny0 * nx0); for (var ey = 0; ey < ny0; ey++) for (var ex = 0; ex < nx0; ex++) { var okc = cur[ey * nx0 + ex] === 1; for (var ddy = -1; okc && ddy <= 1; ddy++) for (var ddx = -1; okc && ddx <= 1; ddx++) { var yy = ey + ddy, xx = ex + ddx; if (yy < 0 || xx < 0 || yy >= ny0 || xx >= nx0 || cur[yy * nx0 + xx] !== 1) okc = false; } if (okc) nxt[ey * nx0 + ex] = 1; } cur = nxt; } wmM = depth._wet[mk] = cur; }
       anchors.push([o.start.lat, o.start.lon]); o.legs.forEach(function (lg) { if (lg.point) anchors.push(lg.point); if (lg.gate) { anchors.push(lg.gate.a); if (!(dist(lg.gate.a[0], lg.gate.a[1], lg.gate.b[0], lg.gate.b[1]) > 2)) anchors.push(lg.gate.b); } if (lg.at) anchors.push(lg.at); });
     }
+    /* marks in shallow water (Stuart 15 Nov 2026, Solent racing): inshore race marks are often laid where the depth data (below lowest
+       astronomical tide, about 230 m by 150 m squares) reads shallower than the safety depth, or even as the shore: 31 of the 157 Solent
+       marks do at 2.5 m. Only for a start, mark or finish that is itself in such water: within SREL nm of it any square below chart datum
+       counts as water, and within SALL nm every square does, so the boat can reach it. Everywhere else the safety depth holds, and a
+       course whose marks are all in deep water routes exactly as before. */
+    var SREL = 0.4, SALL = 0.15, shAnch = [];
+    if (depth) {
+      var allA = [[o.start.lat, o.start.lon]]; o.legs.forEach(function (lg) { if (lg.point) allA.push(lg.point); if (lg.gate) { allA.push(lg.gate.a); allA.push(lg.gate.b); } if (lg.at) allA.push(lg.at); });
+      allA.forEach(function (a) { var I = depth.idx(a[0], a[1]); if (!I || wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] !== 1) shAnch.push(a); });
+    }
+    function shallowOk(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon, z = null; for (var i = 0; i < shAnch.length; i++) { var d = dist(la, lo, shAnch[i][0], shAnch[i][1]); if (d <= SALL) return true; if (d <= SREL) { if (z === null) z = depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; } } return false; }
     function nearAnchor(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon; for (var i = 0; i < anchors.length; i++) if (dist(la, lo, anchors[i][0], anchors[i][1]) <= MREL) return true; return false; }
     function wetLine(la0, lo0, la1, lo1) {
       if (nogo.length) for (var k = 1; k <= 8; k++) if (blocked(la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return false;
       if (!depth) return true; var L = depth.L;
-      return eachCell(L, la0, lo0, la1, lo1, function (y, x) { if (y < 0 || x < 0 || y >= L.ny || x >= L.nx) return false; var i = y * L.nx + x; return wmM[i] === 1 || (wm[i] === 1 && margin > 0 && nearAnchor(y, x)); });
+      return eachCell(L, la0, lo0, la1, lo1, function (y, x) { if (y < 0 || x < 0 || y >= L.ny || x >= L.nx) return false; var i = y * L.nx + x; return wmM[i] === 1 || (wm[i] === 1 && margin > 0 && nearAnchor(y, x)) || (shAnch.length > 0 && shallowOk(y, x)); });
     }
     var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [], iso = o.iso ? [] : null, isoT = t;   /* iso: the front each hour, for the isochrones on the chart */
     for (var li = 0; li < o.legs.length; li++) {

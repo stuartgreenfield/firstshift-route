@@ -1961,7 +1961,14 @@
     } else { LIVE.fix = LIVE.real; }
     LIVE.drTrack = [];
   }
-  window.__fsOri = function () { return ORI.mode; };   /* for the reopen test */
+  window.__fsOri = function () { return ORI.mode; };
+  /* for the Solent race builder (solent.js, Stuart 15 Nov): route a built course as one of My races, the safety depth, and the
+     forecast wind at a place and time (true, from), from the models the set-up card would use */
+  window.__fsUseCourse = function (c) { archiveRoutes(); var a = myRaces(), rg = regionFor(c), rec = { id: 'r' + Date.now().toString(36), name: c.name, page: rg ? rg.id : HERE, course: c, settings: snapSettings(), savedAt: Date.now(), summary: '' };
+    a.unshift(rec); setMyRaces(a); openMy(rec.id); return rec.id; };
+  window.__fsDepth = function (v) { if (v == null) return +$('depth').value; depthSet(v); };
+  window.__fsStartAt = function () { var v = +$('startSel').value; return v > 0 ? v : null; };
+  window.__fsWindAt = function (la, lo, ep) { try { var W = FSRouter.windSampler(P0(), cardModels())(la, lo, ((ep || Date.now() / 1000) - T0) / 3600); return W && W[0] === W[0] ? { tws: W[0], twd: W[1] } : null; } catch (e) { return null; } };   /* for the reopen test */
   window.__fsDR = function () { var f = LIVE.fix; return { on: drOn(), active: !!(f && f.dr), fix: f && f.dr ? { la: f.la, lo: f.lo, sog: f.sog, cog: f.cog, run: f.run, rad: f.rad, src: f.src, since: f.since } : null, last: LIVE.drLast || null, msg: LIVE.drMsg || null }; };   /* for Navigate and the automatic tests */
   /* the heading that makes good bearing B through the water and tide, and the speed over the ground it gives; on a beat or a run, the best VMG */
   function liveSteer(B, tws, twd, cu, cv, spd) {
@@ -2627,7 +2634,8 @@
     if (S.mob) mobDraw();
     if (!S.edit && S.show.legs && meta.course) { var lc = meta.course; legsDraw(courseFull(lc), false, 'label'); }
     liveDraw();
-    if (window.__fsOverlay && !S.edit) try { ctx.save(); window.__fsOverlay(ctx, X, Y); ctx.restore(); } catch (e) { ctx.restore(); }   /* the basic plotter (fsplot.js) draws its bearing and COG lines here */
+    if (window.__fsOverlay && !S.edit) try { ctx.save(); window.__fsOverlay(ctx, X, Y); ctx.restore(); } catch (e) { ctx.restore(); }
+    (window.__fsOverlays || []).forEach(function (fn) { try { ctx.save(); fn(ctx, X, Y, !!S.edit); ctx.restore(); } catch (e) { ctx.restore(); } });   /* more layers: the Solent race marks */   /* the basic plotter (fsplot.js) draws its bearing and COG lines here */
     if (S.edit) { ctx.save(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px Inter, sans-serif'; ctx.setLineDash([6, 5]);   /* every area a drawn course can route in, each named */
       REGIONS.forEach(function (g) { if (!READY[g.id]) return; var rb = g.region; ctx.globalAlpha = g.id === HERE ? 1 : 0.6; ctx.lineWidth = g.id === HERE ? 1.8 : 1.2; ctx.strokeRect(X(rb.w), Y(rb.n), X(rb.e) - X(rb.w), Y(rb.s) - Y(rb.n)); ctx.fillText(g.name, X(rb.w) + 5, Y(rb.n) + 13); });
       ctx.restore(); }   /* the area a new course must stay inside */
@@ -3000,6 +3008,7 @@
   cv.addEventListener('lostpointercapture', function (e) { ptrs.delete(e.pointerId); pmid = null; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
+    if (window.__fsTapHook) try { if (window.__fsTapHook(LA(y), LO(x), x, y, !!S.edit)) return; } catch (e) {}   /* the Solent marks and race builder (solent.js) take taps first */
     if (S.edit) { editTap(x, y); return; }
     if (!S.adjDraw && !S.mobTap && meta && meta.course && $('fromHere').getAttribute('aria-pressed') !== 'true') { var pm = null; realMarks(meta.course).forEach(function (m) { if (!m.side) return; var mx = X(m.lon) + 11, my = Y(m.lat) - 2; if (x >= mx - 6 && x <= mx + 66 && y >= my - 8 && y <= my + 22) pm = m; }); if (pm) { startEdit(courseCopy()); var ix = -1; S.edit.pts.forEach(function (q, i) { if (ix < 0 && Math.abs(q.lat - pm.lat) < 1e-6 && Math.abs(q.lon - pm.lon) < 1e-6) ix = i; }); if (ix > 0) { markCard(ix); busy('Choose which side to leave ' + (pm.name || 'the mark') + ', then Done, then Save and route.'); setTimeout(function () { busy(''); }, 6000); } return; } }   /* tap the PORT or STBD tag to change the rounding side */
     if (S.adjDraw) {   /* drawing the area for a forecast override: two opposite corners */
