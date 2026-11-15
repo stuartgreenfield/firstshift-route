@@ -6,6 +6,7 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 15 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 14:58 | Navigate: red no-data warning hidden behind the route (plotter) bar on the tablet; add the fix to the next update and go live | Built and live 15:12 in Navigate v0.7.41 (plotter bar, banner and progress box move down by the measured overlap) |
 | 10:22 | Keep going down the list (H then I) | H dead reckoning tested; I reopen checked against every item (routes, view, zoom, orientation, Live GPS, plotter view and mark, link, helm, log); gap fixed: dead reckoning carries on after a reopen from the last fix kept on the phone (under 30 min). Plotter bar marks DEAD RECKONING. Branch reopen-2026-11-15, Route v0.12.18 with Navigate v0.7.40; waiting for the test round and Stuart's go |
 
 ## 13 November 2026
