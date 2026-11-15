@@ -807,6 +807,9 @@ A4, 125, 180, 18, 60</textarea>
       <p class="note" data-i>Smooth rounds off the edges of the red shallow water so the chart is easier to read. Squares shows the depth squares exactly as the router sees them: red is shallower than your safety depth, pale red is the margin the routes also keep clear of (Course tab). Routes always follow the squares, whichever you choose.</p>
       <div class="row"><label for="zoomMax">Closest zoom</label><input type="range" id="zoomMax" min="1" max="6" step="1" value="1" style="width:160px"><b id="zoomMaxV" style="font-family:var(--f-data)"></b></div>
       <p class="note" data-i>How far you can zoom in, for example at a mark. The depth squares are about 230 m by 150 m, so closer in shows marks and buoys larger but no more depth detail.</p>
+      <h3>My waypoints</h3>
+      <div class="xrow"><button class="btn primary" id="wptOpen" type="button">Open my waypoints</button></div>
+      <p class="note" data-i>Your own points for building courses: tap the chart and choose Save as waypoint, type a position, use Here (GPS), or import GPX or CSV. Pick them in order to route a course. The ruler button on the chart measures bearing, distance, wind, boat speed, VMC, tide and time between any two points.</p>
       <h3>Racing in the Solent</h3>
       <label class="chk"><input type="checkbox" id="solentOn"><span>Show the Solent race marks</span></label>
       <p class="note" data-i>The JOG and SCRA Solent Area Mark Codes 2026 list (23 February 2026): 157 marks with their codes, in their colours. Tap a mark for its name, position and any notes. Most yellow race marks are laid March to November only.</p>
@@ -861,4 +864,5 @@ A4, 125, 180, 18, 60</textarea>
 <script src="fsplot.js"></script>
 <script src="solent.js"></script>
 <script src="deck.js"></script>
+<script src="waypoints.js"></script>
 <script src="fstour.js"></script>

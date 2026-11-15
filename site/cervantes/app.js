@@ -1971,6 +1971,28 @@
     a.unshift(rec); setMyRaces(a); openMy(rec.id); return rec.id; };
   window.__fsDepth = function (v) { if (v == null) return +$('depth').value; depthSet(v); };
   window.__fsStartAt = function () { var v = +$('startSel').value; return v > 0 ? v : null; };
+  /* the measuring tool (waypoints.js, Stuart 15 Nov, K): from A to B at the time on the slider. Wind and tide at the middle of the line,
+     the boat's polar, the course to steer across the tide (liveSteer); on a beat or a run, the best VMG with the tack or gybe headings and
+     the time including tacking; the sail from the crossover chart; whether the line crosses water under the safety depth */
+  window.__fsMeasure = function (la0, lo0, la1, lo1, tH) {
+    var t = tH != null ? tH : S.t, r = rhumb({ lat: la0, lon: lo0 }, { lat: la1, lon: lo1 }), ms = S.sel ? S.sel.models : cardModels(), o = { nm: r.nm, brg: r.brg, t: t, at: T0 + t * 3600 };
+    var mla = (la0 + la1) / 2, mlo = (lo0 + lo1) / 2;
+    try { var W = FSRouter.windSampler(P, ms)(mla, mlo, t); if (W && W[0] === W[0]) { o.tws = W[0]; o.twd = W[1]; } } catch (e) {}
+    try { var td = $('tideSel').value ? FSRouter.tideSampler(P, $('tideSel').value)(mla, mlo, t) : null; if (td && td[0] === td[0]) { o.tu = td[0]; o.tv = td[1]; o.tide = Math.hypot(td[0], td[1]); o.tideTo = (Math.atan2(td[0], td[1]) / R + 360) % 360; o.tideAlong = td[0] * Math.sin(r.brg * R) + td[1] * Math.cos(r.brg * R); } } catch (e) {}
+    if (o.tws != null) {
+      var spd = speedFn(opts(ms)), st = liveSteer(r.brg, o.tws, o.twd, o.tu || 0, o.tv || 0, spd);
+      if (st) { o.hdg = st.hdg; o.sog = st.sog; o.twa = st.twa; o.tack = !!st.tack; o.bsp = spd(o.tws, Math.abs(st.twa)); o.hours = st.sog > 0.2 ? r.nm / st.sog : null;
+        if (st.tack) { o.kind = Math.abs(st.twa) < 90 ? 'beat' : 'run'; o.other = (st.hdg + 2 * (((o.twd - st.hdg + 540) % 360) - 180) + 360) % 360; }
+        else o.kind = Math.abs(st.twa) < 70 ? 'fetch' : Math.abs(st.twa) < 140 ? 'reach' : 'run';
+        try { o.sail = rig({ tws: o.tws, twa: Math.abs(st.twa), twd: o.twd }); } catch (e) {} }
+    }
+    try { if (P.depth) o.shallow = !FSRouter.clearLine(P.depth, +$('depth').value, la0, lo0, la1, lo1); } catch (e) {}
+    return o;
+  };
+  window.__fsLL = function (cx, cy) { var r = $('map').getBoundingClientRect(), u = unrot(cx - r.left, cy - r.top); return { la: LA(u[1]), lo: LO(u[0]), x: u[0], y: u[1] }; };   /* screen point to position, for the measuring tool */
+  window.__fsMarksGet = function () { return myMarks(); };
+  window.__fsMarksSet = function (a) { myMarksSet(a); draw(); };
+  window.__fsTimeH = function () { return S.t; };
   window.__fsWindAt = function (la, lo, ep) { try { var W = FSRouter.windSampler(P0(), cardModels())(la, lo, ((ep || Date.now() / 1000) - T0) / 3600); return W && W[0] === W[0] ? { tws: W[0], twd: W[1] } : null; } catch (e) { return null; } };   /* for the reopen test */
   window.__fsDR = function () { var f = LIVE.fix; return { on: drOn(), active: !!(f && f.dr), fix: f && f.dr ? { la: f.la, lo: f.lo, sog: f.sog, cog: f.cog, run: f.run, rad: f.rad, src: f.src, since: f.since } : null, last: LIVE.drLast || null, msg: LIVE.drMsg || null }; };   /* for Navigate and the automatic tests */
   /* the heading that makes good bearing B through the water and tide, and the speed over the ground it gives; on a beat or a run, the best VMG */
@@ -3085,6 +3107,7 @@
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
     if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.splice(rows.length ? 1 : 0, 0, '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>');
     $('tipBody').innerHTML = rows.join(''); tip.hidden = false; tip.classList.toggle('docked', !!docked);
+    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}   /* waypoints.js: Save as waypoint, Measure from here */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
