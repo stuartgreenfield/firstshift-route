@@ -109,7 +109,25 @@
     });
   })();
   function errShow(msg) { var b = $('errBox'); if (!b) return; $('errMsg').textContent = msg; b.hidden = false; }
-  function errHide() { var b = $('errBox'); if (b) b.hidden = true; }
+  function errHide() { var b = $('errBox'); if (b) b.hidden = true; if ($('errDepth')) $('errDepth').hidden = true; }
+  /* F6 (Stuart 15 Nov 15:29, 17:10 "Plain message + depth button"): a route that cannot leave its start (no way through after 0 h) usually
+     starts in water shallower than the safety depth. Say so plainly, with the charted depth there, and offer to route with a safety depth
+     that the start allows. Try again alone would only repeat the same failure. */
+  function depthOffer(e, sp) {
+    var b = $('errDepth'); if (!b) return; b.hidden = true;
+    if (!e || !/after 0 h/.test(e.message || '') || !sp) return;
+    var safety = +$('depth').value, z = P.depth ? P.depth.nearest('z', sp.lat, sp.lon) : NaN, wd = -z, who = sp.from ? 'The boat' : 'The start';
+    var y = null, msg;
+    /* the deepest safety depth with a way out, by the router's own test (every depth square on the line): a clear mile on at least one
+       of 36 bearings, trying the safety depth less 0.5 m, then 1 m, and so on */
+    var clearAt = function (d) { for (var bb = 0; bb < 360; bb += 10) { var la1 = sp.lat + Math.cos(bb * R) / 60, lo1 = sp.lon + Math.sin(bb * R) / (60 * Math.cos(sp.lat * R)); if (FSRouter.clearLine(P.depth, d, sp.lat, sp.lon, la1, lo1)) return true; } return false; };
+    var exitD = -1; if (P.depth) for (var cd = Math.floor(safety * 2) / 2 - 0.5; cd >= 0; cd -= 0.5) if (clearAt(cd)) { exitD = cd; break; }
+    if (wd === wd && wd <= 0) msg = who + ' is ashore or on a drying bank on the chart, so no route can leave it. ' + (sp.from ? 'Tap the chart where the boat really is, or route from the start.' : 'Move the start into the water.');
+    else if (wd === wd && wd < safety) { y = exitD >= 0 ? exitD : Math.max(0, Math.floor(wd * 2) / 2); msg = who + ' is in water about ' + wd.toFixed(1) + ' m deep on the chart, shallower than your safety depth of ' + safety.toFixed(1) + ' m, so no route can leave it.'; }
+    else { y = exitD >= 0 ? exitD : null; msg = 'No way out from ' + who.toLowerCase() + ' with a safety depth of ' + safety.toFixed(1) + ' m: within a mile in every direction the chart shows shallower water.'; }
+    $('errMsg').textContent = msg;
+    if (y != null && y < safety) { b.textContent = 'Route with ' + y.toFixed(1) + ' m'; b.hidden = false; b.onclick = function () { errHide(); depthSet(y); S.running = false; S.preBad = true; S.routes = []; run(); }; }
+  }
   (function () { var b = $('errBox'); if (!b) return; $('errX').onclick = errHide; $('errRetry').onclick = function () { errHide(); S.running = false; S.preBad = true; S.routes = []; run(); }; })();
   setInterval(function () {   /* a route that has run for two minutes with nothing to show is stuck: say so */
     if (S.running) { S.runSince = S.runSince || Date.now(); if (Date.now() - S.runSince > 120000 && !(S.routes && S.routes.length) && $('errBox') && $('errBox').hidden) errShow('Routing is taking far longer than usual. Try again, or choose fewer wind models in Settings, Forecasts.'); }
@@ -2252,10 +2270,11 @@
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
     var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
+    var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
     pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); draw(); });
+    .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };

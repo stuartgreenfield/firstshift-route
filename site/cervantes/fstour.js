@@ -99,7 +99,7 @@
     var L = levels(), nx = L.filter(function (l) { return T.lv && l.n === T.lv.n + 1; })[0];
     var hole = T.root.querySelector('.fst-hole'), card = T.root.querySelector('.fst-card');
     hole.style.width = hole.style.height = '0px'; hole.classList.remove('test'); card.classList.remove('test');
-    if (!T.shown && !T.retried) { T.retried = true; try { if (window.FSTourPrepare) window.FSTourPrepare(); } catch (e) {} setTimeout(function () { T.i = -1; go(0, 1); }, 700); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
+    if (!T.shown && (T.retried || 0) < 3) { T.retried = (T.retried || 0) + 1; try { if (window.FSTourPrepare) window.FSTourPrepare(); } catch (e) {} setTimeout(function () { T.i = -1; go(0, 1); }, 700 + 800 * T.retried); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
     if (!T.shown) { card.innerHTML = '<h4>Nothing to point at</h4><p>The buttons this part of the tour shows are hidden on this screen just now. Close any open panels, or tap MENU to bring the menus back, then try again.</p><div class="fst-b"><button class="btn primary" data-fst="lv' + T.lv.n + '">Try again</button><button class="btn" data-fst="end">Done</button></div>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; return; }
     card.innerHTML = '<h4>That’s the tour</h4><p>' + (nx ? 'Level ' + nx.n + ', ' + nx.name.toLowerCase() + ', is next when you are ready.' : 'Try it safely first: everything is in Help, and you can take the tour again from the top of Help.') + '</p><div class="fst-b">' + (nx ? '<button class="btn primary" data-fst="lv' + nx.n + '">Level ' + nx.n + '</button>' : '') + '<button class="btn' + (nx ? '' : ' primary') + '" data-fst="end">Done</button></div>';
     card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
@@ -160,7 +160,9 @@
   var tries = 0, wt = setInterval(function () {
     if (++tries > 600) { clearInterval(wt); return; }
     if (!want) return;
-    var sp = $('splash'), busy = (sp && !sp.hidden) || ['wiz', 'races', 'errBox'].some(function (id) { var e = $(id); return e && !e.hidden; });
+    /* F7 (Stuart 15 Nov: "Nothing to point at" on first opening Route): also wait for the first routes, whose progress box and panels
+       move the buttons about while they arrive */
+    var sp = $('splash'), busy = (sp && !sp.hidden) || ['wiz', 'races', 'errBox', 'prog'].some(function (id) { var e = $(id); return e && !e.hidden; }) || (window.__navFc && window.__navFc() && window.__navFc().running);
     if (busy) return;
     clearInterval(wt); want = false; setTimeout(chooser, 400);
   }, 500);

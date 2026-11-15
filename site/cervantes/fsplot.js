@@ -34,6 +34,26 @@
   function setMark(i) { var c = course(); if (!c) return; var n = points(c).length; MKS[c.key] = (i + n) % n; sv(MK, MKS); arrived = null; tick(true); }
 
   var arrived = null, msg = null;
+  /* F8 (Stuart 15 Nov 16:12, 17:10: "A switch: mark or route", "Next turn on the route"): in Route mode the bar steers along the route
+     on the chart (the one chosen, so a re-route from here is followed at once). The next turn is where the route's heading changes by
+     more than 10 degrees; XTE is from the route line the boat is beside. Mark mode is as before. */
+  function routeCalc(p, f, F) {
+    var pl = null; try { pl = window.__fsPlan ? window.__fsPlan() : null; } catch (e) {}
+    if (!pl || !pl.path || pl.path.length < 2) return null;
+    var P = pl.path.map(function (q) { return F.to(q[0], q[1]); }), k = 0, bd = 1e9;
+    for (var j = 0; j < P.length - 1; j++) { var dx = P[j + 1].x - P[j].x, dy = P[j + 1].y - P[j].y, L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, -(P[j].x * dx + P[j].y * dy) / L)), d = Math.hypot(P[j].x + u * dx, P[j].y + u * dy); if (d < bd - 1e-6) { bd = d; k = j; } }
+    var segB = function (j) { return bear(P[j + 1].x - P[j].x, P[j + 1].y - P[j].y); }, dB = function (a, b) { return Math.abs(((a - b + 540) % 360) - 180); };
+    var t = k + 1, b0 = segB(k); while (t < P.length - 1 && (Math.hypot(P[t + 1].x - P[t].x, P[t + 1].y - P[t].y) < 0.02 || dB(segB(t), b0) <= 10)) t++;
+    if (Math.hypot(P[t].x, P[t].y) < C.radius && t < P.length - 1) { var b1 = segB(t); t++; while (t < P.length - 1 && dB(segB(t), b1) <= 10) t++; }
+    var T = P[t], o = {}, back = F.back(T.x, T.y), last = t === P.length - 1;
+    o.m = { lat: back.la, lon: back.lo, name: last ? 'Route: finish' : 'Route: next turn', route: true, finish: last }; o.i = t; o.n = P.length;
+    o.btw = bear(T.x, T.y); o.dtw = Math.hypot(T.x, T.y);
+    o.vmc = f.sog != null && f.cog != null ? f.sog * Math.cos((f.cog - o.btw) * R) : null; o.eta = o.vmc != null && o.vmc > 0.3 ? Date.now() + o.dtw / o.vmc * 3600e3 : null;
+    var A = P[k], B = P[k + 1], dx2 = B.x - A.x, dy2 = B.y - A.y, L2 = Math.hypot(dx2, dy2);
+    if (L2 > 0.001) { var cr = (dx2 * (-A.y) - dy2 * (-A.x)) / L2; o.xte = { d: Math.abs(cr), side: cr > 0 ? 'L' : 'R', leg: bear(dx2, dy2) }; }
+    if (!last) o.after = segB(t);
+    return o;
+  }
   function calc() {
     var c = course(), f = fix(), o = { ok: false };
     if (!c) { o.why = 'No course loaded.'; return o; }
@@ -46,6 +66,7 @@
     /* cross-track error: the boat at the origin, positive cross product means left of the leg looking along it */
     var dx = M.x - A.x, dy = M.y - A.y, L = Math.hypot(dx, dy);
     if (L > 0.01) { var cr = (dx * (-A.y) - dy * (-A.x)) / L; o.xte = { d: Math.abs(cr), side: cr > 0 ? 'L' : 'R', leg: bear(dx, dy) }; }
+    if (C.mode === 'route') { var ro = routeCalc(p, f, F); if (ro) { Object.assign(o, ro); return o; } o.noRoute = true; }
     if (o.dtw < C.radius && i < pts.length - 1 && arrived !== c.key + i) { arrived = c.key + i; MKS[c.key] = i + 1; sv(MK, MKS); msg = { t: 'Next mark: ' + (pts[i + 1].name || 'Finish'), until: Date.now() + 8000 }; }
     return o;
   }
@@ -59,27 +80,28 @@
   function dur(h) { var m = Math.round(h * 60); return m >= 60 ? Math.floor(m / 60) + 'h ' + ('0' + m % 60).slice(-2) : m + ' min'; }
   function clk(ms) { var d = new Date(ms); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
   function cell(k, v, sub, cls) { return '<div class="rpl' + (cls ? ' ' + cls : '') + '"><span>' + k + '</span><b>' + v + '</b><i>' + (sub || '&nbsp;') + '</i></div>'; }
+  function modeBtn() { return '<button class="rpnav rpmode" data-k="mode" aria-label="Steer to the next mark or along the route" title="Steer to the next mark or along the route">' + (C.mode === 'route' ? 'ROUTE' : 'MARK') + '</button>'; }
   function render(o) {
     if (!bar) return; bar.hidden = !C.on; document.body.classList.toggle('rplot', !!C.on); if (!C.on) return;
     var nav = function (k, t, l) { return '<button class="rpnav" data-k="' + k + '" aria-label="' + l + '">' + t + '</button>'; };
-    var name = !o.ok ? '<b>Plotter</b><small>' + esc(o.why) + '</small>' : '<b>' + esc(o.m.name || (o.m.finish ? 'Finish' : 'Mark')) + '</b><small>' + (o.m.finish ? 'Finish' : 'Mark ' + (o.i + 1) + ' of ' + (o.n - 1)) + (o.m.side && !o.m.finish ? ', leave to ' + o.m.side : '') + '</small>';
+    var name = o.ok && o.m.route ? '<b>' + esc(o.m.name) + '</b><small>' + (o.after != null ? 'then ' + brg(o.after) : 'the end of the route') + '</small>' : !o.ok ? '<b>Plotter</b><small>' + esc(o.why) + '</small>' : '<b>' + esc(o.m.name || (o.m.finish ? 'Finish' : 'Mark')) + '</b><small>' + (o.m.finish ? 'Finish' : 'Mark ' + (o.i + 1) + ' of ' + (o.n - 1)) + (o.m.side && !o.m.finish ? ', leave to ' + o.m.side : '') + '</small>';
     var x = o.xte;
     if (C.mini && o.ok) {
       bar.classList.add('mini');
-      bar.innerHTML = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show all the figures"><b>' + esc(o.m.name || 'Mark') + ' <em>▾ more</em></b><span class="rpline">' + brg(o.btw) + ' · ' + dist(o.dtw) + (x ? ' · XTE ' + (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '') + '</span></button>' + nav('next', '›', 'Next mark') + '</div>';
+      bar.innerHTML = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show all the figures"><b>' + esc(o.m.name || 'Mark') + ' <em>▾ more</em></b><span class="rpline">' + brg(o.btw) + ' · ' + dist(o.dtw) + (x ? ' · XTE ' + (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '') + '</span></button>' + nav('next', '›', 'Next mark') + modeBtn() + '</div>';
       return;
     }
     bar.classList.remove('mini');
-    var h = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show one line">' + name + '</button>' + nav('next', '›', 'Next mark') + '<button class="rpnav rpmin" data-k="mini" aria-label="Minimise to one line">MIN</button></div>';
+    var h = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show one line">' + name + '</button>' + nav('next', '›', 'Next mark') + modeBtn() + '<button class="rpnav rpmin" data-k="mini" aria-label="Minimise to one line">MIN</button></div>';
     if (o.ok) {
       h += '<div class="rpgrid">' +
         cell('BTW', brg(o.btw), 'true bearing') +
         cell('DTW', dist(o.dtw), '') +
         cell('ETA', o.eta ? clk(o.eta) : '--', o.eta ? 'UTC, in ' + dur((o.eta - Date.now()) / 3600e3) : 'not closing') +
         cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn towards it' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
-        cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? 'on the leg' : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the leg') : '') +
+        cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? (o.m.route ? 'on the route' : 'on the leg') : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the ' + (o.m.route ? 'route' : 'leg')) : '') +
         cell('SOG · COG', o.sog != null ? n1(o.sog) + ' · ' + (o.cog != null ? ('00' + Math.round(o.cog) % 360).slice(-3) + '°' : '--') : '--', 'this phone’s GPS') + '</div>';
-      h += '<p class="rpfoot">' + (o.ok && o.dr ? '<b class="npdr">DEAD RECKONING: no GPS</b> · ' : '') + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + 'Next mark when within ' + C.radius + ' nm · bearings true · not for navigation</p>';
+      h += '<p class="rpfoot">' + (o.ok && o.dr ? '<b class="npdr">DEAD RECKONING: no GPS</b> · ' : '') + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + (o.m.route ? 'Steering along the route on the chart' : (o.noRoute ? 'No route on the chart: steering to the mark' : 'Next mark when within ' + C.radius + ' nm')) + ' · bearings true · not for navigation</p>';
     }
     bar.innerHTML = h;
   }
@@ -87,6 +109,7 @@
     var t = e.target.closest('button'); if (!t) return;
     if (t.dataset.k === 'prev' || t.dataset.k === 'next') { var c = course(); if (!c) return; setMark((MKS[c.key] || 0) + (t.dataset.k === 'next' ? 1 : -1)); return; }
     if (t.dataset.k === 'mini') { C.mini = !C.mini; saveC(); tick(true); }
+    if (t.dataset.k === 'mode') { C.mode = C.mode === 'route' ? 'mark' : 'route'; saveC(); tick(true); }
   }
   function toggle(on) {
     C.on = on == null ? !C.on : !!on; saveC();
