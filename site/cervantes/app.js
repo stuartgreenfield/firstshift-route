@@ -1887,6 +1887,8 @@
   var LIVE = { mini: store('fs-livemini') === '1', on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 24 * 3600000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
   /* dead reckoning when the GPS is lost (Stuart 15 Nov 2026, 09:13: "quite an important feature"): on by default */
   function drOn() { return !$('drOn') || $('drOn').checked; }
+  function drPct() { var v = $('drPct') ? +$('drPct').value : 10; return (v >= 5 && v <= 25 ? v : 10) / 100; }   /* Stuart 15 Nov H Q&A: the growth of the circle of doubt is a setting, 5 to 25% */
+  (function () { var e = $('drPct'); if (!e) return; var v = store('fs-drPct'); if (v != null) e.value = v; var f = function () { $('drPctV').textContent = e.value + '%'; }; f(); e.oninput = function () { store('fs-drPct', e.value); f(); }; })();
   (function () { var v = store('fs-drOn'); if ($('drOn')) { if (v != null) $('drOn').checked = v === '1'; $('drOn').onchange = function () { store('fs-drOn', $('drOn').checked ? '1' : '0'); if (!$('drOn').checked && LIVE.fix && LIVE.fix.dr) drEnd(null); }; } })();
   function liveSet() { ['gpsMode', 'xteLim', 'behLim'].forEach(function (id) { var v = store('fs-' + id); if (v != null && $(id)) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); if (id === 'gpsMode' && LIVE.on) { liveStop(true); liveStart(); } }; }); var ls = store('fs-liveSound'); if (ls != null) $('liveSound').checked = ls === '1'; $('liveSound').onchange = function () { store('fs-liveSound', this.checked ? '1' : '0'); }; }
   function liveWake() { try { if (LIVE.on && $('gpsMode').value === 'screen' && navigator.wakeLock && !LIVE.wake) navigator.wakeLock.request('screen').then(function (w) { LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () {}); } catch (e) {} }
@@ -1929,7 +1931,7 @@
   /* ---- dead reckoning: no GPS fix for DRT seconds, so the boat carries on from the last good fix ----
      Velocity: Navigate's instruments (true heading and log speed, window.__navDR) with the forecast tidal stream added, while they
      are fresh; otherwise the last course and speed over the ground from the GPS (which already includes the tide). The circle of
-     doubt grows with the distance run: 0.05 nm plus 10% of it. Nothing is added to the GPS trail; the reckoned track is kept apart. */
+     doubt grows with the distance run: 0.05 nm plus a share of it, 10% unless set otherwise in the Course tab (5 to 25%). Nothing is added to the GPS trail; the reckoned track is kept apart. */
   function drAfter() { return ($('gpsMode') && $('gpsMode').value === 'battery' ? 45 : 10) * 1000; }
   function drVel(la, lo) {
     var nv = null; try { nv = window.__navDR ? window.__navDR() : null; } catch (e) {}
@@ -1948,7 +1950,7 @@
     var p = LIVE.fix && LIVE.fix.dr ? LIVE.fix : r, dt = (now - (p.dr ? p.at : r.at)) / 3600000, v = drVel(p.la, p.lo);
     var la = p.la, lo = p.lo, run = p.dr ? p.run : 0;
     if (v && v.sog > 0.05) { var d = v.sog * dt; la = p.la + d * Math.cos(v.cog * R) / 60; lo = p.lo + d * Math.sin(v.cog * R) / (60 * Math.cos(p.la * R)); run += d; }
-    var f = { la: la, lo: lo, at: now, acc: 5, sog: v ? v.sog : null, cog: v ? v.cog : null, dr: true, since: r.at, run: run, rad: 0.05 + 0.1 * run, src: v ? v.src : 'no speed known: holding the last position' };
+    var f = { la: la, lo: lo, at: now, acc: 5, sog: v ? v.sog : null, cog: v ? v.cog : null, dr: true, since: r.at, run: run, rad: 0.05 + drPct() * run, src: v ? v.src : 'no speed known: holding the last position' };
     if (!p.dr) { LIVE.drTrack = [[r.la, r.lo]]; LIVE.drStart = r.at; try { liveBeep(); } catch (e) {} }
     LIVE.drTrack.push([la, lo]); if (LIVE.drTrack.length > 4000) LIVE.drTrack.shift();
     LIVE.fix = f; try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();

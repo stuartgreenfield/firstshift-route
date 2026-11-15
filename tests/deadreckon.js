@@ -24,6 +24,11 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(d.active, 'after 10 s with no fix the boat is dead reckoned', JSON.stringify(d.fix && { cog: Math.round(d.fix.cog), sog: d.fix.sog && d.fix.sog.toFixed(1), src: d.fix.src }));
   ok(d.fix && Math.abs(d.fix.cog - 90) < 2 && Math.abs(d.fix.sog - 6) < 0.3, 'it carries on at the last course and speed (090°, 6 kn)');
   ok(d.fix && d.fix.lo > lastLo + 0.0004 && Math.abs(d.fix.la - la) < 0.0002, 'the reckoned position has moved east from the last fix', (d.fix.lo - lastLo).toFixed(5));
+  const r10 = await p.evaluate(() => { const f = window.__fsDR().fix; return f.rad - (0.05 + 0.10 * f.run); });
+  await p.evaluate(() => { const e = document.getElementById('drPct'); e.value = 20; e.dispatchEvent(new Event('input')); }); await p.waitForTimeout(1500);
+  const r20 = await p.evaluate(() => { const f = window.__fsDR().fix; return { d: f.rad - (0.05 + 0.20 * f.run), kept: localStorage.getItem('fs-drPct') }; });
+  ok(Math.abs(r10) < 1e-6 && Math.abs(r20.d) < 1e-6 && r20.kept === '20', 'the circle of doubt grows by the share set in the Course tab (10% by default, 20% when set)', JSON.stringify({ r10, r20 }));
+  await p.evaluate(() => { const e = document.getElementById('drPct'); e.value = 10; e.dispatchEvent(new Event('input')); });
   const box = await p.evaluate(() => (document.querySelector('#liveBox .lvdr') || {}).textContent || '');
   ok(/DEAD RECKONING: no GPS for/.test(box) && /Position good to about/.test(box), 'the warning says dead reckoning, for how long, and how good', box.slice(0, 120));
   await p.screenshot({ path: '/tmp/claude-0/sh/dr.png' });

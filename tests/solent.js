@@ -66,7 +66,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const rt = await p.evaluate(() => { const pl = window.__fsPlan(), c = window.__navCourse(); if (!pl || !c) return null; const near = (m) => Math.min.apply(null, pl.path.map(q => Math.hypot(q[0] - m.lat, (q[1] - m.lon) * Math.cos(m.lat * Math.PI / 180)) * 60)); return { n: pl.path.length, marks: c.marks.map(m => m.name + ' ' + m.side), near: c.marks.map(near).map(x => +x.toFixed(2)), mine: JSON.parse(localStorage.getItem('fs-myraces') || '[]').map(r => r.name) }; });
   ok(rt && rt.n > 5 && rt.near.every(x => x < 0.3), 'it is routed as normal: the route goes round each mark', rt && JSON.stringify({ points: rt.n, nearest: rt.near }));
   ok(rt && rt.marks.join('|') === '3G Cowes Week 200 port|3E The Boss starboard|4F Royal Thames port', 'with each mark to the side chosen', rt && rt.marks.join(' | '));
-  ok(rt && rt.mine[0] === 'Solent race', 'and it is saved in My races', rt && rt.mine.join(', '));
+  ok(rt && /^Solent race \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/.test(rt.mine[0]), 'and it is saved in My races with the race date', rt && rt.mine.join(', '));
   await p.screenshot({ path: OUT + '/solent-routed.png' });
   // windward-leeward from a heading and distance, two laps
   await p.evaluate(() => { window.FSSolent.open(); window.FSSolent.set({ type: 'wl', start: { code: '3X', name: '3X Island Sailing Club', lat: 50 + 46.10 / 60, lon: -(1 + 18.43 / 60) }, wl: { wkind: 'brg', brg: 270, dist: 1.2, laps: 2, lkind: 'start', side: 'port', wcode: '', lcode: '' } }); }); await p.waitForTimeout(300);

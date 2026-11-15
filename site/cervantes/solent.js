@@ -202,7 +202,9 @@
     });
     on('solBoardGo', 'onclick', function () { var r = parseBoard($('solBoard').value), n = $('solBoardNote'); if (r.marks.length) { B.marks = r.marks; saveB(); render(); redraw(); n = $('solBoardNote'); } n.textContent = (r.marks.length ? r.marks.length + ' marks set.' : 'No mark codes found.') + (r.bad.length ? ' Not on the list: ' + r.bad.join(', ') + '.' : ''); });
     on('solClear', 'onclick', function () { B = { type: B.type, name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } }; saveB(); render(); redraw(); });
-    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax(); $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
+    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax();
+      var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+      if (c.name.indexOf(ds) < 0) c.name = (c.name + ' ' + ds).slice(0, 70);   /* Stuart 15 Nov J Q&A: the race date added to the name in My races */ $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
   }
   function pickStart(what) {
     pick = what; $('solSheet').hidden = true; var bar = $('solPick');
