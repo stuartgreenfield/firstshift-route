@@ -708,6 +708,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
       <h3>Start and manoeuvres</h3>
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>
       <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
+      <div class="row"><label for="bowOff">Bow offset</label><input type="number" id="bowOff" value="0" min="0" max="30" step="0.5"> m</div>
+      <p class="note" data-i>From where the GPS is (this phone, or the boat's antenna) forward to the bow. Pinging the start line adds it along the heading, so the line ends are where the bow was, not the GPS (J3, Stuart 15 Nov; Raymarine's start line help gives the same warning).</p>
       <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
       <p class="note" data-i>Each tack or gybe costs this many seconds of sailing. Route charges it at every change of tack, so it only tacks or gybes when the gain pays for it.</p>
       <div class="row"><label for="leeway">Leeway upwind</label><input type="number" id="leeway" value="0" min="0" max="10" step="0.5"> °</div>
