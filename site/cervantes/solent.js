@@ -10,7 +10,6 @@
   'use strict';
   var R = Math.PI / 180, KEY = 'fs-solent', BKEY = 'fs-solent-b';
   function ld(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
-  function INK() { var r = document.documentElement, cs = getComputedStyle(r); var v = (cs.getPropertyValue('--ink') || '').trim(); return v || '#0f172a'; }
   function sv(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -49,7 +48,7 @@
       if (oncourse[m.id] && !used[m.id]) return;   /* the course already labels its own marks */
       if (used[m.id]) { ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = '#2563eb'; ctx.stroke(); }
       if (!code) return; var t = m.id + (name ? ' ' + m.name : '');
-      ctx.fillStyle = INK(); ctx.fillText(t, x + r + 3, y);   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(t, x + r + 3, y); ctx.fillStyle = '#0f172a'; ctx.fillText(t, x + r + 3, y);
     });
     if (builderOpen() || pick) drawPlan(ctx, X, Y);
   }

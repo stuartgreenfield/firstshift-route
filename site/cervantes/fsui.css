@@ -112,4 +112,3 @@ html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
 :root[data-night] .rpl b,:root[data-night] .rpname b,:root[data-night] .rpline{color:#E0322A}
 :root[data-night] .rplotb[aria-pressed="true"]{background:#3A0A08!important;color:#E0322A!important}
 img.hpic:not([src]){display:none}
-.rpmode{font-size:11px;padding:0 6px;letter-spacing:.04em}   /* F8: MARK or ROUTE */

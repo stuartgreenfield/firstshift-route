@@ -513,7 +513,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="busy" id="busy" hidden></div>
     <button class="boatwarn" id="boatWarn" hidden>Generic boat in use: set up your boat</button>
     <button class="updbar" id="updBar" hidden>Route has been updated. Tap to update.</button>
-    <div class="errbox" id="errBox" hidden role="alert"><span id="errMsg"></span><button class="btn primary" id="errDepth" hidden></button><button class="btn" id="errRetry">Try again</button><button class="btn" id="errX" aria-label="Close">✕</button></div>
+    <div class="errbox" id="errBox" hidden role="alert"><span id="errMsg"></span><button class="btn" id="errRetry">Try again</button><button class="btn" id="errX" aria-label="Close">✕</button></div>
     <div class="sessbox" id="sessBox" hidden role="dialog" aria-label="Carry on"><span>Start a new race or boat?</span><button class="btn" id="sessNo">No</button><button class="btn primary" id="sessYes">Yes</button></div>
     <div class="prog" id="prog" role="status" aria-live="polite" hidden><div class="pg-t"><span id="pgT"></span><b id="pgP"></b></div><div class="pg-bar"><i id="pgBar"></i></div><div class="pg-d" id="pgD"></div></div>
   </div>
@@ -652,7 +652,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.20</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.19</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -807,9 +807,6 @@ A4, 125, 180, 18, 60</textarea>
       <p class="note" data-i>Smooth rounds off the edges of the red shallow water so the chart is easier to read. Squares shows the depth squares exactly as the router sees them: red is shallower than your safety depth, pale red is the margin the routes also keep clear of (Course tab). Routes always follow the squares, whichever you choose.</p>
       <div class="row"><label for="zoomMax">Closest zoom</label><input type="range" id="zoomMax" min="1" max="6" step="1" value="1" style="width:160px"><b id="zoomMaxV" style="font-family:var(--f-data)"></b></div>
       <p class="note" data-i>How far you can zoom in, for example at a mark. The depth squares are about 230 m by 150 m, so closer in shows marks and buoys larger but no more depth detail.</p>
-      <h3>My waypoints</h3>
-      <div class="xrow"><button class="btn primary" id="wptOpen" type="button">Open my waypoints</button></div>
-      <p class="note" data-i>Your own points for building courses: tap the chart and choose Save as waypoint, type a position, use Here (GPS), or import GPX or CSV. Pick them in order to route a course. The ruler button on the chart measures bearing, distance, wind, boat speed, VMC, tide and time between any two points.</p>
       <h3>Racing in the Solent</h3>
       <label class="chk"><input type="checkbox" id="solentOn"><span>Show the Solent race marks</span></label>
       <p class="note" data-i>The JOG and SCRA Solent Area Mark Codes 2026 list (23 February 2026): 157 marks with their codes, in their colours. Tap a mark for its name, position and any notes. Most yellow race marks are laid March to November only.</p>
@@ -863,6 +860,4 @@ A4, 125, 180, 18, 60</textarea>
 <script src="fshelp.js"></script>
 <script src="fsplot.js"></script>
 <script src="solent.js"></script>
-<script src="deck.js"></script>
-<script src="waypoints.js"></script>
 <script src="fstour.js"></script>

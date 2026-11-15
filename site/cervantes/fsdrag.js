@@ -5,7 +5,7 @@
    puts them all back. A moved panel can never leave the screen. */
 (function () {
   'use strict';
-  var KEY = 'nav-pos', PANELS = [['liveBox', 'GPS window'], ['fsPlot', 'Plotter bar']];   /* the plotter bar too (Stuart 15 Nov 16:18, F9: "the plot bar on Route cant be moved as no handle appears on it") */
+  var KEY = 'nav-pos', PANELS = [['liveBox', 'GPS window']];
   function $(id) { return document.getElementById(id); }
   function ld() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
   function sv(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
