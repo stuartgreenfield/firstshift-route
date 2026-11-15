@@ -117,7 +117,8 @@
   /* More: Help opens at the matching topic; closing Help brings the tour back at the same step */
   function helpTopic(key) {
     var hits = [].slice.call(document.querySelectorAll('#help .htopic')).filter(function (d) { var h = d.querySelector('h3'); return d.dataset.k === key || (h && h.firstChild && String(h.firstChild.textContent).trim() === key); });
-    if (hits[0]) hits[0].classList.remove('hffold'); return hits[0] || null;
+    if (window.FSHelpFind && FSHelpFind.open) { var el = FSHelpFind.open(key); if (el) return null; }   /* Help as pages: open the topic's page (Stuart 15 Nov 21:50) */
+    return hits[0] || null;
   }
   function more() {
     var s = steps()[T.i]; if (!s || !s.help) return;
