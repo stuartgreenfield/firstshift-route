@@ -276,3 +276,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 06:51 15 Nov 2026: Stuart decided A, B, C (smooth view default, squares option), zoom slider, E and F in Navigate and Polar Live, Android and iOS code, versions since 2015, competitor research; go live on his go. Route v0.12.15: margin (default 1 square), depth view, closest zoom, tests/depthview.js.
 - 07:46 15 Nov 2026: LIVE Route v0.12.15 and Navigate v0.7.37 (Stuart's go 07:42). Rollback restore-2026-11-15-0745 / site-restore-2026-11-15-0745. GitHub security audit clean; backup 2026-11-15.
 - 08:04 15 Nov 2026: Stuart chose C: Navigate for iPhone built both on a private GitHub repository (navigate-ios, created) and on his Mac with Xcode (kit in FirstShift Navigate/iPhone build).
+- 08:13-08:24 15 Nov 2026: depth view buttons and three linked no-go depth sliders (Route v0.12.16, not live); Winning Tides researched; Solent marks and Solent race builder added to the list.

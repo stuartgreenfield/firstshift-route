@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.15';
+  var VERSION = 'FirstShift Route v0.12.16';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -92,7 +92,8 @@
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
     meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); mfInit(); wizInit(); crewInit(); shareInit(); askInit(); bcInit();
     /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
-    (function () { var dv = $('depthView'), zm = $('zoomMax'); if (dv) { var v = store('fs-depthView'); if (v && dv.querySelector('option[value="' + v + '"]')) dv.value = v; dv.onchange = function () { store('fs-depthView', dv.value); buildDepth(); draw(); }; }
+    /* Shallow water shown: two buttons rather than a drop-down (Stuart 15 Nov 08:13: the drop-down would not open or select on the Android tablet) */
+    (function () { var dv = $('depthView'), zm = $('zoomMax'), sg = $('depthViewSeg'); if (dv && sg) { var setV = function (v) { dv.value = v === 'squares' ? 'squares' : 'smooth'; [].forEach.call(sg.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === dv.value)); }); }; setV(store('fs-depthView')); [].forEach.call(sg.querySelectorAll('button'), function (b) { b.onclick = function () { setV(b.dataset.v); store('fs-depthView', dv.value); buildDepth(); draw(); }; }); }
       if (zm) { var z = store('fs-zoomMax'); if (z != null) zm.value = z; var f = function () { var k = +zm.value || 1; $('zoomMaxV').textContent = (k === 1 ? 'Standard, ' : k + ' times, ') + 'about ' + (Math.max(320, Math.min(W || 400, 1400)) * 60 / (20000 * k)).toFixed(k > 3 ? 2 : 1) + ' nm across'; }; zm.oninput = function () { store('fs-zoomMax', zm.value); f(); if (view.s > ZMAX()) { view.s = ZMAX(); draw(); } }; f(); } })();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
@@ -226,7 +227,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.15 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.16 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -247,7 +248,9 @@
     $('boatPick').onchange = function () { var f = meta.fleet.find(function (x) { return x.name === $('boatPick').value; }); if (f) { $('tcc').value = f.tcc.toFixed(3); if (!$('boatName').value) $('boatName').value = f.name; if (!meta.live) $('startSel').value = String(f.start); boatChanged(); } };
     initBoat();
     (function () { var el = $('margin'); if (!el) return; var v = store('fs-margin'); if (v != null && el.querySelector('option[value="' + v + '"]')) el.value = v; el.onchange = function () { store('fs-margin', el.value); buildDepth(); draw(); }; })();
-    $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
+    $('depth').oninput = function () { depthSet($('depth').value); };
+    if ($('depth2')) $('depth2').oninput = function () { depthSet($('depth2').value); };
+    depthSet($('depth').value, true);
     $('run').onclick = function () { S.from = null; run(); };
     /* From here: with no position on this device (a Mac without location, or location turned off), it says so and you tap the chart where the boat is */
     try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) { var f = function () { var no = st.state === 'denied' || !navigator.geolocation; $('fromHere').classList.toggle('nogps', no); $('fromHere').title = no ? 'From here: no position on this device, so tap the chart where the boat is' : 'From here: route from where you are now (GPS), or tap the chart'; }; f(); st.onchange = f; }).catch(function () {}); } catch (e) {}
@@ -309,7 +312,7 @@
     /* Settings: route again by itself on closing, if anything that affects the routes changed */
     var setSnap = '';
     function settingsSnap() { return [].map.call(document.querySelectorAll('#sheet input, #sheet select, #sheet textarea'), function (el) { return el.id + '=' + (el.type === 'checkbox' ? el.checked : el.value); }).join('|') + '|' + JSON.stringify(meta && meta.course ? [meta.course.name, meta.course.marks, meta.course.start, meta.course.finish] : ''); }
-    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom|shareTrack|leeway)=/;
+    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom|shareTrack|leeway|depthView|zoomMax|depth2)=/;
     function routeSnap() { return settingsSnap().split('|').filter(function (x) { return !DISPLAY_ONLY.test(x); }).join('|'); }
     $('setBtn').onclick = function () { setSnap = routeSnap(); $('sheet').hidden = false; plotPolar(); };
     $('sheetX').onclick = function () { $('sheet').hidden = true; if (setSnap && routeSnap() !== setSnap && !S.running) { busy('Settings changed: routing again…'); S.from = null; run(); } setSnap = ''; };
@@ -327,7 +330,7 @@
       else if (!$('panel').hidden && !$('panel').classList.contains('collapsed')) closePanel();
     });
     $('dataChip').onclick = function () { $('panel').hidden = false; openTab('data'); };
-    $('layersBtn').onclick = function () { var p = $('layers'); p.hidden = !p.hidden; $('layersBtn').setAttribute('aria-expanded', !p.hidden); layersPop(); };
+    $('layersBtn').onclick = function () { var p = $('layers'); if (!p.hidden) { closeLayers(); return; } p.hidden = false; layDepth = +$('depth').value; $('layersBtn').setAttribute('aria-expanded', 'true'); layersPop(); };
     [].forEach.call($('plans').children, function (b) { b.onclick = function () { applyPlan(b.dataset.plan); }; });
     $('dlBtn').onclick = function () { download(); };
     $('ovChk').onchange = dataTable;
@@ -356,7 +359,9 @@
     document.addEventListener('visibilitychange', function () { if (document.hidden) sessSave(); }); window.addEventListener('pagehide', function () { sessSave(); });
   }
   function syncSym() { var a = document.getElementById('lWind'), b = document.getElementById('lTide'); if (a) a.value = $('windSym').value; if (b) b.value = $('tideSym').value; }
-  function closeLayers() { $('layers').hidden = true; $('layersBtn').setAttribute('aria-expanded', 'false'); }
+  var layDepth = null;   /* the no-go depth when the Layers panel opened: closing it routes again if it changed, as closing Settings does */
+  function closeLayers() { $('layers').hidden = true; $('layersBtn').setAttribute('aria-expanded', 'false'); if (layDepth != null && +$('depth').value !== layDepth) depthRerun(); layDepth = null; }
+  function depthRerun() { if (S.running) { setTimeout(depthRerun, 1000); return; } busy('No-go depth changed: routing again…'); S.from = null; run(); }   /* waits for a route already being worked out, then routes again with the new depth */
   function closePanel() { var p = $('panel'); if (wide()) p.hidden = true; else p.classList.add('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'false'); setTimeout(resizeDraw, 0); }
   function wide() { return matchMedia('(min-width:900px), (orientation:landscape) and (max-height:500px)').matches; }   /* a phone on its side gets the computer layout: a short screen needs the chart beside the results */
   function openTab(t, fromTab) {
@@ -391,7 +396,8 @@
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
   function layersPop() {
-    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lCourse">Just the course</button><button class="btn" id="lRoute">Just the route</button></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
+    var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lCourse">Just the course</button><button class="btn" id="lRoute">Just the route</button></div>' +
+      '<div class="ldepth"><label for="lDepth">No-go depth</label><input type="range" id="lDepth" min="0" max="20" step="0.5" value="' + (+$('depth').value) + '" aria-label="No-go depth (the safety depth)"><b id="lDepthV" style="font-family:var(--f-data)">' + (+$('depth').value).toFixed(1) + ' m</b></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="tide"' + (S.show.tide ? ' checked' : '') + '><span class="sw" style="border-color:var(--tide)"></span>Tidal stream</label><select id="lTide" aria-label="Tide symbol" style="margin-left:29px">' + $('tideSym').innerHTML + '</select>' +
       '<label><input type="checkbox" data-l="ghosts"' + (S.show.ghosts ? ' checked' : '') + '><span class="sw" style="border-color:var(--ghost);border-top-style:dotted"></span>Fleet on your route</label>' +
       '<label><input type="checkbox" data-l="legs"' + (S.show.legs ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>Course rhumb lines: course and distance</label>' +
@@ -412,6 +418,7 @@
     [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (CHARTS[c.dataset.l]) { chartSave(); chartCredit(); } if (c.dataset.l === 'iso' && c.checked) isoFetch(); } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
     $('layersX').onclick = closeLayers;
+    $('lDepth').oninput = function () { depthSet($('lDepth').value); };
     $('lWind').onchange = function () { $('windSym').value = $('lWind').value; $('windSym').onchange(); };
     $('lTide').onchange = function () { $('tideSym').value = $('lTide').value; $('tideSym').onchange(); };
   }
@@ -2414,6 +2421,8 @@
   function hex(c) { var m = /^#?([0-9a-f]{6})$/i.exec(c); if (!m) return [128, 128, 128]; var n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
   /* the margin in metres for the depth squares loaded (Full about 230 by 150 m, Lite twice that) */
   function marginNote() { var el = $('marginV'); if (!el) return; var m = +($('margin') ? $('margin').value : 1), L = P.depth && P.depth.L; if (!m) { el.textContent = ''; return; } if (!L) { el.textContent = ''; return; } var ns = Math.round(m * Math.abs(L.dlat) * 111120 / 10) * 10, ew = Math.round(m * Math.abs(L.dlon) * 111120 * Math.cos((L.lat0 + L.ny * L.dlat / 2) * Math.PI / 180) / 10) * 10; el.textContent = 'about ' + ew + ' to ' + ns + ' m'; }
+  /* the no-go (safety) depth has three sliders, Course tab, Chart tab and Layers panel, kept in step (Stuart 15 Nov 08:13) */
+  function depthSet(v, quiet) { v = Math.max(0, Math.min(20, +v || 0)); var t = v.toFixed(1) + ' m'; [['depth', 'depthV'], ['depth2', 'depth2V'], ['lDepth', 'lDepthV']].forEach(function (p) { var el = $(p[0]); if (el && +el.value !== v) el.value = v; if ($(p[1])) $(p[1]).textContent = t; }); if (!quiet) { buildDepth(); draw(); } }
   function depthSquares() { return !!($('depthView') && $('depthView').value === 'squares'); }
   function buildDepth() {
     marginNote();
