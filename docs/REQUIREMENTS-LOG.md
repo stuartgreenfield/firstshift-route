@@ -280,3 +280,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 08:26 15 Nov 2026: Solent race builder: course from mark downloads or built on screen once the Solent marks are on.
 - 08:33 15 Nov 2026: waypoint store and measuring tool for both tools; research saved (Navigate docs/WAYPOINTS-MEASURE-RESEARCH-2026-11-15.md).
 - 09:13 15 Nov 2026: dead reckoning when GPS is lost (important), Route and Navigate; spec in Navigate REPLIES 09:13.
+- 09:28 15 Nov 2026: LIVE Route v0.12.16 and Navigate v0.7.38 (Stuart's go 09:26). Rollback restore-2026-11-15-0927.
