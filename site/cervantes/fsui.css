@@ -19,6 +19,7 @@ body.navclear .bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:
 body.navclear .bar>.mobbtn,body.navclear .bar>.navmenub{pointer-events:auto;box-shadow:0 2px 10px rgba(0,0,0,.4)}
 body.navclear .bar>.mobbtn{width:auto;min-width:52px;height:40px;font-size:12px}
 body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px;opacity:.9}
+body.navclear .bar>.navmenub{margin-left:auto}   /* MENU on the right, as in Navigate (Stuart 15 Nov 21:16: "the menu button needs to move to the right side like navigate") */
 body.navclear .livebox{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 body.navtip .livebox{visibility:hidden}
 :root[data-night] .navtoast{border-color:#3A0A08}
@@ -112,3 +113,4 @@ html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
 :root[data-night] .rpl b,:root[data-night] .rpname b,:root[data-night] .rpline{color:#E0322A}
 :root[data-night] .rplotb[aria-pressed="true"]{background:#3A0A08!important;color:#E0322A!important}
 img.hpic:not([src]){display:none}
+.rpmode{font-size:11px;padding:0 6px;letter-spacing:.04em}   /* F8: MARK or ROUTE */

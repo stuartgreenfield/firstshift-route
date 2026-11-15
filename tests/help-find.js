@@ -1,0 +1,46 @@
+/* Help as pages (Stuart 15 Nov 21:50): Help home with search and section cards, section lists, topic pages with Play and Stop,
+   search results; nothing floats over the text. Run: node tests/help-find.js <base> [width height] */
+const { chromium } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8769', W = +process.argv[3] || 412, H = +process.argv[4] || 915;
+let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
+(async () => {
+  const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: W, height: H }, isMobile: W < 900, hasTouch: true, serviceWorkers: 'block' });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(BASE + '/channel-area/'); await p.waitForFunction(() => window.FSHelpFind && document.getElementById('helpBtn'), null, { timeout: 300000 }); await p.waitForTimeout(1500);
+  await p.evaluate(() => document.getElementById('helpBtn').click()); await p.waitForTimeout(1200);
+  const h0 = await p.evaluate(() => ({ view: FSHelpFind.view().view, q: !!document.getElementById('hfQ'), cards: [...document.querySelectorAll('.hfcard b')].map(x => x.textContent), others: [...document.querySelectorAll('#help .sbody>*')].filter(e => e.id !== 'hfView' && getComputedStyle(e).display !== 'none').length, sticky: getComputedStyle(document.getElementById('hfView').querySelector('.hfsearch')).position, secs: FSHelpFind.sections().filter(s => s.n).map(s => s.name + ' ' + s.n).join(', '), n: FSHelpFind.topics().length, dup: (() => { const t = FSHelpFind.topics().map(x => x.t); return t.length - new Set(t).size; })() }));
+  ok(h0.view === 'home' && h0.q && h0.cards.length >= 4 && h0.others === 0, 'Help opens on Help home: search box and section cards, nothing else', JSON.stringify(h0.cards));
+  ok(h0.sticky !== 'sticky' && h0.sticky !== 'fixed', 'the search box is part of the page, not floating over it', h0.sticky);
+  ok(h0.dup === 0, 'every topic once', h0.n + ' topics: ' + h0.secs);
+  await p.click('.hfcard >> nth=1'); await p.waitForTimeout(400);
+  const s1 = await p.evaluate(() => ({ v: FSHelpFind.view(), items: document.querySelectorAll('.hflist button').length, hero: !!document.querySelector('#hfView img.hfhero') }));
+  ok(s1.v.view === 'sec' && s1.items > 0 && s1.hero, 'a card opens its section: a picture and the list of its topics', JSON.stringify(s1));
+  await p.click('.hflist button >> nth=0'); await p.waitForTimeout(400);
+  const t1 = await p.evaluate(() => ({ v: FSHelpFind.view(), h2: (document.querySelector('.hftopic h2') || {}).textContent, text: (document.getElementById('hfText') || {}).textContent.length, play: !!document.getElementById('hfPlay'), pic: !!document.querySelector('#hfView img.hfhero'), next: !!document.querySelector('.hfpn [data-t]') }));
+  ok(t1.v.view === 'topic' && t1.h2 && t1.text > 40 && t1.play && t1.pic, 'a topic opens on its own page: title, picture, Play, the text', JSON.stringify(t1));
+  ok(t1.next, 'Next (or Previous) goes along the section');
+  await p.evaluate(() => { window.__said = 0; if (window.speechSynthesis) { speechSynthesis.speak = () => { window.__said++; }; } HTMLMediaElement.prototype.play = function () { window.__said++; return Promise.resolve(); }; });
+  await p.click('#hfPlay'); await p.waitForTimeout(1500);
+  const pl = await p.evaluate(() => ({ pressed: document.getElementById('hfPlay').getAttribute('aria-pressed'), label: document.getElementById('hfPlay').textContent, said: window.__said, playing: FSHelpFind.view().playing }));
+  ok(pl.pressed === 'true' && /Stop/.test(pl.label) && pl.said > 0, 'Play reads the topic aloud and becomes Stop', JSON.stringify(pl));
+  await p.click('#hfPlay'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => !FSHelpFind.view().playing && /Play/.test(document.getElementById('hfPlay').textContent)), 'Stop stops it');
+  await p.click('[data-go]'); await p.waitForTimeout(300); ok(await p.evaluate(() => FSHelpFind.view().view === 'sec'), 'Back returns to the section');
+  await p.click('[data-go="home"]'); await p.waitForTimeout(300);
+  await p.fill('#hfQ', 'polar'); await p.waitForTimeout(800);
+  const f1 = await p.evaluate(() => ({ v: FSHelpFind.view(), items: document.querySelectorAll('.hflist button').length, marks: document.querySelectorAll('#hfView mark.hfq').length, note: (document.getElementById('hfNote') || {}).textContent }));
+  ok(f1.v.view === 'find' && f1.items > 0 && f1.marks > 0, 'typing lists the matching topics with the word marked', JSON.stringify(f1));
+  await p.fill('#hfQ', 'zzzqqq'); await p.click('#hfGo'); await p.waitForTimeout(300);
+  ok(/No topic mentions zzzqqq/.test(await p.evaluate(() => document.getElementById('hfNote').textContent)), 'the Search button works too, and says when nothing matches');
+  await p.evaluate(() => { document.getElementById('helpX').click(); }); await p.waitForTimeout(300);
+  const tm = await p.evaluate(() => { const t = FSHelpFind.topics()[3]; document.getElementById('helpBtn').click(); return new Promise(r => setTimeout(() => { FSHelpFind.open(t.t); setTimeout(() => r({ want: t.t, got: (document.querySelector('.hftopic h2') || {}).textContent }), 200); }, 300)); });
+  ok(tm.want === tm.got, 'a topic can be opened straight away (the tour\'s More)', JSON.stringify(tm));
+  const pics = await p.evaluate(async () => { const bad = []; FSHelpFind.home(); await new Promise(r => setTimeout(r, 1500)); document.querySelectorAll('.hfcard img').forEach(i => { if (!i.complete || !i.naturalWidth) bad.push('card ' + i.alt); });
+    for (const t of FSHelpFind.topics()) { FSHelpFind.open(t.t); await new Promise(r => setTimeout(r, 120)); const i = document.querySelector('#hfView img.hfhero'); await new Promise(r => { if (!i || i.complete) r(); else { i.onload = i.onerror = r; setTimeout(r, 3000); } }); if (!i || !i.naturalWidth) bad.push(t.t); } return bad; });
+  ok(pics.length === 0, 'every section card and every topic page has its screenshot', pics.join(', '));
+  const vo = await p.evaluate(async () => { let src = null, spoke = 0; const pl = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { src = this.src; return Promise.resolve(); }; if (window.speechSynthesis) speechSynthesis.speak = () => { spoke++; };
+    const t = FSHelpFind.topics()[0]; FSHelpFind.open(t.t); await new Promise(r => setTimeout(r, 200)); document.getElementById('hfPlay').click(); await new Promise(r => setTimeout(r, 1500)); FSHelpFind.stop(); HTMLMediaElement.prototype.play = pl; return { t: t.t, src, spoke }; });
+  ok(vo.src && /voice\/.+\.mp3$/.test(vo.src) && !vo.spoke, 'Play uses Emma\'s recording for the topic', JSON.stringify(vo));
+  ok(errs.length === 0, 'no page errors', errs.slice(0, 3).join(' | '));
+  console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0);
+})();

@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.19';
+  var VERSION = 'FirstShift Route v0.12.21';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -30,11 +30,60 @@
 
   /* ---------- workers ---------- */
   function call(w, msg, tr) { return new Promise(function (ok, no) { msg.id = ++jid; jobs[jid] = { ok: ok, no: no }; w.postMessage(msg, tr || []); }); }
-  function pool(msg) { if (!workers.length) return Promise.reject(new Error('This browser cannot run background routing.')); return call(workers[wq++ % workers.length], msg); }
-  function all(msgFn) { return Promise.all(workers.map(function (w) { var m = msgFn(); return call(w, m.msg, m.tr); })); }
+  function pool(msg) { return wReady.then(function () { return call(workers[wq++ % workers.length], msg); }); }
+  function all(msgFn) { return wReady.then(function () { return Promise.all(workers.map(function (w) { var m = msgFn(); return call(w, m.msg, m.tr); })); }); }
   var MOBILE = /iPhone|iPad|iPod|Android|Mobi/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));   /* iPadOS calls itself a Mac */
   var n = Math.max(1, Math.min(MOBILE ? 2 : 4, (navigator.hardwareConcurrency || 2) - 1));   /* each worker holds every forecast: two on a phone or tablet, so iOS does not close Route for memory (Stuart 12 Nov) */
-  for (var i = 0; i < n; i++) { try { var w = new Worker('worker.js'); w.onmessage = function (e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }; workers.push(w); } catch (e) { break; } }
+  /* Finding F2 (15 Nov 2026, Stuart: "C: both, plus check"). Offline on Android the page stayed at "Loading forecasts 100%": every
+     forecast was handed to the routing workers and the page waited for an answer from a worker that had never started. Now:
+     1. the workers are built from router.js, engine.js and worker.js as the page itself loads them (so on Android they come from
+        inside the app, never the network); 2. if that fails, the worker file is loaded as before; 3. each worker must answer a ping
+        within 10 s, and one that fails is dropped; 4. if none answer, routing runs on the main screen thread: slower, but it works.
+     window.__fsWork() says which, for Data sources. */
+  function onMsg(e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }
+  var workMode = { mode: 'starting', n: 0, why: '' };
+  window.__fsWork = function () { return { mode: workMode.mode, n: workers.length, why: workMode.why }; };
+  function wSrc() {
+    var get = function (f) { return fetch(f, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); }); };
+    var tm = new Promise(function (_, no) { setTimeout(function () { no(new Error('slow')); }, 8000); });
+    return Promise.race([Promise.all([get('router.js'), get('engine.js'), get('worker.js')]), tm]).then(function (t) { var wk = t[2].replace(/^\s*importScripts\([^)]*\);?/m, ''); return { all: t[0] + '\n;\n' + t[1] + '\n;\n' + wk, wk: wk }; });
+  }
+  /* F14 (Stuart's Android tablet, 15 Nov 19:52: loading stopped at 9 of 14; "Both fixes"): a worker that is slow to answer is waited for,
+     never shut down. Routing goes ahead as soon as one worker answers, and the others join as they answer. A worker counts as failed
+     only if it reports an error, or nothing has answered in 60 s. */
+  function startSet(make) {
+    var set = []; for (var i = 0; i < n; i++) { try { var w = make(); w.onmessage = onMsg; set.push(w); } catch (e) { break; } }
+    if (!set.length) return Promise.resolve([]);
+    return new Promise(function (ok) {
+      var good = [], left = set.length, over = false, end = function () { if (over) return; over = true; ok(good.slice()); };
+      set.forEach(function (w) {
+        var done = false, fin = function (g) { if (done) return; done = true; left--; if (g) { if (over) { if (workers.indexOf(w) < 0) workers.push(w); } else { good.push(w); end(); } } else { try { w.terminate(); } catch (e) {} if (!left && !over) end(); } };
+        w.onerror = function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); fin(false); };
+        call(w, { type: 'ping' }).then(function () { fin(true); }, function () { fin(false); });
+      });
+      setTimeout(end, 60000);
+    });
+  }
+  function mainThread(src) {   /* the worker's own code, run on the page: same answers, but the screen waits while it routes. It shares the page's own
+       forecasts (P) instead of keeping a second copy, which a tablet has no memory for (F14) */
+    var h = null, fake = { postMessage: function (msg) { if (msg && (msg.type === 'layer' || msg.type === 'drop')) { setTimeout(function () { fake.onmessage({ data: { id: msg.id, ok: true } }); }, 0); return; } setTimeout(function () { h({ data: msg }); }, 0); }, terminate: function () {} };
+    h = new Function('postMessage', 'importScripts', '__pageP', 'var onmessage;\n' + src.replace(/var P = FSRouter\.emptyPack\(\);/, 'var P = __pageP;') + '\n;return onmessage;')   /* only worker.js: the page already has FSRouter and FSPolar */
+      (function (r) { setTimeout(function () { fake.onmessage({ data: r }); }, 0); }, function () {}, P);
+    return fake;
+  }
+  var wReady = wSrc().then(function (src) {
+    var url = URL.createObjectURL(new Blob([src.all], { type: 'text/javascript' }));
+    return startSet(function () { return new Worker(url); }).then(function (ok) { return { ok: ok, src: src.wk, how: 'background' }; });
+  }, function (e) { return { ok: [], src: null, how: '', why: e.message }; }).then(function (r) {
+    if (r.ok.length) return r;
+    return startSet(function () { return new Worker('worker.js'); }).then(function (ok) { return { ok: ok, src: r.src, how: 'background (file)' }; });
+  }).then(function (r) {
+    if (r.ok.length) { workers = r.ok; workMode.mode = r.how; return; }
+    var src = r.src;
+    if (!src) { workMode.mode = 'none'; workMode.why = 'The routing code could not be loaded.'; throw new Error('Routing could not start on this device: ' + workMode.why); }
+    workers = [mainThread(src)]; workers[0].onmessage = onMsg; workMode.mode = 'main'; workMode.why = 'Background routing could not start on this device, so routing runs on the main screen. It works, but the screen may pause while it routes.';
+  });
+  wReady.catch(function () {});
 
   /* phones: From here sits beside Play in the bottom bar */
   (function () { var mq = matchMedia('(max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px)'), fh = $('fromHere'), home = fh.parentNode, next = fh.nextSibling;
@@ -68,7 +117,32 @@
     });
   })();
   function errShow(msg) { var b = $('errBox'); if (!b) return; $('errMsg').textContent = msg; b.hidden = false; }
-  function errHide() { var b = $('errBox'); if (b) b.hidden = true; }
+  function errHide() { var b = $('errBox'); if (b) b.hidden = true; if ($('errDepth')) $('errDepth').hidden = true; }
+  /* F6 (Stuart 15 Nov 15:29, 17:10 "Plain message + depth button"): a route that cannot leave its start (no way through after 0 h) usually
+     starts in water shallower than the safety depth. Say so plainly, with the charted depth there, and offer to route with a safety depth
+     that the start allows. Try again alone would only repeat the same failure. */
+  /* said under the route when it leaves the start through water shallower than the safety depth (the router allows that within 1 nm of
+     the start, Stuart 15 Nov 20:04) */
+  function shallowStartNote() {
+    try { var r = S.sel && S.sel.r, safety = +$('depth').value; if (!r || !r.path || !P.depth || !(safety > 0)) return ''; var p0 = r.path[0], low = Infinity;
+      for (var i = 0; i < r.path.length && i < 40; i++) { var q = r.path[i], dd = rhumb({ lat: p0.la, lon: p0.lo }, { lat: q.la, lon: q.lo }).nm; if (dd > 1.05) break; var z = P.depth.nearest('z', q.la, q.lo); if (z === z) low = Math.min(low, -z); }
+      return low < safety ? ' Leaving the start the route crosses water about ' + Math.max(0, low).toFixed(1) + ' m deep on the chart, less than your safety depth of ' + safety.toFixed(1) + ' m: check the depth there on the tide.' : '';
+    } catch (e) { return ''; } }
+  function depthOffer(e, sp) {
+    var b = $('errDepth'); if (!b) return; b.hidden = true;
+    if (!e || !/after 0 h/.test(e.message || '') || !sp) return;
+    var safety = +$('depth').value, z = P.depth ? P.depth.nearest('z', sp.lat, sp.lon) : NaN, wd = -z, who = sp.from ? 'The boat' : 'The start';
+    var y = null, msg;
+    /* the deepest safety depth with a way out, by the router's own test (every depth square on the line): a clear mile on at least one
+       of 36 bearings, trying the safety depth less 0.5 m, then 1 m, and so on */
+    var clearAt = function (d) { for (var bb = 0; bb < 360; bb += 10) { var la1 = sp.lat + Math.cos(bb * R) / 60, lo1 = sp.lon + Math.sin(bb * R) / (60 * Math.cos(sp.lat * R)); if (FSRouter.clearLine(P.depth, d, sp.lat, sp.lon, la1, lo1)) return true; } return false; };
+    var exitD = -1; if (P.depth) for (var cd = Math.floor(safety * 2) / 2 - 0.5; cd >= 0; cd -= 0.5) if (clearAt(cd)) { exitD = cd; break; }
+    if (wd === wd && wd <= 0) msg = who + ' is ashore or on a drying bank on the chart, so no route can leave it. ' + (sp.from ? 'Tap the chart where the boat really is, or route from the start.' : 'Move the start into the water.');
+    else if (wd === wd && wd < safety) { y = exitD >= 0 ? exitD : Math.max(0, Math.floor(wd * 2) / 2); msg = who + ' is in water about ' + wd.toFixed(1) + ' m deep on the chart, shallower than your safety depth of ' + safety.toFixed(1) + ' m, so no route can leave it.'; }
+    else { y = exitD >= 0 ? exitD : null; msg = 'No way out from ' + who.toLowerCase() + ' with a safety depth of ' + safety.toFixed(1) + ' m: within a mile in every direction the chart shows shallower water.'; }
+    $('errMsg').textContent = msg;
+    if (y != null && y < safety) { b.textContent = 'Route with ' + y.toFixed(1) + ' m'; b.hidden = false; b.onclick = function () { errHide(); depthSet(y); S.running = false; S.preBad = true; S.routes = []; run(); }; }
+  }
   (function () { var b = $('errBox'); if (!b) return; $('errX').onclick = errHide; $('errRetry').onclick = function () { errHide(); S.running = false; S.preBad = true; S.routes = []; run(); }; })();
   setInterval(function () {   /* a route that has run for two minutes with nothing to show is stuck: say so */
     if (S.running) { S.runSince = S.runSince || Date.now(); if (Date.now() - S.runSince > 120000 && !(S.routes && S.routes.length) && $('errBox') && $('errBox').hidden) errShow('Routing is taking far longer than usual. Try again, or choose fewer wind models in Settings, Forecasts.'); }
@@ -227,7 +301,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.19 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.21 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1967,12 +2041,35 @@
     LIVE.drTrack = [];
   }
   window.__fsOri = function () { return ORI.mode; };
+  window.__fsBurn = function () { var p = LIVE.calc && LIVE.calc.pre; return p && p.line && p.line.burn != null ? p.line.burn : null; };   /* time to burn at the start, for the deck screen */
   /* for the Solent race builder (solent.js, Stuart 15 Nov): route a built course as one of My races, the safety depth, and the
      forecast wind at a place and time (true, from), from the models the set-up card would use */
   window.__fsUseCourse = function (c) { archiveRoutes(); var a = myRaces(), rg = regionFor(c), rec = { id: 'r' + Date.now().toString(36), name: c.name, page: rg ? rg.id : HERE, course: c, settings: snapSettings(), savedAt: Date.now(), summary: '' };
     a.unshift(rec); setMyRaces(a); openMy(rec.id); return rec.id; };
   window.__fsDepth = function (v) { if (v == null) return +$('depth').value; depthSet(v); };
   window.__fsStartAt = function () { var v = +$('startSel').value; return v > 0 ? v : null; };
+  /* the measuring tool (waypoints.js, Stuart 15 Nov, K): from A to B at the time on the slider. Wind and tide at the middle of the line,
+     the boat's polar, the course to steer across the tide (liveSteer); on a beat or a run, the best VMG with the tack or gybe headings and
+     the time including tacking; the sail from the crossover chart; whether the line crosses water under the safety depth */
+  window.__fsMeasure = function (la0, lo0, la1, lo1, tH) {
+    var t = tH != null ? tH : S.t, r = rhumb({ lat: la0, lon: lo0 }, { lat: la1, lon: lo1 }), ms = S.sel ? S.sel.models : cardModels(), o = { nm: r.nm, brg: r.brg, t: t, at: T0 + t * 3600 };
+    var mla = (la0 + la1) / 2, mlo = (lo0 + lo1) / 2;
+    try { var W = FSRouter.windSampler(P, ms)(mla, mlo, t); if (W && W[0] === W[0]) { o.tws = W[0]; o.twd = W[1]; } } catch (e) {}
+    try { var td = $('tideSel').value ? FSRouter.tideSampler(P, $('tideSel').value)(mla, mlo, t) : null; if (td && td[0] === td[0]) { o.tu = td[0]; o.tv = td[1]; o.tide = Math.hypot(td[0], td[1]); o.tideTo = (Math.atan2(td[0], td[1]) / R + 360) % 360; o.tideAlong = td[0] * Math.sin(r.brg * R) + td[1] * Math.cos(r.brg * R); } } catch (e) {}
+    if (o.tws != null) {
+      var spd = speedFn(opts(ms)), st = liveSteer(r.brg, o.tws, o.twd, o.tu || 0, o.tv || 0, spd);
+      if (st) { o.hdg = st.hdg; o.sog = st.sog; o.twa = st.twa; o.tack = !!st.tack; o.bsp = spd(o.tws, Math.abs(st.twa)); o.hours = st.sog > 0.2 ? r.nm / st.sog : null;
+        if (st.tack) { o.kind = Math.abs(st.twa) < 90 ? 'beat' : 'run'; o.other = (st.hdg + 2 * (((o.twd - st.hdg + 540) % 360) - 180) + 360) % 360; }
+        else o.kind = Math.abs(st.twa) < 70 ? 'fetch' : Math.abs(st.twa) < 140 ? 'reach' : 'run';
+        try { o.sail = rig({ tws: o.tws, twa: Math.abs(st.twa), twd: o.twd }); } catch (e) {} }
+    }
+    try { if (P.depth) o.shallow = !FSRouter.clearLine(P.depth, +$('depth').value, la0, lo0, la1, lo1); } catch (e) {}
+    return o;
+  };
+  window.__fsLL = function (cx, cy) { var r = $('map').getBoundingClientRect(), u = unrot(cx - r.left, cy - r.top); return { la: LA(u[1]), lo: LO(u[0]), x: u[0], y: u[1] }; };   /* screen point to position, for the measuring tool */
+  window.__fsMarksGet = function () { return myMarks(); };
+  window.__fsMarksSet = function (a) { myMarksSet(a); draw(); };
+  window.__fsTimeH = function () { return S.t; };
   window.__fsWindAt = function (la, lo, ep) { try { var W = FSRouter.windSampler(P0(), cardModels())(la, lo, ((ep || Date.now() / 1000) - T0) / 3600); return W && W[0] === W[0] ? { tws: W[0], twd: W[1] } : null; } catch (e) { return null; } };   /* for the reopen test */
   window.__fsDR = function () { var f = LIVE.fix; return { on: drOn(), active: !!(f && f.dr), fix: f && f.dr ? { la: f.la, lo: f.lo, sog: f.sog, cog: f.cog, run: f.run, rad: f.rad, src: f.src, since: f.since } : null, last: LIVE.drLast || null, msg: LIVE.drMsg || null }; };   /* for Navigate and the automatic tests */
   /* the heading that makes good bearing B through the water and tide, and the speed over the ground it gives; on a beat or a run, the best VMG */
@@ -2188,10 +2285,11 @@
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
     var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
+    var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
-    pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.'; })
-    .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); draw(); });
+    pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); })
+    .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
@@ -2507,8 +2605,10 @@
     var c = document.createElement('canvas'); c.width = nx; c.height = ny;
     var g = c.getContext('2d'), im = g.createImageData(nx, ny), d = im.data;
     var land = hex(css['--land']), sea = hex(css['--sea']), sea2 = hex(css['--sea2']), sh = hex(css['--shoal']), she = hex(css['--shoaledge']), le = hex(css['--landedge']);
-    var Z = new Float32Array(nx * ny);
-    for (var yy = 0; yy < ny; yy++) for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); }
+    /* F11 (15 Nov 2026, Stuart: "Yes, in this release"): the depths of every square are worked out once per depth grid and kept; a change of
+       screen mode or safety depth only recolours them. Before, every mode change rebuilt them (2 to 4.6 s at phone speed). */
+    var Z = buildDepth.z && buildDepth.zOf === F && buildDepth.zCoast === coastBits ? buildDepth.z : null;   /* and again when the coastline arrives */
+    if (!Z) { Z = new Float32Array(nx * ny); for (var yy = 0; yy < ny; yy++) for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); } buildDepth.z = Z; buildDepth.zOf = F; buildDepth.zCoast = coastBits; }
     function z(y, x) { var v = Z[y * nx + x]; return v === 999 ? -99 : v; }
     /* squares view: mark the margin squares, each within the margin of a square that is land, shallower than the safety depth or without data, as the router does */
     var MG = null, mgn = +($('margin') ? $('margin').value : 1) || 0;
@@ -2540,7 +2640,9 @@
       }
       return new Float32Array(out2);
     }
-    depthLines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null };
+    /* F11: the coast and safety-depth lines depend only on the depths and the safety depth, not the colours: kept between mode changes */
+    var ck = safety + '|' + (Z === buildDepth.lz ? 1 : 0); if (!(buildDepth.lines && buildDepth.lk === ck)) { buildDepth.lines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null }; buildDepth.lk = safety + '|1'; buildDepth.lz = Z; }
+    depthLines = buildDepth.lines;
   }
   var depthLines = null;
   /* Real chart layers (Stuart 12 Nov): free tiles now, licensed GeoGarage or C-MAP tiles slot into CHARTS later.
@@ -3087,6 +3189,7 @@
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
     if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.splice(rows.length ? 1 : 0, 0, '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>');
     $('tipBody').innerHTML = rows.join(''); tip.hidden = false; tip.classList.toggle('docked', !!docked);
+    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}   /* waypoints.js: Save as waypoint, Measure from here */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
@@ -3149,7 +3252,8 @@
     $('polZ').onchange = function () { $('mastRow').hidden = $('polZ').value !== 'mast'; boatChanged(); };
     $('mastZ').oninput = $('stabOn').onchange = function () { boatChanged(); };
     $('mastRow').hidden = $('polZ').value !== 'mast';
-    $('boatSave').onclick = function () { var n = $('boatName').value.trim() || 'My boat', b = boats(); $('boatName').value = n; b[n] = { spec: boatSpec(), tackS: +$('tackS').value, gybeS: +$('gybeS').value, sails: $('sails').value, mains: $('mains').value, polZ: $('polZ').value, mastZ: $('mastZ').value }; store('fsBoats', JSON.stringify(b)); store('fs-boat-cur', n); listBoats(n); busy('Saved ' + n + ' on this device'); setTimeout(function () { busy(''); }, 1600); };
+    $('boatSave').onclick = function () { var n = $('boatName').value.trim() || 'My boat', b = boats(); $('boatName').value = n; b[n] = { spec: boatSpec(), tackS: +$('tackS').value, gybeS: +$('gybeS').value, sails: $('sails').value, mains: $('mains').value, polZ: $('polZ').value, mastZ: $('mastZ').value }; store('fsBoats', JSON.stringify(b)); store('fs-boat-cur', n); listBoats(n); store('fs-boatset', '1'); boatWarn(); busy('Saved ' + n + ' on this device'); setTimeout(function () { busy(''); }, 1600); };   /* F3 (15 Nov): the boat warning is redone at once, so it no longer stays after the name is saved */
+    $('boatName').addEventListener('input', function () { try { boatWarn(); } catch (e) {} });
     $('boatDel').onclick = function () { var n = $('myBoat').value, b = boats(); if (!n) return; delete b[n]; store('fsBoats', JSON.stringify(b)); listBoats(''); };
     $('myBoat').onchange = function () { var n = $('myBoat').value, b = boats()[n]; $('boatDel').hidden = !n; if (!b) return; store('fs-boat-cur', n); var s = b.spec; $('boatName').value = n; $('tcc').value = (+s.tcc).toFixed(3); $('boatType').value = s.type || 'perf'; eg(); $('polarTxt').value = s.text || ''; $('tuUp').value = s.tune.up; $('tuReach').value = s.tune.reach; $('tuRun').value = s.tune.run; if (b.tackS) $('tackS').value = b.tackS; if (b.polZ) { $('polZ').value = b.polZ; $('mastZ').value = b.mastZ || ''; $('polZ').dispatchEvent(new Event('change')); } if (b.gybeS) $('gybeS').value = b.gybeS; ['sails', 'mains'].forEach(function (id) { if (b[id]) { $(id).value = b[id]; $(id).dispatchEvent(new Event('input')); } }); setSrc(s.src); readOwn(true); boatChanged(); };
     listBoats(''); setSrc('type'); boatChanged();

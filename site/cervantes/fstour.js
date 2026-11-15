@@ -24,6 +24,13 @@
     { el: '#layersBtn', t: 'Layers', x: 'Choose what the chart shows: wind, tide, waves, depth and marks.', help: 'charts' },
     { el: '#helpBtn', t: 'Help', x: 'Everything is explained in Help, with a Listen button on each topic. Try it safely first is at the top, and you can take this tour again from there.' }
   ];
+  /* Route's own preparation (F14 photo, 15 Nov 19:51: "Nothing to point at" with the menus hidden): bring the menus back from Clear
+     screen and the deck screen's MENU before the tour looks for its buttons. Navigate sets its own (navtour.js). */
+  function prepRoute() {
+    try { if (window.NavClear && window.NavClear.on()) window.NavClear.set(false); } catch (e) {}
+    try { if (document.body.classList.contains('fsdeck') && !document.body.classList.contains('fsdeckmenu')) document.body.classList.add('fsdeckmenu'); } catch (e) {}
+  }
+  function prep() { try { if (window.FSTourPrepare) window.FSTourPrepare(); else prepRoute(); } catch (e) {} }
   function levels() { var L = window.FSTourLevels; return L && L.length ? L : [{ n: 1, name: 'Get going', note: 'Race, forecast, route and plotter', steps: ROUTE }]; }
   window.FSTourRoute = ROUTE;
   function tryText() { return window.FSTourTry || '<p><b>Press Play</b> under the chart and watch the boat sail the route, with the wind, the tide and the figures at every moment. Nothing is sent anywhere and nothing can go wrong. Drag the slider to any moment of the race.</p>'; }
@@ -93,13 +100,16 @@
     card.innerHTML = '<h4>Show me round</h4><p>Choose where to start. Each level takes a couple of minutes.</p><div class="fst-lv">' + L.map(function (l) { return '<button data-fst="lv' + l.n + '"><b>Level ' + l.n + ': ' + l.name + '</b><span>' + (l.note || '') + '</span></button>'; }).join('') + '</div><div class="fst-b"><button class="fst-end" data-fst="end">Not now</button></div>';
     card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
   }
-  function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; build().hidden = false; try { if (window.FSTourPrepare) window.FSTourPrepare(); } catch (e) {}   /* Navigate: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
+  function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; T.waits = 0; build().hidden = false; prep();   /* Navigate: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
   function end() { T.on = false; T.paused = false; if (T.root) T.root.hidden = true; try { if (T.lv && T.lv.after) T.lv.after(); } catch (e) {} }
   function finish() {
     var L = levels(), nx = L.filter(function (l) { return T.lv && l.n === T.lv.n + 1; })[0];
     var hole = T.root.querySelector('.fst-hole'), card = T.root.querySelector('.fst-card');
     hole.style.width = hole.style.height = '0px'; hole.classList.remove('test'); card.classList.remove('test');
-    if (!T.shown && !T.retried) { T.retried = true; try { if (window.FSTourPrepare) window.FSTourPrepare(); } catch (e) {} setTimeout(function () { T.i = -1; go(0, 1); }, 700); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
+    /* F7 (Stuart 15 Nov: "Nothing to point at" on first opening Route): on a first opening the routes are still being worked out and the
+       buttons are not all there yet. Wait for the first routes (up to a minute), saying so, then try three times before giving up. */
+    if (!T.shown && window.__fsPlan && !window.__fsPlan() && (T.waits || 0) < 40) { T.waits = (T.waits || 0) + 1; card.innerHTML = '<h4>Getting ready</h4><p>Route is working out the first routes. The tour starts as soon as they are on the chart.</p>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; setTimeout(function () { if (T.on) { T.i = -1; go(0, 1); } }, 1500); return; }
+    if (!T.shown && (T.retried || 0) < 3) { T.retried = (T.retried || 0) + 1; prep(); setTimeout(function () { T.i = -1; go(0, 1); }, 700 + 800 * T.retried); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
     if (!T.shown) { card.innerHTML = '<h4>Nothing to point at</h4><p>The buttons this part of the tour shows are hidden on this screen just now. Close any open panels, or tap MENU to bring the menus back, then try again.</p><div class="fst-b"><button class="btn primary" data-fst="lv' + T.lv.n + '">Try again</button><button class="btn" data-fst="end">Done</button></div>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; return; }
     card.innerHTML = '<h4>That’s the tour</h4><p>' + (nx ? 'Level ' + nx.n + ', ' + nx.name.toLowerCase() + ', is next when you are ready.' : 'Try it safely first: everything is in Help, and you can take the tour again from the top of Help.') + '</p><div class="fst-b">' + (nx ? '<button class="btn primary" data-fst="lv' + nx.n + '">Level ' + nx.n + '</button>' : '') + '<button class="btn' + (nx ? '' : ' primary') + '" data-fst="end">Done</button></div>';
     card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
@@ -107,6 +117,7 @@
   /* More: Help opens at the matching topic; closing Help brings the tour back at the same step */
   function helpTopic(key) {
     var hits = [].slice.call(document.querySelectorAll('#help .htopic')).filter(function (d) { var h = d.querySelector('h3'); return d.dataset.k === key || (h && h.firstChild && String(h.firstChild.textContent).trim() === key); });
+    if (window.FSHelpFind && FSHelpFind.open) { var el = FSHelpFind.open(key); if (el) return null; }   /* Help as pages: open the topic's page (Stuart 15 Nov 21:50) */
     return hits[0] || null;
   }
   function more() {
@@ -122,7 +133,11 @@
   /* the how-to film (Stuart 14 Nov 19:11): a thumbnail on the landing page opens a larger player with Go to the tool and End;
      also a Watch button in Help. Navigate sets window.FSFilmCfg in navtour.js. */
   function filmCfg() { return window.FSFilmCfg || { tool: 'Route', srcs: ['https://video.wixstatic.com/video/d74d0c_b0d924a6b582446198770eb18f032e10/720p/mp4/file.mp4', '../films/route-how-to.mp4'], poster: '../films/route-how-to.jpg', len: '1 min 39 s' }; }   /* Wix streams on iPhones (it answers range requests); the copy on this site is the fallback */
+  /* in the Navigate app the film plays in Android's own player inside the app, with End and Go to the tool: the page's player did
+     nothing when tapped there (Stuart 15 Nov 22:27), and the phone's separate video player lost the way back (22:40) */
+  function filmApp() { return !!(window.NativeLink && window.NativeLink.playFilm); }
   function filmOpen() {
+    if (filmApp()) { var c0 = filmCfg(); try { window.NativeLink.playFilm((c0.srcs || [c0.src]).join('|'), 'How to use ' + c0.tool); return; } catch (e) {} }
     var c = filmCfg(), f = $('fsFilm');
     if (!f) { f = document.createElement('div'); f.id = 'fsFilm'; f.className = 'fsfilm'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', 'How to use ' + c.tool); document.body.appendChild(f); }
     f.innerHTML = '<div class="fsfilm-in"><h3>How to use ' + c.tool + '</h3><video id="fsFilmV" controls playsinline preload="metadata" poster="' + c.poster + '">' + (c.srcs || [c.src]).map(function (u) { return '<source src="' + u + '" type="video/mp4">'; }).join('') + '</video><p>' + c.len + ', with sound. Needs an internet connection.</p><div class="fsfilm-b"><button class="btn" type="button" data-film="end">End</button><button class="btn primary" type="button" data-film="go">Go to ' + c.tool + '</button></div></div>';
@@ -131,8 +146,9 @@
   }
   function filmEnd() { var f = $('fsFilm'), v = $('fsFilmV'); if (v) try { v.pause(); } catch (e) {} if (f) f.hidden = true; }
   function filmGo() { filmEnd(); var sp = $('splash'); if (sp && !sp.hidden && !sp.classList.contains('terms')) { var n = $('spTourNo'); if (n) n.click(); } var h = $('help'); if (h && !h.hidden) h.hidden = true; }
-  window.FSFilm = { open: filmOpen, end: filmEnd };
-  function filmWire() { var b = $('spFilm'); if (!b) return; var c = filmCfg(); b.addEventListener('click', function (e) { e.stopPropagation(); filmOpen(); }); var im = b.querySelector('img'); if (im) im.src = c.poster; var t = b.querySelector('b'); if (t) t.textContent = 'Watch: how to use ' + c.tool; b.setAttribute('aria-label', 'Watch the two-minute film: how to use ' + c.tool); }
+  window.FSFilm = { open: filmOpen, end: filmEnd, go: filmGo };
+  function filmWire() { var b = $('spFilm'); if (!b) return; var c = filmCfg();
+ b.addEventListener('click', function (e) { e.stopPropagation(); filmOpen(); }); if (filmApp()) b.addEventListener('touchend', function (e) { e.preventDefault(); e.stopPropagation(); filmOpen(); });   /* in the app a tap opens the film straight away, whatever happens to the click */ var im = b.querySelector('img'); if (im) im.src = c.poster; var t = b.querySelector('b'); if (t) t.textContent = 'Watch: how to use ' + c.tool; b.setAttribute('aria-label', 'Watch the two-minute film: how to use ' + c.tool); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(filmWire, 0); }); else setTimeout(filmWire, 0);
   /* Help: "Try it safely first" highlighted at the very top, with the tour button */
   function tryBox() {
@@ -160,6 +176,8 @@
   var tries = 0, wt = setInterval(function () {
     if (++tries > 600) { clearInterval(wt); return; }
     if (!want) return;
+    /* F7 (Stuart 15 Nov: "Nothing to point at" on first opening Route): also wait for the first routes (up to 60 s), whose panels move the
+       buttons about while they arrive; and try three times before saying there is nothing to point at */
     var sp = $('splash'), busy = (sp && !sp.hidden) || ['wiz', 'races', 'errBox'].some(function (id) { var e = $(id); return e && !e.hidden; });
     if (busy) return;
     clearInterval(wt); want = false; setTimeout(chooser, 400);

@@ -6,6 +6,7 @@ function samplers(o) { var s = FSRouter.adjust({ wind: FSRouter.windSampler(P, o
 onmessage = function (e) {
   var m = e.data;
   try {
+    if (m.type === 'ping') { postMessage({ id: m.id, ok: true }); return; }   /* the page checks each worker answers before it hands over forecasts (finding F2, 15 Nov 2026) */
     if (m.type === 'layer') { FSRouter.addLayer(P, m.L, m.buf); postMessage({ id: m.id, ok: true }); return; }
     if (m.type === 'drop') { if (m.kind === 'depth') P.depth = null; else delete P[m.kind][m.lid]; postMessage({ id: m.id, ok: true }); return; }
     if (m.type === 'route') {

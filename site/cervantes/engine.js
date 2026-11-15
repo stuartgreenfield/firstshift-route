@@ -719,6 +719,8 @@
     toOpenCPN: function (p) { return { text: toGrid(p, ';', 'twa/tws'), warnings: blanks(p), ext: 'pol' }; },
     toAdrena: function (p) { return { text: tabGrid(p), warnings: blanks(p).concat(['Layout from published descriptions of the shared .pol format. Test with a real Adrena import.']), ext: 'pol' }; },
     toSailGrib: function (p) { return { text: tabGrid(p), warnings: blanks(p), ext: 'pol' }; },
+    /* NavimetriX imports a .pol whose "fields are separated by tabs" (its FAQ, 15 Nov 2026 research): TWS across, TWA down (M, Stuart 14:30) */
+    toNavimetrix: function (p) { return { text: toGrid(p, '\t', 'TWA\\TWS'), warnings: blanks(p), ext: 'pol' }; },
     toPredictWind: toPredictWind
   };
 });

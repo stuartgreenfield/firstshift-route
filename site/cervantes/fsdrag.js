@@ -5,7 +5,7 @@
    puts them all back. A moved panel can never leave the screen. */
 (function () {
   'use strict';
-  var KEY = 'nav-pos', PANELS = [['liveBox', 'GPS window']];
+  var KEY = 'nav-pos', PANELS = [['liveBox', 'GPS window'], ['fsPlot', 'Plotter bar'], ['fsRulerBtn', 'Ruler button'], ['helpBtn', 'Help button'], ['oriBtn', 'North up button'], ['editFab', 'Edit course button'], ['fromHere', 'From here button'], ['navClearBtn', 'Clear screen button'], ['navMenuBtn', 'MENU button']];   /* every small chart button too (Stuart 15 Nov 20:30, 20:32: "Maybe all the little icons on the screen can move about"); MOB stays where it is */   /* the plotter bar too (Stuart 15 Nov 16:18, F9: "the plot bar on Route cant be moved as no handle appears on it") */
   function $(id) { return document.getElementById(id); }
   function ld() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
   function sv(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }

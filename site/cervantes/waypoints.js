@@ -52,7 +52,13 @@
       var x0 = X(M.a.lo), y0 = Y(M.a.la), x1 = X(M.b.lo), y1 = Y(M.b.la);
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.stroke(); ctx.lineWidth = 2.5; ctx.setLineDash([8, 5]); ctx.strokeStyle = M.r && M.r.shallow ? '#dc2626' : '#7c3aed'; ctx.stroke(); ctx.setLineDash([]);
       [[x0, y0], [x1, y1]].forEach(function (q) { ctx.beginPath(); ctx.arc(q[0], q[1], 5, 0, 2 * Math.PI); ctx.fillStyle = '#7c3aed'; ctx.fill(); });
-    }
+      /* bearing and distance on the chart by the moving end, updated as the finger moves (Stuart 15 Nov 20:26) */
+      if (M.r && M.r.nm != null) {
+        var txt = ('00' + Math.round(M.r.brg) % 360).slice(-3) + '°T  ' + (M.r.nm < 0.1 ? Math.round(M.r.nm * 1852) + ' m' : M.r.nm < 10 ? M.r.nm.toFixed(2) + ' nm' : M.r.nm.toFixed(1) + ' nm');
+        ctx.font = '700 14px Inter, system-ui, sans-serif'; var tw = ctx.measureText(txt).width, lx = Math.min(x1 + 14, (ctx.canvas.width / (window.devicePixelRatio || 1)) - tw - 16), ly = Math.max(y1 - 14, 22);
+        ctx.fillStyle = 'rgba(17,24,39,.82)'; ctx.fillRect(lx - 6, ly - 16, tw + 12, 22); ctx.fillStyle = M.r.shallow ? '#fca5a5' : '#fff'; ctx.fillText(txt, lx, ly);
+      }
+    } else if (M && M.a) { var xa = X(M.a.lo), ya = Y(M.a.la); ctx.beginPath(); ctx.arc(xa, ya, 6, 0, 2 * Math.PI); ctx.fillStyle = '#7c3aed'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); }   /* the first point, before the drag */
   }
   /* the tap box: save this point, or measure from it */
   function tipExtra(body, la, lo) {
@@ -110,17 +116,22 @@
     if (r.tide != null) rows.push('Tide ' + r.tide.toFixed(1) + ' kn to ' + d3(r.tideTo) + ': ' + (Math.abs(r.tideAlong) < 0.1 ? 'across the line' : (r.tideAlong > 0 ? '+' : '') + r.tideAlong.toFixed(1) + ' kn along it') + (r.sog != null ? ' (in the VMC above)' : ''));
     if (r.shallow) rows.push('<b class="fsmwarn">Crosses water shallower than your safety depth.</b>');
     if (later.some(function (x) { return x && x.tws != null; })) rows.push('<table class="fsmlater"><tr><th>Later</th><th>Wind</th><th>Tide along</th><th>VMC</th><th>Time</th></tr>' + later.map(function (x, k) { if (!x) return ''; var tt = new Date(x.at * 1000); return '<tr><td>+' + (k + 1) + ' h ' + ('0' + tt.getUTCHours()).slice(-2) + ':' + ('0' + tt.getUTCMinutes()).slice(-2) + '</td><td>' + (x.tws != null ? x.tws.toFixed(0) + ' kn ' + d3(x.twd) : '--') + '</td><td>' + (x.tideAlong != null ? (x.tideAlong > 0 ? '+' : '') + x.tideAlong.toFixed(1) + ' kn' : '--') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) + ' kn' : '--') + '</td><td>' + hm(x.tack && x.hoursAll != null ? x.hoursAll : x.hours) + '</td></tr>'; }).join('') + '</table>');
-    bx.innerHTML = '<button class="close" type="button" aria-label="Close the measurement">×</button>' + rows.map(function (h) { return '<div>' + h + '</div>'; }).join('') + '<div class="xrow"><button class="btn" type="button" data-m="save">Save the end as a waypoint</button><button class="btn" type="button" data-m="off">Ruler off</button></div>';
-    bx.hidden = false; bx.querySelector('.close').onclick = function () { bx.hidden = true; M = null; redraw(); };
-    bx.querySelector('[data-m="off"]').onclick = function () { ruler(false); };
-    bx.querySelector('[data-m="save"]').onclick = function () { openSheet({ edit: { lat: M.b.la, lon: M.b.lo, name: '', type: 'waypoint', notes: '' } }); };
+    /* compact by default (Stuart 15 Nov 20:30: "the info box for the ruler does dominate a bit"): one line, More for the rest; the choice is kept */
+    var full = false; try { full = localStorage.getItem('fs-measfull') === '1'; } catch (e) {}
+    var one = d3(r.brg) + 'T · ' + (r.nm < 10 ? r.nm.toFixed(2) : r.nm.toFixed(1)) + ' nm' + (r.hdg != null ? ' · ' + (r.kind === 'beat' ? 'beat' : r.kind === 'fetch' ? 'fetch' : r.kind === 'reach' ? 'reach' : 'run') + ' · ' + hm(r.tack && r.hoursAll != null ? r.hoursAll : r.hours) : '') + (r.shallow ? ' · <b class="fsmwarn">shallow</b>' : '');
+    bx.classList.toggle('full', full);
+    bx.innerHTML = '<button class="close" type="button" aria-label="Close the measurement">×</button>' + (full ? rows.map(function (h) { return '<div>' + h + '</div>'; }).join('') + '<div class="xrow"><button class="btn" type="button" data-m="save">Save the end as a waypoint</button><button class="btn" type="button" data-m="off">Ruler off</button><button class="btn" type="button" data-m="less">Less</button></div>' : '<div class="fsmone"><b>' + one + '</b><button class="btn fsmmore" type="button" data-m="more">More</button></div>');
+    bx.hidden = false; bx.querySelector('.close').onclick = function () { ruler(false); };   /* the × ends measuring too, so taps give the boat and weather card again (F15, Stuart 15 Nov 21:15: "× turns ruler off") */
+    var setFull = function (v) { try { localStorage.setItem('fs-measfull', v ? '1' : '0'); } catch (e) {} calc(); };
+    if (full) { bx.querySelector('[data-m="off"]').onclick = function () { ruler(false); }; bx.querySelector('[data-m="save"]').onclick = function () { openSheet({ edit: { lat: M.b.la, lon: M.b.lo, name: '', type: 'waypoint', notes: '' } }); }; bx.querySelector('[data-m="less"]').onclick = function () { setFull(false); }; }
+    else bx.querySelector('[data-m="more"]').onclick = function () { setFull(true); };
   }
 
   /* ---- the waypoint sheet ---- */
   var sel = [];   /* a course being built: indexes into the list, with sides */
   function css() {
     if ($('wptCss')) return; var s = document.createElement('style'); s.id = 'wptCss';
-    s.textContent = '.fsmeas{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:6;width:min(calc(100% - 24px),520px);background:var(--panel);color:var(--ink);border:2px solid #7c3aed;border-radius:12px;padding:10px 36px 8px 12px;font-size:13px;display:flex;flex-direction:column;gap:3px;box-shadow:0 4px 16px rgba(0,0,0,.35)}.fsmeas[hidden]{display:none}.fsmeas .close{position:absolute;right:6px;top:4px}.fsmwarn{color:#dc2626}.fsmlater{border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;margin-top:4px}.fsmlater th,.fsmlater td{padding:1px 8px 1px 0;text-align:left}.fsmlater th{color:var(--muted);font-weight:600}' +
+    s.textContent = '.fsmeas{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;z-index:6;width:auto;max-width:min(calc(100% - 24px),360px);background:var(--glass,var(--panel));color:var(--ink);border:1px solid #7c3aed;border-radius:10px;padding:6px 30px 6px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px;box-shadow:0 2px 8px rgba(0,0,0,.25)}.fsmeas.full{max-width:min(calc(100% - 24px),480px)}.fsmone{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fsmmore{min-height:30px;padding:0 10px;font-size:12px}.fsmeas[hidden]{display:none}.fsmeas .close{position:absolute;right:6px;top:4px}.fsmwarn{color:#dc2626}.fsmlater{border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;margin-top:4px}.fsmlater th,.fsmlater td{padding:1px 8px 1px 0;text-align:left}.fsmlater th{color:var(--muted);font-weight:600}' +
       '.fsrulerb{right:max(64px,calc(env(safe-area-inset-right,0px) + 52px))!important;bottom:104px!important}.fsrulerb[aria-pressed="true"]{background:#7c3aed!important;color:#fff!important;border-color:#7c3aed!important}body.fsruler #map{cursor:crosshair}' +
       '.wptrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line)}.wptrow b{flex:1 1 160px;min-width:0}.wptrow small{color:var(--muted);flex-basis:100%}.wptform{display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px;margin:8px 0}.wptform input,.wptform select,.wptform textarea{width:100%;box-sizing:border-box;font:inherit}.wptcourse{background:var(--bg);border-radius:10px;padding:8px;margin:8px 0}';
     document.head.appendChild(s);
