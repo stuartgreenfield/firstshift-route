@@ -74,6 +74,22 @@
   }
 
   function addLayer(P, L, buf) { var f = Field(L, buf); if (L.kind === 'depth') P.depth = f; else (P[L.kind] = P[L.kind] || {})[L.id] = f; return f; }
+  /* every depth square a straight line touches, in order, exactly (a grid walk, so a square the line only clips at a corner still
+     counts); each square is the one nearest its grid point, as Field.nearest reads it. fn(y, x) returning false stops the walk. */
+  function eachCell(L, la0, lo0, la1, lo1, fn) {
+    var y0 = (la0 - L.lat0) / L.dlat + 0.5, x0 = (lo0 - L.lon0) / L.dlon + 0.5, y1 = (la1 - L.lat0) / L.dlat + 0.5, x1 = (lo1 - L.lon0) / L.dlon + 0.5;
+    var cy = Math.floor(y0), cx = Math.floor(x0), ey = Math.floor(y1), ex = Math.floor(x1), dy = y1 - y0, dx = x1 - x0;
+    var sy = dy > 0 ? 1 : -1, sx = dx > 0 ? 1 : -1, tdy = dy ? Math.abs(1 / dy) : Infinity, tdx = dx ? Math.abs(1 / dx) : Infinity;
+    var ty = dy ? (dy > 0 ? cy + 1 - y0 : y0 - cy) * tdy : Infinity, tx = dx ? (dx > 0 ? cx + 1 - x0 : x0 - cx) * tdx : Infinity;
+    for (var n = 0; n < 100000; n++) {
+      if (fn(cy, cx) === false) return false;
+      if (cy === ey && cx === ex) return true;
+      if (ty < tx) { if (ty > 1) return true; cy += sy; ty += tdy; } else { if (tx > 1) return true; cx += sx; tx += tdx; }
+    }
+    return true;
+  }
+  /* a straight line clear of water shallower than the safety depth (and of land), checked in every depth square it touches: for the plotter's way back to the plan */
+  function clearLine(depth, safety, la0, lo0, la1, lo1) { if (!depth) return true; var L = depth.L; return eachCell(L, la0, lo0, la1, lo1, function (y, x) { if (y < 0 || x < 0 || y >= L.ny || x >= L.nx) return true; var z = depth.cellAt('z', 0, y, x); return !(z === z && z > -safety); }); }
   function emptyPack() { return { wind: {}, tide: {}, wave: {}, met: {}, ens: {}, depth: null }; }
   function loadPack(meta, bin) {
     var P = { meta: meta, wind: {}, tide: {}, wave: {}, met: {}, depth: null };
@@ -260,6 +276,14 @@
     var wm = null;
     if (depth) { depth._wet = depth._wet || {}; wm = depth._wet[safety]; if (!wm) { wm = new Uint8Array(depth.ny * depth.nx); for (var wy = 0; wy < depth.ny; wy++) for (var wx = 0; wx < depth.nx; wx++) { var zc = depth.cellAt('z', 0, wy, wx); if (zc === zc && zc <= -safety) wm[wy * depth.nx + wx] = 1; } depth._wet[safety] = wm; } }
     function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var I = depth.idx(la, lo); if (!I) return false; return wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1; }
+    /* the whole step must be in water deep enough, checked at every depth square it passes through (Stuart 15 Nov 2026: a route crossed
+       the Shingles in 2.5 m with the safety depth at 3 m; the step was checked at only four points, about 0.25 nm apart, and a narrow
+       shoal one or two squares wide fell between them; now every square the step touches) */
+    function wetLine(la0, lo0, la1, lo1) {
+      if (nogo.length) for (var k = 1; k <= 8; k++) if (blocked(la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return false;
+      if (!depth) return true; var L = depth.L;
+      return eachCell(L, la0, lo0, la1, lo1, function (y, x) { return y >= 0 && x >= 0 && y < L.ny && x < L.nx && wm[y * L.nx + x] === 1; });
+    }
     var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [], iso = o.iso ? [] : null, isoT = t;   /* iso: the front each hour, for the isochrones on the chart */
     for (var li = 0; li < o.legs.length; li++) {
       var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var far = leg.gate && dist(leg.gate.a[0], leg.gate.a[1], leg.gate.b[0], leg.gate.b[1]) > 2;   /* offshore rounding mark: aim at the mark itself */
@@ -324,7 +348,7 @@
               }
               if (score <= bestS[sec]) { ncand++; continue; }
             }
-            if (!wet(nla, nlo) || !wet(p.la + dn / 120, p.lo + de / (120 * kp)) || !wet(p.la + dn / 240, p.lo + de / (240 * kp)) || !wet(p.la + 3 * dn / 240, p.lo + 3 * de / (240 * kp))) continue;
+            if (!wetLine(p.la, p.lo, nla, nlo)) continue;
             var c = { la: nla, lo: nlo, par: pi, hdg: HH[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
             if (arrived) { c.fr = fr; c.la = p.la + (nla - p.la) * fr; c.lo = p.lo + (nlo - p.lo) * fr; hit.push(c); } else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
           }
@@ -407,5 +431,5 @@
   }
 
   return { waterWind: waterWind, heightWind: heightWind, Field: Field, loadPack: loadPack, addLayer: addLayer, emptyPack: emptyPack, windSampler: windSampler, tideSampler: tideSampler, adjust: adjust, waveSampler: waveSampler, polarTable: polarTable, bestVmg: bestVmg,
-    seaFactor: seaFactor, SEA: SEA, route: route, sailTrack: sailTrack, markGate: markGate, dist: dist, brg: brg, sailFor: sailFor, parseCrossover: parseCrossover };
+    seaFactor: seaFactor, SEA: SEA, route: route, sailTrack: sailTrack, markGate: markGate, clearLine: clearLine, dist: dist, brg: brg, sailFor: sailFor, parseCrossover: parseCrossover };
 });

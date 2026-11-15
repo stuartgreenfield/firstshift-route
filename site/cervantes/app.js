@@ -1947,7 +1947,7 @@
       for (var j = best.i + 1; j < p.length; j++) { if (ts[j] > Math.max(nowH, best.t) + 1.5 || (p[j].leg || 0) !== (p[best.i + 1].leg || 0)) break;   /* rejoin on this leg, within the next 90 minutes of the plan: no cutting marks or corners on today's wind */ var r = rhumb({ lat: f.la, lon: f.lo }, { lat: p[j].la, lon: p[j].lo }); if (r.nm < 0.05) continue;
         var st = liveSteer(r.brg, W[0], W[1], tid[0] || 0, tid[1] || 0, spd); if (!st) continue;
         var ta = nowH + r.nm / st.sog / (st.tack ? 1 : 1), lost = ta - ts[j];
-        var wet = true; if (P.depth) for (var k = 1; k < 8; k++) { var la = f.la + (p[j].la - f.la) * k / 8, lo = f.lo + (p[j].lo - f.lo) * k / 8, z = P.depth.nearest('z', la, lo); if (z === z && z > -safe) { wet = false; break; } }
+        var wet = FSRouter.clearLine(P.depth, safe, f.la, f.lo, p[j].la, p[j].lo);   /* every depth square on the way back, not 8 points over up to 11 nm (15 Nov 2026) */
         if (!wet) continue; (o.cands = o.cands || []).push({ j: j, la: p[j].la, lo: p[j].lo, brg: r.brg, nm: r.nm, steer: st.hdg, sog: st.sog, tack: !!st.tack, ta: ta, lost: lost }); }
       /* back on the plan soonest: of the ways back that lose no more than 2 minutes more than the best, the one that gets there first */
       /* regain the routing position soonest (Stuart 12 Nov): catch the plan, the earliest point reached no later than the plan; failing that, back on the planned track soonest */
