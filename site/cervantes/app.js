@@ -2590,8 +2590,10 @@
     var c = document.createElement('canvas'); c.width = nx; c.height = ny;
     var g = c.getContext('2d'), im = g.createImageData(nx, ny), d = im.data;
     var land = hex(css['--land']), sea = hex(css['--sea']), sea2 = hex(css['--sea2']), sh = hex(css['--shoal']), she = hex(css['--shoaledge']), le = hex(css['--landedge']);
-    var Z = new Float32Array(nx * ny);
-    for (var yy = 0; yy < ny; yy++) for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); }
+    /* F11 (15 Nov 2026, Stuart: "Yes, in this release"): the depths of every square are worked out once per depth grid and kept; a change of
+       screen mode or safety depth only recolours them. Before, every mode change rebuilt them (2 to 4.6 s at phone speed). */
+    var Z = buildDepth.z && buildDepth.zOf === F && buildDepth.zCoast === coastBits ? buildDepth.z : null;   /* and again when the coastline arrives */
+    if (!Z) { Z = new Float32Array(nx * ny); for (var yy = 0; yy < ny; yy++) for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); } buildDepth.z = Z; buildDepth.zOf = F; buildDepth.zCoast = coastBits; }
     function z(y, x) { var v = Z[y * nx + x]; return v === 999 ? -99 : v; }
     /* squares view: mark the margin squares, each within the margin of a square that is land, shallower than the safety depth or without data, as the router does */
     var MG = null, mgn = +($('margin') ? $('margin').value : 1) || 0;
@@ -2623,7 +2625,9 @@
       }
       return new Float32Array(out2);
     }
-    depthLines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null };
+    /* F11: the coast and safety-depth lines depend only on the depths and the safety depth, not the colours: kept between mode changes */
+    var ck = safety + '|' + (Z === buildDepth.lz ? 1 : 0); if (!(buildDepth.lines && buildDepth.lk === ck)) { buildDepth.lines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null }; buildDepth.lk = safety + '|1'; buildDepth.lz = Z; }
+    depthLines = buildDepth.lines;
   }
   var depthLines = null;
   /* Real chart layers (Stuart 12 Nov): free tiles now, licensed GeoGarage or C-MAP tiles slot into CHARTS later.
