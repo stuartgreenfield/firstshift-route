@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-15T20:46:31.085Z",
+ "log": [
+  {
+   "race": "biscay-area",
+   "h": 0,
+   "s": 30,
+   "note": "Routed in 22.2 s. First answer in 5.3 s."
+  },
+  {
+   "race": "biscay-area",
+   "h": 1,
+   "s": 58,
+   "note": "Routed in 23.1 s. First answer in 3.8 s."
+  },
+  {
+   "race": "biscay-area",
+   "h": 2,
+   "s": 85,
+   "note": "Routed in 23.3 s. First answer in 4.0 s."
+  },
+  {
+   "race": "biscay-area",
+   "h": 3,
+   "s": 112,
+   "note": "Routed in 21.7 s. First answer in 3.9 s."
+  },
+  {
+   "race": "biscay-area",
+   "h": 4,
+   "s": 138,
+   "note": "Routed in 22.2 s. First answer in 3.8 s."
+  },
+  {
+   "race": "biscay-area",
+   "h": 5,
+   "s": 165,
+   "note": "Routed in 21.9 s. First answer in 4.0 s."
+  }
+ ]
+}

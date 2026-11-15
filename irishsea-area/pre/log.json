@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-15T20:43:46.421Z",
+ "log": [
+  {
+   "race": "irishsea-area",
+   "h": 0,
+   "s": 7,
+   "note": "Routed in 3.2 s. First answer in 1.8 s."
+  },
+  {
+   "race": "irishsea-area",
+   "h": 1,
+   "s": 11,
+   "note": "Routed in 2.9 s. First answer in 0.6 s."
+  },
+  {
+   "race": "irishsea-area",
+   "h": 2,
+   "s": 14,
+   "note": "Routed in 2.8 s. First answer in 0.5 s."
+  },
+  {
+   "race": "irishsea-area",
+   "h": 3,
+   "s": 17,
+   "note": "Routed in 2.7 s. First answer in 0.5 s."
+  },
+  {
+   "race": "irishsea-area",
+   "h": 4,
+   "s": 21,
+   "note": "Routed in 2.5 s. First answer in 0.5 s."
+  },
+  {
+   "race": "irishsea-area",
+   "h": 5,
+   "s": 24,
+   "note": "Routed in 2.4 s. First answer in 0.5 s."
+  }
+ ]
+}
