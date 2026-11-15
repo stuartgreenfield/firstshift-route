@@ -133,7 +133,12 @@
   /* the how-to film (Stuart 14 Nov 19:11): a thumbnail on the landing page opens a larger player with Go to the tool and End;
      also a Watch button in Help. Navigate sets window.FSFilmCfg in navtour.js. */
   function filmCfg() { return window.FSFilmCfg || { tool: 'Route', srcs: ['https://video.wixstatic.com/video/d74d0c_b0d924a6b582446198770eb18f032e10/720p/mp4/file.mp4', '../films/route-how-to.mp4'], poster: '../films/route-how-to.jpg', len: '1 min 39 s' }; }   /* Wix streams on iPhones (it answers range requests); the copy on this site is the fallback */
+  /* in the Navigate app the film opens in the phone's own video player, from a plain link: the app's built-in player did nothing
+     when tapped (Stuart 15 Nov 22:27: "the 2min film does not connect and run"; 22:30: tapping it, "Nothing happens") */
+  function inApp() { return !!window.NativeLink; }
+  function filmUrl(c) { var s = c.srcs || [c.src]; return s.filter(function (u) { return /^https:\/\/route\.firstshiftsailing\.com\//.test(u); })[0] || s[s.length - 1]; }
   function filmOpen() {
+    if (inApp()) { location.href = filmUrl(filmCfg()); return; }
     var c = filmCfg(), f = $('fsFilm');
     if (!f) { f = document.createElement('div'); f.id = 'fsFilm'; f.className = 'fsfilm'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-label', 'How to use ' + c.tool); document.body.appendChild(f); }
     f.innerHTML = '<div class="fsfilm-in"><h3>How to use ' + c.tool + '</h3><video id="fsFilmV" controls playsinline preload="metadata" poster="' + c.poster + '">' + (c.srcs || [c.src]).map(function (u) { return '<source src="' + u + '" type="video/mp4">'; }).join('') + '</video><p>' + c.len + ', with sound. Needs an internet connection.</p><div class="fsfilm-b"><button class="btn" type="button" data-film="end">End</button><button class="btn primary" type="button" data-film="go">Go to ' + c.tool + '</button></div></div>';
@@ -143,7 +148,8 @@
   function filmEnd() { var f = $('fsFilm'), v = $('fsFilmV'); if (v) try { v.pause(); } catch (e) {} if (f) f.hidden = true; }
   function filmGo() { filmEnd(); var sp = $('splash'); if (sp && !sp.hidden && !sp.classList.contains('terms')) { var n = $('spTourNo'); if (n) n.click(); } var h = $('help'); if (h && !h.hidden) h.hidden = true; }
   window.FSFilm = { open: filmOpen, end: filmEnd };
-  function filmWire() { var b = $('spFilm'); if (!b) return; var c = filmCfg(); b.addEventListener('click', function (e) { e.stopPropagation(); filmOpen(); }); var im = b.querySelector('img'); if (im) im.src = c.poster; var t = b.querySelector('b'); if (t) t.textContent = 'Watch: how to use ' + c.tool; b.setAttribute('aria-label', 'Watch the two-minute film: how to use ' + c.tool); }
+  function filmWire() { var b = $('spFilm'); if (!b) return; var c = filmCfg();
+    if (inApp() && b.tagName !== 'A') { var a = document.createElement('a'); a.id = 'spFilm'; a.className = b.className; a.href = filmUrl(c); a.innerHTML = b.innerHTML; a.style.textDecoration = 'none'; a.style.color = 'inherit'; b.parentNode.replaceChild(a, b); b = a; b.addEventListener('click', function (e) { e.stopPropagation(); }); var im0 = b.querySelector('img'); if (im0) im0.src = c.poster; var t0 = b.querySelector('b'); if (t0) t0.textContent = 'Watch: how to use ' + c.tool; b.setAttribute('aria-label', 'Watch the two-minute film: how to use ' + c.tool + ' (opens in the video player)'); return; } b.addEventListener('click', function (e) { e.stopPropagation(); filmOpen(); }); var im = b.querySelector('img'); if (im) im.src = c.poster; var t = b.querySelector('b'); if (t) t.textContent = 'Watch: how to use ' + c.tool; b.setAttribute('aria-label', 'Watch the two-minute film: how to use ' + c.tool); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(filmWire, 0); }); else setTimeout(filmWire, 0);
   /* Help: "Try it safely first" highlighted at the very top, with the tour button */
   function tryBox() {
