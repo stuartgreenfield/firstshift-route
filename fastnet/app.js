@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.18';
+  var VERSION = 'FirstShift Route v0.12.19';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -227,7 +227,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.18 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.19 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -491,10 +491,13 @@
   }
   /* isochrones: the router's front each hour for the chosen route, worked out when the layer is switched on */
   function isoFetch() {
-    var s = S.sel; if (!s || s.iso || S.isoBusy || !meta) { draw(); return; }
+    /* F5 (15 Nov 2026): this used to call draw() while the isochrones were being worked out, and draw() calls this again: the chart was
+       redrawn thousands of times in one go (65 s frozen on a computer, longer on a tablet; iOS closed the page). Now it only asks once,
+       and the chart is drawn when they arrive. A failed attempt is not repeated on every redraw: Route again clears it. */
+    var s = S.sel; if (!s || s.iso || S.isoBusy || !meta) return;
     S.isoBusy = true; busy('Working out the isochrones…');
     var L = S.lastReq || { base: opts(s.models), start: startPt(), legs: legsFor(S.from) };
-    pool({ type: 'route', o: Object.assign({}, L.base, { models: s.models, start: L.start, legs: L.legs, iso: true }) }).then(function (r) { S.isoBusy = false; busy(''); s.iso = r.iso || []; draw(); }, function (e) { S.isoBusy = false; busy('Isochrones: ' + e.message); });
+    pool({ type: 'route', o: Object.assign({}, L.base, { models: s.models, start: L.start, legs: L.legs, iso: true }) }).then(function (r) { S.isoBusy = false; busy(''); s.iso = r.iso || []; draw(); }, function (e) { S.isoBusy = false; s.iso = []; busy('Isochrones: ' + e.message); setTimeout(function () { busy(''); }, 8000); draw(); });
   }
   function drawIso() {
     var s = S.sel; if (!S.show.iso || !s) return; if (!s.iso) { isoFetch(); return; }
