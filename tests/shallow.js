@@ -3,11 +3,12 @@
 const { chromium } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8770';
 (async () => {
   const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' }); const p = await c.newPage();
-  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
+  if (process.env.MARGIN != null) await c.addInitScript('window.__mg = ' + JSON.stringify(process.env.MARGIN));
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); if (window.__mg != null) localStorage.setItem('fs-margin', window.__mg); });
   const AREA = process.argv[5] || 'channel-area'; await p.goto(BASE + '/' + AREA + '/' + (process.argv[4] && process.argv[4] !== '-' ? '?race=' + process.argv[4] : '')); 
-  await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.path && !f.running; }, null, { timeout: 600000 });
+  await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.path && !f.running; }, null, { timeout: 1500000 });
   await p.waitForTimeout(3000);
-  if (process.argv[3] === 'local') { await p.evaluate(() => document.getElementById('errRetry').click()); await p.waitForTimeout(2000); await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.path && !f.running; }, null, { timeout: 500000 }); await p.waitForTimeout(2000); }
+  if (process.argv[3] === 'local') { await p.evaluate(() => document.getElementById('errRetry').click()); await p.waitForTimeout(2000); await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.path && !f.running; }, null, { timeout: 1500000 }); await p.waitForTimeout(2000); }
   const r = await p.evaluate(() => {
     const F = window.__navFc(), P = F.P, D = P.depth, safe = +document.getElementById('depth').value, out = { safe, dlat: D.L ? D.L.dlat : null, routes: [] };
     const path = F.sel.path, hits = [];
