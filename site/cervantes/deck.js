@@ -57,6 +57,7 @@
   };
   var ORDER = ['spd', 'cog', 'bsp', 'hdg', 'perf', 'tgt', 'tws', 'twa', 'twd', 'awa', 'aws', 'dtw', 'btw', 'vmc', 'eta', 'xte', 'lay', 'gate', 'gun', 'dpt', 'burn', 'place'];
   var VIEWS = [['chart', 'Chart'], ['decision', 'Routes'], ['plan', 'Plan'], ['fleet', 'Fleet'], ['data', 'Data']];
+  function views() { return window.NavTact ? [['tact', 'Tactician']].concat(VIEWS) : VIEWS; }   /* Navigate: the Solent tactician view (Stuart 15 Nov 11:39) */
 
   /* ---- history: the trend arrow and the one-minute average ---- */
   var H = {};
@@ -114,13 +115,14 @@
     node.addEventListener('touchstart', function (e) { if (!on || e.touches.length !== 1) { x0 = null; return; } x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, { passive: true });
     node.addEventListener('touchend', function (e) { if (x0 == null || !on) return; var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null; if (Date.now() - t0 < 700 && Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) step(dx < 0 ? 1 : -1); }, { passive: true });
   }
-  function step(d) { var i = VIEWS.map(function (v) { return v[0]; }).indexOf(C.view); C.view = VIEWS[(i + d + VIEWS.length) % VIEWS.length][0]; save(); applyView(); }
+  function step(d) { var V = views(), i = V.map(function (v) { return v[0]; }).indexOf(C.view); C.view = V[(i + d + V.length) % V.length][0]; save(); applyView(); }
   function applyView() {
-    var v = C.view, name = (VIEWS.filter(function (x) { return x[0] === v; })[0] || VIEWS[0])[1];
-    document.body.classList.toggle('fsdeckv', on && v !== 'chart');
+    var V = views(), v = C.view, name = (V.filter(function (x) { return x[0] === v; })[0] || V[0])[1];
+    if (window.NavTact) window.NavTact.view(on && v === 'tact');
+    document.body.classList.toggle('fsdeckv', on && v !== 'chart' && v !== 'tact');
     if ($('dkView')) $('dkView').textContent = 'VIEW: ' + name + ' ›';
-    if ($('dkDots')) $('dkDots').innerHTML = VIEWS.map(function (x) { return '<i class="' + (x[0] === v ? 'on' : '') + '"></i>'; }).join('');
-    if (on && v !== 'chart') { var pn = $('panel'); if (pn) { pn.hidden = false; pn.classList.remove('collapsed'); var tb = pn.querySelector('.tab[data-tab="' + v + '"]'); if (tb && tb.getAttribute('aria-selected') !== 'true') tb.click(); } }
+    if ($('dkDots')) $('dkDots').innerHTML = V.map(function (x) { return '<i class="' + (x[0] === v ? 'on' : '') + '"></i>'; }).join('');
+    if (on && v !== 'chart' && v !== 'tact') { var pn = $('panel'); if (pn) { pn.hidden = false; pn.classList.remove('collapsed'); var tb = pn.querySelector('.tab[data-tab="' + v + '"]'); if (tb && tb.getAttribute('aria-selected') !== 'true') tb.click(); } }
     setTimeout(function () { window.dispatchEvent(new Event('resize')); mob(); }, 30);
   }
   function pick(i) {
@@ -164,6 +166,8 @@
   function set(v) {
     on = !!v; C.on = on; save(); build(); document.body.classList.toggle('fsdeck', on); document.body.classList.remove('fsdeckmenu'); if ($('dkMenu')) $('dkMenu').setAttribute('aria-pressed', 'false');
     var bt = $('fsDeckBtn'); if (bt) bt.setAttribute('aria-pressed', String(on));
+    if (on && window.NavTact && window.FSSolent && FSSolent.isOn() && !C.tactSeen) { C.view = 'tact'; C.tactSeen = true; save(); }   /* a Solent race opens on the tactician view once; the crew can swipe away */
+    if (!on && window.NavTact) window.NavTact.view(false);
     if (on) { try { if (navigator.wakeLock && !wake) navigator.wakeLock.request('screen').then(function (w) { wake = w; }).catch(function () {}); } catch (e) {} }
     else if (wake) { try { wake.release(); } catch (e) {} wake = null; }
     applyView(); tick(); setTimeout(mob, 80); if (!on) mob();
