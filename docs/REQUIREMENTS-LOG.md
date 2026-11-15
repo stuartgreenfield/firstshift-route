@@ -277,3 +277,6 @@ Status: Built · Partly built · To build · Researching · Later.
 - 07:46 15 Nov 2026: LIVE Route v0.12.15 and Navigate v0.7.37 (Stuart's go 07:42). Rollback restore-2026-11-15-0745 / site-restore-2026-11-15-0745. GitHub security audit clean; backup 2026-11-15.
 - 08:04 15 Nov 2026: Stuart chose C: Navigate for iPhone built both on a private GitHub repository (navigate-ios, created) and on his Mac with Xcode (kit in FirstShift Navigate/iPhone build).
 - 08:13-08:24 15 Nov 2026: depth view buttons and three linked no-go depth sliders (Route v0.12.16, not live); Winning Tides researched; Solent marks and Solent race builder added to the list.
+- 08:26 15 Nov 2026: Solent race builder: course from mark downloads or built on screen once the Solent marks are on.
+- 08:33 15 Nov 2026: waypoint store and measuring tool for both tools; research saved (Navigate docs/WAYPOINTS-MEASURE-RESEARCH-2026-11-15.md).
+- 09:13 15 Nov 2026: dead reckoning when GPS is lost (important), Route and Navigate; spec in Navigate REPLIES 09:13.
