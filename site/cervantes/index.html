@@ -292,6 +292,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 .lead{display:flex;gap:8px;min-width:0;pointer-events:none}.lead>*{pointer-events:auto}
 .logobox{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:10px;background:var(--glass);border:1px solid var(--line)}
 .logobox .logo{height:34px;width:auto}
+.logobox::after{content:"\2122";position:absolute;top:2px;right:3px;font:600 8px/1 Inter,system-ui,sans-serif;color:var(--ink);opacity:.75;pointer-events:none}.sp-txt h1 .tm{font-size:.22em;font-weight:600;vertical-align:super;margin-left:.08em;opacity:.8}   /* tiny TM mark, top right of the brand (Stuart 15 Nov 09:56) */
 .logobox{position:relative;text-decoration:none;width:auto;padding:0 10px;--mk-navy:#042D5E;--mk-blue:#3574BA;--mk-ink:#042D5E;--mk-dot:#3574BA}.logobox .mk{display:block;height:auto}.logobox .mk-s{display:none;width:48px}.logobox .mk-r{height:40px;width:auto}@media (max-width:1279px){.logobox{width:58px;padding:0}.logobox .mk-r{display:none}.logobox .mk-s{display:block;width:50px}}.tname{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}:root[data-theme="dark"] .logobox{--mk-navy:#FFFFFF;--mk-blue:#6FA9E0;--mk-ink:#FFFFFF;--mk-dot:#6FA9E0}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logobox{--mk-navy:#FFFFFF;--mk-blue:#6FA9E0;--mk-ink:#FFFFFF;--mk-dot:#6FA9E0}}:root[data-night] .logobox{--mk-navy:#C0281F;--mk-blue:#8A1E18;--mk-ink:#C0281F;--mk-dot:#8A1E18}   /* the tool's name under the sails (Stuart 14 Nov: so there is no confusion between the tools) */
 .brand{align-content:center}
 .lg-d{display:none}
@@ -476,7 +477,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
-  <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span></h1>
+  <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span><sup class="tm" aria-label="trade mark">™</sup></h1>
   <p>Free race routing for offshore sailors. Eight forecast models, tidal streams, sea state and your own sail crossovers, worked through on your phone, tablet or computer. The route, the plan and the crew brief, ready before you slip the lines.</p>
   <span class="sp-mail" id="spMail">firstshiftsailing.com<br>stuart@greenfield.co.uk</span><span class="sp-go">Tap to start · planning aid, not for navigation</span>
   <button class="sp-film" id="spFilm" type="button" aria-label="Watch the two-minute film: how to use Route"><img src="../films/route-how-to.jpg" alt="" width="160" height="90"><span><b>Watch: how to use Route</b><i>2 minutes, with sound</i></span></button>
