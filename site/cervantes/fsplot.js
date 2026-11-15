@@ -39,7 +39,7 @@
     if (!c) { o.why = 'No course loaded.'; return o; }
     if (!f) { o.why = 'Waiting for this phone’s GPS (Live GPS).'; o.c = c; return o; }
     var p = { la: f.la, lo: f.lo }, pts = points(c), i = markIdx(c, p), m = pts[i], F = fxy(p), M = F.to(m.lat, m.lon), A0 = prevOf(c, i), A = F.to(A0.lat, A0.lon);
-    o.ok = true; o.c = c; o.f = p; o.i = i; o.n = pts.length; o.m = m; o.sog = f.sog; o.cog = f.cog;
+    o.ok = true; o.c = c; o.f = p; o.i = i; o.n = pts.length; o.m = m; o.sog = f.sog; o.cog = f.cog; o.dr = !!f.dr;   /* dr: reckoned while the GPS is lost (Stuart 15 Nov) */
     o.btw = bear(M.x, M.y); o.dtw = Math.hypot(M.x, M.y);
     o.vmc = f.sog != null && f.cog != null ? f.sog * Math.cos((f.cog - o.btw) * R) : null;
     if (o.vmc != null && o.vmc > 0.3) o.eta = Date.now() + o.dtw / o.vmc * 3600e3;
@@ -79,7 +79,7 @@
         cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn towards it' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
         cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? 'on the leg' : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the leg') : '') +
         cell('SOG · COG', o.sog != null ? n1(o.sog) + ' · ' + (o.cog != null ? ('00' + Math.round(o.cog) % 360).slice(-3) + '°' : '--') : '--', 'this phone’s GPS') + '</div>';
-      h += '<p class="rpfoot">' + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + 'Next mark when within ' + C.radius + ' nm · bearings true · not for navigation</p>';
+      h += '<p class="rpfoot">' + (o.ok && o.dr ? '<b class="npdr">DEAD RECKONING: no GPS</b> · ' : '') + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + 'Next mark when within ' + C.radius + ' nm · bearings true · not for navigation</p>';
     }
     bar.innerHTML = h;
   }
