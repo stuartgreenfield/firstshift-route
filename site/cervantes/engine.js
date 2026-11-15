@@ -471,7 +471,8 @@
   /* Feed one sentence; returns a full sample when a boat speed or wind update completes one. tOverride in seconds. */
   NmeaReader.prototype.line = function (line, tOverride) {
     line = String(line).trim();
-    if (line[0] !== '$' || !checksumOk(line)) return null;
+    if (line[0] !== '$') return this.n2k(line, tOverride);
+    if (!checksumOk(line)) return null;
     var f = line.replace(/\*.*$/, '').split(','), id = f[0].slice(3), st = this.st, num = function (v) { var n = parseFloat(v); return isFinite(n) ? n : null; };
     if (id === 'VHW') { var kn = num(f[5]); if (kn != null) st.bsp = kn; }
     else if (id === 'MWV' && f[5] === 'A') {
@@ -488,6 +489,34 @@
     if (!isNum(st.bsp)) return null;
     var hasT = isNum(st.twa) && isNum(st.tws), hasA = isNum(st.awa) && isNum(st.aws);
     if (!hasT && !hasA) return null;
+    var t = tOverride != null ? tOverride : Date.now() / 1000;
+    if (this.lastT === t) return null;
+    this.lastT = t;
+    return { t: t, bsp: st.bsp, twa: st.twa, tws: st.tws, awa: st.awa, aws: st.aws, hdg: st.hdg, rpm: st.rpm, sog: st.sog };
+  };
+
+  /* NMEA 2000 from a Yacht Devices gateway server set to the RAW protocol (Stuart 15 Nov 2026, F: Polar Live reads NMEA 2000 as well):
+     one message a line, for example "17:33:21.107 R 19F51323 01 2F 30 70 00 2F 30 70" (time, R from the bus, the 29-bit identifier,
+     the data bytes; YDWG-02 manual). Single-frame messages only, decoded as Navigate does (navigate.js, open canboat definitions):
+     128259 speed through water, 130306 wind (apparent, or true to the boat), 127250 heading, 129026 speed over ground.
+     A wind message completes a sample, as MWV does in NMEA 0183. */
+  var N2K_RE = /^(\d\d:\d\d:\d\d\.\d+\s+)?[RT]?\s*[0-9A-F]{8}(\s+[0-9A-F]{2}){1,8}\s*$/i, KN_MS = 1.94384, DEG = 180 / Math.PI;
+  NmeaReader.prototype.n2k = function (line, tOverride) {
+    if (!N2K_RE.test(line)) return null;
+    var p = line.split(/\s+/), i = 0; if (/:/.test(p[0])) i++; if (/^[RT]$/i.test(p[i])) { if (p[i].toUpperCase() === 'T') return null; i++; }
+    var id = parseInt(p[i], 16), d = p.slice(i + 1).map(function (x) { return parseInt(x, 16); }); if (!(id >= 0) || !d.length) return null;
+    var pf = (id >> 16) & 0xFF, ps = (id >> 8) & 0xFF, dp = (id >> 24) & 3, pgn = pf < 240 ? (dp << 16) | (pf << 8) : (dp << 16) | (pf << 8) | ps, st = this.st;
+    function u16(o) { var v = d[o] | (d[o + 1] << 8); return v >= 0xFFFD ? null : v; }
+    function s16(o) { var v = d[o] | (d[o + 1] << 8); if (v >= 0x7FFD && v <= 0x7FFF) return null; return v > 0x7FFF ? v - 0x10000 : v; }
+    var v, w;
+    if (pgn === 128259 && d.length >= 3) { v = u16(1); if (v != null && v * 0.01 * KN_MS < 40) st.bsp = v * 0.01 * KN_MS; return null; }
+    if (pgn === 127250 && d.length >= 3) { v = u16(1); if (v != null) st.hdg = ((v * 1e-4 * DEG) % 360 + 360) % 360; return null; }
+    if (pgn === 129026 && d.length >= 6) { w = u16(4); if (w != null) st.sog = w * 0.01 * KN_MS; return null; }
+    if (pgn !== 130306 || d.length < 6) return null;
+    v = u16(1); w = u16(3); var ref = d[5] & 7; if (v == null || w == null) return null;
+    var spd = v * 0.01 * KN_MS, ang = norm180(w * 1e-4 * DEG);
+    if (ref === 2) { st.awa = ang; st.aws = spd; } else if (ref === 3 || ref === 4) { st.twa = ang; st.tws = spd; } else return null;
+    if (!isNum(st.bsp)) return null;
     var t = tOverride != null ? tOverride : Date.now() / 1000;
     if (this.lastT === t) return null;
     this.lastT = t;

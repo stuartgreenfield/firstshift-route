@@ -252,7 +252,7 @@
 
   /* ---------- isochrone router ---------- */
   function route(o) {
-    /* o: { start:{lat,lon,t}, legs:[{name, gate:{a,b}} | {name, point:[la,lo], r}], wind, tide, wave, speed, depth, safety (m),
+    /* o: { start:{lat,lon,t}, legs:[{name, gate:{a,b}} | {name, point:[la,lo], r}], wind, tide, wave, speed, depth, safety (m), margin (depth squares, 0 to 3),
             dt (s), hstep (deg), sectors, maxHours, tackS, gybeS, sea } */
     var dt0 = o.dt || 600, dt = dt0, hstep = o.hstep || 5, sectors = o.sectors || 360, maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt);
     var nh = Math.round(360 / hstep), H = [], sinH = [], cosH = [];
@@ -279,10 +279,21 @@
     /* the whole step must be in water deep enough, checked at every depth square it passes through (Stuart 15 Nov 2026: a route crossed
        the Shingles in 2.5 m with the safety depth at 3 m; the step was checked at only four points, about 0.25 nm apart, and a narrow
        shoal one or two squares wide fell between them; now every square the step touches) */
+    /* safety margin (Stuart 15 Nov 2026, B): keep this many depth squares clear of water shallower than the safety depth, because
+       EMODnet depths are averages over about 115 m and a rock or bank edge can sit in a square that reads deep. A square counts only
+       if it and every square within the margin are deep enough. Within MREL nm of the start, each mark and the finish the margin is
+       relaxed to the safety depth alone, so a start line, a buoy or a finish close to shallow water can still be reached. */
+    var margin = Math.max(0, Math.min(3, Math.round(o.margin || 0))), wmM = wm, MREL = 0.4, anchors = [];
+    if (depth && margin) {
+      var mk = safety + ':m' + margin; wmM = depth._wet[mk];
+      if (!wmM) { var nx0 = depth.nx, ny0 = depth.ny, cur = wm; for (var mi = 0; mi < margin; mi++) { var nxt = new Uint8Array(ny0 * nx0); for (var ey = 0; ey < ny0; ey++) for (var ex = 0; ex < nx0; ex++) { var okc = cur[ey * nx0 + ex] === 1; for (var ddy = -1; okc && ddy <= 1; ddy++) for (var ddx = -1; okc && ddx <= 1; ddx++) { var yy = ey + ddy, xx = ex + ddx; if (yy < 0 || xx < 0 || yy >= ny0 || xx >= nx0 || cur[yy * nx0 + xx] !== 1) okc = false; } if (okc) nxt[ey * nx0 + ex] = 1; } cur = nxt; } wmM = depth._wet[mk] = cur; }
+      anchors.push([o.start.lat, o.start.lon]); o.legs.forEach(function (lg) { if (lg.point) anchors.push(lg.point); if (lg.gate) { anchors.push(lg.gate.a); if (!(dist(lg.gate.a[0], lg.gate.a[1], lg.gate.b[0], lg.gate.b[1]) > 2)) anchors.push(lg.gate.b); } if (lg.at) anchors.push(lg.at); });
+    }
+    function nearAnchor(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon; for (var i = 0; i < anchors.length; i++) if (dist(la, lo, anchors[i][0], anchors[i][1]) <= MREL) return true; return false; }
     function wetLine(la0, lo0, la1, lo1) {
       if (nogo.length) for (var k = 1; k <= 8; k++) if (blocked(la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return false;
       if (!depth) return true; var L = depth.L;
-      return eachCell(L, la0, lo0, la1, lo1, function (y, x) { return y >= 0 && x >= 0 && y < L.ny && x < L.nx && wm[y * L.nx + x] === 1; });
+      return eachCell(L, la0, lo0, la1, lo1, function (y, x) { if (y < 0 || x < 0 || y >= L.ny || x >= L.nx) return false; var i = y * L.nx + x; return wmM[i] === 1 || (wm[i] === 1 && margin > 0 && nearAnchor(y, x)); });
     }
     var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [], iso = o.iso ? [] : null, isoT = t;   /* iso: the front each hour, for the isochrones on the chart */
     for (var li = 0; li < o.legs.length; li++) {

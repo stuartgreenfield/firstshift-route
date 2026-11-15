@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.14';
+  var VERSION = 'FirstShift Route v0.12.15';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -91,6 +91,9 @@
   /* ---------- start ---------- */
   fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
     meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); mfInit(); wizInit(); crewInit(); shareInit(); askInit(); bcInit();
+    /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
+    (function () { var dv = $('depthView'), zm = $('zoomMax'); if (dv) { var v = store('fs-depthView'); if (v && dv.querySelector('option[value="' + v + '"]')) dv.value = v; dv.onchange = function () { store('fs-depthView', dv.value); buildDepth(); draw(); }; }
+      if (zm) { var z = store('fs-zoomMax'); if (z != null) zm.value = z; var f = function () { var k = +zm.value || 1; $('zoomMaxV').textContent = (k === 1 ? 'Standard, ' : k + ' times, ') + 'about ' + (Math.max(320, Math.min(W || 400, 1400)) * 60 / (20000 * k)).toFixed(k > 3 ? 2 : 1) + ' nm across'; }; zm.oninput = function () { store('fs-zoomMax', zm.value); f(); if (view.s > ZMAX()) { view.s = ZMAX(); draw(); } }; f(); } })();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
     fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
@@ -223,7 +226,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.14 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.15 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -243,6 +246,7 @@
     meta.fleet.filter(function (f) { return f.irc; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (f) { $('boatPick').insertAdjacentHTML('beforeend', '<option value="' + f.name + '">' + f.name + ' · TCC ' + f.tcc.toFixed(3) + '</option>'); });
     $('boatPick').onchange = function () { var f = meta.fleet.find(function (x) { return x.name === $('boatPick').value; }); if (f) { $('tcc').value = f.tcc.toFixed(3); if (!$('boatName').value) $('boatName').value = f.name; if (!meta.live) $('startSel').value = String(f.start); boatChanged(); } };
     initBoat();
+    (function () { var el = $('margin'); if (!el) return; var v = store('fs-margin'); if (v != null && el.querySelector('option[value="' + v + '"]')) el.value = v; el.onchange = function () { store('fs-margin', el.value); buildDepth(); draw(); }; })();
     $('depth').oninput = function () { $('depthV').textContent = (+$('depth').value).toFixed(1) + ' m'; buildDepth(); draw(); };
     $('run').onclick = function () { S.from = null; run(); };
     /* From here: with no position on this device (a Mac without location, or location turned off), it says so and you tap the chart where the boat is */
@@ -502,7 +506,7 @@
   function opts(models) {
     var spec = boatSpec(), b = FSBoat.resolve(spec), pol = b.pol;
     return { blend: store('nav-blend') === '1', models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
-      sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, nogo: nogoRings(), maxHours: HMAX() + 2, tackS: +$('tackS').value, gybeS: +$('gybeS').value, adj: adjVals(), tideWind: $('tideWind') ? $('tideWind').checked : true, polZ: polZ(), stab: $('stabOn') ? $('stabOn').checked : true };
+      sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, margin: +($('margin') ? $('margin').value : 1), nogo: nogoRings(), maxHours: HMAX() + 2, tackS: +$('tackS').value, gybeS: +$('gybeS').value, adj: adjVals(), tideWind: $('tideWind') ? $('tideWind').checked : true, polZ: polZ(), stab: $('stabOn') ? $('stabOn').checked : true };
   }
   /* the height the polar's wind speeds refer to: 10 m (ORC, designers, FirstShift and Navigate's learned polars) or the masthead (D, 14 Nov 2026) */
   function polZ() { var z = $('polZ') && $('polZ').value === 'mast' ? +$('mastZ').value : 10; return z > 0 ? z : 10; }
@@ -1677,7 +1681,7 @@
   window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };   /* the phone's own GPS fix, for the basic plotter */
   window.__fsRedraw = function () { draw(); };
   window.__navFollow = function (on) { if (on == null) return follow; followSet(!!on); };
-  window.__navScale = function (nm) { view.s = Math.max(20, Math.min(20000, H * 0.22 / (nm / 60))); followSet(true); draw(); };   /* the boat and the next mark on screen */
+  window.__navScale = function (nm) { view.s = Math.max(20, Math.min(ZMAX(), H * 0.22 / (nm / 60))); followSet(true); draw(); };   /* the boat and the next mark on screen */
   window.__navPanelMin = function () { if (!wide()) closePanel(); };
   window.__navLiveOn = function (mini) { if (!LIVE.on) liveStart(); if (mini && !LIVE.mini) { LIVE.mini = true; LIVE.big = false; store('fs-livemini', '1'); if (LIVE.fix) liveShow(); } };
   window.__navAisCheck = function (steps) { if (!S.sel) return null; var t0 = S.t, src = AIS.src, n = 0, dry = 0, bad = []; AIS.src = 'test'; AIS.fleet = null; AIS.tg = new FSAIS.Targets(); var a = S.start.t, b = S.sel.r.finish; for (var i = 0; i <= steps; i++) { S.t = a + (b - a) * i / steps; aisEmulate(); Object.keys(AIS.tg.t).forEach(function (m) { var x = AIS.tg.t[m]; if (x.lat == null || x.at < aisNowMs() - 1000) return; n++; if (aisDry(x.lat, x.lon)) { dry++; if (bad.length < 5) bad.push([x.name, x.lat.toFixed(4), x.lon.toFixed(4)]); } }); } S.t = t0; AIS.src = src; AIS.tg = new FSAIS.Targets(); AIS.fleet = null; return { n: n, dry: dry, bad: bad }; };   /* for the automatic tests */
@@ -2064,7 +2068,7 @@
     return fetch('pre/routes.json?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.built === (meta.built || meta.t0)) S.pre = j; }).catch(function () {});
   }
   function startPt() { return S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 }; }
-  function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return (m.side || '') + m.lat.toFixed(3) + m.lon.toFixed(3); }), meta.course.finish.lat.toFixed(3) + meta.course.finish.lon.toFixed(3), base.tackS, base.gybeS, base.safety, base.sea.up, base.sea.reach, base.sea.surf, base.adj].concat(base.tideWind === false ? ['ground wind'] : [], base.polZ !== 10 ? ['z' + base.polZ + (base.stab ? 's' : '')] : [])); }
+  function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return (m.side || '') + m.lat.toFixed(3) + m.lon.toFixed(3); }), meta.course.finish.lat.toFixed(3) + meta.course.finish.lon.toFixed(3), base.tackS, base.gybeS, base.safety, base.margin, base.sea.up, base.sea.reach, base.sea.surf, base.adj].concat(base.tideWind === false ? ['ground wind'] : [], base.polZ !== 10 ? ['z' + base.polZ + (base.stab ? 's' : '')] : [])); }
   function fullKey(base, st) { return JSON.stringify([liteKey(base, st), base.models.slice().sort(), base.tide, base.wave, base.nogo.length]); }
   function preEntry(full) {
     if (!S.pre || S.from) return null;
@@ -2408,7 +2412,11 @@
   function LA(y) { return view.la - (y - H / 2) / view.s; }
   var depthImg = null;
   function hex(c) { var m = /^#?([0-9a-f]{6})$/i.exec(c); if (!m) return [128, 128, 128]; var n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  /* the margin in metres for the depth squares loaded (Full about 230 by 150 m, Lite twice that) */
+  function marginNote() { var el = $('marginV'); if (!el) return; var m = +($('margin') ? $('margin').value : 1), L = P.depth && P.depth.L; if (!m) { el.textContent = ''; return; } if (!L) { el.textContent = ''; return; } var ns = Math.round(m * Math.abs(L.dlat) * 111120 / 10) * 10, ew = Math.round(m * Math.abs(L.dlon) * 111120 * Math.cos((L.lat0 + L.ny * L.dlat / 2) * Math.PI / 180) / 10) * 10; el.textContent = 'about ' + ew + ' to ' + ns + ' m'; }
+  function depthSquares() { return !!($('depthView') && $('depthView').value === 'squares'); }
   function buildDepth() {
+    marginNote();
     if (!P.depth) { depthImg = null; return; }
     var L = P.depth.L, F = P.depth, nx = L.nx, ny = L.ny, safety = +$('depth').value, out = hex(css['--out'] || css['--sea']);
     var c = document.createElement('canvas'); c.width = nx; c.height = ny;
@@ -2417,12 +2425,17 @@
     var Z = new Float32Array(nx * ny);
     for (var yy = 0; yy < ny; yy++) for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); }
     function z(y, x) { var v = Z[y * nx + x]; return v === 999 ? -99 : v; }
+    /* squares view: mark the margin squares, each within the margin of a square that is land, shallower than the safety depth or without data, as the router does */
+    var MG = null, mgn = +($('margin') ? $('margin').value : 1) || 0;
+    if (depthSquares() && mgn > 0) { var bad = new Uint8Array(nx * ny); for (var by = 0; by < ny; by++) for (var bx = 0; bx < nx; bx++) { var bv = Z[by * nx + bx]; bad[by * nx + bx] = (bv === 999 || bv === 2 || bv > 0 || -bv < safety) ? 1 : 0; }
+      MG = new Uint8Array(nx * ny); for (var my2 = 0; my2 < ny; my2++) for (var mx2 = 0; mx2 < nx; mx2++) { if (bad[my2 * nx + mx2]) continue; for (var ay = -mgn; ay <= mgn && !MG[my2 * nx + mx2]; ay++) for (var ax = -mgn; ax <= mgn; ax++) { var yy2 = my2 + ay, xx2 = mx2 + ax; if (yy2 < 0 || xx2 < 0 || yy2 >= ny || xx2 >= nx || bad[yy2 * nx + xx2]) { MG[my2 * nx + mx2] = 1; break; } } } }
     for (var y = 0; y < ny; y++) for (var x = 0; x < nx; x++) {
       var v = Z[y * nx + x], o = ((ny - 1 - y) * nx + x) * 4, col;
       if (v === 999) col = out;
       else if (v === 2) col = land;
       else if (v > 0) col = land;   /* edges are drawn as clean lines on top (depthLines), not as pixels */
       else if (-v < safety) col = sh;
+      else if (MG && MG[y * nx + x]) col = [(sh[0] + sea2[0]) / 2, (sh[1] + sea2[1]) / 2, (sh[2] + sea2[2]) / 2];   /* the margin the routes keep clear of (squares view) */
       else { var f = Math.min(1, -v / 60); col = [sea2[0] + (sea[0] - sea2[0]) * f, sea2[1] + (sea[1] - sea2[1]) * f, sea2[2] + (sea[2] - sea2[2]) * f]; }
       d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
     }
@@ -2501,7 +2514,7 @@
     if (!depthLines) return; var lo0 = LO(0), lo1 = LO(W), la1 = LA(0), la0 = LA(H), kx = K * view.s, ox = W / 2 - view.lo * kx, sy = view.s, oy = H / 2 + view.la * sy;
     function strokeSegs(a, colour, w) { if (!a) return; ctx.beginPath(); for (var i = 0; i < a.length; i += 4) { var x1 = a[i], y1 = a[i + 1], x2 = a[i + 2], y2 = a[i + 3]; if ((x1 < lo0 && x2 < lo0) || (x1 > lo1 && x2 > lo1) || (y1 < la0 && y2 < la0) || (y1 > la1 && y2 > la1)) continue; ctx.moveTo(x1 * kx + ox, oy - y1 * sy); ctx.lineTo(x2 * kx + ox, oy - y2 * sy); } ctx.strokeStyle = colour; ctx.lineWidth = w; ctx.stroke(); }
     ctx.save(); ctx.lineCap = 'round';
-    strokeSegs(depthLines.safe, css['--shoaledge'], 1.1);
+    if (!depthSquares()) strokeSegs(depthLines.safe, css['--shoaledge'], 1.1);   /* in the squares view the squares themselves are the edge */
     strokeSegs(depthLines.coast, css['--landedge'], 1.3);
     ctx.restore();
   }
@@ -2522,7 +2535,7 @@
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
     oriUpdate(); ORI.turned = !!ORI.ang; if (ORI.ang) { ctx.translate(ORI.cx, ORI.cy); ctx.rotate(-ORI.ang * R); ctx.translate(-ORI.cx, -ORI.cy); }
     baseLand();
-    if (depthImg) { var L = P.depth.L; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
+    if (depthImg) { var L = P.depth.L; var sq = depthSquares(); ctx.imageSmoothingEnabled = !sq; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     try { drawDepthLines(); } catch (e) {}
     grid();
     if (S.show.band) bandEdge();
@@ -2842,7 +2855,7 @@
     [bar, !wide() && pn && !pn.hidden && !pn.classList.contains('collapsed') ? pn : null, LIVE.on && !$('liveBox').hidden ? $('liveBox') : null].forEach(function (el) { if (!el) return; var r = el.getBoundingClientRect(); if (r.height && r.top > cr.top + top && r.left < cr.left + W / 2 && r.right > cr.left + W / 2) bot = Math.min(bot, r.top - cr.top); });
     var left = 0, right = W; if (wide() && pn && !pn.hidden) { var r2 = pn.getBoundingClientRect(); if (r2.left - cr.left > W / 2) right = r2.left - cr.left; else if (r2.right - cr.left < W / 2) left = r2.right - cr.left; }
     var cx = (left + right) / 2, cy = (top + bot) / 2;
-    var fa = null; try { fa = window.__navFollowAdj ? window.__navFollowAdj(pos, right - left, bot - top, view.s) : null; } catch (e) {} if (fa && fa.s > 0) view.s = Math.max(20, Math.min(20000, fa.s));   /* look ahead and auto zoom */
+    var fa = null; try { fa = window.__navFollowAdj ? window.__navFollowAdj(pos, right - left, bot - top, view.s) : null; } catch (e) {} if (fa && fa.s > 0) view.s = Math.max(20, Math.min(ZMAX(), fa.s));   /* look ahead and auto zoom */
     view.lo = pos.lo - (cx - W / 2) / (K * view.s); view.la = pos.la + (cy - H / 2) / view.s;
     if (fa && fa.ahead) { view.la += fa.ahead[0] / view.s; view.lo += fa.ahead[1] / (K * view.s); }
   }
@@ -2856,7 +2869,8 @@
   /* ---------- pointer ---------- */
   var ptrs = new Map(), pinch = 0, pmid = null, moved = 0;
   cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(evx(e), evy(e), e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
-  function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(20000, view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
+  function ZMAX() { var k = +($('zoomMax') ? $('zoomMax').value : 1) || 1; return 20000 * Math.max(1, Math.min(6, k)); }   /* closest zoom, screen points per degree of latitude: 20,000 is about 1.2 nm across a phone */
+  function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(ZMAX(), view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
   cv.addEventListener('dblclick', function () { fit(); draw(); });
   cv.addEventListener('pointerdown', function (e) { if (e.isPrimary) { ptrs.clear(); pmid = null; S.drag = null; }   /* the first finger down starts a new gesture: a finger whose lift was never reported (Stuart 14 Nov 20:42, Android tablet: pinch stopped working) must not leave the chart thinking three fingers are down */ try { cv.setPointerCapture(e.pointerId); } catch (er) {} ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
   /* two fingers move the chart as well as zoom it, like a map app (Stuart 12 Nov): read both fingers together once a frame */

@@ -650,7 +650,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.14</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.15</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -728,6 +728,8 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
     <div class="sbody" id="s-course" hidden>
       <div class="row"><label for="depth">Safety depth</label><input type="range" id="depth" min="0" max="20" step="0.5" value="3" style="width:180px"><b id="depthV" style="font-family:var(--f-data)">3.0 m</b></div>
       <p class="note" data-i>The router keeps out of water shallower than this, shown red on the chart. EMODnet depths relative to lowest astronomical tide; no tide height added. Not for navigation.</p>
+      <div class="row"><label for="margin">Keep clear by</label><select id="margin"><option value="0">No margin</option><option value="1" selected>1 depth square</option><option value="2">2 depth squares</option></select><b id="marginV" style="font-family:var(--f-data)"></b></div>
+      <p class="note" data-i>Routes also keep this far from water shallower than the safety depth, because the seabed depths are averages over about 115 m and a rock or the edge of a bank can sit inside a square that reads deep. Near the start, each mark and the finish (0.4 nm) only the safety depth applies, so they can still be reached. Routes always follow the depth squares, whichever chart view you choose.</p>
       <h3>While racing</h3>
       <div class="row"><label for="gpsMode">Live GPS</label><select id="gpsMode"><option value="screen">Keep screen on, every second</option><option value="battery">Save battery, every 20 seconds</option></select></div>
       <div class="row"><label for="xteLim">Alert off track by (nm)</label><input type="number" id="xteLim" min="0" max="50" step="0.1" value="1.0"></div>
@@ -792,6 +794,11 @@ A4, 125, 180, 18, 60</textarea>
         <li>Your course, marks and waypoints, the routes, and the wind, tide and weather from the forecasts.</li>
         <li>If you turn them on: buoys, beacons and lights from OpenSeaMap, loaded from the internet as you zoom in to a few miles across.</li>
       </ul>
+      <h3>Depth and zoom</h3>
+      <div class="row"><label for="depthView">Shallow water shown</label><select id="depthView"><option value="smooth" selected>Smooth</option><option value="squares">Squares the router uses</option></select></div>
+      <p class="note" data-i>Smooth rounds off the edges of the red shallow water so the chart is easier to read. Squares shows the depth squares exactly as the router sees them: red is shallower than your safety depth, pale red is the margin the routes also keep clear of (Course tab). Routes always follow the squares, whichever you choose.</p>
+      <div class="row"><label for="zoomMax">Closest zoom</label><input type="range" id="zoomMax" min="1" max="6" step="1" value="1" style="width:160px"><b id="zoomMaxV" style="font-family:var(--f-data)"></b></div>
+      <p class="note" data-i>How far you can zoom in, for example at a mark. The depth squares are about 230 m by 150 m, so closer in shows marks and buoys larger but no more depth detail.</p>
       <h3>How to change it</h3>
       <p class="note">Tap the layers button at the top of the screen (two stacked layers). Under <b>Chart</b>, turn the OpenSeaMap buoys, beacons and lights on or off. Under <b>Weather and race</b>, choose wind, tidal stream, traffic separation schemes, lighthouses, laylines, isochrones and the forecast weather, and which routes to show. <b>Show all</b>, <b>Just the course</b> and <b>Just the route</b> set several at once. The wind and tide symbols and AIS are in the Display tab.</p>
       <h3>Not for navigation</h3>
