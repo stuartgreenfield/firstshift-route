@@ -117,7 +117,7 @@
   /* More: Help opens at the matching topic; closing Help brings the tour back at the same step */
   function helpTopic(key) {
     var hits = [].slice.call(document.querySelectorAll('#help .htopic')).filter(function (d) { var h = d.querySelector('h3'); return d.dataset.k === key || (h && h.firstChild && String(h.firstChild.textContent).trim() === key); });
-    return hits[0] || null;
+    if (hits[0]) hits[0].classList.remove('hffold'); return hits[0] || null;
   }
   function more() {
     var s = steps()[T.i]; if (!s || !s.help) return;
