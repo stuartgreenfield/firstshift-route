@@ -24,6 +24,13 @@
     { el: '#layersBtn', t: 'Layers', x: 'Choose what the chart shows: wind, tide, waves, depth and marks.', help: 'charts' },
     { el: '#helpBtn', t: 'Help', x: 'Everything is explained in Help, with a Listen button on each topic. Try it safely first is at the top, and you can take this tour again from there.' }
   ];
+  /* Route's own preparation (F14 photo, 15 Nov 19:51: "Nothing to point at" with the menus hidden): bring the menus back from Clear
+     screen and the deck screen's MENU before the tour looks for its buttons. Navigate sets its own (navtour.js). */
+  function prepRoute() {
+    try { if (window.NavClear && window.NavClear.on()) window.NavClear.set(false); } catch (e) {}
+    try { if (document.body.classList.contains('fsdeck') && !document.body.classList.contains('fsdeckmenu')) document.body.classList.add('fsdeckmenu'); } catch (e) {}
+  }
+  function prep() { try { if (window.FSTourPrepare) window.FSTourPrepare(); else prepRoute(); } catch (e) {} }
   function levels() { var L = window.FSTourLevels; return L && L.length ? L : [{ n: 1, name: 'Get going', note: 'Race, forecast, route and plotter', steps: ROUTE }]; }
   window.FSTourRoute = ROUTE;
   function tryText() { return window.FSTourTry || '<p><b>Press Play</b> under the chart and watch the boat sail the route, with the wind, the tide and the figures at every moment. Nothing is sent anywhere and nothing can go wrong. Drag the slider to any moment of the race.</p>'; }
@@ -93,7 +100,7 @@
     card.innerHTML = '<h4>Show me round</h4><p>Choose where to start. Each level takes a couple of minutes.</p><div class="fst-lv">' + L.map(function (l) { return '<button data-fst="lv' + l.n + '"><b>Level ' + l.n + ': ' + l.name + '</b><span>' + (l.note || '') + '</span></button>'; }).join('') + '</div><div class="fst-b"><button class="fst-end" data-fst="end">Not now</button></div>';
     card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
   }
-  function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; T.waits = 0; build().hidden = false; try { if (window.FSTourPrepare) window.FSTourPrepare(); } catch (e) {}   /* Navigate: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
+  function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; T.waits = 0; build().hidden = false; prep();   /* Navigate: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
   function end() { T.on = false; T.paused = false; if (T.root) T.root.hidden = true; try { if (T.lv && T.lv.after) T.lv.after(); } catch (e) {} }
   function finish() {
     var L = levels(), nx = L.filter(function (l) { return T.lv && l.n === T.lv.n + 1; })[0];
@@ -102,7 +109,7 @@
     /* F7 (Stuart 15 Nov: "Nothing to point at" on first opening Route): on a first opening the routes are still being worked out and the
        buttons are not all there yet. Wait for the first routes (up to a minute), saying so, then try three times before giving up. */
     if (!T.shown && window.__fsPlan && !window.__fsPlan() && (T.waits || 0) < 40) { T.waits = (T.waits || 0) + 1; card.innerHTML = '<h4>Getting ready</h4><p>Route is working out the first routes. The tour starts as soon as they are on the chart.</p>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; setTimeout(function () { if (T.on) { T.i = -1; go(0, 1); } }, 1500); return; }
-    if (!T.shown && (T.retried || 0) < 3) { T.retried = (T.retried || 0) + 1; try { if (window.FSTourPrepare) window.FSTourPrepare(); } catch (e) {} setTimeout(function () { T.i = -1; go(0, 1); }, 700 + 800 * T.retried); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
+    if (!T.shown && (T.retried || 0) < 3) { T.retried = (T.retried || 0) + 1; prep(); setTimeout(function () { T.i = -1; go(0, 1); }, 700 + 800 * T.retried); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
     if (!T.shown) { card.innerHTML = '<h4>Nothing to point at</h4><p>The buttons this part of the tour shows are hidden on this screen just now. Close any open panels, or tap MENU to bring the menus back, then try again.</p><div class="fst-b"><button class="btn primary" data-fst="lv' + T.lv.n + '">Try again</button><button class="btn" data-fst="end">Done</button></div>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; return; }
     card.innerHTML = '<h4>That’s the tour</h4><p>' + (nx ? 'Level ' + nx.n + ', ' + nx.name.toLowerCase() + ', is next when you are ready.' : 'Try it safely first: everything is in Help, and you can take the tour again from the top of Help.') + '</p><div class="fst-b">' + (nx ? '<button class="btn primary" data-fst="lv' + nx.n + '">Level ' + nx.n + '</button>' : '') + '<button class="btn' + (nx ? '' : ' primary') + '" data-fst="end">Done</button></div>';
     card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
