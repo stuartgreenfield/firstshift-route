@@ -30,11 +30,52 @@
 
   /* ---------- workers ---------- */
   function call(w, msg, tr) { return new Promise(function (ok, no) { msg.id = ++jid; jobs[jid] = { ok: ok, no: no }; w.postMessage(msg, tr || []); }); }
-  function pool(msg) { if (!workers.length) return Promise.reject(new Error('This browser cannot run background routing.')); return call(workers[wq++ % workers.length], msg); }
-  function all(msgFn) { return Promise.all(workers.map(function (w) { var m = msgFn(); return call(w, m.msg, m.tr); })); }
+  function pool(msg) { return wReady.then(function () { return call(workers[wq++ % workers.length], msg); }); }
+  function all(msgFn) { return wReady.then(function () { return Promise.all(workers.map(function (w) { var m = msgFn(); return call(w, m.msg, m.tr); })); }); }
   var MOBILE = /iPhone|iPad|iPod|Android|Mobi/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));   /* iPadOS calls itself a Mac */
   var n = Math.max(1, Math.min(MOBILE ? 2 : 4, (navigator.hardwareConcurrency || 2) - 1));   /* each worker holds every forecast: two on a phone or tablet, so iOS does not close Route for memory (Stuart 12 Nov) */
-  for (var i = 0; i < n; i++) { try { var w = new Worker('worker.js'); w.onmessage = function (e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }; workers.push(w); } catch (e) { break; } }
+  /* Finding F2 (15 Nov 2026, Stuart: "C: both, plus check"). Offline on Android the page stayed at "Loading forecasts 100%": every
+     forecast was handed to the routing workers and the page waited for an answer from a worker that had never started. Now:
+     1. the workers are built from router.js, engine.js and worker.js as the page itself loads them (so on Android they come from
+        inside the app, never the network); 2. if that fails, the worker file is loaded as before; 3. each worker must answer a ping
+        within 10 s, and one that fails is dropped; 4. if none answer, routing runs on the main screen thread: slower, but it works.
+     window.__fsWork() says which, for Data sources. */
+  function onMsg(e) { var j = jobs[e.data.id]; if (j) { delete jobs[e.data.id]; e.data.ok ? j.ok(e.data.r) : j.no(new Error(e.data.error)); } }
+  var workMode = { mode: 'starting', n: 0, why: '' };
+  window.__fsWork = function () { return { mode: workMode.mode, n: workers.length, why: workMode.why }; };
+  function wSrc() {
+    var get = function (f) { return fetch(f, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); }); };
+    var tm = new Promise(function (_, no) { setTimeout(function () { no(new Error('slow')); }, 8000); });
+    return Promise.race([Promise.all([get('router.js'), get('engine.js'), get('worker.js')]), tm]).then(function (t) { var wk = t[2].replace(/^\s*importScripts\([^)]*\);?/m, ''); return { all: t[0] + '\n;\n' + t[1] + '\n;\n' + wk, wk: wk }; });
+  }
+  function startSet(make) {
+    var set = []; for (var i = 0; i < n; i++) { try { var w = make(); w.onmessage = onMsg; set.push(w); } catch (e) { break; } }
+    return Promise.all(set.map(function (w) { return new Promise(function (ok) {
+      var done = false, fin = function (good) { if (done) return; done = true; if (!good) { try { w.terminate(); } catch (e) {} } ok(good ? w : null); };
+      w.onerror = function (ev) { if (ev && ev.preventDefault) ev.preventDefault(); fin(false); };
+      setTimeout(function () { fin(false); }, 10000);
+      call(w, { type: 'ping' }).then(function () { fin(true); }, function () { fin(false); });
+    }); })).then(function (r) { return r.filter(Boolean); });
+  }
+  function mainThread(src) {   /* the worker's own code, run on the page: same answers, but the screen waits while it routes */
+    var h = null, fake = { postMessage: function (msg) { setTimeout(function () { h({ data: msg }); }, 0); }, terminate: function () {} };
+    h = new Function('postMessage', 'importScripts', 'var onmessage;\n' + src + '\n;return onmessage;')   /* only worker.js: the page already has FSRouter and FSPolar */
+      (function (r) { setTimeout(function () { fake.onmessage({ data: r }); }, 0); }, function () {});
+    return fake;
+  }
+  var wReady = wSrc().then(function (src) {
+    var url = URL.createObjectURL(new Blob([src.all], { type: 'text/javascript' }));
+    return startSet(function () { return new Worker(url); }).then(function (ok) { return { ok: ok, src: src.wk, how: 'background' }; });
+  }, function (e) { return { ok: [], src: null, how: '', why: e.message }; }).then(function (r) {
+    if (r.ok.length) return r;
+    return startSet(function () { return new Worker('worker.js'); }).then(function (ok) { return { ok: ok, src: r.src, how: 'background (file)' }; });
+  }).then(function (r) {
+    if (r.ok.length) { workers = r.ok; workMode.mode = r.how; return; }
+    var src = r.src;
+    if (!src) { workMode.mode = 'none'; workMode.why = 'The routing code could not be loaded.'; throw new Error('Routing could not start on this device: ' + workMode.why); }
+    workers = [mainThread(src)]; workers[0].onmessage = onMsg; workMode.mode = 'main'; workMode.why = 'Background routing could not start on this device, so routing runs on the main screen. It works, but the screen may pause while it routes.';
+  });
+  wReady.catch(function () {});
 
   /* phones: From here sits beside Play in the bottom bar */
   (function () { var mq = matchMedia('(max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px)'), fh = $('fromHere'), home = fh.parentNode, next = fh.nextSibling;
