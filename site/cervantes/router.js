@@ -292,14 +292,16 @@
     /* marks in shallow water (Stuart 15 Nov 2026, Solent racing): inshore race marks are often laid where the depth data (below lowest
        astronomical tide, about 230 m by 150 m squares) reads shallower than the safety depth, or even as the shore: 31 of the 157 Solent
        marks do at 2.5 m. Only for a start, mark or finish that is itself in such water: within SREL nm of it any square below chart datum
-       counts as water, and within SALL nm every square does, so the boat can reach it. Everywhere else the safety depth holds, and a
+       counts as water. Only for the start, where the route begins, every square within SALL nm counts too, since a start the data shows
+       as shore cannot otherwise be left. Never for a mark: the boat rounds a mark from up to 0.5 nm off, and a mark can be a rock or a
+       fort (the Fastnet Rock, No Man's Land Fort), so a route must never cut across it. Everywhere else the safety depth holds, and a
        course whose marks are all in deep water routes exactly as before. */
     var SREL = 0.4, SALL = 0.15, shAnch = [];
     if (depth) {
       var allA = [[o.start.lat, o.start.lon]]; o.legs.forEach(function (lg) { if (lg.point) allA.push(lg.point); if (lg.gate) { allA.push(lg.gate.a); allA.push(lg.gate.b); } if (lg.at) allA.push(lg.at); });
-      allA.forEach(function (a) { var I = depth.idx(a[0], a[1]); if (!I || wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] !== 1) shAnch.push(a); });
+      allA.forEach(function (a, k) { var I = depth.idx(a[0], a[1]); if (!I || wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] !== 1) shAnch.push([a[0], a[1], k === 0]); });
     }
-    function shallowOk(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon, z = null; for (var i = 0; i < shAnch.length; i++) { var d = dist(la, lo, shAnch[i][0], shAnch[i][1]); if (d <= SALL) return true; if (d <= SREL) { if (z === null) z = depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; } } return false; }
+    function shallowOk(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon, z = null; for (var i = 0; i < shAnch.length; i++) { var d = dist(la, lo, shAnch[i][0], shAnch[i][1]); if (d <= SALL && shAnch[i][2]) return true; if (d <= SREL) { if (z === null) z = depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; } } return false; }
     function nearAnchor(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon; for (var i = 0; i < anchors.length; i++) if (dist(la, lo, anchors[i][0], anchors[i][1]) <= MREL) return true; return false; }
     function wetLine(la0, lo0, la1, lo1) {
       if (nogo.length) for (var k = 1; k <= 8; k++) if (blocked(la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return false;
