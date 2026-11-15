@@ -6,6 +6,13 @@ Status: Built · Partly built · To build · Researching · Later.
 ## 15 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
+| 16:33 | Routes stop short of the finish; in the Solent they must reach the finish and round marks closely | Later (F10) |
+| 16:18 | Route's plot bar cannot be moved: no handle | To fix (F9) |
+| 16:12 | After re-routing from here, the plot bar (heading, miles, XTE) does not follow the new route | To build: a switch in the bar, mark or route (F8, Stuart 16:32) |
+| 16:15 | Isochrones tick box freezes the whole tool (Android tablet, iPhone) | Fixed and live 16:51 in Route v0.12.19 and Navigate v0.7.42 (F5) |
+| 15:40 | Full review and button test of Route and Navigate; backups and rollback points | Button test running; restore points made before every release |
+| 15:40 | Tour says "Nothing to point at" on Route | To look at (F7) |
+| 15:29 | Re-route after editing gave "No way through", then froze | Logged (F6); the freeze part was F5 |
 | 14:58 | Navigate: red no-data warning hidden behind the route (plotter) bar on the tablet; add the fix to the next update and go live | Built and live 15:12 in Navigate v0.7.41 (plotter bar, banner and progress box move down by the measured overlap) |
 | 10:22 | Keep going down the list (H then I) | H dead reckoning tested; I reopen checked against every item (routes, view, zoom, orientation, Live GPS, plotter view and mark, link, helm, log); gap fixed: dead reckoning carries on after a reopen from the last fix kept on the phone (under 30 min). Plotter bar marks DEAD RECKONING. Branch reopen-2026-11-15, Route v0.12.18 with Navigate v0.7.40; waiting for the test round and Stuart's go |
 
