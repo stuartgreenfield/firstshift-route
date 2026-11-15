@@ -16,6 +16,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => { const e = document.getElementById('solentOn'); e.checked = true; e.dispatchEvent(new Event('change')); });
   await p.waitForFunction(() => window.FSSolent.marks(), null, { timeout: 30000 });
   const mk = await p.evaluate(() => { const m = window.FSSolent.marks(); const g = m.find(x => x.id === '3G'); return { n: m.length, g, kept: JSON.parse(localStorage.getItem('fs-solent')).on }; });
+  const zm = await p.evaluate(() => ({ v: +document.getElementById('zoomMax').value, kept: localStorage.getItem('fs-zoomMax') }));
+  ok(zm.v === 6 && zm.kept === '6', 'Solent marks on: the closest zoom is set to the maximum (6 times)', JSON.stringify(zm));
   ok(mk.n === 157 && mk.g && mk.g.name === 'Cowes Week 200' && Math.abs(mk.g.lat - (50 + 46.58 / 60)) < 1e-5 && Math.abs(mk.g.lon + (1 + 21.46 / 60)) < 1e-5 && mk.kept, 'the 157 marks of the JOG / SCRA 2026 list load, positions as printed (3G Cowes Week 200, 50 46.58N 01 21.46W), and the switch is kept', mk.n + ' marks');
   // zoom to Cowes and tap 3G
   await p.evaluate(() => { const v = window.__navViewGet(); window.__navViewSet({ la: 50.775, lo: -1.33, s: v.s * 30 > 60000 ? 60000 : 60 * 60, follow: false }); }); await p.waitForTimeout(600);

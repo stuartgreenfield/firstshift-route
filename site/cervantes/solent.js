@@ -124,7 +124,7 @@
     document.head.appendChild(st);
   }
   function openBuilder() {
-    css(); load().then(render);
+    css(); zoomMax(); load().then(render);
     var s = $('solSheet'); if (!s) { s = document.createElement('div'); s.className = 'sheet'; s.id = 'solSheet'; s.hidden = true;
       s.innerHTML = '<div class="in" role="dialog" aria-label="Solent race builder"><div class="shead"><h2>Solent race</h2><button class="close" id="solX" aria-label="Close the Solent race builder">×</button></div><div class="sbody" id="solBody"></div></div>';
       document.body.appendChild(s); $('solX').onclick = function () { s.hidden = true; redraw(); }; }
@@ -202,7 +202,7 @@
     });
     on('solBoardGo', 'onclick', function () { var r = parseBoard($('solBoard').value), n = $('solBoardNote'); if (r.marks.length) { B.marks = r.marks; saveB(); render(); redraw(); n = $('solBoardNote'); } n.textContent = (r.marks.length ? r.marks.length + ' marks set.' : 'No mark codes found.') + (r.bad.length ? ' Not on the list: ' + r.bad.join(', ') + '.' : ''); });
     on('solClear', 'onclick', function () { B = { type: B.type, name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } }; saveB(); render(); redraw(); });
-    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
+    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax(); $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
   }
   function pickStart(what) {
     pick = what; $('solSheet').hidden = true; var bar = $('solPick');
@@ -217,7 +217,9 @@
   }
 
   /* ---- Settings, Charts: the switch and the button ---- */
-  function setOn(v) { C.on = !!v; sv(KEY, C); if (C.on) load(); redraw(); var e = $('solentOn'); if (e) e.checked = C.on; }
+  /* Stuart 15 Nov 11:26: "on solent race zoom should be set to allow the max": the Closest zoom slider (Settings, Chart) goes to 6 times */
+  function zoomMax() { var z = $('zoomMax'); if (!z || +z.value >= +z.max) return; z.value = z.max; z.dispatchEvent(new Event('input', { bubbles: true })); z.dispatchEvent(new Event('change', { bubbles: true })); }
+  function setOn(v) { C.on = !!v; sv(KEY, C); if (C.on) { load(); zoomMax(); } redraw(); var e = $('solentOn'); if (e) e.checked = C.on; }
   function hookSettings() {
     var e = $('solentOn'); if (e) { e.checked = !!C.on; e.onchange = function () { setOn(e.checked); }; }
     var bt = $('solentBuild'); if (bt) bt.onclick = function () { if (!C.on) setOn(true); openBuilder(); };
