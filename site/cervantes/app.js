@@ -622,13 +622,16 @@
   function legsFor(fromPt) {
     if (S.to) return [{ name: 'Your point', point: [S.to.lat, S.to.lon], r: 0.3, at: [S.to.lat, S.to.lon] }];
     var c = meta.course, pts = [c.start].concat((c.marks || []).filter(function (m) { return !m.via || m.must; })).concat([c.finish]), legs = [];   /* waypoints the routes need not pass are left out */
+    /* F10 (Stuart 15 Nov 16:33): on an inshore course (under 40 nm, a Solent race) the routes go right to the finish and round each mark close:
+       the finish within 0.05 nm and a gate ray of 0.15 nm at each mark, instead of 0.4 nm and 1.2 nm offshore */
+    var inshore = courseNm(c) < 40;
     pts.slice(1, -1).forEach(function (m, i) {
       if (m.via) { legs.push({ name: m.name || 'Waypoint', point: [m.lat, m.lon], r: 0.3, at: [m.lat, m.lon] }); return; }
       var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25, legNm = FSRouter.dist(pts[i].lat, pts[i].lon, m.lat, m.lon);
       /* an offshore rounding mark gets a long gate ray, so the router has to sail round it rather than past it */
-      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1))), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
+      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', inshore ? 0.15 : near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1))), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
     });
-    legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: c.finish.radius_nm || 0.4, at: [c.finish.lat, c.finish.lon] });
+    legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: inshore ? 0.05 : c.finish.radius_nm || 0.4, at: [c.finish.lat, c.finish.lon] });
     if (fromPt) {   // from a point on the water: drop the marks already rounded, judged by distance along the course
       var along = function (la, lo) { var best = 1e9, acc = 0, at = 0; for (var k = 0; k < pts.length - 1; k++) { var a = pts[k], b = pts[k + 1], L = FSRouter.dist(a.lat, a.lon, b.lat, b.lon), d1 = FSRouter.dist(a.lat, a.lon, la, lo), d2 = FSRouter.dist(la, lo, b.lat, b.lon), off = d1 + d2 - L; if (off < best) { best = off; at = acc + Math.min(L, d1); } acc += L; } return at; };
       var me = along(fromPt.lat, fromPt.lon), cum = 0;
