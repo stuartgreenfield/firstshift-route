@@ -3,6 +3,11 @@
 Every requirement Stuart has asked for, newest first, with its status. Kept in the repository (docs/), on Stuart's Mac (FirstShift tools site/routing/) and summarised in the routing doc ("Requirements: running list").
 Status: Built · Partly built · To build · Researching · Later.
 
+## 15 November 2026
+| Time | Requirement | Status |
+| --- | --- | --- |
+| 10:22 | Keep going down the list (H then I) | H dead reckoning tested; I reopen checked against every item (routes, view, zoom, orientation, Live GPS, plotter view and mark, link, helm, log); gap fixed: dead reckoning carries on after a reopen from the last fix kept on the phone (under 30 min). Plotter bar marks DEAD RECKONING. Branch reopen-2026-11-15, Route v0.12.18 with Navigate v0.7.40; waiting for the test round and Stuart's go |
+
 ## 13 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
