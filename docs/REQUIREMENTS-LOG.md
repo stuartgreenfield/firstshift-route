@@ -5,6 +5,7 @@ Status: Built · Partly built · To build · Researching · Later.
 
 ## 16 November 2026
 
+- 11:35 To-do: GeoGarage charts through the user's own account (as NavimetriX), raster and vector; NMEA 0183 and 2000 emulator; Ready to go live after Practice (practice off, clear practice data, checklist); Sydney Hobart and RORC Caribbean 600 routing areas with forecasts built on GitHub; start line bias in Navigate, Route and from the Startline tool. Website redesign = Tools pages only; Help upgrade = the Help job.
 - 08:45 To-do: (1) rebuild the Wix Tools pages in the Wix editor, editable and scaling on phones; (2) plan and cost to make the GitHub files private; (3) big screen-space and UI review against the leading tools, SWOT and action plan for phones, tablets, remote screens and PCs.
 - 08:00 Solent races as a clean inshore mode: top left Solent race, offshore routes saved away, toggle back; the course built one prompt at a time in a draggable box. Test copy v0.12.25.
 - 07:39 Rolled back v0.12.23 (bugs; phone buttons covered the bar). 07:55 faint buoy labels, round buttons hide on phones while a window is open: test copy v0.12.24.
