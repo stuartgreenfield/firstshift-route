@@ -294,3 +294,5 @@ Status: Built · Partly built · To build · Researching · Later.
 - 08:33 15 Nov 2026: waypoint store and measuring tool for both tools; research saved (Navigate docs/WAYPOINTS-MEASURE-RESEARCH-2026-11-15.md).
 - 09:13 15 Nov 2026: dead reckoning when GPS is lost (important), Route and Navigate; spec in Navigate REPLIES 09:13.
 - 09:28 15 Nov 2026: LIVE Route v0.12.16 and Navigate v0.7.38 (Stuart's go 09:26). Rollback restore-2026-11-15-0927.
+
+- 16 Nov 2026 06:31, Stuart: "Need to update help for new features on both tools put in job list please". Full Help update for every new feature in Route and Navigate (steps, screenshots, tour links, paths, recordings). Jobs Sheet row 35, To build.
