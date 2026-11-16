@@ -57,7 +57,7 @@
   function drawPlan(ctx, X, Y) {
     var c = build(true); if (!c || !c.start) return; var p = [c.start].concat(c.marks).concat(c.finish ? [c.finish] : []);
     ctx.beginPath(); p.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeStyle = '#2563eb'; ctx.stroke(); ctx.setLineDash([]);
-    if (pick === 'chain') { ctx.font = '700 12px system-ui, sans-serif'; ctx.textBaseline = 'middle'; c.marks.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); ctx.fillStyle = '#2563eb'; ctx.beginPath(); ctx.arc(x - 12, y - 12, 9, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(String(i + 1), x - 12, y - 12); ctx.textAlign = 'left'; }); }   /* numbered while building on the map */
+    if (pick === 'chain' || (WZ.on && B.type !== 'wl')) { ctx.font = '700 12px system-ui, sans-serif'; ctx.textBaseline = 'middle'; c.marks.forEach(function (q, i) { var x = X(q.lon), y = Y(q.lat); ctx.fillStyle = '#2563eb'; ctx.beginPath(); ctx.arc(x - 12, y - 12, 9, 0, 2 * Math.PI); ctx.fill(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(String(i + 1), x - 12, y - 12); ctx.textAlign = 'left'; }); }   /* numbered while building on the map */
     var s = c.start; ctx.beginPath(); ctx.moveTo(X(s.lon) - 7, Y(s.lat) - 7); ctx.lineTo(X(s.lon) + 7, Y(s.lat) - 7); ctx.lineTo(X(s.lon), Y(s.lat) + 6); ctx.closePath(); ctx.fillStyle = '#2563eb'; ctx.fill();
   }
   function hit(x, y) {
@@ -76,6 +76,7 @@
   }
   function ddm(v, pos, neg) { var a = Math.abs(v), d = Math.floor(a), mn = (a - d) * 60; return (d < 10 && pos === 'E' ? '00' : d < 100 && pos === 'E' ? '0' : '') + d + '° ' + mn.toFixed(2) + "' " + (v >= 0 ? pos : neg); }
   function tapHook(la, lo, x, y, editing) {
+    if (WZ.on && !editing) { var wr = wzTap(la, lo, x, y); if (wr) return true; }
     if (pick === 'chain') { var mc = hit(x, y); if (mc) sidePop(mc, x, y); else toast('Tap one of the Solent buoys.'); return true; }
     if (pick) { var m = hit(x, y); pickDone(m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }); return true; }
     if (editing || !C.on) return false;
@@ -84,7 +85,7 @@
   }
 
   /* ---- building the course ---- */
-  function toPt(m, side) { var o = { name: m.code ? m.code + ' ' + (BY[m.code] ? BY[m.code].name : '') : m.name, lat: m.lat, lon: m.lon }; if (side) o.side = side; if (m.gate) { o.gate = m.gate; o.name = m.name; } return o; }
+  function toPt(m, side) { if (side === 'stbd') side = 'starboard'; var o = { name: m.code ? m.code + ' ' + (BY[m.code] ? BY[m.code].name : '') : m.name, lat: m.lat, lon: m.lon }; if (side) o.side = side; if (m.gate) { o.gate = m.gate; o.name = m.name; } return o; }
   function fromCode(code, side) { var m = mark(code); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: side || 'port' } : null; }
   function offset(p, brg, nm) { return { lat: p.lat + nm * Math.cos(brg * R) / 60, lon: p.lon + nm * Math.sin(brg * R) / (60 * Math.cos(p.lat * R)) }; }
   function windward() {
@@ -124,7 +125,7 @@
   }
 
   /* ---- the builder sheet ---- */
-  function builderOpen() { var s = $('solSheet'); return !!(s && !s.hidden); }
+  function builderOpen() { var s = $('solSheet'), w = $('solStep'); return !!(s && !s.hidden) || !!(w && !w.hidden); }
   function css() {
     if ($('solCss')) return; var st = document.createElement('style'); st.id = 'solCss';
     st.textContent = '.solpop{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);z-index:60;max-width:min(92vw,360px);background:var(--bg,#fff);color:var(--ink,#0f172a);border:1px solid var(--line,#cbd5e1);border-radius:12px;padding:10px 34px 10px 12px;box-shadow:0 4px 18px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:2px;font-size:13px}.solpop[hidden]{display:none}.solpop .close{position:absolute;right:6px;top:4px}.solpop .soln{color:var(--muted,#64748b);font-size:12px}' +
@@ -134,6 +135,7 @@
       '.solchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}.solchip{flex:none;min-height:34px;padding:0 10px;border-radius:17px;border:1px solid var(--line,#ccc);background:none;color:var(--ink,#000);font:700 13px var(--f-data,monospace)}.solchip.port{border-color:#dc2626;color:#dc2626}.solchip.stbd{border-color:#16a34a;color:#16a34a}' +
       '.solside{position:fixed;z-index:63;width:270px;background:var(--panel,#fff);color:var(--ink,#000);border:1px solid var(--line,#ccc);border-radius:12px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.solside[hidden]{display:none}.solside .btn{min-height:42px}' +
       '.sollq{width:100%;min-height:44px;font-size:16px;padding:0 10px;border-radius:9px;border:1px solid var(--line,#ccc);background:var(--bg,#fff);color:var(--ink,#000)}.solla{margin:10px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#667)}.sollr{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line,#e2e8f0)}.sollr b{width:34px;font-family:var(--f-data,monospace)}.sollr span{flex:1;min-width:0;display:flex;flex-direction:column}.sollr small{color:var(--muted,#667)}.sollr .btn{min-height:38px}' +
+      '.solstep{position:fixed;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 10px);margin:0 auto;max-width:440px;z-index:64;background:var(--panel,#fff);color:var(--ink,#000);border:2px solid #1d4ed8;border-radius:14px;padding:0 12px 10px;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:8px;font-size:14px;max-height:60vh;overflow-y:auto;box-sizing:border-box}.solstep[hidden]{display:none}.solgrip{height:20px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;margin:0 -12px}.solgrip span{width:44px;height:5px;border-radius:3px;background:var(--muted,#889);opacity:.7}.solhd{display:flex;align-items:center;gap:8px}.solhd b{flex:1;font-size:16px}.solhd .close{font-size:22px;background:none;border:0;color:inherit;min-width:40px;min-height:40px}.solstepn{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#667);white-space:nowrap}.solgot{margin:0;font-size:13px;color:var(--muted,#667)}.solgot b{color:var(--ink,#000)}.solnav{display:flex;gap:8px;justify-content:space-between}.solnav .btn{min-height:42px;flex:1}.solnav .btn:disabled{opacity:.4;cursor:default}.solstep input{width:62px;min-height:34px;font-size:16px}.solstep .solname{flex:1;width:auto}.solstep .seg button{min-height:34px;white-space:nowrap}.solk{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#667)}' +
       '.solcards{display:flex;flex-direction:column;gap:10px}.solcards .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:12px;min-height:64px;gap:2px}.solcards span{font-size:12px;opacity:.85;font-weight:400}';
     document.head.appendChild(st);
   }
@@ -225,10 +227,13 @@
     on('solBoardGo', 'onclick', function () { var r = parseBoard($('solBoard').value), n = $('solBoardNote'); if (r.marks.length) { B.marks = r.marks; saveB(); render(); redraw(); n = $('solBoardNote'); } n.textContent = (r.marks.length ? r.marks.length + ' marks set.' : 'No mark codes found.') + (r.bad.length ? ' Not on the list: ' + r.bad.join(', ') + '.' : ''); });
     on('solClear', 'onclick', function () { B = { type: B.type, name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } }; saveB(); render(); redraw(); });
     [].forEach.call(document.querySelectorAll('#solSheet select.soltide'), function (el) { el.onchange = function () { var L = B.legTide = B.legTide || []; var i = +el.dataset.leg - 1; L[i] = L[i] || {}; L[i][el.dataset.k] = +el.value; sv(BKEY, B); }; });
-    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
-      var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
-      if (c.name.indexOf(ds) < 0) c.name = (c.name + ' ' + ds).slice(0, 70);   /* Stuart 15 Nov J Q&A: the race date added to the name in My races */ $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
+    on('solGo', 'onclick', go);
   }
+  function go() { var c = build(); if (c.err) { toast(c.err); return false; } zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
+    /* the date and time added to the name in Saved routes (Stuart 15 Nov J Q&A; 16 Nov "Solent race with date time stamp so it can be rerun after the event") */
+    var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    c.name = (c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d\d:\d\d)?$/, '') + ' ' + ds).slice(0, 70); c.solent = true;
+    if ($('solSheet')) $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); return true; }
   function pickStart(what) {
     pickStart.back = pick === 'chain'; if ($('solChain')) $('solChain').hidden = true; pick = what; if ($('solSheet')) $('solSheet').hidden = true; var bar = $('solPick');
     if (!bar) { bar = document.createElement('div'); bar.id = 'solPick'; bar.className = 'solpick'; document.body.appendChild(bar); }
@@ -270,7 +275,7 @@
     p.onclick = function (e) { var b = e.target.closest('[data-s]'); if (!b) return; var s2 = b.dataset.s; p.hidden = true; HOT = null;
       if (s2 === 'port' || s2 === 'stbd') { B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: s2 }); saveB(); }
       else if (s2 === 'del') { B.marks.splice(inIdx, 1); saveB(); }
-      chainBar(); redraw(); };
+      chainBar(); wzRender(); redraw(); };
   }
   function list(on) {
     css(); var L = $('solList');
@@ -278,7 +283,7 @@
       L.innerHTML = '<div class="in" role="dialog" aria-label="All the Solent buoys"><div class="shead"><h2>All the buoys</h2><button class="close" id="solListX" aria-label="Close the list">×</button></div><div class="sbody"><input type="search" id="solListQ" placeholder="Code or name, for example 3G or Royal" aria-label="Find a buoy" class="sollq"><p class="note" id="solListN"></p><div id="solListB"></div></div></div>';
       document.body.appendChild(L); $('solListX').onclick = function () { L.hidden = true; if (pick === 'chain') chainBar(); };
       $('solListQ').addEventListener('input', fill);
-      $('solListB').addEventListener('click', function (e) { var b = e.target.closest('[data-add]'); if (!b) return; var m = mark(b.dataset.add); if (!m) return; B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: b.dataset.side }); saveB(); fill(); chainBar(); redraw(); });   /* the list's own line says what was added: no message over the course bar */
+      $('solListB').addEventListener('click', function (e) { var b = e.target.closest('[data-add]'); if (!b) return; var m = mark(b.dataset.add); if (!m) return; B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: b.dataset.side }); saveB(); fill(); chainBar(); wzRender(); redraw(); });   /* the list's own line says what was added: no message over the course bar */
     }
     function fill() {
       if (!MK) { $('solListB').innerHTML = '<p class="note">Loading the Solent mark list…</p>'; return; }
@@ -291,13 +296,89 @@
   }
   /* from the race list: a two-button card, Round the cans or Windward-leeward (Stuart 15 Nov 17:32) */
   function startCard() {
-    css(); var c = $('solCard'); if (!c) { c = document.createElement('div'); c.id = 'solCard'; c.className = 'sheet'; c.hidden = true;
-      c.innerHTML = '<div class="in" role="dialog" aria-label="Solent race"><div class="shead"><h2>Solent race</h2><button class="close" id="solCardX" aria-label="Close">×</button></div><div class="sbody"><p class="note">Marks from the JOG / SCRA Solent mark list 2026.</p><div class="solcards"><button class="btn primary" id="solCardM"><b>Round the cans</b><span>Tap the buoys on the chart, or pick them from the list</span></button><button class="btn" id="solCardW"><b>Windward-leeward</b><span>Start, windward mark, leeward mark or gate, laps</span></button></div>' + ((B.marks || []).length ? '<p class="note">Your last course: ' + B.marks.length + ' marks. <button class="linkbtn" id="solCardOld">Open it</button></p>' : '') + '</div></div>';
-      document.body.appendChild(c); }
+    css(); var c = $('solCard'); if (!c) { c = document.createElement('div'); c.id = 'solCard'; c.className = 'sheet'; c.hidden = true; document.body.appendChild(c); }
+    var prev = window.__fsOffshorePrev ? window.__fsOffshorePrev() : null, has = !!B.start && (B.type === 'wl' || (B.marks || []).length);
+    c.innerHTML = '<div class="in" role="dialog" aria-label="Solent race"><div class="shead"><h2>Solent race</h2><button class="close" id="solCardX" aria-label="Close">×</button></div><div class="sbody"><p class="note">Marks from the JOG / SCRA Solent mark list 2026. The chart prompts you one step at a time.</p><div class="solcards"><button class="btn primary" id="solCardM"><b>Round the cans</b><span>Start, then tap each buoy with Port or Starboard, then the finish</span></button><button class="btn" id="solCardW"><b>Windward-leeward</b><span>Start, windward mark, leeward mark or gate, laps</span></button></div>' +
+      (has ? '<p class="note">Your last course: ' + esc(B.type === 'wl' ? 'windward-leeward' : B.marks.length + ' marks') + '. <button class="linkbtn" id="solCardOld">Open it</button></p>' : '') +
+      (prev ? '<p class="note">' + esc(prev.name) + ' is kept with its routes. <button class="linkbtn" id="solCardOff">Back to ' + esc(prev.short || prev.name) + '</button></p>' : '') + '</div></div>';
     c.hidden = false; $('solCardX').onclick = function () { c.hidden = true; };
-    $('solCardM').onclick = function () { c.hidden = true; B.type = 'marks'; if (!B.start || (B.marks || []).length) { B.marks = []; B.legTide = []; } saveB(); chain(true); };
-    $('solCardW').onclick = function () { c.hidden = true; B.type = 'wl'; saveB(); openBuilder(); };
-    if ($('solCardOld')) $('solCardOld').onclick = function () { c.hidden = true; openBuilder(); };
+    $('solCardM').onclick = function () { c.hidden = true; B.type = 'marks'; B.marks = []; B.legTide = []; B.fin = 'start'; B.finish = null; saveB(); wzOpen(1); };
+    $('solCardW').onclick = function () { c.hidden = true; B.type = 'wl'; B.legTide = []; saveB(); wzOpen(1); };
+    if ($('solCardOld')) $('solCardOld').onclick = function () { c.hidden = true; wzOpen(B.type === 'wl' ? 5 : 4); };
+    if ($('solCardOff')) $('solCardOff').onclick = function () { c.hidden = true; wzOpen(0); if (window.__fsInshore) window.__fsInshore(false); };
+  }
+
+  /* ---- the course, one prompt at a time (Stuart 16 Nov 07:48 "Yes the first in the list maybe the box can be dragged around simply to
+     put clear of phone windows"; 08:00 "Yes very good logic please build"). One small box: what to do now, what has been chosen, Back,
+     Next and Cancel. Taps on the chart answer the step. It never sends you to the big Solent sheet. Drag it by its grip anywhere on the
+     screen; it remembers where. Windward-leeward: 1 start, 2 windward mark, 3 leeward mark or gate, 4 laps and finish, 5 check and route.
+     Round the cans: 1 start, 2 the buoys, 3 finish, 4 check and route. ---- */
+  var WZ = { on: false, n: 1 };
+  function wzSteps() { return B.type === 'wl' ? ['start', 'wind', 'lee', 'laps', 'check'] : ['start', 'marks', 'fin', 'check']; }
+  function wzKey() { return wzSteps()[WZ.n - 1]; }
+  function wzOk(k) { var w = B.wl;
+    if (k === 'start') return !!B.start; if (k === 'wind') return !!windward(); if (k === 'lee') return !!leeward(); if (k === 'marks') return (B.marks || []).length > 0;
+    if (k === 'fin') return B.fin !== 'mark' || !!B.finish; return true; }
+  function wzOpen(n) {
+    css(); if (!n) { WZ.on = false; var b0 = $('solStep'); if (b0) b0.hidden = true; pick = null; redraw(); return; }
+    pick = null; ['solChain', 'solSheet', 'solPick'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; });
+    if (window.__fsPanelClose) window.__fsPanelClose();   /* the most chart to tap on: the results panel folds away while building */
+    if (!C.on) setOn(true); zoomMax(); WZ.on = true; WZ.n = Math.max(1, Math.min(n, wzSteps().length));
+    load().then(function () { wzRender(); redraw(); }); wzBox(); wzRender(); redraw();
+  }
+  function wzBox() {
+    var b = $('solStep'); if (b) return b;
+    b = document.createElement('div'); b.id = 'solStep'; b.className = 'solstep'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Solent race, step by step'); document.body.appendChild(b);
+    var pos = ld('fs-solstep-pos', null); if (pos) place(b, pos.x, pos.y);
+    b.addEventListener('click', function (e) { var t = e.target.closest('button'); if (!t || !b.contains(t)) return; var k = t.dataset.k, v = t.dataset.v, w = B.wl;
+      if (k === 'x') { wzOpen(0); return; } if (k === 'back') { WZ.n = Math.max(1, WZ.n - 1); } else if (k === 'next') { if (wzOk(wzKey())) WZ.n = Math.min(wzSteps().length, WZ.n + 1); }
+      else if (k === 'go') { if (go()) wzOpen(0); return; }
+      else if (k === 'wk') w.wkind = v; else if (k === 'lk') { w.lkind = v; if (v === 'gate') { w.lcode = ''; w.lcode2 = ''; } }
+      else if (k === 'fc') { b.dataset.msg = fcWind(); } else if (k === 'lap') w.laps = Math.max(1, Math.min(6, (w.laps || 1) + (+v))); else if (k === 'wf') w.fin = v; else if (k === 'sd') w.side = v;
+      else if (k === 'fin') { B.fin = v; if (v === 'start') B.finish = null; } else if (k === 'undo') B.marks.pop(); else if (k === 'list') { list(true); return; }
+      else if (k === 'side') { var m = B.marks[+v]; m.side = m.side === 'stbd' || m.side === 'starboard' ? 'port' : 'stbd'; }
+      saveB(); wzRender(); redraw(); });
+    b.addEventListener('change', function (e) { var t = e.target, w = B.wl;
+      if (t.id === 'solSbrg') { var v = +t.value; w.brg = t.value === '' ? null : ((v % 360) + 360) % 360; } else if (t.id === 'solSdist') w.dist = Math.max(0.2, Math.min(10, +t.value || 1)); else if (t.id === 'solSname') B.name = t.value.trim() || 'Solent race';
+      saveB(); wzRender(); redraw(); });
+    /* drag by the grip */
+    var drag = null;
+    b.addEventListener('pointerdown', function (e) { if (!e.target.closest('.solgrip')) return; var r = b.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId }; try { b.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); });
+    b.addEventListener('pointermove', function (e) { if (!drag || e.pointerId !== drag.id) return; place(b, e.clientX - drag.dx, e.clientY - drag.dy); });
+    var end = function (e) { if (!drag || e.pointerId !== drag.id) return; drag = null; var r = b.getBoundingClientRect(); sv('fs-solstep-pos', { x: r.left, y: r.top }); };
+    b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
+    window.addEventListener('resize', function () { var r = b.getBoundingClientRect(); if (b.style.top) place(b, r.left, r.top); });
+    return b;
+  }
+  function place(b, x, y) { var w = b.offsetWidth || 300, h = b.offsetHeight || 160; x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - Math.min(h, 120), y)); b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; b.style.margin = '0'; }
+  function wzTap(la, lo, x, y) {
+    var k = wzKey(), m = hit(x, y), w = B.wl;
+    if (k === 'start') { B.start = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
+    else if (k === 'wind' && w.wkind === 'buoy') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } w.wcode = m.id; }
+    else if (k === 'lee' && w.lkind === 'buoy') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } w.lcode = m.id; }
+    else if (k === 'lee' && w.lkind === 'gate') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } if (!mark(w.lcode) || (mark(w.lcode) && mark(w.lcode2))) { w.lcode = m.id; w.lcode2 = ''; } else if (m.id !== w.lcode) w.lcode2 = m.id; }
+    else if (k === 'marks') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } sidePop(m, x, y); return true; }
+    else if (k === 'fin' && B.fin === 'mark') { B.finish = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
+    else return false;
+    saveB(); wzRender(); redraw(); return true;
+  }
+  function wzRender() {
+    var b = $('solStep'); if (!b || !WZ.on) return; var k = wzKey(), w = B.wl, N = wzSteps().length, ok = wzOk(k);
+    var seg = function (key, cur, opts) { return '<span class="seg">' + opts.map(function (o) { return '<button type="button" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</span>'; };
+    var got = function (t) { return '<p class="solgot">' + t + '</p>'; }, h = '', ask = '';
+    if (k === 'start') { ask = 'Tap the start on the chart'; h = got(B.start ? 'Start: <b>' + esc(B.start.name) + '</b>. Tap again to change it.' : 'A buoy, or a point on the start line.'); }
+    else if (k === 'wind') { ask = w.wkind === 'buoy' ? 'Tap the windward buoy' : 'Windward mark: heading and distance'; h = '<div class="solcl">' + seg('wk', w.wkind === 'buoy' ? 'buoy' : 'brg', [['buoy', 'A buoy'], ['brg', 'Heading']]) + '</div>';
+      h += w.wkind === 'buoy' ? got(mark(w.wcode) ? 'Windward: <b>' + esc(w.wcode + ' ' + mark(w.wcode).name) + '</b>' : 'Tap it on the chart.') : '<div class="solcl"><input id="solSbrg" type="number" inputmode="numeric" min="0" max="360" value="' + (w.brg == null ? '' : w.brg) + '" aria-label="Heading from the start, degrees true" placeholder="°T">°T <input id="solSdist" type="number" inputmode="decimal" min="0.2" max="10" step="0.1" value="' + w.dist + '" aria-label="Distance, nautical miles"> nm <button class="btn" data-k="fc">Forecast wind</button></div>' + (b.dataset.msg ? got(esc(b.dataset.msg)) : ''); }
+    else if (k === 'lee') { ask = w.lkind === 'buoy' ? 'Tap the leeward buoy' : w.lkind === 'gate' ? (mark(w.lcode) && !mark(w.lcode2) ? 'Tap the second gate buoy' : 'Tap the two gate buoys') : 'Leeward mark: the start line'; h = '<div class="solcl">' + seg('lk', w.lkind || 'start', [['start', 'Start line'], ['buoy', 'A buoy'], ['gate', 'A gate']]) + '</div>';
+      h += got(w.lkind === 'buoy' ? (mark(w.lcode) ? 'Leeward: <b>' + esc(w.lcode + ' ' + mark(w.lcode).name) + '</b>' : 'Tap it on the chart.') : w.lkind === 'gate' ? 'Gate: <b>' + (mark(w.lcode) ? esc(w.lcode) : '?') + '</b> and <b>' + (mark(w.lcode2) ? esc(w.lcode2) : '?') + '</b>. Round either buoy.' : 'The boats round the start line.'); }
+    else if (k === 'laps') { ask = 'Laps and finish'; h = '<div class="solcl"><span class="solk">Laps</span><span class="seg"><button type="button" data-k="lap" data-v="-1" aria-label="One lap fewer">−</button><button type="button" aria-pressed="true" disabled>' + (w.laps || 1) + '</button><button type="button" data-k="lap" data-v="1" aria-label="One lap more">+</button></span></div><div class="solcl"><span class="solk">Finish at</span>' + seg('wf', w.fin || 'lee', [['lee', 'Leeward'], ['start', 'Start line'], ['wind', 'Windward']]) + '</div><div class="solcl"><span class="solk">Leave marks to</span>' + seg('sd', w.side === 'starboard' ? 'starboard' : 'port', [['port', 'Port'], ['starboard', 'Starboard']]) + '</div>'; }
+    else if (k === 'marks') { var n = B.marks.length; ask = n ? 'Tap the next buoy' : 'Tap the first buoy'; h = got('Then choose Port or Starboard. Tap a chip below to swap sides.') + '<div class="solchips">' + (n ? B.marks.map(function (m, i) { var st = m.side === 'stbd' || m.side === 'starboard'; return '<button class="solchip ' + (st ? 'stbd' : 'port') + '" data-k="side" data-v="' + i + '">' + (i + 1) + '. ' + esc(m.code || m.name) + ' ' + (st ? 'S' : 'P') + '</button>'; }).join('') : '<span class="soln">No buoys yet.</span>') + '</div><div class="solcl"><button class="btn" data-k="undo"' + (n ? '' : ' disabled') + '>Undo</button><button class="btn" data-k="list">All the buoys</button></div>'; }
+    else if (k === 'fin') { ask = B.fin === 'mark' ? 'Tap the finish on the chart' : 'Finish at the start line'; h = '<div class="solcl">' + seg('fin', B.fin === 'mark' ? 'mark' : 'start', [['start', 'Start line'], ['mark', 'A buoy or point']]) + '</div>' + (B.fin === 'mark' ? got(B.finish ? 'Finish: <b>' + esc(B.finish.name) + '</b>' : 'Tap it on the chart.') : ''); }
+    else { var c = build(); ask = c.err ? 'Something is missing' : 'Check the course'; h = c.err ? got(esc(c.err)) : got('<b>' + c.marks.length + ' marks, about ' + nm(c) + ' nm.</b> ' + esc([c.start].concat(c.marks).concat([c.finish]).map(function (q) { return (q.gate ? 'Gate' : (q.name || '').replace(/^(Start|Finish), /, '').split(' ')[0]) + (q.side ? (q.side === 'starboard' ? ' S' : ' P') : ''); }).join(' → '))) + '<div class="solcl"><label class="solk" for="solSname">Name</label><input id="solSname" class="solname" maxlength="60" value="' + esc(B.name || 'Solent race') + '"></div>'; ok = !c.err; }
+    var last = WZ.n === N;
+    b.innerHTML = '<div class="solgrip" title="Drag to move"><span></span></div><div class="solhd"><span class="solstepn">Step ' + WZ.n + ' of ' + N + '</span><b>' + ask + '</b><button class="close" data-k="x" aria-label="Cancel">×</button></div>' + h +
+      '<div class="solnav"><button class="btn" data-k="back"' + (WZ.n > 1 ? '' : ' disabled') + '>Back</button>' + (last ? '<button class="btn primary" data-k="go"' + (ok ? '' : ' disabled') + '>Route this race</button>' : '<button class="btn primary" data-k="next"' + (ok ? '' : ' disabled') + '>Next</button>') + '</div>';
+    b.hidden = false; if (b.style.top) { var r = b.getBoundingClientRect(); place(b, r.left, r.top); }
   }
   /* ---- Settings, Charts: the switch and the button ---- */
   /* Stuart 15 Nov 11:26: "on solent race zoom should be set to allow the max": the Closest zoom slider (Settings, Chart) goes to 6 times */
@@ -309,7 +390,7 @@
   }
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   window.__fsTapHook = tapHook;
-  window.FSSolent = { start: startCard, chain: chain, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
+  window.FSSolent = { start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
   if (C.on) load();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookSettings); else hookSettings();
 })();
