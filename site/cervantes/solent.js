@@ -427,6 +427,13 @@
     window.addEventListener('resize', function () { var r = b.getBoundingClientRect(); if (b.style.top) place(b, r.left, r.top); });
     return b;
   }
+  /* Issue 1 (Stuart 16 Nov 21:29, iPhone photo): typing in the box, the keyboard and its bar covered it. While a field in the box has
+     the keyboard, the box sits at the top of the visible screen, above the keyboard, and goes back when the keyboard closes. */
+  function kbFit() { var b = $('solStep'), vv = window.visualViewport; if (!b || !vv) return; var f = document.activeElement, typing = !!(f && b.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)), kb = innerHeight - vv.height > 120;
+    if (typing && kb) { if (!b.dataset.kb) b.dataset.kb = JSON.stringify({ t: b.style.top, l: b.style.left, r: b.style.right, bo: b.style.bottom, m: b.style.maxHeight, mg: b.style.margin }); b.style.top = Math.round(vv.offsetTop + 8) + 'px'; b.style.bottom = 'auto'; b.style.maxHeight = Math.round(vv.height - 16) + 'px'; b.style.margin = '0 auto'; b.style.left = ''; b.style.right = ''; try { f.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+    else if (b.dataset.kb) { var o = JSON.parse(b.dataset.kb); delete b.dataset.kb; b.style.top = o.t; b.style.left = o.l; b.style.right = o.r; b.style.bottom = o.bo; b.style.maxHeight = o.m; b.style.margin = o.mg; } }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', kbFit); visualViewport.addEventListener('scroll', kbFit); }
+  document.addEventListener('focusin', function () { setTimeout(kbFit, 300); }); document.addEventListener('focusout', function () { setTimeout(kbFit, 300); });
   function place(b, x, y) { var w = b.offsetWidth || 300, h = b.offsetHeight || 160; x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - Math.min(h, 120), y)); b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; b.style.margin = '0'; }
   /* F17 (Stuart 16 Nov 12:46): a click that misses says so in the box, naming the nearest buoy; a buoy can also be typed by its code */
   function nearest(la, lo) { var best = null, bd = 1e9; (MK || []).forEach(function (m) { var dx = (m.lon - lo) * Math.cos(la * R) * 60, dy = (m.lat - la) * 60, d = Math.hypot(dx, dy); if (d < bd) { bd = d; best = m; } }); return best ? { m: best, nm: bd } : null; }
