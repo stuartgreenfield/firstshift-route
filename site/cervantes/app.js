@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.22';
+  var VERSION = 'FirstShift Route v0.12.24';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -301,7 +301,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.22 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.24 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -3283,4 +3283,16 @@
   }
   var spCache = {};
   function speedFn(o) { var key = o.polKey || 't' + o.tcc; if (!spCache[key]) spCache[key] = FSRouter.polarTable(o.polar && o.polar.v ? o.polar : FSPolar.startFromTcc(o.tcc)); return spCache[key]; }
+})();
+/* Phone: the round chart buttons hide while a window or bar is open, and come back when it closes (Stuart 16 Nov 07:39 "be sure phone
+   tools don't obscure tool windows"; 07:48 Decided "Hide while open"). Man overboard stays. */
+(function () {
+  var WINS = ['.sheet', '#tip', '#fsMeas', '#solChain', '#solSide', '#solList', '#solPick', '#solCard', '#solPop', '#tgPop', '#astroPop', '#trkCard', '#fsFilm', '#navPanel', '.navpanel', '#navLog', '#layers'];
+  var phone = window.matchMedia ? window.matchMedia('(max-width: 600px), (max-height: 500px)') : { matches: false };
+  function open() { for (var i = 0; i < WINS.length; i++) { var l = document.querySelectorAll(WINS[i]); for (var j = 0; j < l.length; j++) { var e = l[j]; if (!e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden') return true; } } return false; }
+  function tick() { var on = phone.matches && open(); if (document.body && document.body.classList.contains('fabsoff') !== on) document.body.classList.toggle('fabsoff', on); }
+  function css() { if (document.getElementById('fabsOffCss')) return; var s = document.createElement('style'); s.id = 'fabsOffCss'; s.textContent = 'body.fabsoff .fabhelp{display:none!important}'; document.head.appendChild(s); }
+  function start() { css(); tick(); setInterval(tick, 300); }
+  window.__fsFabsTick = tick;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

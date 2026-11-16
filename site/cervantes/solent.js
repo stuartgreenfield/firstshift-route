@@ -42,14 +42,14 @@
     if (!C.on && !pick && !builderOpen()) return; if (!MK) { load(); return; }
     var pxnm = Math.abs(Y(50.8) - Y(50.8 + 1 / 60)); if (pxnm < 1.2) return;
     var r = pxnm > 40 ? 6 : pxnm > 12 ? 5 : 3.5, code = pxnm > 9, name = pxnm > 45, used = usedCodes();
-    ctx.font = (pxnm > 25 ? '600 12px ' : '600 11px ') + 'system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    ctx.font = '400 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';   /* Stuart 16 Nov 07:47: "Very faded buoy number and name very faint as you touch them": faint, small; the buoy touched, and the course's own, in full */
     var oncourse = {}; try { var cc = window.__navCourse && window.__navCourse(); if (cc) [cc.start].concat(cc.marks || []).concat([cc.finish]).forEach(function (q) { var k = /^(?:Start, |Finish, )?(\d[0-9A-Z]) /.exec((q && q.name) || ''); if (k) oncourse[k[1]] = 1; }); } catch (e) {}
     MK.forEach(function (m) {
       var x = X(m.lon), y = Y(m.lat); dot(ctx, x, y, used[m.id] ? r + 2 : r, m.col);
       if (oncourse[m.id] && !used[m.id]) return;   /* the course already labels its own marks */
       if (used[m.id]) { ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = '#2563eb'; ctx.stroke(); }
       if (!code) return; var t = m.id + (name ? ' ' + m.name : '');
-      ctx.fillStyle = INK(); ctx.fillText(t, x + r + 3, y);   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
+      ctx.fillStyle = INK(); ctx.globalAlpha = used[m.id] || m.id === HOT ? 1 : 0.3; ctx.fillText(t, x + r + 3, y); ctx.globalAlpha = 1;   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
     });
     if (builderOpen() || pick) drawPlan(ctx, X, Y);
   }
@@ -65,11 +65,14 @@
     MK.forEach(function (m) { var d = Math.hypot(last.X(m.lon) - x, last.Y(m.lat) - y); if (d < bd) { bd = d; best = m; } });
     return best;
   }
+  var HOT = null;   /* the buoy last touched: its label shown in full until its card closes */
+  function hot(id) { HOT = id; redraw(); }
   function showMark(m) {
+    css(); hot(m.id);   /* css(): the card had no styles until the builder had been opened, so on a phone it sat below the screen */
     var p = $('solPop'); if (!p) { p = document.createElement('div'); p.id = 'solPop'; p.className = 'solpop'; p.setAttribute('role', 'dialog'); document.body.appendChild(p); }
     p.innerHTML = '<button class="close" aria-label="Close">×</button><b>' + esc(m.id) + ' ' + esc(m.name) + '</b><span>' + esc(COLN[m.col] || m.col) + ' · ' + m.zone + '</span><span>' + ddm(m.lat, 'N', 'S') + ' ' + ddm(m.lon, 'E', 'W') + '</span>' + (m.flag ? '<span class="soln">' + esc(flagText(m.flag)) + '</span>' : '') + '<span class="soln">JOG / SCRA Solent mark list 2026</span>';
-    p.hidden = false; p.querySelector('.close').onclick = function () { p.hidden = true; };
-    clearTimeout(showMark.t); showMark.t = setTimeout(function () { p.hidden = true; }, 9000);
+    p.hidden = false; p.querySelector('.close').onclick = function () { p.hidden = true; hot(null); };
+    clearTimeout(showMark.t); showMark.t = setTimeout(function () { p.hidden = true; hot(null); }, 9000);
   }
   function ddm(v, pos, neg) { var a = Math.abs(v), d = Math.floor(a), mn = (a - d) * 60; return (d < 10 && pos === 'E' ? '00' : d < 100 && pos === 'E' ? '0' : '') + d + '° ' + mn.toFixed(2) + "' " + (v >= 0 ? pos : neg); }
   function tapHook(la, lo, x, y, editing) {
@@ -259,11 +262,12 @@
     else { pick = null; var bar = $('solChain'); if (bar) bar.hidden = true; var sp = $('solSide'); if (sp) sp.hidden = true; var L = $('solList'); if (L) L.hidden = true; openBuilder(); }
   }
   function sidePop(m, x, y) {
+    hot(m.id);
     var p = $('solSide'); if (!p) { p = document.createElement('div'); p.id = 'solSide'; p.className = 'solside'; p.setAttribute('role', 'dialog'); document.body.appendChild(p); }
     var inIdx = -1; B.marks.forEach(function (q, i) { if (q.code === m.id) inIdx = i; });
     p.innerHTML = '<b>' + esc(m.id) + ' ' + esc(m.name) + '</b><div class="xrow"><button class="btn primary" data-s="port">Port</button><button class="btn primary" data-s="stbd">Starboard</button>' + (inIdx >= 0 ? '<button class="btn" data-s="del">Remove</button>' : '') + '<button class="btn" data-s="x" aria-label="Close">×</button></div>' + (m.flag ? '<span class="soln">' + esc(flagText(m.flag)) + '</span>' : '');
     var W = innerWidth, H = innerHeight; p.style.left = Math.max(8, Math.min(W - 280, x - 130)) + 'px'; p.style.top = Math.max(60, Math.min(H - 150, y + 18)) + 'px'; p.hidden = false;
-    p.onclick = function (e) { var b = e.target.closest('[data-s]'); if (!b) return; var s2 = b.dataset.s; p.hidden = true;
+    p.onclick = function (e) { var b = e.target.closest('[data-s]'); if (!b) return; var s2 = b.dataset.s; p.hidden = true; HOT = null;
       if (s2 === 'port' || s2 === 'stbd') { B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: s2 }); saveB(); }
       else if (s2 === 'del') { B.marks.splice(inIdx, 1); saveB(); }
       chainBar(); redraw(); };
