@@ -3,6 +3,12 @@
 Every requirement Stuart has asked for, newest first, with its status. Kept in the repository (docs/), on Stuart's Mac (FirstShift tools site/routing/) and summarised in the routing doc ("Requirements: running list").
 Status: Built · Partly built · To build · Researching · Later.
 
+## 16 November 2026
+
+- 07:07 Solent races: clear the last race from the screen; stay on the map from picking the windward-leeward points or the round-the-cans marks through to routing; buoy names smaller and in a tint. Decided 07:10 (DECISIONS). Built, test copy v0.12.23.
+- 07:11 Try it safely, and the tool jumping back to the landing page between actions. Landing page now once per session. Test copy v0.12.23.
+- 06:31 Help for the new features on both tools (Jobs row 35).
+
 ## 15 November 2026
 | Time | Requirement | Status |
 | --- | --- | --- |
