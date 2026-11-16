@@ -16,7 +16,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   /* A: round the cans, not routed */
   await p.waitForSelector('#solCard:not([hidden])', { timeout: 60000 }).catch(() => {});
   const T = await p.evaluate(() => ({ title: document.title, name: (document.querySelector('.tname') || {}).textContent, card: !!document.querySelector('#solCard:not([hidden])') }));
-  ok(T.title === 'FirstShift Mark · Solent' && T.name === 'Mark' && T.card, 'FirstShift Mark opens straight onto the Solent course card', JSON.stringify(T));
+  ok(T.title === 'FirstShift Mark · Solent' && T.name === 'Mark · Solent' && T.card, 'FirstShift Mark opens straight onto the Solent course card', JSON.stringify(T));
   await p.click('#solCardM'); await p.waitForTimeout(1200);
   let bx = await box(); ok(bx && /Route this race, or not/.test(bx.ask) && /Step 1 of 5/.test(bx.step), 'step 1 asks Route or not (5 steps when not routed)', bx && bx.step + ' ' + bx.ask);
   ok(await p.evaluate(() => document.querySelector('#solStep [data-k="plan"][data-v="list"]').getAttribute('aria-pressed') === 'true'), 'No routing is ticked first');
@@ -40,7 +40,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   /* header or lift: sail a starboard beat in a 230 wind (close-hauled 185), then 10 degrees higher */
   await p.evaluate(() => window.__fsLiveOpen()); await p.waitForTimeout(1500);
   const sail = async (la, lo, brg, n) => { for (let i = 0; i < n; i++) { la += 6 / 3600 * 1.0 * Math.cos(brg * Math.PI / 180) / 60 * 1; lo += 6 / 3600 * 1.0 * Math.sin(brg * Math.PI / 180) / 60 / Math.cos(la * Math.PI / 180); await c.setGeolocation({ latitude: la, longitude: lo, accuracy: 5 }); await p.waitForTimeout(1000); } return [la, lo]; };
-  const open = async () => p.evaluate(() => { const ms = FSSolent.marks(); for (let la = 50.74; la < 50.80; la += 0.002) for (let lo = -1.36; lo < -1.26; lo += 0.003) { if (!ms.some(m => Math.hypot(m.lat - la, (m.lon - lo) * 0.63) * 60 < 0.25) && !ms.some(m => Math.hypot(m.lat - (la - 0.0012), (m.lon - lo) * 0.63) * 60 < 0.25)) return [la, lo]; } return null; });
+  const open = async () => p.evaluate(() => { const ms = FSSolent.marks(); for (let la = 50.74; la < 50.80; la += 0.002) for (let lo = -1.36; lo < -1.26; lo += 0.003) { const wet = (a, o) => !window.__fsOnLand(a, o); if (!ms.some(m => Math.hypot(m.lat - la, (m.lon - lo) * 0.63) * 60 < 0.25) && !ms.some(m => Math.hypot(m.lat - (la - 0.0012), (m.lon - lo) * 0.63) * 60 < 0.25) && [[0, 0], [-0.0015, 0.02], [0.002, 0.008], [0.001, 0.013], [-0.0007 - 0.0085, 0.01 - 0.0151]].every(d => wet(la + d[0], lo + d[1]))) return [la, lo]; } return null; });
   let pos = await sail(50.7600, -1.3000, 188, 26); let sh = await p.evaluate(() => (document.querySelector('.lvsh') || {}).textContent || 'none');
   ok(/ON THE WIND|LIFT [0-3]°|HEADER [0-3]°/.test(sh), 'close-hauled on starboard at 188 (wind 230, 42° off): on the wind', sh);
   pos = await sail(pos[0], pos[1], 198, 25); sh = await p.evaluate(() => (document.querySelector('.lvsh') || {}).textContent || 'none');

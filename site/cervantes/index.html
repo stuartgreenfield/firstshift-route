@@ -421,7 +421,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 /* Screen rules (UI review step 1, 16 Nov): on a phone held sideways the chart is about 220 points high, too short for the column of round
    buttons (the top one sat above the screen and one under the top bar), so they line up along the foot of the chart instead, right to left */
 /* Screen rules: man overboard sits bottom left over everything, so on a phone the GPS window and pop-ups keep clear of its column */
-@media (max-width:600px),(max-height:500px){.livebox:not(.mini){left:calc(58px + env(safe-area-inset-left,0px));right:8px;width:auto;max-width:560px;transform:none}.pop{max-width:calc(100% - 66px)}.livebox.mini{left:auto;right:max(8px,env(safe-area-inset-right,0px));transform:none;max-width:calc(100% - 66px)}.lvmini{gap:7px;padding:0 10px}.lvmini .lvlab{display:none}}
+@media (max-width:600px),(max-height:500px){.livebox:not(.mini){left:58px;right:8px;width:auto;max-width:560px;transform:none}.pop{max-width:calc(100% - 66px)}.livebox.mini{left:auto;right:8px;transform:none;max-width:calc(100% - 66px)}.lvmini{gap:7px;padding:0 10px}.lvmini .lvlab{display:none}}
 @media (orientation:landscape) and (max-height:500px){.livebox:not(.mini){overflow:auto}}
 .fabhelp svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .fitbox.later{border:2px solid var(--warn);border-radius:12px;padding:10px 12px;margin:8px 0;line-height:1.45}.fitbox.later b{color:var(--warn)}
@@ -489,6 +489,13 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 #help.sheet{z-index:11}   /* Help opened from Settings, Races or set-up sits on top of them (Stuart 12 Nov) */
 .mkarea{align-self:center;font:600 15px var(--f-head,Inter,sans-serif);color:var(--muted);white-space:nowrap;margin:0 2px 0 -2px}.mkarea::before{content:'· ';color:var(--brand)}@media (max-width:600px){.mkarea{display:none}}
 html:not(.fssolent) #rmSolent,html:not(.fssolent) .solsettings{display:none!important}
+/* The phone's own bars (Stuart 16 Nov 22:29): the page body already keeps clear of a notch at the side, so windows and buttons
+inside the app do not add it a second time (it squeezed the top bar on a phone held sideways); the results tabs shrink to fit */
+:root{--gut:10px;--gutR:10px}
+.fabhelp{right:12px}.fabhelp.fabhere{right:66px}
+.tabs{min-width:0}.tabs .tab{flex:1 1 0;min-width:0;overflow:hidden}.tabs #panelX{flex:none}
+.livebox{bottom:10px}
+#astroLine{max-width:calc(100% - 128px);overflow:hidden;text-overflow:ellipsis}   /* the sun and moon line never reaches man overboard */   /* the chart ends above the bottom bar, which already keeps clear of the home bar */
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
@@ -668,7 +675,7 @@ html:not(.fssolent) #rmSolent,html:not(.fssolent) .solsettings{display:none!impo
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.32</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.33</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -888,6 +895,7 @@ A4, 125, 180, 18, 60</textarea>
 <script src="fshelp.js"></script>
 <script src="fsplot.js"></script>
 <script src="solent.js"></script>
+<script src="mark.js"></script>
 <script src="deck.js"></script>
 <script src="waypoints.js"></script>
 <script src="tracks.js"></script>

@@ -32,4 +32,17 @@ It also reports, for each screen and state, the chart's share of the screen and 
 Screens: phone upright 390 × 664, phone sideways 750 × 342, tablet upright 800 × 1280, tablet sideways 1280 × 800, PC 1920 × 1080.
 States: routed with nothing open, Layers open, GPS window open, GPS window minimised.
 
+## The phone's own bars and keyboard (Stuart 16 Nov 22:29)
+
+"Ensure on the new releases the devices driven menus don't over lay your menus." The notch and rounded corners, the home bar, the
+Android gesture bar, the browser toolbars and the on-screen keyboard never cover a FirstShift menu, button or box.
+
+- The page body keeps clear of a notch at the side; windows and buttons inside the app do not add it again.
+- The top bar and the strips under it start below the notch; the bottom bar keeps clear of the home bar.
+- A short chart (small phone) puts the round buttons in a row along the foot, and the small GPS pill under the top bar.
+- While the keyboard is open, a window over the chart lifts and scrolls so the field being typed in stays above it.
+
+`tests/screen-rules.js` serves the pages with the iPhone 13 (upright and sideways), iPhone SE and Pixel 5 safe-area insets and fails on
+anything under those bars; `tests/keyboard.js` stands in for the iPhone keyboard and fails on any text field left behind it.
+
 Run: `node tests/screen-rules.js http://localhost:8779` (Route) and `http://localhost:8778` (Navigate).

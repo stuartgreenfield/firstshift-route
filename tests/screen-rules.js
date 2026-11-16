@@ -2,14 +2,18 @@
    may cover another window or button, and none may sit off the screen. Reports the chart's share of the screen and the
    buttons smaller than 44 points. Run: node tests/screen-rules.js http://localhost:8779 [Route|Navigate] */
 const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
-const sizes = [['Phone upright', { ...devices['iPhone 13'] }], ['Phone sideways', { ...devices['iPhone 13 landscape'] }], ['Tablet upright', { viewport: { width: 800, height: 1280 }, hasTouch: true, isMobile: true }], ['Tablet sideways', { viewport: { width: 1280, height: 800 }, hasTouch: true, isMobile: true }], ['PC', { viewport: { width: 1920, height: 1080 } }]];
+/* The phone's own bars (Stuart 16 Nov 22:29: "ensure on the new releases the devices driven menus don't over lay your menus"):
+   the notch and rounded corners, the home bar and the Android gesture bar take the safe-area insets below. Chromium has no notch, so
+   the test serves the pages with env(safe-area-inset-*) set to the phone's values and fails on any button or box in those strips. */
+const INS = { 'Phone upright': [47, 0, 34, 0], 'Phone sideways': [0, 47, 21, 47], 'Small phone': [20, 0, 0, 0], 'Android phone': [24, 0, 24, 0] };   /* top, right, bottom, left (iPhone 13; iPhone SE; Android gesture bar) */
+const sizes = [['Phone upright', { ...devices['iPhone 13'] }], ['Phone sideways', { ...devices['iPhone 13 landscape'] }], ['Small phone', { ...devices['iPhone SE'] }], ['Android phone', { ...devices['Pixel 5'] }], ['Tablet upright', { viewport: { width: 800, height: 1280 }, hasTouch: true, isMobile: true }], ['Tablet sideways', { viewport: { width: 1280, height: 800 }, hasTouch: true, isMobile: true }], ['PC', { viewport: { width: 1920, height: 1080 } }]];
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
 /* everything placed over the page: absolute or fixed boxes that are not inside another fixed box */
 const scan = () => { const W = innerWidth, H = innerHeight, out = [];
   const nm = e => e.id || (typeof e.className === 'string' && e.className.split(' ')[0]) || e.tagName;
   for (const e of document.querySelectorAll('body *')) { const cs = getComputedStyle(e); if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
     if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || e.closest('[hidden]')) continue;
-    if (e.id === 'map' || e.tagName === 'CANVAS') continue;
+    if (e.id === 'map' || e.tagName === 'CANVAS' || e.id === 'navToast') continue;   /* a passing message is not a window */
     let a = e.parentElement, inner = false; while (a && a !== document.body) { const s = getComputedStyle(a); if (s.position === 'fixed' || s.position === 'absolute') { inner = true; break; } a = a.parentElement; } if (inner) continue;
     const r = e.getBoundingClientRect(); if (r.width < 20 || r.height < 20) continue;
     out.push({ n: nm(e), r: [r.left, r.top, r.right, r.bottom].map(Math.round) }); }
@@ -25,16 +29,26 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
   for (const [name, opt] of sizes) {
     const c = await b.newContext({ ...opt, serviceWorkers: 'block', geolocation: { latitude: 50.70, longitude: -1.20 }, permissions: ['geolocation'] });
     await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
+    const ins = INS[name]; if (ins) { const v = { top: ins[0], right: ins[1], bottom: ins[2], left: ins[3] };
+      await c.route(/\.(html|css|js)(\?.*)?$|\/$/, async rt => { const u = rt.request().url(); if (!u.startsWith(BASE)) return rt.continue(); const r = await rt.fetch(); const t = (await r.text()).replace(/env\(\s*safe-area-inset-(top|bottom|left|right)\s*(?:,\s*[^()]*)?\)/g, (m, k) => v[k] + 'px'); await rt.fulfill({ response: r, body: t }); }); }
     const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/channel-area/');
     await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running; }, null, { timeout: 600000 }).catch(() => {});
     await p.waitForTimeout(2500);
     const states = [['routed', async () => {}],
       ['layers open', async () => { await p.click('#layersBtn').catch(() => {}); await p.waitForTimeout(800); }],
       ['GPS on', async () => { await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.click('#liveBtn').catch(() => {}); await p.waitForTimeout(2500); }],
-      ['GPS minimised', async () => { await p.click('#lvMin').catch(() => {}); await p.waitForTimeout(800); }]];
+      ['GPS minimised', async () => { await p.click('#lvMin').catch(() => {}); await p.waitForTimeout(800); }],
+      ['plotter and sun line', async () => { await p.evaluate(() => { try { localStorage.setItem('fs-astro-line', '1'); } catch (e) {} if (window.FSAstro) FSAstro.line(); const b = document.getElementById('fsPlotBtn'); const pl = document.getElementById('fsPlot'); if (b && (!pl || pl.hidden)) b.click(); }); await p.waitForTimeout(1200); }],
+      ['Clear screen', async () => { await p.evaluate(() => { const b = document.getElementById('navClearBtn'); if (b) b.click(); }); await p.waitForTimeout(1200); }]];
     for (const [st, act] of states) { await act(); const r = await p.evaluate(scan);
       ok(!r.off.length, `${name} | ${st} | nothing off the screen`, r.off.join('; ') || null);
       ok(!r.lap.length, `${name} | ${st} | no window or button covers another`, r.lap.join('; ') || null);
+      if (ins) { const bad = await p.evaluate(([t, rr, bo, l]) => { const W = innerWidth, H = innerHeight, out = [];
+          for (const e of document.querySelectorAll('button, input, select, textarea, a[href], [role=button], .chip')) { if (e.closest('[hidden]')) continue; const c = getComputedStyle(e); if (c.display === 'none' || c.visibility === 'hidden' || +c.opacity === 0) continue; const r = e.getBoundingClientRect(); if (r.width < 4 || r.height < 4 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+            const h = document.elementFromPoint(Math.min(W - 1, Math.max(0, (r.left + r.right) / 2)), Math.min(H - 1, Math.max(0, (r.top + r.bottom) / 2))); if (!h || !(e === h || e.contains(h) || h.contains(e))) continue;
+            if (r.top < t - 1 || r.bottom > H - bo + 1 || r.left < l - 1 || r.right > W - rr + 1) out.push((e.id || e.getAttribute('aria-label') || e.textContent.trim().slice(0, 18) || e.tagName) + ' ' + [r.left, r.top, r.right, r.bottom].map(Math.round).join(',')); }
+          return out; }, ins);
+        ok(!bad.length, `${name} | ${st} | nothing under the phone's own bars (notch, home or gesture bar)`, bad.slice(0, 8).join('; ') || null); }
       ok(!r.blap.length, `${name} | ${st} | no two buttons on top of each other`, r.blap.slice(0, 8).join('; ') || null);
       rep.push(`${name} | ${st} | chart ${r.share}% | buttons under 44: ${r.small}`);
       await p.screenshot({ path: `/tmp/claude-0/ui/rules-${name.replace(/ /g, '-')}-${st.replace(/ /g, '-')}.png` }); }
