@@ -42,14 +42,14 @@
     if (!C.on && !pick && !builderOpen()) return; if (!MK) { load(); return; }
     var pxnm = Math.abs(Y(50.8) - Y(50.8 + 1 / 60)); if (pxnm < 1.2) return;
     var r = pxnm > 40 ? 6 : pxnm > 12 ? 5 : 3.5, code = pxnm > 9, name = pxnm > 45, used = usedCodes();
-    ctx.font = '400 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';   /* Stuart 16 Nov 07:07 "smaller and in a tint": 10 px, normal weight, the code alone until zoomed in close */
+    ctx.font = (pxnm > 25 ? '600 12px ' : '600 11px ') + 'system-ui, sans-serif'; ctx.textBaseline = 'middle';
     var oncourse = {}; try { var cc = window.__navCourse && window.__navCourse(); if (cc) [cc.start].concat(cc.marks || []).concat([cc.finish]).forEach(function (q) { var k = /^(?:Start, |Finish, )?(\d[0-9A-Z]) /.exec((q && q.name) || ''); if (k) oncourse[k[1]] = 1; }); } catch (e) {}
     MK.forEach(function (m) {
       var x = X(m.lon), y = Y(m.lat); dot(ctx, x, y, used[m.id] ? r + 2 : r, m.col);
       if (oncourse[m.id] && !used[m.id]) return;   /* the course already labels its own marks */
       if (used[m.id]) { ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = '#2563eb'; ctx.stroke(); }
       if (!code) return; var t = m.id + (name ? ' ' + m.name : '');
-      ctx.fillStyle = INK(); ctx.globalAlpha = used[m.id] ? 1 : 0.62; ctx.fillText(t, x + r + 3, y); ctx.globalAlpha = 1;   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
+      ctx.fillStyle = INK(); ctx.fillText(t, x + r + 3, y);   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
     });
     if (builderOpen() || pick) drawPlan(ctx, X, Y);
   }
@@ -73,7 +73,6 @@
   }
   function ddm(v, pos, neg) { var a = Math.abs(v), d = Math.floor(a), mn = (a - d) * 60; return (d < 10 && pos === 'E' ? '00' : d < 100 && pos === 'E' ? '0' : '') + d + '° ' + mn.toFixed(2) + "' " + (v >= 0 ? pos : neg); }
   function tapHook(la, lo, x, y, editing) {
-    if (pick === 'wl') return wlTap(la, lo, x, y);
     if (pick === 'chain') { var mc = hit(x, y); if (mc) sidePop(mc, x, y); else toast('Tap one of the Solent buoys.'); return true; }
     if (pick) { var m = hit(x, y); pickDone(m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }); return true; }
     if (editing || !C.on) return false;
@@ -132,7 +131,6 @@
       '.solchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}.solchip{flex:none;min-height:34px;padding:0 10px;border-radius:17px;border:1px solid var(--line,#ccc);background:none;color:var(--ink,#000);font:700 13px var(--f-data,monospace)}.solchip.port{border-color:#dc2626;color:#dc2626}.solchip.stbd{border-color:#16a34a;color:#16a34a}' +
       '.solside{position:fixed;z-index:63;width:270px;background:var(--panel,#fff);color:var(--ink,#000);border:1px solid var(--line,#ccc);border-radius:12px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.solside[hidden]{display:none}.solside .btn{min-height:42px}' +
       '.sollq{width:100%;min-height:44px;font-size:16px;padding:0 10px;border-radius:9px;border:1px solid var(--line,#ccc);background:var(--bg,#fff);color:var(--ink,#000)}.solla{margin:10px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#667)}.sollr{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line,#e2e8f0)}.sollr b{width:34px;font-family:var(--f-data,monospace)}.sollr span{flex:1;min-width:0;display:flex;flex-direction:column}.sollr small{color:var(--muted,#667)}.sollr .btn{min-height:38px}' +
-      '.solwl{max-height:46vh;overflow-y:auto;gap:5px;padding:6px 8px;font-size:13px}.solwl .solcl{gap:6px}.solwl input{width:56px;min-height:30px;font-size:16px}.solwl .seg button{min-height:30px;padding:0 9px;font-size:13px;white-space:nowrap}.solwl .solchip{min-height:30px;font-size:12px;padding:0 9px}.solwl .btn{min-height:38px}.solwl .solcl>b{font-size:14px}.solk{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#667)}.solchip.on{border-color:#1d4ed8;color:#1d4ed8;border-width:2px}.solchain .seg button{min-height:34px}.solchain .soln{font-size:12px;color:var(--muted,#667)}' +
       '.solcards{display:flex;flex-direction:column;gap:10px}.solcards .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:12px;min-height:64px;gap:2px}.solcards span{font-size:12px;opacity:.85;font-weight:400}';
     document.head.appendChild(st);
   }
@@ -213,25 +211,21 @@
     on('solSide', 'onchange', function () { B.wl.side = this.value; saveB(); });
     on('solDepth', 'onchange', function () { if (window.__fsDepth) window.__fsDepth(+this.value); });
     on('solFc', 'onclick', function () {
-      var msg = fcWind(); render(); redraw(); $('solFcNote').textContent = msg;
+      var n = $('solFcNote'); if (!B.start) { n.textContent = 'Choose the start first.'; return; }
+      var t = window.__fsStartAt ? window.__fsStartAt() : null, w = window.__fsWindAt ? window.__fsWindAt(B.start.lat, B.start.lon, t) : null;
+      if (!w) { n.textContent = 'No forecast wind here at the start time: type the heading.'; return; }
+      B.wl.brg = Math.round(w.twd) % 360; saveB(); render(); redraw();
+      $('solFcNote').textContent = 'Forecast at the start' + (t ? ' (' + new Date(t * 1000).toUTCString().slice(17, 22) + ' UTC)' : '') + ': ' + w.tws.toFixed(0) + ' kn from ' + ('00' + Math.round(w.twd)).slice(-3) + '°T. Check the wind on the line before the start.';
     });
     on('solChainGo', 'onclick', function () { chain(true); });
     on('solListGo', 'onclick', function () { list(true); });
     on('solBoardGo', 'onclick', function () { var r = parseBoard($('solBoard').value), n = $('solBoardNote'); if (r.marks.length) { B.marks = r.marks; saveB(); render(); redraw(); n = $('solBoardNote'); } n.textContent = (r.marks.length ? r.marks.length + ' marks set.' : 'No mark codes found.') + (r.bad.length ? ' Not on the list: ' + r.bad.join(', ') + '.' : ''); });
     on('solClear', 'onclick', function () { B = { type: B.type, name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } }; saveB(); render(); redraw(); });
     [].forEach.call(document.querySelectorAll('#solSheet select.soltide'), function (el) { el.onchange = function () { var L = B.legTide = B.legTide || []; var i = +el.dataset.leg - 1; L[i] = L[i] || {}; L[i][el.dataset.k] = +el.value; sv(BKEY, B); }; });
-    on('solGo', 'onclick', go);
+    on('solGo', 'onclick', function () { var c = build(); if (c.err) return; zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
+      var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+      if (c.name.indexOf(ds) < 0) c.name = (c.name + ' ' + ds).slice(0, 70);   /* Stuart 15 Nov J Q&A: the race date added to the name in My races */ $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); });
   }
-  function go() { var c = build(); if (c.err) { toast(c.err); return false; } zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
-    /* Stuart 15 Nov J Q&A: the race date added to the name in My races; 16 Nov 07:07: "if no name defaults to Solent race with date time stamp so it can be rerun after the event" */
-    var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-    c.name = (c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d\d:\d\d)?$/, '') + ' ' + ds).slice(0, 70);
-    if ($('solSheet')) $('solSheet').hidden = true; barsOff(); if (window.__fsUseCourse) window.__fsUseCourse(c); return true; }
-  function barsOff() { pick = null; WLS = null; ['solChain', 'solWl', 'solSide', 'solList', 'solPick'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; }); }
-  /* the forecast wind at the start, for the windward mark's heading */
-  function fcWind() { if (!B.start) return 'Choose the start first.'; var t = window.__fsStartAt ? window.__fsStartAt() : null, w = window.__fsWindAt ? window.__fsWindAt(B.start.lat, B.start.lon, t) : null;
-    if (!w) return 'No forecast wind here at the start time: type the heading.'; B.wl.brg = Math.round(w.twd) % 360; saveB();
-    return 'Forecast at the start' + (t ? ' (' + new Date(t * 1000).toUTCString().slice(17, 22) + ' UTC)' : '') + ': ' + w.tws.toFixed(0) + ' kn from ' + ('00' + Math.round(w.twd)).slice(-3) + '°T. Check the wind on the line before the start.'; }
   function pickStart(what) {
     pickStart.back = pick === 'chain'; if ($('solChain')) $('solChain').hidden = true; pick = what; if ($('solSheet')) $('solSheet').hidden = true; var bar = $('solPick');
     if (!bar) { bar = document.createElement('div'); bar.id = 'solPick'; bar.className = 'solpick'; document.body.appendChild(bar); }
@@ -252,14 +246,12 @@
   function chainBar() {
     var bar = $('solChain'); if (!bar) { bar = document.createElement('div'); bar.id = 'solChain'; bar.className = 'solchain'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Course being built'); document.body.appendChild(bar);
       bar.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.k;
-        if (k === 'undo') { B.marks.pop(); saveB(); chainBar(); redraw(); } else if (k === 'list') list(true); else if (k === 'done' || k === 'more') chain(false); else if (k === 'start') { pickStart('start'); }
-        else if (k === 'go') go(); else if (k === 'finS') { B.fin = 'start'; saveB(); chainBar(); redraw(); } else if (k === 'finM') { B.fin = 'mark'; saveB(); pickStart('finish'); }
+        if (k === 'undo') { B.marks.pop(); saveB(); chainBar(); redraw(); } else if (k === 'list') list(true); else if (k === 'done') chain(false); else if (k === 'start') { pickStart('start'); }
         else if (b.dataset.i != null) { var i = +b.dataset.i, m = B.marks[i]; m.side = m.side === 'port' ? 'stbd' : 'port'; saveB(); chainBar(); redraw(); } }); }
     var n = B.marks.length, sd = function (m) { return m.side === 'stbd' ? 'S' : 'P'; };
     bar.innerHTML = '<div class="solcl"><b>' + (B.start ? (n ? 'Tap the next buoy' : 'Tap a buoy, then Port or Starboard') : 'Start: ') + '</b>' + (B.start ? '' : '<button class="btn" data-k="start">Pick the start</button>') + '<span class="solcn">' + n + ' mark' + (n === 1 ? '' : 's') + (n ? ', about ' + nm(build(true).err ? { start: B.start || B.marks[0], marks: B.marks, finish: B.start || B.marks[n - 1] } : build(true)) + ' nm' : '') + '</span></div>' +
       '<div class="solchips">' + (B.marks.length ? B.marks.map(function (m, i) { return '<button class="solchip ' + (m.side === 'stbd' ? 'stbd' : 'port') + '" data-i="' + i + '" title="Tap to swap Port and Starboard">' + (i + 1) + '. ' + esc(m.code || m.name) + ' ' + sd(m) + '</button>'; }).join('') : '<span class="note">No marks yet.</span>') + '</div>' +
-      '<div class="solcl"><span class="solk">Finish at</span><span class="seg"><button type="button" data-k="finS" aria-pressed="' + (B.fin !== 'mark') + '">Start line</button><button type="button" data-k="finM" aria-pressed="' + (B.fin === 'mark') + '">' + (B.fin === 'mark' && B.finish ? esc(B.finish.code || 'Point') : 'A mark') + '</button></span></div>' +
-      '<div class="xrow"><button class="btn" data-k="undo"' + (n ? '' : ' disabled') + '>Undo</button><button class="btn" data-k="list">All the buoys</button><button class="btn" data-k="more">More options</button><button class="btn primary" data-k="go"' + (B.start && n ? '' : ' disabled') + '>Route this race</button></div>';   /* Stuart 16 Nov 07:07: stay on the map through to routing */
+      '<div class="xrow"><button class="btn" data-k="undo"' + (n ? '' : ' disabled') + '>Undo</button><button class="btn" data-k="list">All the buoys</button><button class="btn primary" data-k="done">Finish</button></div>';
     bar.hidden = !pick || pick !== 'chain';
   }
   function chain(on) {
@@ -293,47 +285,6 @@
     }
     if (on) { load().then(fill); fill(); L.hidden = false; setTimeout(function () { try { $('solListQ').focus(); } catch (e) {} }, 100); } else L.hidden = true;
   }
-  /* ---- windward-leeward on the map (Stuart 16 Nov 07:07: "Can you stay on the map all the time from picking either the windward leeward
-     points or the round the cans?"; Decided "Both on the map"). A bar at the foot of the chart: tap the start, the windward buoy (or give a
-     heading and distance, or the forecast wind), the leeward buoy or the two buoys of a gate; laps, finish and side as chips; Route this race.
-     The full sheet stays behind More options. ---- */
-  var WLS = null;   /* what the next tap on the chart sets: start, wind, lee, gate1, gate2 */
-  function wlNext() { var w = B.wl; if (!B.start) return 'start'; if (w.wkind === 'buoy' && !mark(w.wcode)) return 'wind'; if (w.lkind === 'buoy' && !mark(w.lcode)) return 'lee'; if (w.lkind === 'gate' && !mark(w.lcode)) return 'gate1'; if (w.lkind === 'gate' && !mark(w.lcode2)) return 'gate2'; return null; }
-  function wlTap(la, lo, x, y) {
-    var m = hit(x, y), w = B.wl, st = WLS || wlNext();
-    if (st === 'start') B.start = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo };
-    else if (!st) { if (m) showMark(m); return !!m; }
-    else if (!m) { toast('Tap one of the Solent buoys.'); return true; }
-    else if (st === 'wind') { w.wkind = 'buoy'; w.wcode = m.id; }
-    else if (st === 'lee') w.lcode = m.id; else if (st === 'gate1') w.lcode = m.id; else if (st === 'gate2') w.lcode2 = m.id;
-    saveB(); WLS = null; wlBar(); redraw(); return true;
-  }
-  function wlBar() {
-    var bar = $('solWl'), w = B.wl;
-    if (!bar) { bar = document.createElement('div'); bar.id = 'solWl'; bar.className = 'solchain solwl'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Windward-leeward course'); document.body.appendChild(bar);
-      bar.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.k, v = b.dataset.v, w2 = B.wl;
-        if (k === 'x') { wlMap(false); redraw(); return; } if (k === 'go') { go(); return; } if (k === 'more') { wlMap(false); openBuilder(); return; }
-        if (k === 'tap') WLS = v; else if (k === 'wk') { w2.wkind = v; WLS = v === 'buoy' ? 'wind' : null; } else if (k === 'lk') { w2.lkind = v; WLS = v === 'buoy' ? 'lee' : v === 'gate' ? 'gate1' : null; }
-        else if (k === 'fc') { bar.dataset.msg = fcWind(); } else if (k === 'lap') w2.laps = Math.max(1, Math.min(6, (w2.laps || 1) + (+v))); else if (k === 'wf') w2.fin = v; else if (k === 'sd') w2.side = v;
-        saveB(); wlBar(); redraw(); });
-      bar.addEventListener('change', function (e) { var t = e.target, w2 = B.wl; if (t.id === 'solWbrg') { var v = +t.value; w2.brg = t.value === '' ? null : ((v % 360) + 360) % 360; } else if (t.id === 'solWdist') w2.dist = Math.max(0.2, Math.min(10, +t.value || 1)); saveB(); wlBar(); redraw(); }); }
-    var st = WLS || wlNext(), c = build(true), ok = !build().err, seg = function (k, cur, opts) { return '<span class="seg">' + opts.map(function (o) { return '<button type="button" data-k="' + k + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</span>'; },
-      chip = function (v, txt, on) { return '<button class="solchip' + (on ? ' on' : '') + '" data-k="tap" data-v="' + v + '" title="Tap, then the chart, to change">' + esc(txt) + '</button>'; };
-    var say = { start: 'Tap the start on the chart: a buoy or a point on the line', wind: 'Tap the windward buoy', lee: 'Tap the leeward buoy', gate1: 'Tap the first buoy of the gate', gate2: 'Tap the second buoy of the gate' }[st] || (ok ? 'Ready: Route this race' : 'Give the windward mark a heading and distance');
-    var h = '<div class="solcl"><b>' + say + '</b><span class="solcn">' + (ok ? c.marks.length + ' marks, about ' + nm(c) + ' nm' : '') + '</span></div>';
-    h += '<div class="solcl"><span class="solk">Start</span>' + chip('start', B.start ? (B.start.code || 'Point') : 'Tap the chart', st === 'start') + '<span class="solk">Windward</span>' + seg('wk', w.wkind === 'buoy' ? 'buoy' : 'brg', [['buoy', 'Buoy'], ['brg', 'Heading']]) + (w.wkind === 'buoy' ? chip('wind', mark(w.wcode) ? w.wcode : 'Tap a buoy', st === 'wind') : '<input id="solWbrg" type="number" inputmode="numeric" min="0" max="360" value="' + (w.brg == null ? '' : w.brg) + '" aria-label="Heading from the start, degrees true" placeholder="°T">°T <input id="solWdist" type="number" inputmode="decimal" min="0.2" max="10" step="0.1" value="' + w.dist + '" aria-label="Distance, nautical miles"> nm <button class="btn" data-k="fc">Forecast wind</button>') + '</div>';
-    if (bar.dataset.msg && w.wkind !== 'buoy') h += '<span class="soln">' + esc(bar.dataset.msg) + '</span>';
-    h += '<div class="solcl"><span class="solk">Leeward</span>' + seg('lk', w.lkind || 'start', [['start', 'Start line'], ['buoy', 'Buoy'], ['gate', 'Gate']]) + (w.lkind === 'buoy' ? chip('lee', mark(w.lcode) ? w.lcode : 'Tap a buoy', st === 'lee') : w.lkind === 'gate' ? chip('gate1', mark(w.lcode) ? w.lcode : 'Buoy 1', st === 'gate1') + chip('gate2', mark(w.lcode2) ? w.lcode2 : 'Buoy 2', st === 'gate2') : '') + '</div>';
-    h += '<div class="solcl"><span class="solk">Laps</span><span class="seg"><button type="button" data-k="lap" data-v="-1" aria-label="One lap fewer">−</button><button type="button" aria-pressed="true" disabled>' + (w.laps || 1) + '</button><button type="button" data-k="lap" data-v="1" aria-label="One lap more">+</button></span><span class="solk">Finish</span>' + seg('wf', w.fin || 'lee', [['lee', 'Leeward'], ['start', 'Start'], ['wind', 'Windward']]) + '<span class="solk">Leave to</span>' + seg('sd', w.side === 'starboard' ? 'starboard' : 'port', [['port', 'P'], ['starboard', 'S']]) + '</div>';
-    h += '<div class="xrow"><button class="btn" data-k="x" aria-label="Close">×</button><button class="btn" data-k="more">More options</button><button class="btn primary" data-k="go"' + (ok ? '' : ' disabled') + '>Route this race</button></div>';
-    bar.innerHTML = h; bar.hidden = pick !== 'wl';
-  }
-  function wlMap(on) {
-    css(); if (on) { barsOff(); pick = 'wl'; B.type = 'wl'; saveB(); var s = $('solSheet'); if (s) s.hidden = true; if (!C.on) setOn(true); zoomMax(); load().then(function () { wlBar(); redraw(); }); wlBar(); redraw(); }
-    else { pick = null; WLS = null; var bar = $('solWl'); if (bar) bar.hidden = true; }
-  }
-  /* Clear (Stuart 16 Nov 07:07): the routing first, then the buoys; the race is kept under Saved routes to run again */
-  function clearRace() { barsOff(); var c = $('solCard'); if (c) c.hidden = true; var s = $('solSheet'); if (s) s.hidden = true; var had = window.__fsClearRace ? window.__fsClearRace() : false; setOn(false); toast(had ? 'Cleared from the chart. The race is kept in Races, Saved routes, to run again.' : 'Solent buoys off.'); }
   /* from the race list: a two-button card, Round the cans or Windward-leeward (Stuart 15 Nov 17:32) */
   function startCard() {
     css(); var c = $('solCard'); if (!c) { c = document.createElement('div'); c.id = 'solCard'; c.className = 'sheet'; c.hidden = true;
@@ -341,7 +292,7 @@
       document.body.appendChild(c); }
     c.hidden = false; $('solCardX').onclick = function () { c.hidden = true; };
     $('solCardM').onclick = function () { c.hidden = true; B.type = 'marks'; if (!B.start || (B.marks || []).length) { B.marks = []; B.legTide = []; } saveB(); chain(true); };
-    $('solCardW').onclick = function () { c.hidden = true; B.type = 'wl'; saveB(); wlMap(true); };
+    $('solCardW').onclick = function () { c.hidden = true; B.type = 'wl'; saveB(); openBuilder(); };
     if ($('solCardOld')) $('solCardOld').onclick = function () { c.hidden = true; openBuilder(); };
   }
   /* ---- Settings, Charts: the switch and the button ---- */
@@ -351,11 +302,10 @@
   function hookSettings() {
     var e = $('solentOn'); if (e) { e.checked = !!C.on; e.onchange = function () { setOn(e.checked); }; }
     var bt = $('solentBuild'); if (bt) bt.onclick = function () { if (!C.on) setOn(true); openBuilder(); };
-    var rc = $('rmClear'); if (rc) rc.onclick = function () { var m = $('raceMenu'); if (m) m.hidden = true; clearRace(); };
   }
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   window.__fsTapHook = tapHook;
-  window.FSSolent = { start: startCard, chain: chain, wl: wlMap, clear: clearRace, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
+  window.FSSolent = { start: startCard, chain: chain, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
   if (C.on) load();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookSettings); else hookSettings();
 })();
