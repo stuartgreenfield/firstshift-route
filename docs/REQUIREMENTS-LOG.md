@@ -5,6 +5,8 @@ Status: Built · Partly built · To build · Researching · Later.
 
 ## 16 November 2026
 
+- 08:00 Solent races as a clean inshore mode: top left Solent race, offshore routes saved away, toggle back; the course built one prompt at a time in a draggable box. Test copy v0.12.25.
+- 07:39 Rolled back v0.12.23 (bugs; phone buttons covered the bar). 07:55 faint buoy labels, round buttons hide on phones while a window is open: test copy v0.12.24.
 - 07:07 Solent races: clear the last race from the screen; stay on the map from picking the windward-leeward points or the round-the-cans marks through to routing; buoy names smaller and in a tint. Decided 07:10 (DECISIONS). Built, test copy v0.12.23.
 - 07:11 Try it safely, and the tool jumping back to the landing page between actions. Landing page now once per session. Test copy v0.12.23.
 - 06:31 Help for the new features on both tools (Jobs row 35).
