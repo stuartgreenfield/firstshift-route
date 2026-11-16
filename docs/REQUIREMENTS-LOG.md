@@ -305,3 +305,4 @@ Status: Built · Partly built · To build · Researching · Later.
 - 09:13 15 Nov 2026: dead reckoning when GPS is lost (important), Route and Navigate; spec in Navigate REPLIES 09:13.
 - 09:28 15 Nov 2026: LIVE Route v0.12.16 and Navigate v0.7.38 (Stuart's go 09:26). Rollback restore-2026-11-15-0927.
 - 15:47 16 Nov 2026: reopening must put the routes back exactly as left; re-route only with new data on the server, and then only when asked. Dead-reckoning beeps quiet on a computer (16:05). Test copy v0.12.28.
+- 16:45 16 Nov 2026: LIVE Route v0.12.28 and Navigate v0.7.51 (Stuart's go 16:24). Rollback restore-2026-11-16-1630, site-restore-2026-11-16-1630.
