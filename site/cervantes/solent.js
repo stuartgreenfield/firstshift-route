@@ -46,8 +46,9 @@
     var r = pxnm > 40 ? 6 : pxnm > 12 ? 5 : 3.5, code = pxnm > 9, name = pxnm > 45, used = usedCodes();
     ctx.font = '400 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';   /* Stuart 16 Nov 07:47: "Very faded buoy number and name very faint as you touch them": faint, small; the buoy touched, and the course's own, in full */
     var oncourse = {}; try { var cc = window.__navCourse && window.__navCourse(); if (cc) [cc.start].concat(cc.marks || []).concat([cc.finish]).forEach(function (q) { var k = /^(?:Start, |Finish, )?(\d[0-9A-Z]) /.exec((q && q.name) || ''); if (k) oncourse[k[1]] = 1; }); } catch (e) {}
+    var dim = !!window.FS_MARK && Object.keys(oncourse).length > 0 && !pick && !builderOpen() && !window.__fsMarkPicking;   /* Mark (16 Nov 23:50): with a course on the chart, the other buoys step back */
     MK.forEach(function (m) {
-      var x = X(m.lon), y = Y(m.lat); dot(ctx, x, y, used[m.id] ? r + 2 : r, m.col);
+      var x = X(m.lon), y = Y(m.lat), back = dim && !oncourse[m.id] && !used[m.id]; if (back) ctx.globalAlpha = 0.3; dot(ctx, x, y, used[m.id] ? r + 2 : back ? r * 0.7 : r, m.col); if (back) { ctx.globalAlpha = 1; return; }
       if (oncourse[m.id] && !used[m.id]) return;   /* the course already labels its own marks */
       if (used[m.id]) { ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = '#2563eb'; ctx.stroke(); }
       if (!code) return; var t = m.id + (name ? ' ' + m.name : '');

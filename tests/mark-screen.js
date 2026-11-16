@@ -16,7 +16,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
   const nm = e => e.id || (typeof e.className === 'string' && e.className.split(' ')[0]) || e.tagName;
   for (const e of document.querySelectorAll('body *')) { const cs = getComputedStyle(e); if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
     if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || e.closest('[hidden]')) continue;
-    if (e.id === 'map' || e.tagName === 'CANVAS' || e.id === 'navToast') continue;   /* a passing message is not a window */
+    if (e.id === 'map' || e.id === 'app' || e.tagName === 'CANVAS' || e.id === 'navToast') continue;   /* the chart itself is not a window */   /* a passing message is not a window */
     let a = e.parentElement, inner = false; while (a && a !== document.body) { const s = getComputedStyle(a); if (s.position === 'fixed' || s.position === 'absolute') { inner = true; break; } a = a.parentElement; } if (inner) continue;
     const r = e.getBoundingClientRect(); if (r.width < 20 || r.height < 20) continue;
     out.push({ n: nm(e), r: [r.left, r.top, r.right, r.bottom].map(Math.round) }); }
@@ -56,8 +56,8 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
       ok(!r.off.length, `${name} | ${st} | nothing off the screen`, r.off.join('; ') || null);
       ok(!r.lap.length, `${name} | ${st} | no window or button covers another`, r.lap.join('; ') || null);
       if (ins) { const bad = await p.evaluate(([t, rr, bo, l]) => { const W = innerWidth, H = innerHeight, out = [];
-          for (const e of document.querySelectorAll('button, input, select, textarea, a[href], [role=button], .chip')) { if (e.closest('[hidden]')) continue; const c = getComputedStyle(e); if (c.display === 'none' || c.visibility === 'hidden' || +c.opacity === 0) continue; const r = e.getBoundingClientRect(); if (r.width < 4 || r.height < 4 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
-            const h = document.elementFromPoint(Math.min(W - 1, Math.max(0, (r.left + r.right) / 2)), Math.min(H - 1, Math.max(0, (r.top + r.bottom) / 2))); if (!h || !(e === h || e.contains(h) || h.contains(e))) continue;
+          for (const e of document.querySelectorAll('button, input, select, textarea, a[href], [role=button], .chip')) { if (e.closest('[hidden]')) continue; const c = getComputedStyle(e); if (c.display === 'none' || c.visibility === 'hidden' || +c.opacity === 0) continue; const r0 = e.getBoundingClientRect(); let L0 = r0.left, T0 = r0.top, R0 = r0.right, B0 = r0.bottom; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) { const cs2 = getComputedStyle(a); if (cs2.overflowX !== 'visible' || cs2.overflowY !== 'visible') { const q = a.getBoundingClientRect(); L0 = Math.max(L0, q.left); T0 = Math.max(T0, q.top); R0 = Math.min(R0, q.right); B0 = Math.min(B0, q.bottom); } } if (R0 - L0 < 4 || B0 - T0 < 4) continue; const r = { left: L0, top: T0, right: R0, bottom: B0 };   /* only the part not hidden by a scrolling window */ if (r.right - r.left < 4 || r.bottom - r.top < 4 || r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W) continue;
+            const h = document.elementFromPoint(Math.min(W - 1, Math.max(0, (r.left + r.right) / 2)), Math.min(H - 1, Math.max(0, (r.top + r.bottom) / 2))); if (!h || !(e === h || e.contains(h))) continue;   /* the button itself is there, not just the window behind it */
             if (r.top < t - 1 || r.bottom > H - bo + 1 || r.left < l - 1 || r.right > W - rr + 1) out.push((e.id || e.getAttribute('aria-label') || e.textContent.trim().slice(0, 18) || e.tagName) + ' ' + [r.left, r.top, r.right, r.bottom].map(Math.round).join(',')); }
           return out; }, ins);
         ok(!bad.length, `${name} | ${st} | nothing under the phone's own bars (notch, home or gesture bar)`, bad.slice(0, 8).join('; ') || null); }

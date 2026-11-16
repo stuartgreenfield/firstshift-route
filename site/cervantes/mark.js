@@ -28,6 +28,7 @@
   function solSet(o) { if (window.FSSolent && FSSolent.set) FSSolent.set(o); }
   function toast(t) { try { if (window.NavToast) return window.NavToast(t); } catch (e) {} }
   function fix() { try { var f = window.__fsLiveFix && window.__fsLiveFix(); return f && !f.dr && Date.now() - f.at < 30000 ? f : null; } catch (e) { return null; } }
+  function anyFix() { try { var f = window.__fsLiveFix && window.__fsLiveFix(); return f && Date.now() - f.at < 120000 ? f : null; } catch (e) { return null; } }   /* for figures shown, not for pings: a fix up to two minutes old, or dead reckoning */
   function onLand(la, lo) { try { return !!(window.__fsOnLand && window.__fsOnLand(la, lo)); } catch (e) { return false; } }
   document.documentElement.classList.add('mk');
 
@@ -40,7 +41,7 @@
       'html.mk #solCard,html.mk #solStep,html.mk #solLegs,html.mk #solAfter,html.mk #solChain,html.mk #solPick,html.mk #solSheet,html.mk .solpop,html.mk .solpick,html.mk .solchain,html.mk .solstep,html.mk #wiz,html.mk .splash{display:none!important}' +
       'html.mk body{overflow:hidden}' +
       'html.mk .app{position:fixed;left:0;right:var(--mkW,0px);top:calc(env(safe-area-inset-top,0px) + var(--mkT,52px));bottom:var(--mkH,0px);height:auto;grid-template-rows:minmax(0,1fr);grid-template-columns:minmax(0,1fr)}' +
-      'html.mk .mobbtn.mobfab{bottom:calc(var(--mkH,0px) + 12px)!important;left:max(12px,env(safe-area-inset-left,0px))!important;top:auto!important;width:52px;height:52px;font-size:12px}' +
+      'html.mk .mobbtn.mobfab{bottom:var(--mkMob,12px)!important;left:max(12px,env(safe-area-inset-left,0px))!important;top:auto!important;width:52px;height:52px;font-size:12px}' +
       /* the thin top bar */
       '.mktop{position:fixed;left:0;right:0;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 4px) max(10px,env(safe-area-inset-right,0px)) 4px max(10px,env(safe-area-inset-left,0px));min-height:52px;box-sizing:border-box;background:var(--panel);border-bottom:1px solid var(--line);color:var(--ink)}' +
       '.mktop .mkn{display:flex;align-items:baseline;gap:6px;font:700 17px var(--f-head);white-space:nowrap;flex:none}.mktop .mkn small{font:600 12px var(--f-head);color:#ff8a1f}' +
@@ -49,12 +50,12 @@
       '.mkib{flex:none;min-width:48px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--soft,transparent);color:var(--ink);font:600 13px var(--f-head);display:grid;place-items:center;cursor:pointer}' +
       /* the panel */
       '.mkpanel{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--panel);color:var(--ink);border-top:1px solid var(--line);display:flex;flex-direction:column;max-height:min(46%,520px);padding:0 max(10px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(10px,env(safe-area-inset-left,0px));box-shadow:0 -6px 20px rgba(0,0,0,.25)}' +
-      '.mkbody{overflow-y:auto;overscroll-behavior:contain;padding:10px 2px 10px;display:grid;gap:10px;min-height:0}' +
-      '.mktabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px 0 4px;border-bottom:1px solid var(--line)}' +
-      '.mktabs button{min-height:48px;border-radius:10px;border:1px solid transparent;background:none;color:var(--muted);font:700 14px var(--f-head);cursor:pointer}' +
+      '.mkbody{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;padding:10px 2px 10px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-height:0}' +
+      '.mktabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:6px 0 4px;border-bottom:1px solid var(--line)}' +
+      '.mktabs button{min-width:0;padding:0 2px;overflow:hidden;text-overflow:ellipsis;min-height:48px;border-radius:10px;border:1px solid transparent;background:none;color:var(--muted);font:700 14px var(--f-head);cursor:pointer}' +
       '.mktabs button[aria-selected="true"]{background:var(--soft,rgba(127,127,127,.15));color:var(--ink);border-color:var(--line)}' +
-      '.mkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.mkrow>label{font:600 13px var(--f-head);color:var(--muted);min-width:72px}' +
-      '.mkb{min-height:48px;min-width:48px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--soft,transparent);color:var(--ink);font:700 14px var(--f-head);cursor:pointer}' +
+      '.mkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0}.mkrow>*{max-width:100%;box-sizing:border-box}.mkrow>label{font:600 13px var(--f-head);color:var(--muted);min-width:72px}' +
+      '.mkb{min-height:48px;min-width:48px;padding:4px 14px;white-space:normal;line-height:1.15;border-radius:10px;border:1px solid var(--line);background:var(--soft,transparent);color:var(--ink);font:700 14px var(--f-head);cursor:pointer}' +
       '.mkb.pri{background:#ff8a1f;border-color:#ff8a1f;color:#111}.mkb[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}.mkb.warn{background:#dc2626;border-color:#dc2626;color:#fff}' +
       '.mkb:disabled{opacity:.45}' +
       '.mkin{min-height:48px;box-sizing:border-box;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 16px var(--f-data);padding:0 10px;width:6.5em}' +
@@ -67,12 +68,12 @@
       '.mkmk{display:flex;flex-wrap:wrap;gap:6px}.mkmk .mkchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:10px;padding:0 4px 0 10px;min-height:48px;font:700 15px var(--f-data)}' +
       '.mkchip button{min-width:44px;min-height:44px;border:0;background:none;color:var(--ink);font:700 14px var(--f-head);cursor:pointer;border-radius:8px}' +
       '.mkwarn{border:2px solid #dc2626;border-radius:12px;padding:8px 10px;font:700 16px var(--f-head);color:#dc2626}' +
-      '.mkpick{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + var(--mkT,52px) + 8px);z-index:21;background:#ff8a1f;color:#111;border-radius:12px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:700 14px var(--f-head);max-width:calc(100% - 24px);box-sizing:border-box}' +
+      '.mkpick{position:fixed;left:calc((100% - var(--mkW,0px)) / 2);transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + var(--mkT,52px) + 8px);z-index:21;background:#ff8a1f;color:#111;border-radius:12px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:700 14px var(--f-head);max-width:calc(100% - var(--mkW,0px) - 24px);box-sizing:border-box}' +
       '.mkset{display:grid;gap:8px}' +
       /* a pad, or any wide screen: the panel beside the chart */
-      '@media (min-width:900px){.mkpanel{left:auto;top:calc(env(safe-area-inset-top,0px) + var(--mkT,52px));width:400px;max-height:none;border-top:0;border-left:1px solid var(--line);box-shadow:none}}' +
+      '@media (min-width:900px){.mkpanel{left:auto;padding-left:12px;top:calc(env(safe-area-inset-top,0px) + var(--mkT,52px));width:400px;max-height:none;border-top:0;border-left:1px solid var(--line);box-shadow:none}}' +
       /* phone held sideways: the panel beside the chart too, narrower */
-      '@media (orientation:landscape) and (max-height:500px){.mkpanel{left:auto;top:calc(env(safe-area-inset-top,0px) + var(--mkT,44px));width:min(46%,380px);max-height:none;border-top:0;border-left:1px solid var(--line)}.mktop{min-height:44px}.mkbig b{font-size:24px}.mktabs button{min-height:44px}}' +
+      '@media (orientation:landscape) and (max-height:500px){.mkpanel{left:auto;padding-left:10px;top:calc(env(safe-area-inset-top,0px) + var(--mkT,44px));width:min(46%,380px);max-height:none;border-top:0;border-left:1px solid var(--line)}.mktop{min-height:44px}.mkbig b{font-size:24px}.mktabs button{min-height:44px}}' +
       /* big buttons (Settings) and sunlight */
       'html.mkbigui .mkb,html.mkbigui .mktabs button{min-height:60px;font-size:17px}html.mkbigui .mkin{min-height:60px;font-size:19px}html.mkbigui .mkbig b{font-size:38px}' +
       'html.mksun{--ink:#000;--muted:#222;--panel:#fff;--bg:#fff;--line:#000}html.mksun .mkbig b{font-weight:800}';
@@ -95,7 +96,7 @@
   /* the chart fits exactly between the top bar and the panel, so nothing sits on top of it but the course, the boat and man overboard */
   function fitRO() { var f = function () { if (!panel || !top) return; var side = innerWidth >= 900 || (innerWidth > innerHeight && innerHeight <= 500), pr = panel.getBoundingClientRect(), tr = top.getBoundingClientRect(), ds = document.documentElement.style;
       ds.setProperty('--mkT', Math.round(tr.height - (parseFloat(getComputedStyle(top).paddingTop) - 4)) + 'px');
-      ds.setProperty('--mkH', side ? '0px' : Math.round(innerHeight - pr.top) + 'px'); ds.setProperty('--mkW', side ? Math.round(innerWidth - pr.left) + 'px' : '0px');
+      ds.setProperty('--mkH', side ? '0px' : Math.round(innerHeight - pr.top) + 'px'); var ib = window.__fsInsets ? window.__fsInsets().b : 0; ds.setProperty('--mkMob', Math.round((side ? ib : innerHeight - pr.top) + 12) + 'px');   /* man overboard clear of the panel and of the home bar */ ds.setProperty('--mkW', side ? Math.round(innerWidth - pr.left) + 'px' : '0px');
       if (f.w !== innerWidth + 'x' + innerHeight + ':' + Math.round(pr.top) + ':' + Math.round(pr.left)) { f.w = innerWidth + 'x' + innerHeight + ':' + Math.round(pr.top) + ':' + Math.round(pr.left); try { window.dispatchEvent(new Event('resize')); } catch (e) {} } };
     if (window.ResizeObserver) { new ResizeObserver(function () { setTimeout(f, 0); }).observe(panel); new ResizeObserver(function () { setTimeout(f, 0); }).observe(top); }
     window.addEventListener('resize', function () { setTimeout(f, 50); }); f(); setTimeout(f, 300); }
@@ -169,7 +170,7 @@
   function startHtml() {
     var g = gunAt(), d = g ? new Date(g * 1000) : null, l = window.__fsLine ? window.__fsLine() : {}, tr = !!l.transit, h = '';
     h += '<div class="mkbig" id="mkStartBig"></div>';
-    h += '<div class="mkrow"><label>Gun</label><input class="mkin" id="mkGunT" type="time" step="60" value="' + (d ? ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) : '') + '" aria-label="Gun time for your class"><button class="mkb pri" data-k="sync">Sync</button></div>';
+    h += '<div class="mkrow"><label>Gun</label><input class="mkin" style="width:9em" id="mkGunT" type="time" step="60" value="' + (d ? ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) : '') + '" aria-label="Gun time for your class"><button class="mkb pri" data-k="sync">Sync</button></div>';
     h += '<div class="mkrow"><label>Sequence</label>' + seg('seq', 5, '5-4-1-0', M.seq !== 3) + seg('seq', 3, '3-2-1-0', M.seq === 3) + '<button class="mkb" data-k="ap">Postpone (AP)</button><button class="mkb" data-k="recall">General recall</button></div>';
     h += '<div class="mkrow"><label>Flag</label>' + [['P', 'P'], ['I', 'I'], ['Z', 'Z'], ['U', 'U'], ['B', 'Black']].map(function (f) { return seg('flag', f[0], f[1], M.flag === f[0]); }).join('') + '</div><p class="mknote">' + flagText(M.flag) + '</p>';
     h += '<p class="mkh">Line</p><div class="mkrow">' + seg('lkind', 'cb', 'Committee boat and pin', !tr) + seg('lkind', 'tr', 'Shore transit', tr) + '</div>';
@@ -184,7 +185,7 @@
     var g = gunAt(), f = M.finAt, tcc = window.__fsTcc ? window.__fsTcc() : 1, h = '';
     if (g && f) { var el = f - g, ct = el * tcc; h += '<div class="mkbig"><div><small>Elapsed</small><b>' + hms(el) + '</b><span>gun ' + hhmm(g) + ', finish ' + hhmm(f) + '</span></div><div><small>Corrected (IRC)</small><b>' + hms(ct) + '</b><span>TCC ' + tcc.toFixed(3) + ', saved with the track</span></div></div>'; }
     else h += '<p class="mknote">The times show here after Finished.</p>';
-    h += '<div class="mkrow"><button class="mkb pri" data-k="next">Next course</button></div><p class="mknote">Next course keeps the start line, the wind and the class gun settings, and clears the marks.</p>';
+    h += '<div class="mkrow"><button class="mkb pri" data-k="next">Next course</button></div><p class="mknote">Next course keeps the start line, the wind and the start sequence, and clears the marks and the gun time.</p>';
     return h;
   }
   function hms(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 3600) + ':' + ('0' + Math.floor(s % 3600 / 60)).slice(-2) + ':' + ('0' + s % 60).slice(-2); }
@@ -202,7 +203,7 @@
 
   /* ---------- live figures ---------- */
   function live() {
-    var f = fix(), now = Date.now() / 1000, g = gunAt();
+    var f = anyFix(), now = Date.now() / 1000, g = gunAt();
     if (M.tab === 'start' && $('mkStartBig')) {
       var lc = window.__fsLineCalc ? window.__fsLineCalc(g) : null, h = '';
       h += '<div><small>Gun</small><b>' + (g ? (now < g ? mmss(g - now) : '+' + mmss(now - g)) : '--') + '</b><span>' + (g ? hhmm(g) : 'set the gun time') + '</span></div>';
@@ -212,7 +213,7 @@
         var bw = M.wind && M.wind.twd != null ? M.wind.twd : lc.wind ? lc.wind[1] : null;
         if (bw != null) { var b = bias(lc, bw); h += '<div><small>Bias</small><b>' + b.end + ' ' + b.m + ' m</b><span>' + b.deg + '° for wind ' + p3(bw) + '</span></div>'; }
         var warn = earlyWarn(lc, g, now); if (warn) h = '<div class="mkwarn" style="grid-column:1/-1">' + warn + '</div>' + h;
-      } else h += '<div><small>Line</small><b>--</b><span>' + (f ? 'ping both ends' : 'GPS starting') + '</span></div>';
+      } else h += '<div><small>Line</small><b>--</b><span>' + (f ? 'ping both ends' : 'waiting for the GPS') + '</span></div>';
       $('mkStartBig').innerHTML = h;
     }
     if (M.tab === 'race' && $('mkRaceBig')) {
@@ -221,11 +222,24 @@
       else h2 += '<div><small>Next mark</small><b>--</b><span>' + esc(pc && pc.why || 'No course') + '</span></div>';
       var sh = cl && cl.shift; h2 += '<div><small>Header or lift</small><b class="' + (sh && sh.kind === 'header' ? 'bad' : sh && sh.kind === 'lift' ? 'ok' : '') + '">' + (sh && !sh.off ? (sh.kind === 'steady' ? 'Steady' : (sh.kind === 'lift' ? 'Lift ' : 'Header ') + sh.deg + '°') : '--') + '</b><span>' + (sh && !sh.off ? sh.tack + ' tack' : M.wind && M.wind.twd != null ? 'on a beat' : 'give the wind') + '</span></div>';
       var td = f && window.__fsTideAt ? window.__fsTideAt(f.la, f.lo) : null; if (!td && M.tide && M.tide.mode === 'steady' && M.tide.spd != null) td = [+M.tide.spd, +M.tide.dir];
-      h2 += '<div><small>Tide here</small><b>' + (td ? (+td[0]).toFixed(1) + ' kn' : '--') + '</b><span>' + (td ? 'to ' + p3(td[1]) : f ? 'no tide model here' : 'GPS starting') + '</span></div>';
-      if (plus) { var nw = null; try { nw = window.__navWind(); } catch (e) {} if (nw) h2 += '<div><small>TWS / TWD</small><b>' + Math.round(nw[0]) + ' kn</b><span>from ' + p3(nw[1]) + '</span></div>'; }
+      h2 += '<div><small>Tide here</small><b>' + (td ? (+td[0]).toFixed(1) + ' kn' : '--') + '</b><span>' + (td ? 'to ' + p3(td[1]) : f ? 'no tide model here' : 'waiting for the GPS') + '</span></div>';
+      if (plus) h2 += plusHtml();
       $('mkRaceBig').innerHTML = h2;
     }
   }
+  /* Mark+ (brief 7): the boat's instruments through Route+: TWA, TWS, boat speed, % of the polar target, and the shift trend */
+  var TWD = [];
+  function sh(k) { try { var v = window.__navShown ? window.__navShown(k) : null; return v == null || v !== v ? null : +v; } catch (e) { return null; } }
+  function plusHtml() {
+    var twa = sh('twa'), tws = sh('tws'), bsp = sh('bsp'), tg = null, nw = null, h = '';
+    try { tg = window.__navTarget ? window.__navTarget() : null; } catch (e) {} try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {}
+    if (nw && nw[1] != null) { var now = Date.now(); if (!TWD.length || now - TWD[TWD.length - 1][0] > 4000) TWD.push([now, nw[1]]); TWD = TWD.filter(function (q) { return now - q[0] < 600000; }); }
+    h += '<div><small>TWA · TWS</small><b>' + (twa != null ? Math.round(Math.abs(twa)) + '°' + (twa < 0 ? 'P' : 'S') : '--') + '</b><span>' + (tws != null ? tws.toFixed(1) + ' kn true wind' : 'no wind from the boat') + '</span></div>';
+    h += '<div><small>Boat speed</small><b>' + (bsp != null ? bsp.toFixed(1) : '--') + '</b><span>' + (bsp != null && tg ? Math.round(bsp / tg * 100) + '% of target ' + tg.toFixed(1) + ' kn' : 'polar target when sailing') + '</span></div>';
+    var tr = trend(); h += '<div><small>Shift trend</small><b>' + (tr == null ? '--' : Math.abs(tr) < 2 ? 'Steady' : (tr > 0 ? 'Veering ' : 'Backing ') + Math.round(Math.abs(tr)) + '°') + '</b><span>' + (tr == null ? 'needs 3 minutes of wind' : 'last 10 minutes, ' + (nw ? 'now ' + p3(nw[1]) : '')) + '</span></div>';
+    return h;
+  }
+  function trend() { if (TWD.length < 4 || TWD[TWD.length - 1][0] - TWD[0][0] < 180000) return null; var a = TWD.slice(0, Math.ceil(TWD.length / 3)), b = TWD.slice(-Math.ceil(TWD.length / 3)), m = function (arr) { var x = 0, y = 0; arr.forEach(function (q) { x += Math.sin(q[1] * R); y += Math.cos(q[1] * R); }); return Math.atan2(x, y) / R; }; return ((m(b) - m(a) + 540) % 360) - 180; }   /* mean direction, last third against first third */
   function bias(lc, twd) { var bx = lc.pin, bo = lc.boat, k = Math.cos(bo[0] * R) * 60, P = [(bx[1] - bo[1]) * k, (bx[0] - bo[0]) * 60], wx = Math.sin(twd * R), wy = Math.cos(twd * R), up = P[0] * wx + P[1] * wy, ang = Math.atan2(P[0], P[1]) / R, d = Math.abs(90 - Math.abs(((ang - twd + 540) % 360) - 180));
     return { end: up > 0 ? (lc.boat && window.__fsLine && window.__fsLine().transit ? 'Outer' : 'Pin') : (window.__fsLine && window.__fsLine().transit ? 'Inshore' : 'Boat'), m: Math.round(Math.abs(up) * 1852), deg: Math.round(d) }; }
   /* the last minute: the flag in force decides what being on the course side means (World Sailing RRS 29, 30) */
@@ -242,7 +256,7 @@
 
   /* ---------- taps on the chart ---------- */
   var PICK = null, orig = null;
-  function pickBar(t) { var b = $('mkPick'); if (!t) { if (b) b.remove(); return; } if (!b) { b = document.createElement('div'); b.id = 'mkPick'; b.className = 'mkpick'; document.body.appendChild(b); } b.innerHTML = '<span>' + esc(t) + '</span><button class="mkb" id="mkPickX">Done</button>'; $('mkPickX').onclick = function () { PICK = null; pickBar(null); render(); }; }
+  function pickBar(t) { window.__fsMarkPicking = !!t; setTimeout(function () { try { window.__fsRedraw && window.__fsRedraw(); } catch (e) {} }, 0); var b = $('mkPick'); if (!t) { if (b) b.remove(); return; } if (!b) { b = document.createElement('div'); b.id = 'mkPick'; b.className = 'mkpick'; document.body.appendChild(b); } b.innerHTML = '<span>' + esc(t) + '</span><button class="mkb" id="mkPickX">Done</button>'; $('mkPickX').onclick = function () { PICK = null; pickBar(null); render(); }; }
   function nearestMark(la, lo, x, y) { var mk = window.FSSolent && FSSolent.marks ? FSSolent.marks() : null, best = null; if (!mk || !window.__fsXY) return null; mk.forEach(function (m) { var q = window.__fsXY(m.lat, m.lon), d = Math.hypot(q[0] - x, q[1] - y); if (d < 28 && (!best || d < best.d)) best = { d: d, m: m }; }); return best && best.m; }
   function hook() {
     if (orig !== null || !window.__fsTapHook) { if (!window.__fsTapHook) setTimeout(hook, 300); return; } orig = window.__fsTapHook;
@@ -319,9 +333,20 @@
     var B = SOL() || {}; try { if (window.__fsClearCourse) window.__fsClearCourse(); } catch (e) {}
     var w = Object.assign({}, B.wl, { wcode: '', wpt: null, lcode: '', lcode2: '', lpt: null, g1: null, g2: null }), l = window.__fsLine ? window.__fsLine() : {};
     solSet({ marks: [], finish: null, fin: 'start', legTide: [], startAt: null, wl: w, start: l.boat && l.pin ? { code: null, name: 'Start line', lat: (l.boat[0] + l.pin[0]) / 2, lon: (l.boat[1] + l.pin[1]) / 2, line: true } : null });
-    M.finAt = null; M.tab = 'course'; M.routeIt = false; save(); PICK = null; pickBar(null); render();
+    M.finAt = null; M.gun = null; M.tab = 'course'; M.routeIt = false; save(); lastStage = 'course';   /* the next race has its own gun */ PICK = null; pickBar(null); render();
   }
 
+  /* Mark+ laylines (brief 7): from the next mark, when it is upwind, the two tacks at the boat's tacking angle on the live wind */
+  function laylines(ctx, X, Y) {
+    if (!plus || M.tab !== 'race') return; var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} if (!nw || nw[1] == null) return;
+    var pc = null; try { pc = window.__fsPlot && window.__fsPlot.calc ? window.__fsPlot.calc() : null; } catch (e) {} if (!pc || !pc.ok) return;
+    var twa = sh('twa'), ba = twa != null && Math.abs(twa) < 60 ? Math.abs(twa) : (window.FSSolent && FSSolent.windRef && FSSolent.windRef() && FSSolent.windRef().ba) || 42, up = Math.abs(((pc.btw - nw[1] + 540) % 360) - 180) < 90; if (!up) return;
+    var m = pc.m, L = Math.max(0.5, pc.dtw * 1.3);
+    ctx.strokeStyle = '#ff8a1f'; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+    [nw[1] + 180 - ba, nw[1] + 180 + ba].forEach(function (b) { var la = m.lat + L * Math.cos(b * R) / 60, lo = m.lon + L * Math.sin(b * R) / (60 * Math.cos(m.lat * R)); ctx.beginPath(); ctx.moveTo(X(m.lon), Y(m.lat)); ctx.lineTo(X(lo), Y(la)); ctx.stroke(); });
+    ctx.setLineDash([]);
+  }
+  (window.__fsOverlays = window.__fsOverlays || []).push(laylines);
   function boot() { if (!document.body) return setTimeout(boot, 50); build(); hook(); try { if (window.FSSolent && FSSolent.load) FSSolent.load(); if (window.FSSolent && FSSolent.on) FSSolent.on(true); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.FSMark = { state: function () { return M; }, render: render, stage: stage, set: function (o) { Object.assign(M, o); save(); applyLook(); render(); } };
