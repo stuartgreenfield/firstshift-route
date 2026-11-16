@@ -259,7 +259,7 @@
        so a boat could count as rounding when it reached the far end of the line, miles short of the mark. Put the line
        square across the course instead, on the side the boat must not pass. */
     if (Math.abs(turn) >= 135) ray = (bin + (side === 'port' ? -90 : 90) + 360) % 360;
-    var L = (Math.abs(turn) >= 135 ? Math.max(lenNm || 1.5, offNm ? 1 : 20) : (lenNm || 1.5)) / 60, k = Math.cos(mark.lat * R);   // a turn-back line is long, so going round its far end never pays (inshore: 1 nm is plenty)
+    var L = (Math.abs(turn) >= 135 && !offNm ? Math.max(lenNm || 1.5, 20) : (lenNm || 1.5)) / 60, k = Math.cos(mark.lat * R);   // offshore, a turn-back line is long, so going round its far end never pays. Inshore (offNm) the line stays short, 0.15 nm, so the routes go to the buoy itself: with a 1 nm line they turned up to a mile short of St Helens (Stuart 16 Nov 17:06). The crossing must still be the right way round, so a short line cannot be cheated.
     var o = (offNm || 0) / 60, a = [mark.lat + o * Math.cos(ray * R), mark.lon + o * Math.sin(ray * R) / k];
     return { a: a, b: [mark.lat + (o + L) * Math.cos(ray * R), mark.lon + (o + L) * Math.sin(ray * R) / k], ray: ray, side: side, mark: [mark.lat, mark.lon] };
   }
