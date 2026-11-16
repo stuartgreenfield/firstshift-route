@@ -8,8 +8,9 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(BASE + '/channel-area/'); await p.waitForFunction(() => window.FSAstro && document.getElementById('astroBtn') && window.__fsAstroCtx && window.__fsAstroCtx().lat != null, null, { timeout: 300000 }); await p.waitForTimeout(1000);
   const vis = await p.evaluate(() => { const e = document.getElementById('astroBtn'), q = e.getBoundingClientRect(), t = document.elementFromPoint(q.x + q.width / 2, q.y + q.height / 2); return { w: q.width, inView: q.right <= innerWidth && q.left >= 0, top: e.contains(t) }; });
-  ok(vis.w > 20 && vis.inView && vis.top, 'the Astro button is in the top bar and can be pressed', JSON.stringify(vis));
-  await p.click('#astroBtn'); await p.waitForTimeout(500);
+  if (W >= 561) { ok(vis.w > 20 && vis.inView && vis.top, 'the Astro button is in the top bar and can be pressed', JSON.stringify(vis)); await p.click('#astroBtn'); }
+  else { await p.evaluate(() => document.getElementById('layersBtn').click()); await p.waitForTimeout(400); const lay = await p.evaluate(() => !!document.getElementById('astroLay')); ok(lay && vis.w === 0, 'on a phone Astro sits at the top of Layers (the top bar is full)', JSON.stringify(vis)); await p.click('#astroLay'); }
+  await p.waitForTimeout(500);
   const r = await p.evaluate(() => { const c = window.__fsAstroCtx(), o = FSAstro.day(c.at, c.lat, c.lon), hm = d => d && !isNaN(d) ? ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) : '--'; const t = document.getElementById('astroPop').textContent; return { open: !document.getElementById('astroPop').hidden, text: t, rise: hm(o.t.sunrise), set: hm(o.t.sunset), mr: o.m.rise ? hm(o.m.rise) : null, lit: Math.round(o.il.fraction * 100), svg: document.querySelectorAll('#astroPop svg').length, where: c.where }; });
   ok(r.open && r.text.indexOf('Sunrise' + r.rise) >= 0 && r.text.indexOf('Sunset' + r.set) >= 0, 'it gives sunrise and sunset for the day on the slider, at ' + r.where, r.rise + ' / ' + r.set);
   ok(new RegExp(r.lit + '% lit').test(r.text) && /First light/.test(r.text) && /Moonrise/.test(r.text), 'and the moon: how much is lit, rise and set, first and last light', r.lit + '% lit');
