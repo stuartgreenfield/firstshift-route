@@ -40,8 +40,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => { const b = document.querySelector('#solListB [data-side="port"]'); if (b) b.click(); }); await p.waitForTimeout(200);
   const l2 = await p.evaluate(() => ({ n: FSSolent.state().marks.length, open: !document.getElementById('solList').hidden, last: FSSolent.state().marks.slice(-2).map(m => m.code + m.side) }));
   ok(l2.n === n0 + (rn ? 2 : 1) && l2.open, 'adding from the list keeps the list open; search by name works too', JSON.stringify(Object.assign(l2, { royal: rn })));
-  await p.evaluate(() => document.getElementById('solListX').click()); await p.evaluate(() => document.querySelector('#solChain [data-k="done"]').click()); await p.waitForTimeout(800);
+  await p.evaluate(() => document.getElementById('solListX').click()); await p.evaluate(() => document.querySelector('#solChain [data-k="more"]').click()); await p.waitForTimeout(800);
   const fin = await p.evaluate(() => ({ sheet: !document.getElementById('solSheet').hidden, bar: document.getElementById('solChain').hidden, legs: document.querySelectorAll('#solSheet .soltab tbody tr').length, go: !!document.getElementById('solGo') && !document.getElementById('solGo').disabled }));
-  ok(fin.sheet && fin.bar && fin.legs >= 2 && fin.go, 'Finish opens the builder with the legs, ready to route', JSON.stringify(fin));
+  ok(fin.sheet && fin.bar && fin.legs >= 2 && fin.go, 'More options opens the builder with the legs, ready to route', JSON.stringify(fin));
   ok(errs.length === 0, 'no page errors', errs.slice(0, 3).join(' | '));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

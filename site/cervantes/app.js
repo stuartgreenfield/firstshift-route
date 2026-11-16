@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.22';
+  var VERSION = 'FirstShift Route v0.12.23';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
@@ -160,6 +160,12 @@
       if (tb) tb.addEventListener('click', function (ev) { ev.stopPropagation(); });
       return;
     }
+    /* Stuart 16 Nov 07:11: "sometimes the tool jumps back to the landing page in between actions". Every page load showed it: opening a race
+       whose forecasts are on another area's page, or the reload when the signal comes back after being offline. Once answered in this
+       session, a load made by the tool itself goes straight to the chart; a fresh open of the tool still asks. */
+    var seen = false; try { seen = sessionStorage.getItem('fs-sp-seen') === '1'; } catch (e) {}
+    if (seen) { S.splashDone = function () {}; gone = true; sp.hidden = true; return; }
+    sp.addEventListener('click', function () { try { sessionStorage.setItem('fs-sp-seen', '1'); } catch (e) {} }, true);
     if ($('spTour')) { S.splashDone = function () {}; sp.addEventListener('click', hide); return; }   /* Show me round? Yes or No, asked every time: the splash waits for the answer (Stuart 14 Nov) */
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
@@ -301,7 +307,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.22 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.23 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -662,6 +668,7 @@
     applyCourseObj(r);
   }
   function applyCourseObj(r) {
+    S.cleared = false;
     var keep = meta.course0 || (meta.course0 = meta.course); meta.course = { name: r.name, start: r.start, marks: r.marks.map(function (m) { return Object.assign({}, m); }), finish: r.finish, band: keep.band, window: keep.window, race: r, legTide: r.legTide || null };   /* a Solent race keeps its tide by leg */
     $('raceTitle').textContent = r.name + ' · ' + r.start.name.replace(/^Start,\s*/, '').replace(/^RYS line,\s*/, '') + ' to ' + r.finish.name.replace(/^Finish,\s*/, '');
     setShort(r.name.replace(/^Rolex\s+/, '').replace(/\s+(Trophy\s+)?Race$/, '').replace(/\s+Trophy$/, ''));
@@ -1769,7 +1776,7 @@
   window.__navPick = function (id) { var r = (S.routes || []).filter(function (s) { return s.id === id; })[0]; if (!r) return false; S.sel = r; ghosts().then(function () { matrix(); plan(); fleetTable(); update(); }); return true; };
   window.__navReroute = function (la, lo) { if (S.running) return 'busy'; var t = (Date.now() / 1000 - T0) / 3600; if (t > HMAX() - 1 || !inData({ lat: la, lon: lo })) return 'outside'; S.from = { lat: la, lon: lo, t: t, gps: true }; run(); return 'ok'; };
   window.__navAdjust = function (wdir, wspd) { [['adjWdir', wdir], ['adjWspd', wspd]].forEach(function (x) { var el = $(x[0]); if (!el) return; el.value = x[1]; if (el.oninput) el.oninput(); }); adjPill(); };
-  window.__navCourse = function () { var c = meta && meta.course; if (!c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
+  window.__navCourse = function () { var c = meta && meta.course; if (S.cleared || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
   window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };   /* the phone's own GPS fix, for the basic plotter */
   window.__fsRedraw = function () { draw(); };
@@ -2055,6 +2062,11 @@
      forecast wind at a place and time (true, from), from the models the set-up card would use */
   window.__fsUseCourse = function (c) { archiveRoutes(); var a = myRaces(), rg = regionFor(c), rec = { id: 'r' + Date.now().toString(36), name: c.name, page: rg ? rg.id : HERE, course: c, settings: snapSettings(), savedAt: Date.now(), summary: '' };
     a.unshift(rec); setMyRaces(a); openMy(rec.id); return rec.id; };
+  /* Clear the race (Stuart 16 Nov 07:07): "Just removes the routing first then the buoys but saves it as a Solent race if no name defaults
+     to Solent race with date time stamp so it can be rerun after the event". The race and its routes are kept under Saved routes first;
+     then the routes and the course leave the chart. solent.js then turns the buoys off. Choosing any race brings routing back. */
+  window.__fsClearRace = function () { if (S.cleared) return false; try { if (meta.course.race && meta.course.race.custom) saveMyRace(); } catch (e) {} archiveRoutes(); S.cleared = true; $('raceTitle').textContent = 'No race on the chart'; setShort('No race'); draw(); return true; };
+  window.__fsCleared = function () { return !!S.cleared; };
   window.__fsDepth = function (v) { if (v == null) return +$('depth').value; depthSet(v); };
   window.__fsStartAt = function () { var v = +$('startSel').value; return v > 0 ? v : null; };
   /* the measuring tool (waypoints.js, Stuart 15 Nov, K): from A to B at the time on the slider. Wind and tide at the middle of the line,
@@ -2293,6 +2305,7 @@
   }
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
   function run() {
+    if (S.cleared) return;   /* Stuart 16 Nov 07:07: the race was cleared from the chart; choosing a race brings routing back */
     try { adjPill(); } catch (e) {}   /* the chart note follows the race's own tide by leg too */
     if (S.edit && $('races').hidden) { $('editBar').hidden = false; editPrompt(); draw(); busy('The course is still being edited: tap Done, then Save and route. Or Cancel.'); setTimeout(function () { busy(''); }, 4000); }   /* a hidden edit would block routing with no sign why */
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
@@ -2752,7 +2765,7 @@
     try { chartDraw('cmarks'); } catch (e) {}
     zonesDraw(); lightsDraw();
     document.body.classList.toggle('editing', !!S.edit);
-    if (!S.edit) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
+    if (!S.edit && !S.cleared) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
     var selOn = S.sel && !S.sel.hidden;
     if (selOn) line(S.sel, 9, 0.35);
@@ -2760,7 +2773,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) { myMarksDraw(); editDraw(); }
     if (S.mob) mobDraw();
-    if (!S.edit && S.show.legs && meta.course) { var lc = meta.course; legsDraw(courseFull(lc), false, 'label'); }
+    if (!S.edit && !S.cleared && S.show.legs && meta.course) { var lc = meta.course; legsDraw(courseFull(lc), false, 'label'); }
     liveDraw();
     if (window.__fsOverlay && !S.edit) try { ctx.save(); window.__fsOverlay(ctx, X, Y); ctx.restore(); } catch (e) { ctx.restore(); }
     (window.__fsOverlays || []).forEach(function (fn) { try { ctx.save(); fn(ctx, X, Y, !!S.edit); ctx.restore(); } catch (e) { ctx.restore(); } });   /* more layers: the Solent race marks */   /* the basic plotter (fsplot.js) draws its bearing and COG lines here */
