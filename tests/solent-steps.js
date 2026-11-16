@@ -17,7 +17,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   /* windward-leeward, step by step */
   await p.click('#solCardW'); await p.waitForTimeout(600);
   const box = () => p.evaluate(() => { const b = document.getElementById('solStep'); const r = b.getBoundingClientRect(); return { on: !b.hidden, step: b.querySelector('.solstepn').textContent, ask: b.querySelector('.solhd b').textContent, next: (b.querySelector('[data-k="next"]') || b.querySelector('[data-k="go"]')).disabled, r: [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)], fabs: [...document.querySelectorAll('.fabhelp')].filter(e => e.getClientRects().length).length, ih: innerHeight, iw: innerWidth }; });
-  st = await box(); ok(st.on && /Step 1 of 5/.test(st.step) && /Tap the start/.test(st.ask) && st.next && st.fabs === 0 && st.r[3] <= st.ih && st.r[2] <= st.iw, 'Windward-leeward: step 1 of 5 "Tap the start", Next waits, round buttons hidden, box on screen', JSON.stringify(st));
+  st = await box(); ok(st.on && /Step 1 of 6/.test(st.step) && /Tap the start/.test(st.ask) && st.next && st.fabs === 0 && st.r[3] <= st.ih && st.r[2] <= st.iw, 'Windward-leeward: step 1 of 5 "Tap the start", Next waits, round buttons hidden, box on screen', JSON.stringify(st));
   /* drag the box by its grip */
   const g = await p.evaluate(() => { const r = document.querySelector('#solStep .solgrip').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
   await p.mouse.move(g[0], g[1]); await p.mouse.down(); await p.mouse.move(g[0], 300, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(300);
@@ -28,15 +28,16 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await tap('3G'); st = await box(); const sg = await p.evaluate(() => document.querySelector('#solStep .solgot').textContent);
   ok(!st.next && /3G/.test(sg), 'tap a buoy: it becomes the start, Next is ready', sg);
   await click('#solStep [data-k="next"]'); await click('#solStep [data-k="wk"][data-v="buoy"]'); st = await box();
-  ok(/Step 2 of 5/.test(st.step) && /Tap the windward buoy/.test(st.ask), 'step 2: Tap the windward buoy', st.ask);
+  ok(/Step 2 of 6/.test(st.step) && /Tap the windward buoy/.test(st.ask), 'step 2: Tap the windward buoy', st.ask);
   await tap('3F'); await click('#solStep [data-k="next"]'); await click('#solStep [data-k="lk"][data-v="gate"]'); await tap('3E'); st = await box();
-  ok(/Step 3 of 5/.test(st.step) && /second gate buoy/.test(st.ask) && st.next, 'step 3: a gate, first buoy tapped, asks for the second', st.ask);
+  ok(/Step 3 of 6/.test(st.step) && /second gate buoy/.test(st.ask) && st.next, 'step 3: a gate, first buoy tapped, asks for the second', st.ask);
   await tap('3D'); st = await box(); ok(!st.next, 'second gate buoy tapped: Next ready');
   await click('#solStep [data-k="next"]'); await click('#solStep [data-k="lap"][data-v="1"]'); st = await box();
-  ok(/Step 4 of 5/.test(st.step) && await p.evaluate(() => FSSolent.state().wl.laps === 3), 'step 4: laps and finish (laps now 3)');
-  await click('#solStep [data-k="back"]'); st = await box(); ok(/Step 3 of 5/.test(st.step), 'Back goes to the step before'); await click('#solStep [data-k="next"]');
+  ok(/Step 4 of 6/.test(st.step) && await p.evaluate(() => FSSolent.state().wl.laps === 3), 'step 4: laps and finish (laps now 3)');
+  await click('#solStep [data-k="back"]'); st = await box(); ok(/Step 3 of 6/.test(st.step), 'Back goes to the step before'); await click('#solStep [data-k="next"]');
+  await click('#solStep [data-k="next"]'); st = await box(); ok(/Step 5 of 6/.test(st.step) && /Wind and tide/.test(st.ask) && !st.next, 'step 5: wind and tide on the water (optional)', st.ask);
   await click('#solStep [data-k="next"]'); st = await box(); const sum = await p.evaluate(() => document.querySelector('#solStep .solgot').textContent);
-  ok(/Step 5 of 5/.test(st.step) && /Check the course/.test(st.ask) && !st.next && /marks, about/.test(sum), 'step 5: check the course, Route this race ready', sum);
+  ok(/Step 6 of 6/.test(st.step) && /Check the course/.test(st.ask) && !st.next && /marks, about/.test(sum), 'step 6: check the course, Route this race ready', sum + ' / ' + st.step + ' / disabled ' + st.next + ' / ' + await p.evaluate(() => document.getElementById('solStep').innerText.replace(/\s+/g,' ').slice(0,300)));
   await click('#solStep [data-k="go"]'); await p.waitForTimeout(800);
   st = await p.evaluate(() => ({ box: document.getElementById('solStep').hidden, sheet: !document.getElementById('solSheet') || document.getElementById('solSheet').hidden, short: document.getElementById('raceShort').textContent, name: (window.__navCourse() || {}).name, back: !document.getElementById('rmOffshore').hidden }));
   ok(st.box && st.sheet && st.short === 'Solent race' && /^Solent race \d{1,2} [A-Z][a-z]{2} \d\d:\d\d$/.test(st.name || '') && st.back, 'Route this race: box closes, never the big sheet; top left still Solent race; saved with the date and time; the offshore race still to go back to', JSON.stringify(st));
@@ -44,12 +45,12 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(await p.evaluate(() => !!(window.__navFc() || {}).sel), 'the Solent race routes');
   /* round the cans, with a starboard mark */
   await menu('rmSolent'); await p.click('#solCardM'); await p.waitForTimeout(500); await tap('3G'); await click('#solStep [data-k="next"]');
-  st = await box(); ok(/Step 2 of 4/.test(st.step) && /first buoy/.test(st.ask), 'Round the cans: step 2 "Tap the first buoy"', st.ask);
+  st = await box(); ok(/Step 2 of 5/.test(st.step) && /first buoy/.test(st.ask), 'Round the cans: step 2 "Tap the first buoy"', st.ask);
   await tap('3F'); await p.waitForSelector('#solSide:not([hidden])', { timeout: 3000 }).catch(() => {}); await click('#solSide [data-s="stbd"]'); await tap('3E'); await click('#solSide [data-s="port"]');
   const chips = await p.evaluate(() => [...document.querySelectorAll('#solStep .solchip')].map(x => x.textContent));
   ok(chips.length === 2 && /3F S/.test(chips[0]) && /3E P/.test(chips[1]), 'two buoys tapped with Starboard and Port, shown as chips in the box', JSON.stringify(chips));
-  await click('#solStep [data-k="next"]'); st = await box(); ok(/Step 3 of 4/.test(st.step) && /start line/i.test(st.ask), 'step 3: the finish (start line by default)', st.ask);
-  await click('#solStep [data-k="next"]'); await click('#solStep [data-k="go"]'); await p.waitForTimeout(800);
+  await click('#solStep [data-k="next"]'); st = await box(); ok(/Step 3 of 5/.test(st.step) && /start line/i.test(st.ask), 'step 3: the finish (start line by default)', st.ask);
+  await click('#solStep [data-k="next"]'); await click('#solStep [data-k="next"]'); await click('#solStep [data-k="go"]'); await p.waitForTimeout(800);
   const sides = await p.evaluate(() => (window.__navCourse() || { marks: [] }).marks.map(m => m.side));
   ok(sides[0] === 'starboard' && sides[1] === 'port', 'the starboard buoy routes as starboard (was routed as port before)', JSON.stringify(sides));
   /* back to the offshore race */

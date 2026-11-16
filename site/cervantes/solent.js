@@ -324,7 +324,7 @@
      screen; it remembers where. Windward-leeward: 1 start, 2 windward mark, 3 leeward mark or gate, 4 laps and finish, 5 check and route.
      Round the cans: 1 start, 2 the buoys, 3 finish, 4 check and route. ---- */
   var WZ = { on: false, n: 1 };
-  function wzSteps() { return B.type === 'wl' ? ['start', 'wind', 'lee', 'laps', 'check'] : ['start', 'marks', 'fin', 'check']; }
+  function wzSteps() { return B.type === 'wl' ? ['start', 'wind', 'lee', 'laps', 'wt', 'check'] : ['start', 'marks', 'fin', 'wt', 'check']; }
   function wzKey() { return wzSteps()[WZ.n - 1]; }
   function wzOk(k) { var w = B.wl;
     if (k === 'start') return !!B.start; if (k === 'wind') return !!windward(); if (k === 'lee') return !!leeward(); if (k === 'marks') return (B.marks || []).length > 0;
@@ -394,6 +394,7 @@
     else if (k === 'laps') { ask = 'Laps and finish'; h = '<div class="solcl"><span class="solk">Laps</span><span class="seg"><button type="button" data-k="lap" data-v="-1" aria-label="One lap fewer">−</button><button type="button" aria-pressed="true" disabled>' + (w.laps || 1) + '</button><button type="button" data-k="lap" data-v="1" aria-label="One lap more">+</button></span></div><div class="solcl"><span class="solk">Finish at</span>' + seg('wf', w.fin || 'lee', [['lee', 'Leeward'], ['start', 'Start line'], ['wind', 'Windward']]) + '</div><div class="solcl"><span class="solk">Leave marks to</span>' + seg('sd', w.side === 'starboard' ? 'starboard' : 'port', [['port', 'Port'], ['starboard', 'Starboard']]) + '</div>'; }
     else if (k === 'marks') { var n = B.marks.length; ask = n ? 'Tap the next buoy' : 'Tap the first buoy'; h = got('Then choose Port or Starboard. Tap a chip below to swap sides.') + '<div class="solchips">' + (n ? B.marks.map(function (m, i) { var st = m.side === 'stbd' || m.side === 'starboard'; return '<button class="solchip ' + (st ? 'stbd' : 'port') + '" data-k="side" data-v="' + i + '">' + (i + 1) + '. ' + esc(m.code || m.name) + ' ' + (st ? 'S' : 'P') + '</button>'; }).join('') : '<span class="soln">No buoys yet.</span>') + '</div><div class="solcl"><button class="btn" data-k="undo"' + (n ? '' : ' disabled') + '>Undo</button><button class="btn" data-k="list">All the buoys</button></div>'; }
     else if (k === 'fin') { ask = B.fin === 'mark' ? 'Tap the finish on the chart' : 'Finish at the start line'; h = '<div class="solcl">' + seg('fin', B.fin === 'mark' ? 'mark' : 'start', [['start', 'Start line'], ['mark', 'A buoy or point']]) + '</div>' + (B.fin === 'mark' ? got(B.finish ? 'Finish: <b>' + esc(B.finish.name) + '</b>' : 'Tap it on the chart.') : ''); }
+    else if (k === 'wt') { ask = 'Wind and tide on the water'; h = got('Optional. Give the wind you see and Route adds a Fixed wind route beside the forecast routes. Leave it off to use the forecasts only.') + '<div class="fixbox" id="solFix">' + (window.__fsFix ? window.__fsFix.html() : '') + '</div>'; }
     else { var c = build(); ask = c.err ? 'Something is missing' : 'Check the course'; h = c.err ? got(esc(c.err)) : got('<b>' + c.marks.length + ' marks, about ' + nm(c) + ' nm.</b> ' + esc([c.start].concat(c.marks).concat([c.finish]).map(function (q) { return (q.gate ? 'Gate' : (q.name || '').replace(/^(Start|Finish), /, '').split(' ')[0]) + (q.side ? (q.side === 'starboard' ? ' S' : ' P') : ''); }).join(' → '))) + '<div class="solcl"><label class="solk" for="solSname">Name</label><input id="solSname" class="solname" maxlength="60" value="' + esc(B.name || 'Solent race') + '"></div>'; ok = !c.err; }
     h += codeRow(k);
     if (WZ.msg) h = '<p class="solmsg" role="status">' + esc(WZ.msg) + '</p>' + h;
@@ -406,6 +407,7 @@
     b.innerHTML = '<div class="solgrip" title="Drag to move"><span></span></div><div class="solhd"><span class="solstepn">Step ' + WZ.n + ' of ' + N + '</span><b>' + ask + '</b><button class="close" data-k="x" aria-label="Cancel">×</button></div>' + h +
       '<div class="solnav"><button class="btn" data-k="back"' + (WZ.n > 1 ? '' : ' disabled') + '>Back</button>' + (last ? '<button class="btn primary" data-k="go"' + (ok ? '' : ' disabled') + '>Route this race</button>' : '<button class="btn primary" data-k="next"' + (ok ? '' : ' disabled') + '>Next</button>') + '</div>';
     b.hidden = false; if (b.style.top) { var r = b.getBoundingClientRect(); place(b, r.left, r.top); }
+    if (k === 'wt' && window.__fsFix) window.__fsFix.bind($('solFix'));
   }
   /* ---- Settings, Charts: the switch and the button ---- */
   /* Stuart 15 Nov 11:26: "on solent race zoom should be set to allow the max": the Closest zoom slider (Settings, Chart) goes to 6 times */

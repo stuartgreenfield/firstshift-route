@@ -153,6 +153,10 @@
       if (LG.length) { var best = null, bw = 0; for (var i = 0; i < LG.length; i++) { var w2 = legW(LG[i].box, la, lo); if (w2 > bw) { bw = w2; best = LG[i]; } } if (best) C = rot(C, (best.tdir || 0) * bw, 1 + (best.tspd || 0) / 100 * bw); }
       return C;
     };
+    /* Fixed wind (Stuart 16 Nov): the wind the user sees on the water, the same everywhere and all race; and a steady tide (knots, the
+       direction it runs towards) when the user gives one instead of the model */
+    if (a.fixW && a.fixW.tws > 0) { var FW = [+a.fixW.tws, ((+a.fixW.twd % 360) + 360) % 360]; smp.wind = function () { return FW; }; }
+    if (a.fixT && a.fixT.spd >= 0 && a.fixT.dir != null) { var FT = [a.fixT.spd * Math.sin(a.fixT.dir * R), a.fixT.spd * Math.cos(a.fixT.dir * R)]; smp.tide = function () { return FT; }; }
     return smp;
   }
   /* the wind the boat feels is the wind over the water, not over the ground: a tide running with the wind takes strength out of it and one running against it adds strength, and a cross-tide shifts it */
@@ -243,7 +247,7 @@
 
   /* mark as a gate: a short ray from the buoy on the side the boat must NOT pass.
      For a mark where the course turns, rounding to port means the ray points to the starboard (outside) of the turn. */
-  function markGate(mark, prev, next, side, lenNm) {
+  function markGate(mark, prev, next, side, lenNm, offNm) {   /* offNm: the gate starts this far out from the buoy, so a route rounds clear of it (Solent races, Stuart 16 Nov) */
     var bin = brg(prev.lat, prev.lon, mark.lat, mark.lon), bout = brg(mark.lat, mark.lon, next.lat, next.lon);
     var turn = ((bout - bin + 540) % 360) - 180;                // negative = turning to port (left)
     var inside = (bin + 180 + (((bout - (bin + 180)) % 360 + 360) % 360) / 2) % 360; // bisector of the two legs at the mark, pointing inside the turn
@@ -255,8 +259,9 @@
        so a boat could count as rounding when it reached the far end of the line, miles short of the mark. Put the line
        square across the course instead, on the side the boat must not pass. */
     if (Math.abs(turn) >= 135) ray = (bin + (side === 'port' ? -90 : 90) + 360) % 360;
-    var L = (Math.abs(turn) >= 135 ? Math.max(lenNm || 1.5, 20) : (lenNm || 1.5)) / 60, k = Math.cos(mark.lat * R);   // a turn-back line is long, so going round its far end never pays
-    return { a: [mark.lat, mark.lon], b: [mark.lat + L * Math.cos(ray * R), mark.lon + L * Math.sin(ray * R) / k], ray: ray, side: side };
+    var L = (Math.abs(turn) >= 135 ? Math.max(lenNm || 1.5, offNm ? 1 : 20) : (lenNm || 1.5)) / 60, k = Math.cos(mark.lat * R);   // a turn-back line is long, so going round its far end never pays (inshore: 1 nm is plenty)
+    var o = (offNm || 0) / 60, a = [mark.lat + o * Math.cos(ray * R), mark.lon + o * Math.sin(ray * R) / k];
+    return { a: a, b: [mark.lat + (o + L) * Math.cos(ray * R), mark.lon + (o + L) * Math.sin(ray * R) / k], ray: ray, side: side, mark: [mark.lat, mark.lon] };
   }
 
   /* ---------- isochrone router ---------- */

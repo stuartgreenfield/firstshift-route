@@ -1,9 +1,9 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.26';
+  var VERSION = 'FirstShift Route v0.12.27';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
-  var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]] };
+  var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
   var S = { t: 5, routes: [], sel: null, matrix: null, ghosts: null, from: null, running: false, show: { wind: true, tide: true, ghosts: true, real: false, band: true, tss: true, lights: true, lay: true, legs: true, tracks: (function () { try { return localStorage.getItem('fs-tracksshow') !== '0'; } catch (e) { return true; } })() }, choice: {}, loaded: {} };
   var css = {};
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -301,7 +301,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.26 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.27 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -428,7 +428,7 @@
     var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', function () { readCss(); buildDepth(); draw(); });
     new MutationObserver(function () { readCss(); buildDepth(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (window.ResizeObserver) new ResizeObserver(resizeDraw).observe(document.querySelector('.chart')); else window.addEventListener('resize', resizeDraw);
-    resize(); fit(); setTime((starts[0] - T0) / 3600); animate();
+    resize(); fit(); setTime((starts[0] - T0) / 3600); animate(); try { fixMount(); } catch (e) {}
     document.addEventListener('visibilitychange', animate);
     document.addEventListener('visibilitychange', function () { if (document.hidden) sessSave(); }); window.addEventListener('pagehide', function () { sessSave(); });
   }
@@ -501,7 +501,7 @@
   function clockAbs(epoch) { var d = new Date(epoch * 1000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
   function clockH(h) { return clockAbs(T0 + h * 3600); }
   function fmtH(h) { var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0'); }
-  function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE', om: 'Open-Meteo', chain: 'Finest first' }[id] || id; }
+  function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE', om: 'Open-Meteo', chain: 'Finest first', fixed: 'Fixed wind' }[id] || id; }
   /* Progress card. Nielsen Norman Group: waits of 2 to 10 seconds get a looped indicator, longer ones a percent-done bar with a step count
      and a rough time left (Katie Sherwin, "Progress Indicators Make a Slow System Less Insufferable", 2014). */
   var PG = { t0: 0, est: 0 };
@@ -630,7 +630,7 @@
       if (m.gate && m.gate.a && m.gate.b) { legs.push({ name: m.name, gate: { a: m.gate.a, b: m.gate.b }, dt: 180, at: [m.lat, m.lon] }); return; }   /* a leeward gate of two buoys (J3): cross the line between them */
       var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25, legNm = FSRouter.dist(pts[i].lat, pts[i].lon, m.lat, m.lon);
       /* an offshore rounding mark gets a long gate ray, so the router has to sail round it rather than past it */
-      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', inshore ? 0.15 : near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1))), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
+      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', inshore ? 0.15 : near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1)), inshore ? 0.03 : 0), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
     });
     legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: inshore ? 0.05 : c.finish.radius_nm || 0.4, at: [c.finish.lat, c.finish.lon] });
     if (fromPt) {   // from a point on the water: drop the marks already rounded, judged by distance along the course
@@ -679,7 +679,7 @@
     var issue = courseIssue(meta.course);
     $('courseNote').innerHTML = (r.custom ? 'Your own course' + (r.nm ? ', about ' + r.nm + ' nm' : '') + '. ' : (r.nm ? 'About ' + r.nm + ' nm' + (r.nmSource ? ' (' + r.nmSource + ')' : '') + '. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>') + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
     try { history.replaceState(null, '', location.pathname + (!r.custom && r.id !== HERE && r.page ? '?race=' + encodeURIComponent(r.id) : '')); } catch (e) {}   /* the address always matches what is on screen, so a reload reopens it */
-    if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W) fit(); draw();
+    if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W && !(r.solent || S.inshore)) fit(); draw();   /* a Solent race keeps the chart where the user has it */
   }
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
@@ -1770,6 +1770,7 @@
   window.__fsPlan = function () { if (!S.sel || !S.sel.r) return null; var p = S.sel.r.path; return { T0: T0, name: S.sel.name, path: p.map(function (q) { return [q.la, q.lo, q.leg || 0]; }), ts: tsOf(p) }; };   /* for the automatic tests */
   window.__fsLine = function () { return LIVE.calc && LIVE.calc.pre ? LIVE.calc.pre.line : null; };   /* for the automatic tests */
   window.__fsScr = function (la, lo) { var r = $('map').getBoundingClientRect(), x = X(lo), y = Y(la); if (ORI.ang) { var a = -ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; x = ORI.cx + dx * Math.cos(a) - dy * Math.sin(a); y = ORI.cy + dx * Math.sin(a) + dy * Math.cos(a); } return [r.left + x, r.top + y, ORI.mode, Math.round(ORI.ang)]; };   /* for the automatic tests: where a position shows on a turned chart */
+  window.__fsRoutePaths = function () { return { marks: ((meta.course && meta.course.marks) || []).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side, via: m.via }; }), legs: (S.legs || legsFor(null)).map(function (l) { return { name: l.name, gate: l.gate, point: l.point }; }), routes: (S.routes || []).map(function (s) { return { name: s.name, path: ((s.r && s.r.path) || []).map(function (q) { return { la: q.la, lo: q.lo, leg: q.leg }; }) }; }) }; };   /* for the mark-rounding test */
   window.__fsCourseFull = function () { var t = Date.now(); VIA.key = null; var f = courseFull(meta.course); return { ms: Date.now() - t, pts: f.map(function (q) { return [+q.lat.toFixed(4), +q.lon.toFixed(4), q.via ? (q.auto ? 'auto' : q.must ? 'must' : 'via') : q.name]; }), land: f.slice(1).map(function (b, i) { return crossesLand(f[i], b); }) }; };   /* for the automatic tests */
   window.__navFc = function () { return { P: P, T0: T0, sel: S.sel ? { id: S.sel.id, name: S.sel.name, models: S.sel.models, path: S.sel.r && S.sel.r.path, finish: S.sel.r && S.sel.r.finish, from: S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : null } : null, routes: (S.routes || []).map(function (s) { return { id: s.id, name: s.name, models: s.models }; }), running: !!S.running, ms: selectedModels(), choice: Object.assign({}, S.choice), built: meta && (meta.built || meta.t0), layers: meta && meta.layers, adj: adjVals(), short: short, lname: function (id) { var l = layer(id); return l ? l.name : short(id); } }; };   /* the forecast and routes, for the wind check */
   window.__navPick = function (id) { var r = (S.routes || []).filter(function (s) { return s.id === id; })[0]; if (!r) return false; S.sel = r; ghosts().then(function () { matrix(); plan(); fleetTable(); update(); }); return true; };
@@ -2144,11 +2145,95 @@
     return o;
   }
   function P0() { return P; }
+  /* marks while racing (Stuart 16 Nov 13:33, "take track round a mark"): the GPS ticks a mark off when the boat crosses its rounding line
+     (the gate ray, on the side the mark is left to), or passes within 50 m of it and then sails away. The next mark then gets the course and distance. */
+  /* ---------- Fixed wind (Stuart 16 Nov 12:18 and 13:33): the wind and tide seen on the water give one extra route beside the model routes ----------
+     wind: speed and the direction it blows from, the same everywhere for the whole race. Tide: (1) the model, (2) the model corrected by a reading
+     at a buoy (strength scaled and direction turned to match it), or (3) one steady tide. Set in the Solent guided set-up, under the course and in
+     Settings, Boat; changing it re-routes at once. */
+  var FIX = (function () { try { return JSON.parse(store('fs-fix') || 'null') || {}; } catch (e) { return {}; } })();
+  function fixOn() { return FIX.on && +FIX.tws > 0 && FIX.twd !== '' && FIX.twd != null; }
+  function fixHtml(px) {
+    var v = function (k) { return FIX[k] == null ? '' : FIX[k]; }, tm = FIX.tmode || 'model', sg = function (val, lab) { return '<button type="button" data-fx="tmode" data-v="' + val + '" aria-pressed="' + (tm === val) + '">' + lab + '</button>'; };
+    return '<h4>Fixed wind route</h4><label class="fixrow"><input type="checkbox" data-fx="on"' + (FIX.on ? ' checked' : '') + '> Add a route on the wind I see on the water</label>' +
+      '<div class="fixrow"' + (FIX.on ? '' : ' hidden') + '><span>Wind</span><input type="number" inputmode="decimal" min="0" max="60" step="0.5" data-fx="tws" value="' + v('tws') + '" aria-label="Wind speed, knots" placeholder="kn"> kn from <input type="number" inputmode="numeric" min="0" max="360" data-fx="twd" value="' + v('twd') + '" aria-label="Wind from, degrees true" placeholder="°T">°T</div>' +
+      '<div class="fixrow"' + (FIX.on ? '' : ' hidden') + '><span>Tide</span><span class="seg">' + sg('model', 'Model') + sg('buoy', 'At a buoy') + sg('steady', 'Steady') + '</span></div>' +
+      (FIX.on && tm === 'buoy' ? '<div class="fixrow"><span>At buoy</span><input type="text" data-fx="bcode" value="' + v('bcode') + '" aria-label="Buoy code" placeholder="3G"> <input type="number" inputmode="decimal" min="0" max="8" step="0.1" data-fx="bspd" value="' + v('bspd') + '" aria-label="Tide seen, knots" placeholder="kn"> kn to <input type="number" inputmode="numeric" min="0" max="360" data-fx="bdir" value="' + v('bdir') + '" aria-label="Tide runs towards, degrees true" placeholder="°T">°T</div>' : '') +
+      (FIX.on && tm === 'steady' ? '<div class="fixrow"><span>Tide</span><input type="number" inputmode="decimal" min="0" max="8" step="0.1" data-fx="tspd" value="' + v('tspd') + '" aria-label="Tide, knots" placeholder="kn"> kn to <input type="number" inputmode="numeric" min="0" max="360" data-fx="tdir" value="' + v('tdir') + '" aria-label="Tide runs towards, degrees true" placeholder="°T">°T</div>' : '') +
+      '<p class="fixnote">' + (FIX.on ? (fixOn() ? 'Routes again with a Fixed wind route beside the model routes. ' + (fixTideNote() || '') : 'Give the wind speed and direction.') : 'Off. Tick to give the wind (and tide) you see.') + '</p>';
+  }
+  var fixT = null;
+  function fixMount() { ['fixCourse', 'fixSet'].forEach(function (id) { var e = $(id); if (e) { e.innerHTML = fixHtml(id); fixBind(e); } }); try { if (window.FSSolent && FSSolent.stepState().on) FSSolent.step(FSSolent.stepState().n); } catch (e) {} }
+  function fixBind(el) {
+    if (!el) return;
+    [].forEach.call(el.querySelectorAll('[data-fx]'), function (c) {
+      var k = c.getAttribute('data-fx');
+      if (c.tagName === 'BUTTON') c.onclick = function () { FIX[k] = c.getAttribute('data-v'); fixSave(true); };
+      else if (c.type === 'checkbox') c.onchange = function () { FIX[k] = c.checked; fixSave(true); };
+      else c.onchange = function () { FIX[k] = c.type === 'number' ? (c.value === '' ? '' : +c.value) : c.value.trim().toUpperCase(); fixSave(false); };
+    });
+  }
+  function fixSave(redraw) { store('fs-fix', JSON.stringify(FIX)); if (redraw) fixMount(); else { [].forEach.call(document.querySelectorAll('.fixnote'), function (n) { n.textContent = FIX.on ? (fixOn() ? 'Routes again with a Fixed wind route beside the model routes. ' + (fixTideNote() || '') : 'Give the wind speed and direction.') : 'Off. Tick to give the wind (and tide) you see.'; }); }
+    clearTimeout(fixT); fixT = setTimeout(function () { if (S.routes && S.routes.length && !S.running && !(window.FSSolent && FSSolent.stepState().on)) { S.key = null; S.preBad = true; run(); } }, 700); }   /* re-route at once (Stuart 12:18) */
+  /* the buoy reading against the model there, at the start */
+  function fixBuoy() {
+    if (FIX.tmode !== 'buoy' || !(FIX.bspd >= 0) || FIX.bdir === '' || FIX.bdir == null || !FIX.bcode) return null;
+    var mk = window.FSSolent && FSSolent.marks && (FSSolent.marks() || []).filter(function (m) { return m.id.toUpperCase() === String(FIX.bcode).toUpperCase(); })[0]; if (!mk) return { err: 'No Solent buoy ' + FIX.bcode + '.' };
+    var tid = $('tideSel').value; if (!tid || !P.tide[tid]) return { err: 'No tide model loaded to correct.' };
+    var t = (+$('startSel').value - T0) / 3600, C = FSRouter.tideSampler(P, tid)(mk.lat, mk.lon, t), ms = Math.sqrt(C[0] * C[0] + C[1] * C[1]); if (ms < 0.05) return { err: 'The model has almost no tide at ' + mk.id + ' then; use Steady instead.' };
+    var md = (Math.atan2(C[0], C[1]) / R + 360) % 360, turn = ((FIX.bdir - md + 540) % 360) - 180;
+    return { tspd: Math.round((FIX.bspd / ms - 1) * 100), tdir: Math.round(turn), model: [ms, md], at: mk.id };
+  }
+  function fixTideNote() { var tm = FIX.tmode || 'model'; if (tm === 'steady') return FIX.tspd >= 0 && FIX.tdir !== '' && FIX.tdir != null ? 'Tide ' + FIX.tspd + ' kn to ' + FIX.tdir + '°T everywhere.' : 'Give the tide speed and direction.';
+    if (tm === 'buoy') { var b = fixBuoy(); return !b ? 'Give the buoy, and the tide you see there.' : b.err ? b.err : 'Model at ' + b.at + ': ' + b.model[0].toFixed(1) + ' kn to ' + Math.round(b.model[1]) + '°T; corrected ' + (b.tspd >= 0 ? '+' : '') + b.tspd + '% and ' + (b.tdir >= 0 ? '+' : '') + b.tdir + '°.'; }
+    return 'Tide from the model.'; }
+  function fixAdj(base) { var a = Object.assign({}, base || {}); a.fixW = { tws: +FIX.tws, twd: +FIX.twd }; var tm = FIX.tmode || 'model';
+    if (tm === 'steady' && FIX.tspd >= 0 && FIX.tdir !== '' && FIX.tdir != null) a.fixT = { spd: +FIX.tspd, dir: +FIX.tdir };
+    if (tm === 'buoy') { var b = fixBuoy(); if (b && !b.err) { a.tspd = (a.tspd || 0) + b.tspd; a.tdir = (a.tdir || 0) + b.tdir; } }
+    delete a.wdir; delete a.wspd; delete a.wtime; return a; }
+  window.__fsFix = { html: function () { return fixHtml('sol'); }, bind: fixBind, state: function () { return Object.assign({}, FIX); }, set: function (o) { Object.assign(FIX, o); fixSave(true); }, buoy: fixBuoy };
+  /* End race (Stuart 16 Nov 12:25): file the boat's track with the result, keep the race (it was saved when routed) and clear the chart */
+  function endRace() {
+    var now = Date.now(), gun = +$('startSel').value; try { var fu = futureGet(); if (fu && fu.ep) gun = fu.ep; } catch (e) {}
+    var el = gun ? Math.max(0, Math.round(now / 1000 - gun)) : null, hm = function (sec) { return Math.floor(sec / 3600) + 'h ' + ('0' + Math.floor(sec % 3600 / 60)).slice(-2); }, clk = function (ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
+    var name = ($('raceTitle').textContent || 'Race') + ' ' + new Date(now).getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(now).getMonth()], M = LIVE.mk || { done: [] };
+    var res = { name: name, course: meta && meta.course ? meta.course.name : '', gun: gun || null, end: Math.round(now / 1000), elapsed: el, marks: (M.done || []).map(function (d) { return { name: d.name, t: Math.round(d.t / 1000) }; }) };
+    try { var all = JSON.parse(store('fs-results') || '[]'); all.unshift(res); store('fs-results', JSON.stringify(all.slice(0, 50))); } catch (e) {}
+    var tn = name + ' · ended ' + clk(now) + (el != null ? ' · ' + hm(el) + ' from the gun' : '') + (res.marks.length ? ' · ' + res.marks.map(function (m) { return m.name.split(' ')[0] + ' ' + clk(m.t * 1000); }).join(', ') : '');
+    var filed = false; try { if (window.FSTracks && LIVE.trail && LIVE.trail.length > 1) filed = FSTracks.file(LIVE.trail.slice(), tn); } catch (e) {}
+    if (filed) { LIVE.trail = []; store('fs-livetrail', '[]'); }
+    LIVE.mk = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; S.cleared = true;
+    try { liveStop(); } catch (e) {} try { $('finBox').innerHTML = ''; } catch (e) {}
+    busy('Race ended' + (el != null ? ': ' + hm(el) + ' from the gun' : '') + '. ' + (filed ? 'Track filed with the result. ' : '') + 'The race stays in Races, Saved routes; the chart is clear for the next one.'); setTimeout(function () { busy(''); }, 6000);
+    draw();
+  }
+  window.__fsEndRace = endRace;
+  function escMk(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function markTrack(f) {
+    var legs = S.legs || (meta && meta.course ? legsFor(null) : null); if (!legs || !legs.length || !f) return null;
+    var key = legs.map(function (l) { return l.name; }).join('|');
+    if (!LIVE.mk || LIVE.mk.key !== key) LIVE.mk = { key: key, i: 0, done: [], prev: null, near: null };
+    var M = LIVE.mk, kx = Math.cos(f.la * R);
+    var cross = function (p, q, a, b) { var d1x = (q[1] - p[1]) * kx, d1y = q[0] - p[0], d2x = (b[1] - a[1]) * kx, d2y = b[0] - a[0], den = d1x * d2y - d1y * d2x; if (Math.abs(den) < 1e-14) return false; var ex = (a[1] - p[1]) * kx, ey = a[0] - p[0], t = (ex * d2y - ey * d2x) / den, u = (ex * d1y - ey * d1x) / den; return t >= 0 && t <= 1 && u >= 0 && u <= 1; };
+    while (M.i < legs.length - 1) {   /* the last leg is the finish */
+      var lg = legs[M.i], at = (lg.gate && lg.gate.mark) || lg.at || lg.point, d = FSRouter.dist(f.la, f.lo, at[0], at[1]), hit = false;
+      if (lg.gate && M.prev) { var a = lg.gate.mark || lg.gate.a, b = lg.gate.b; hit = cross(M.prev, [f.la, f.lo], a, b); }
+      if (!hit && lg.point && d < (lg.r || 0.05)) hit = true;
+      if (!hit && d < 0.027) M.near = Math.min(M.near == null ? 9 : M.near, d);
+      if (!hit && M.near != null && d > M.near + 0.03) hit = true;   /* came within 50 m and is now sailing away */
+      if (!hit) break;
+      M.done.push({ name: lg.name, t: Date.now() }); M.i++; M.near = null; M.just = Date.now(); try { liveBeep(); } catch (e) {}
+    }
+    M.prev = [f.la, f.lo];
+    var nx = legs[Math.min(M.i, legs.length - 1)], tg = (nx.gate && nx.gate.mark) || nx.at || nx.point;
+    return { name: nx.name, n: M.i + 1, of: legs.length, finish: M.i >= legs.length - 1, to: rhumb({ lat: f.la, lon: f.lon != null ? f.lon : f.lo }, { lat: tg[0], lon: tg[1] }), side: nx.gate && nx.gate.side, last: M.done[M.done.length - 1], fresh: M.just && Date.now() - M.just < 20000 };
+  }
   function liveCalc(f) {
     var o = { fix: f }, nowH = (Date.now() / 1000 - T0) / 3600, s = S.sel; o.nowH = nowH;
     /* before the gun (Stuart 12 Nov): course and distance to the start and the countdown, not ahead or behind a plan that has not begun */
     var gun = +$('startSel').value; try { var fu = futureGet(); if (fu && fu.ep) gun = fu.ep; } catch (e) {}
     if (gun && Date.now() / 1000 < gun && meta && meta.course && meta.course.start) { o.pre = { to: rhumb({ lat: f.la, lon: f.lo }, meta.course.start), secs: gun - Date.now() / 1000, name: meta.course.start.name || 'the start' }; o.pre.line = lineCalc(f, gun); return o; }
+    try { o.mark = markTrack(f); } catch (e) { o.mark = null; }
     if (!s || !s.r || !s.r.path) return o;
     var p = s.r.path, ts = tsOf(p), kx = Math.cos(f.la * R) * 60, best = null;
     for (var i = 0; i < p.length - 1; i++) { var ax = (p[i].lo - f.lo) * kx, ay = (p[i].la - f.la) * 60, bx = (p[i + 1].lo - f.lo) * kx, by = (p[i + 1].la - f.la) * 60, dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)), qx = ax + u * dx, qy = ay + u * dy, d = Math.hypot(qx, qy);
@@ -2197,6 +2282,13 @@
     if (f && f.dr) { var s = Math.round((Date.now() - f.since) / 1000), age = s >= 3600 ? Math.floor(s / 3600) + 'h ' + ('0' + Math.floor(s % 3600 / 60)).slice(-2) : Math.floor(s / 60) + ' min ' + ('0' + s % 60).slice(-2) + ' s';
       h = '<div class="lvl lvdr lvwarn" role="alert"><b>DEAD RECKONING: no GPS for ' + age + '.</b> Carrying on ' + (f.cog != null && f.sog > 0.05 ? ('00' + Math.round(f.cog)).slice(-3) + '°T at ' + f.sog.toFixed(1) + ' kn, from the ' + f.src : f.src) + '. Position good to about ' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '. <button class="btn" id="drStop">Stop dead reckoning</button></div>'; }
     else if (LIVE.drMsg) h = '<div class="lvl lvdr">' + LIVE.drMsg + '</div>';
+    var mk = LIVE.calc && LIVE.calc.mark, om = b.querySelector('.lvmk'); if (om) om.remove();
+    if (mk && !(LIVE.calc && LIVE.calc.pre)) { var nm1 = mk.to.nm < 0.1 ? Math.round(mk.to.nm * 1852) + ' m' : (mk.to.nm < 10 ? mk.to.nm.toFixed(1) : Math.round(mk.to.nm)) + ' nm';
+      b.insertAdjacentHTML('afterbegin', '<div class="lvl lvmk"' + (mk.fresh ? ' role="status"' : '') + '>' + (mk.fresh && mk.last ? '<b class="lvok">✓ ' + escMk(mk.last.name) + ' rounded.</b> ' : '') + (mk.finish ? 'To the finish: ' : 'Next mark ' + mk.n + ' of ' + (mk.of - 1) + ': ') + '<b>' + escMk(mk.name) + '</b>' + (mk.side ? ' to ' + mk.side : '') + ' · <b>' + ('00' + Math.round(mk.to.brg)).slice(-3) + '°T ' + nm1 + '</b>' + (S.inshore ? ' <button class="btn sm" id="mkEnd" title="File the track, keep the result, clear the chart">' + (LIVE.endArm && Date.now() - LIVE.endArm < 5000 ? 'Tap again to end' : 'End race') + '</button>' : '') + (mk.finish ? '' : ' <button class="btn sm" id="mkSkip" title="Count this mark as rounded">Rounded</button>') + (LIVE.mk && LIVE.mk.i > 0 ? ' <button class="btn sm" id="mkBack" title="Go back one mark">Back</button>' : '') + '</div>');
+      b.hidden = false; var sk = $('mkSkip'), bk = $('mkBack');
+      if (sk) sk.onclick = function () { var M = LIVE.mk; if (!M) return; M.done.push({ name: mk.name, t: Date.now() }); M.i++; M.near = null; M.just = Date.now(); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); };
+      var en = $('mkEnd'); if (en) en.onclick = function () { if (!(LIVE.endArm && Date.now() - LIVE.endArm < 5000)) { LIVE.endArm = Date.now(); liveShow(); return; } LIVE.endArm = null; endRace(); };
+      if (bk) bk.onclick = function () { var M = LIVE.mk; if (!M || !M.i) return; M.i--; M.done.pop(); M.near = null; M.just = null; LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }; }
     if (h) { b.hidden = false; b.insertAdjacentHTML('afterbegin', h); var sb = $('drStop'); if (sb) sb.onclick = function () { if ($('drOn')) { $('drOn').checked = false; $('drOn').onchange(); } liveShow(); draw(); }; }
     b.classList.toggle('drmode', !!(f && f.dr));
   }
@@ -2354,21 +2446,22 @@
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
       var FINE = ['ukv', 'arome', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends */
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
+      if (fixOn() && !S.to) sets.push({ id: 'fixed', name: 'Fixed wind ' + FIX.tws + ' kn from ' + ('00' + Math.round(FIX.twd)).slice(-3) + '°', models: [ms[0]], fixed: true, adj: fixAdj(base.adj) });
       var jobs = sets.length * 2 + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
       var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
-      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }) }).then(function (r) { tick(); s.r = r; return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
+      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }, s.adj ? { adj: s.adj } : {}) }).then(function (r) { tick(); s.r = r; return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
         if (gen !== S.gen) throw { abandoned: true };
         S.routes = res.filter(function (s) { return s.r; });
         var errs = res.filter(function (s) { return s.err; });
         if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
-        var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }), paths: [s.r.path] }).then(function (x) { tick(); return x; }); });
+        var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }, s.adj ? { adj: s.adj } : {}), paths: [s.r.path] }).then(function (x) { tick(); return x; }); });
         return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }).then(function (x) { tick(); return x; }); }).concat(selfJobs)).then(function (allr) { if (gen !== S.gen) throw { abandoned: true };
           var cols = allr.slice(0, ms.length), self = allr.slice(ms.length).map(function (x) { return x[0]; });
           S.routes.forEach(function (s, i) { var k = (s.r.finish - start.t) / Math.max(0.1, self[i] - start.t); cols.forEach(function (c) { c[i] = start.t + (c[i] - start.t) * k; }); });
           S.matrix = { models: ms, cols: cols, start: start.t };
           S.routes.forEach(function (s, i) { var v = cols.map(function (c) { return c[i]; }); s.mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length; s.worst = Math.max.apply(null, v); });
-          var rank = function (x) { return x.r.partial ? 1e6 + x.r.partial.togo : x.mean; };   /* a route cut short by the end of the forecasts ranks by distance still to sail */
+          var rank = function (x) { return (x.fixed ? 2e6 : 0) + (x.r.partial ? 1e6 + x.r.partial.togo : x.mean); };   /* the Fixed wind route is shown, never picked as best */   /* a route cut short by the end of the forecasts ranks by distance still to sail */
           var best = S.routes.slice().sort(function (a, b) { return rank(a) - rank(b); })[0];
           S.routes.forEach(function (s) { s.best = s === best; });
           S.sel = best; S.base = base; S.legs = legs; S.start = start;
@@ -3115,7 +3208,7 @@
   cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(evx(e), evy(e), e.deltaY > 0 ? 1 / 1.15 : 1.15); }, { passive: false });
   function ZMAX() { var k = +($('zoomMax') ? $('zoomMax').value : 1) || 1; return 20000 * Math.max(1, Math.min(6, k)); }   /* closest zoom, screen points per degree of latitude: 20,000 is about 1.2 nm across a phone */
   function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(ZMAX(), view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
-  cv.addEventListener('dblclick', function () { fit(); draw(); });
+  cv.addEventListener('dblclick', function () { if (window.FSSolent && (FSSolent.isOn() || S.inshore)) return; fit(); draw(); });   /* Stuart 16 Nov 13:33: in Solent racing a quick second click on a buoy zoomed the whole chart out; a double click no longer re-frames the chart there */
   cv.addEventListener('pointerdown', function (e) { if (e.isPrimary) { ptrs.clear(); pmid = null; S.drag = null; }   /* the first finger down starts a new gesture: a finger whose lift was never reported (Stuart 14 Nov 20:42, Android tablet: pinch stopped working) must not leave the chart thinking three fingers are down */ try { cv.setPointerCapture(e.pointerId); } catch (er) {} ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
   /* two fingers move the chart as well as zoom it, like a map app (Stuart 12 Nov): read both fingers together once a frame */
   var pairRaf = 0;
