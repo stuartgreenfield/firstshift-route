@@ -715,7 +715,7 @@
       else if (fromLink && !beyond(+linkSt) && +linkSt > 0) setStart(+linkSt);   /* an exact start from the navigator's link */
       if (fromLink) { S.startChosen = true; setTimeout(function () { startChosen(); }, 0); }   /* the navigator chose it: the crew phone takes it as chosen */
       S.pendingStart = null;
-      var ss = !qr && !qs.get('course') && !qs.get('new') && sessGet(); if (ss) { S.resume = ss; S.startChosen = true; if ([].some.call($('startSel').options, function (o) { return o.value === ss.startVal; })) $('startSel').value = ss.startVal; chipStart(); }   /* carrying on: no questions, straight back in */
+      var ss = !qr && !qs.get('course') && !qs.get('new') && sessGet(); if (ss) { S.resume = ss; S.startChosen = true; if (+ss.startVal > 0) setStart(+ss.startVal, true); chipStart(); }   /* an exact start such as 16:20, or one now in the past, is put back as it was: otherwise the start no longer matched and Route routed again (Stuart 16 Nov 15:47) */   /* carrying on: no questions, straight back in */
     }).catch(function () { $('raceSel').innerHTML = '<option>Cervantes Trophy Race</option>'; });
   }
   /* ---------- man overboard: hold the red button; marks the position from the GPS, then gives bearing, distance and
@@ -1279,10 +1279,10 @@
   function futureDrop() { try { localStorage.removeItem(futureKey()); } catch (e) {} }
   function beyond(ep) { var r = startRange(); return !!(r && ep > r[1]); }
   function startCheck(ep) { var r = startRange(); if (!r || !(ep === ep)) return 'Enter a time, for example 10:20.'; if (ep > r[1]) return ''; if (ep < r[0] - 3600) return 'Starts can be from ' + clockAbs(r[0]) + ' to ' + clockAbs(r[1]) + ' UTC with these forecasts.'; return ''; }
-  function setStart(ep) {
+  function setStart(ep, quiet) {
     var v = String(Math.round(ep)), sel = $('startSel');
     if (![].some.call(sel.options, function (o) { return o.value === v; })) { var o = document.createElement('option'); o.value = v; o.textContent = clockAbs(+v) + ' (exact)'; var after = [].filter.call(sel.options, function (x) { return +x.value < +v; }).pop(); if (after) after.after(o); else sel.prepend(o); }
-    sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true }));
+    sel.value = v; if (!quiet) sel.dispatchEvent(new Event('change', { bubbles: true }));
   }
   function laterDays(r) { var out = [], t0 = Math.floor(r[1] / 86400) * 86400 + 86400; for (var t = t0; t < t0 + 90 * 86400; t += 86400) { var dd = new Date(t * 1000); out.push({ v: t, k: dd.toUTCString().slice(0, 11) + (dd.getUTCFullYear() !== new Date().getUTCFullYear() ? ' ' + dd.getUTCFullYear() : '') }); } return out; }
   function startPickerHtml(id, cur) { var days = startDayList(), r = startRange(), fu = futureGet(); if (fu) cur = fu.ep; var cd = Math.floor(cur / 86400) * 86400, opt = function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; };
@@ -2442,8 +2442,9 @@
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
-    if (!S.from && !S.resumeTried) { S.resumeTried = true; var own = (!S.resume || S.resume.rk !== raceKey()) && sessFor(raceKey()); if (own) { S.resume = own; if ([].some.call($('startSel').options, function (o) { return o.value === own.startVal; })) $('startSel').value = own.startVal; S.startChosen = true; } }   /* first routing after opening: this race's own kept routes */
-    if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
+    if (!S.from && !S.resumeTried) { S.resumeTried = true; var own = (!S.resume || S.resume.rk !== raceKey()) && sessFor(raceKey()); if (own) { S.resume = own; if (+own.startVal > 0) setStart(+own.startVal, true); S.startChosen = true; } }   /* first routing after opening: this race's own kept routes */
+    if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk === raceKey() && +rs.startVal > 0 && rs.startVal !== $('startSel').value) { setStart(+rs.startVal, true); S.startChosen = true; }   /* the same race: its start as it was, even an exact or past one the start list no longer holds */
+      if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
     var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
     var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
