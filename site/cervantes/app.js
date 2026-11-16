@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.27';
+  var VERSION = 'FirstShift Route v0.12.28';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -301,7 +301,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.27 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.28 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -975,7 +975,7 @@
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return;
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.28) */
       var b = $('updBar'); if (!b) return; b.textContent = 'Route v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -1349,7 +1349,7 @@
         start: S.start, legs: S.legs, base: S.base, matrix: S.matrix,
         routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, hidden: !!s.hidden, r: { arrivals: s.r.arrivals, path: s.r.path, finish: s.r.finish, partial: s.r.partial || undefined } }; }) };
       if (give) return o;
-      store(sessKey(), JSON.stringify(o));
+      var js = JSON.stringify(o); store(sessKey(), js); sessKeep(o.rk, js);
     } catch (e) {}
     return null;
   }
@@ -1373,6 +1373,13 @@
     try { sessionStorage.setItem('fs-wiz', ''); } catch (e) {} WIZ.on = false;   /* the set-up must not take over: old routes open as they were */
     location.href = '../' + o.page + '/';
   }
+  /* each race keeps its own routes too (Stuart 16 Nov 15:47: "when i restarted it re-runs the routing ... it should go back exactly where it was"):
+     reopening on a race whose routes were not the last ones saved puts its own routes back rather than routing again. Four races at most. */
+  function sessKeep(rk, js) { try { var ix = JSON.parse(localStorage.getItem('fs-sessix-' + HERE) || '[]').filter(function (k) { return k !== rk; }); ix.unshift(rk);
+      while (ix.length > 4) { localStorage.removeItem('fs-sessr-' + HERE + '-' + ix.pop()); }
+      try { localStorage.setItem('fs-sessr-' + HERE + '-' + rk, js); } catch (e) { while (ix.length > 1) localStorage.removeItem('fs-sessr-' + HERE + '-' + ix.pop()); try { localStorage.setItem('fs-sessr-' + HERE + '-' + rk, js); } catch (x) { ix.shift(); } }
+      localStorage.setItem('fs-sessix-' + HERE, JSON.stringify(ix)); } catch (e) {} }
+  function sessFor(rk) { try { var o = JSON.parse(localStorage.getItem('fs-sessr-' + HERE + '-' + rk) || 'null'); return o && o.v === 1 && o.rk === rk && Date.now() < o.until ? o : null; } catch (e) { return null; } }
   function sessGet() { try { var o = JSON.parse(store(sessKey()) || 'null'); return o && o.v === 1 && Date.now() < o.until ? o : null; } catch (e) { return null; } }
   function sessDrop() { try { localStorage.removeItem(sessKey()); } catch (e) {} }
   function sessRestore(o) {
@@ -2037,6 +2044,9 @@
     var r = LIVE.real; if (r && r.sog != null && r.cog != null) return { sog: r.sog, cog: r.cog, src: 'last GPS course and speed' };
     return null;
   }
+  /* a Mac or PC has no GPS: its Wi-Fi position comes every half minute or so, and each gap started and ended the reckoning with a beep
+     (Stuart 16 Nov 15:47: "route on mac is giving two beeps every 30sec"). Quiet on a computer; phones, tablets and Navigate still beep. */
+  function drQuiet() { try { return !window.__navDR && !matchMedia('(any-pointer: coarse)').matches && !('ontouchstart' in window); } catch (e) { return false; } }
   function drTick() {
     if (!LIVE.on) return; var r = LIVE.real, now = Date.now();
     if (!r || !drOn() || now - r.at < drAfter()) { if (LIVE.fix && LIVE.fix.dr && r && now - r.at < drAfter()) drEnd(null); return; }
@@ -2044,7 +2054,7 @@
     var la = p.la, lo = p.lo, run = p.dr ? p.run : 0;
     if (v && v.sog > 0.05) { var d = v.sog * dt; la = p.la + d * Math.cos(v.cog * R) / 60; lo = p.lo + d * Math.sin(v.cog * R) / (60 * Math.cos(p.la * R)); run += d; }
     var f = { la: la, lo: lo, at: now, acc: 5, sog: v ? v.sog : null, cog: v ? v.cog : null, dr: true, since: r.at, run: run, rad: 0.05 + drPct() * run, src: v ? v.src : 'no speed known: holding the last position' };
-    if (!p.dr) { LIVE.drTrack = [[r.la, r.lo]]; LIVE.drStart = r.at; try { liveBeep(); } catch (e) {} }
+    if (!p.dr) { LIVE.drTrack = [[r.la, r.lo]]; LIVE.drStart = r.at; if (!drQuiet()) try { liveBeep(); } catch (e) {} }
     LIVE.drTrack.push([la, lo]); if (LIVE.drTrack.length > 4000) LIVE.drTrack.shift();
     LIVE.fix = f; try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();
   }
@@ -2052,7 +2062,7 @@
     var d = LIVE.fix; if (!d || !d.dr) return;
     if (real) { var e = rhumb({ lat: d.la, lon: d.lo }, { lat: real.la, lon: real.lo }), mins = Math.round((Date.now() - d.since) / 60000);
       LIVE.drMsg = 'GPS back after ' + (mins < 1 ? 'under a minute' : mins + ' min') + '. The reckoning was ' + (e.nm < 0.1 ? Math.round(e.nm * 1852) + ' m' : e.nm.toFixed(2) + ' nm') + ' out, ' + ('00' + Math.round(e.brg)).slice(-3) + '°T of the true position.';
-      LIVE.drLast = { err: e.nm, brg: e.brg, mins: mins, at: Date.now() }; try { liveBeep(); } catch (x) {} setTimeout(function () { LIVE.drMsg = null; if (LIVE.fix) liveShow(); }, 20000);
+      LIVE.drLast = { err: e.nm, brg: e.brg, mins: mins, at: Date.now() }; if (!drQuiet()) try { liveBeep(); } catch (x) {} setTimeout(function () { LIVE.drMsg = null; if (LIVE.fix) liveShow(); }, 20000);
     } else { LIVE.fix = LIVE.real; }
     LIVE.drTrack = [];
   }
@@ -2282,6 +2292,7 @@
     if (f && f.dr) { var s = Math.round((Date.now() - f.since) / 1000), age = s >= 3600 ? Math.floor(s / 3600) + 'h ' + ('0' + Math.floor(s % 3600 / 60)).slice(-2) : Math.floor(s / 60) + ' min ' + ('0' + s % 60).slice(-2) + ' s';
       h = '<div class="lvl lvdr lvwarn" role="alert"><b>DEAD RECKONING: no GPS for ' + age + '.</b> Carrying on ' + (f.cog != null && f.sog > 0.05 ? ('00' + Math.round(f.cog)).slice(-3) + '°T at ' + f.sog.toFixed(1) + ' kn, from the ' + f.src : f.src) + '. Position good to about ' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '. <button class="btn" id="drStop">Stop dead reckoning</button></div>'; }
     else if (LIVE.drMsg) h = '<div class="lvl lvdr">' + LIVE.drMsg + '</div>';
+    if (LIVE.mini && !LIVE.big) { b.classList.toggle('drmode', !!(f && f.dr)); return; }   /* the small GPS pill: no extra lines spilling over the chart (16 Nov, seen in Stuart's Chrome) */
     var mk = LIVE.calc && LIVE.calc.mark, om = b.querySelector('.lvmk'); if (om) om.remove();
     if (mk && !(LIVE.calc && LIVE.calc.pre)) { var nm1 = mk.to.nm < 0.1 ? Math.round(mk.to.nm * 1852) + ' m' : (mk.to.nm < 10 ? mk.to.nm.toFixed(1) : Math.round(mk.to.nm)) + ' nm';
       b.insertAdjacentHTML('afterbegin', '<div class="lvl lvmk"' + (mk.fresh ? ' role="status"' : '') + '>' + (mk.fresh && mk.last ? '<b class="lvok">✓ ' + escMk(mk.last.name) + ' rounded.</b> ' : '') + (mk.finish ? 'To the finish: ' : 'Next mark ' + mk.n + ' of ' + (mk.of - 1) + ': ') + '<b>' + escMk(mk.name) + '</b>' + (mk.side ? ' to ' + mk.side : '') + ' · <b>' + ('00' + Math.round(mk.to.brg)).slice(-3) + '°T ' + nm1 + '</b>' + (S.inshore ? ' <button class="btn sm" id="mkEnd" title="File the track, keep the result, clear the chart">' + (LIVE.endArm && Date.now() - LIVE.endArm < 5000 ? 'Tap again to end' : 'End race') + '</button>' : '') + (mk.finish ? '' : ' <button class="btn sm" id="mkSkip" title="Count this mark as rounded">Rounded</button>') + (LIVE.mk && LIVE.mk.i > 0 ? ' <button class="btn sm" id="mkBack" title="Go back one mark">Back</button>' : '') + '</div>');
@@ -2431,6 +2442,7 @@
     var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
+    if (!S.from && !S.resumeTried) { S.resumeTried = true; var own = (!S.resume || S.resume.rk !== raceKey()) && sessFor(raceKey()); if (own) { S.resume = own; if ([].some.call($('startSel').options, function (o) { return o.value === own.startVal; })) $('startSel').value = own.startVal; S.startChosen = true; } }   /* first routing after opening: this race's own kept routes */
     if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { S.startChosen = false; if (startGate()) return run(); } else { S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
     var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
     var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
@@ -2880,7 +2892,8 @@
     try { chartDraw('cmarks'); } catch (e) {}
     zonesDraw(); lightsDraw();
     document.body.classList.toggle('editing', !!S.edit);
-    if (!S.edit && !S.cleared) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
+    var building = window.FSSolent && FSSolent.stepState && FSSolent.stepState().on;   /* a Solent course being built step by step: the last course is not drawn under it (16 Nov) */
+    if (!S.edit && !S.cleared && !building) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
     var selOn = S.sel && !S.sel.hidden;
     if (selOn) line(S.sel, 9, 0.35);
@@ -2888,7 +2901,7 @@
     if (selOn) line(S.sel, 2.2, 1);
     if (S.edit) { myMarksDraw(); editDraw(); }
     if (S.mob) mobDraw();
-    if (!S.edit && !S.cleared && S.show.legs && meta.course) { var lc = meta.course; legsDraw(courseFull(lc), false, 'label'); }
+    if (!S.edit && !S.cleared && !building && S.show.legs && meta.course) { var lc = meta.course; legsDraw(courseFull(lc), false, 'label'); }
     liveDraw();
     if (window.__fsOverlay && !S.edit) try { ctx.save(); window.__fsOverlay(ctx, X, Y); ctx.restore(); } catch (e) { ctx.restore(); }
     (window.__fsOverlays || []).forEach(function (fn) { try { ctx.save(); fn(ctx, X, Y, !!S.edit); ctx.restore(); } catch (e) { ctx.restore(); } });   /* more layers: the Solent race marks */   /* the basic plotter (fsplot.js) draws its bearing and COG lines here */
