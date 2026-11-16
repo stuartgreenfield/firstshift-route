@@ -133,9 +133,11 @@
       '.solrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--line,#e2e8f0)}.solrow b{min-width:0;flex:1 1 140px}.solrow select{max-width:130px}.solrow .btn{padding:4px 9px}.soltxt{width:100%;min-height:44px;font:inherit;box-sizing:border-box}.solerr{color:#b91c1c;font-weight:600}.soltab{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}.soltab th,.soltab td{text-align:left;padding:3px 6px;border-bottom:1px solid var(--line,#e2e8f0)}.soltab td:nth-child(3),.soltab td:nth-child(4){text-align:right}';
     st.textContent += '.solchain{position:fixed;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:62;background:var(--panel,#fff);color:var(--ink,#000);border:2px solid #1d4ed8;border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.35);max-width:720px;margin:0 auto}.solchain[hidden]{display:none}.solcl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.solcn{margin-left:auto;font-size:12px;color:var(--muted,#667)}' +
       '.solchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}.solchip{flex:none;min-height:34px;padding:0 10px;border-radius:17px;border:1px solid var(--line,#ccc);background:none;color:var(--ink,#000);font:700 13px var(--f-data,monospace)}.solchip.port{border-color:#dc2626;color:#dc2626}.solchip.stbd{border-color:#16a34a;color:#16a34a}' +
-      '.solside{position:fixed;z-index:63;width:270px;background:var(--panel,#fff);color:var(--ink,#000);border:1px solid var(--line,#ccc);border-radius:12px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.solside[hidden]{display:none}.solside .btn{min-height:42px}' +
+      '.solside{position:fixed;z-index:66;width:270px;background:var(--panel,#fff);color:var(--ink,#000);border:1px solid var(--line,#ccc);border-radius:12px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:6px}.solside[hidden]{display:none}.solside .btn{min-height:42px}' +
       '.sollq{width:100%;min-height:44px;font-size:16px;padding:0 10px;border-radius:9px;border:1px solid var(--line,#ccc);background:var(--bg,#fff);color:var(--ink,#000)}.solla{margin:10px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#667)}.sollr{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line,#e2e8f0)}.sollr b{width:34px;font-family:var(--f-data,monospace)}.sollr span{flex:1;min-width:0;display:flex;flex-direction:column}.sollr small{color:var(--muted,#667)}.sollr .btn{min-height:38px}' +
       '.solstep{position:fixed;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 10px);margin:0 auto;max-width:440px;z-index:64;background:var(--panel,#fff);color:var(--ink,#000);border:2px solid #1d4ed8;border-radius:14px;padding:0 12px 10px;box-shadow:0 6px 20px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:8px;font-size:14px;max-height:60vh;overflow-y:auto;box-sizing:border-box}.solstep[hidden]{display:none}.solgrip{height:20px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none;margin:0 -12px}.solgrip span{width:44px;height:5px;border-radius:3px;background:var(--muted,#889);opacity:.7}.solhd{display:flex;align-items:center;gap:8px}.solhd b{flex:1;font-size:16px}.solhd .close{font-size:22px;background:none;border:0;color:inherit;min-width:40px;min-height:40px}.solstepn{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#667);white-space:nowrap}.solgot{margin:0;font-size:13px;color:var(--muted,#667)}.solgot b{color:var(--ink,#000)}.solnav{display:flex;gap:8px;justify-content:space-between}.solnav .btn{min-height:42px;flex:1}.solnav .btn:disabled{opacity:.4;cursor:default}.solstep input{width:62px;min-height:34px;font-size:16px}.solstep .solname{flex:1;width:auto}.solstep .seg button{min-height:34px;white-space:nowrap}.solk{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#667)}' +
+      '@media (min-width:1000px) and (min-height:600px){.solstep{right:16px;left:auto;bottom:auto;top:128px;margin:0;width:380px;max-height:calc(100vh - 210px)}}' +
+      '.solmsg{margin:0;padding:6px 8px;border-radius:8px;background:rgba(245,158,11,.15);color:var(--ink,#000);font-size:13px}.solstep .solcode{width:120px;text-transform:uppercase}.solstep input[type=datetime-local]{width:auto;min-height:34px;font-size:15px}#solAfter{z-index:65}' +
       '.solcards{display:flex;flex-direction:column;gap:10px}.solcards .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:12px;min-height:64px;gap:2px}.solcards span{font-size:12px;opacity:.85;font-weight:400}';
     document.head.appendChild(st);
   }
@@ -229,11 +231,19 @@
     [].forEach.call(document.querySelectorAll('#solSheet select.soltide'), function (el) { el.onchange = function () { var L = B.legTide = B.legTide || []; var i = +el.dataset.leg - 1; L[i] = L[i] || {}; L[i][el.dataset.k] = +el.value; sv(BKEY, B); }; });
     on('solGo', 'onclick', go);
   }
-  function go() { var c = build(); if (c.err) { toast(c.err); return false; } zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
+  function go() { var c = build(); if (c.err) { toast(c.err); return false; } if (WZ.on && B.startAt) window.__fsPendingStart = B.startAt; zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
     /* the date and time added to the name in Saved routes (Stuart 15 Nov J Q&A; 16 Nov "Solent race with date time stamp so it can be rerun after the event") */
-    var t = window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    var t = WZ.on && B.startAt ? B.startAt : window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
     c.name = (c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d\d:\d\d)?$/, '') + ' ' + ds).slice(0, 70); c.solent = true;
-    if ($('solSheet')) $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); return true; }
+    if ($('solSheet')) $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); setTimeout(startCardAfter, 600); return true; }
+  /* After routing (Stuart 16 Nov 12:46): "a connection to the usual start sequence with count down distance from line": the GPS window has Gun in, Ping boat and Ping pin, distance to the line and time to burn */
+  function startCardAfter() {
+    css(); var c = $('solAfter'); if (!c) { c = document.createElement('div'); c.id = 'solAfter'; c.className = 'solpop'; c.setAttribute('role', 'dialog'); document.body.appendChild(c); }
+    c.innerHTML = '<button class="close" aria-label="Close">×</button><b>Routed. Next, the start</b><span>The GPS window counts down to the gun and shows your distance to the line and time to burn. Ping the committee boat and the pin there.</span><div class="xrow"><button class="btn primary" data-k="gps">Open the start sequence</button></div>';
+    c.hidden = false; c.querySelector('.close').onclick = function () { c.hidden = true; };
+    c.querySelector('[data-k="gps"]').onclick = function () { c.hidden = true; if (window.__fsLiveOpen) window.__fsLiveOpen(); };
+    clearTimeout(startCardAfter.t); startCardAfter.t = setTimeout(function () { c.hidden = true; }, 20000);
+  }
   function pickStart(what) {
     pickStart.back = pick === 'chain'; if ($('solChain')) $('solChain').hidden = true; pick = what; if ($('solSheet')) $('solSheet').hidden = true; var bar = $('solPick');
     if (!bar) { bar = document.createElement('div'); bar.id = 'solPick'; bar.className = 'solpick'; document.body.appendChild(bar); }
@@ -271,7 +281,7 @@
     var p = $('solSide'); if (!p) { p = document.createElement('div'); p.id = 'solSide'; p.className = 'solside'; p.setAttribute('role', 'dialog'); document.body.appendChild(p); }
     var inIdx = -1; B.marks.forEach(function (q, i) { if (q.code === m.id) inIdx = i; });
     p.innerHTML = '<b>' + esc(m.id) + ' ' + esc(m.name) + '</b><div class="xrow"><button class="btn primary" data-s="port">Port</button><button class="btn primary" data-s="stbd">Starboard</button>' + (inIdx >= 0 ? '<button class="btn" data-s="del">Remove</button>' : '') + '<button class="btn" data-s="x" aria-label="Close">×</button></div>' + (m.flag ? '<span class="soln">' + esc(flagText(m.flag)) + '</span>' : '');
-    var W = innerWidth, H = innerHeight; p.style.left = Math.max(8, Math.min(W - 280, x - 130)) + 'px'; p.style.top = Math.max(60, Math.min(H - 150, y + 18)) + 'px'; p.hidden = false;
+    var W = innerWidth, H = innerHeight; p.style.left = Math.max(8, Math.min(W - 280, x - 130)) + 'px'; p.hidden = false; var ph = p.offsetHeight || 96, sb = $('solStep'), lim = H - 8; if (sb && !sb.hidden) { var sr = sb.getBoundingClientRect(); if (sr.left < x + 140 && sr.right > x - 140 && sr.top > y) lim = sr.top - 6; } var tp = y + 18; if (tp + ph > lim) tp = y - 18 - ph; p.style.top = Math.max(60, Math.min(H - ph - 8, tp)) + 'px';
     p.onclick = function (e) { var b = e.target.closest('[data-s]'); if (!b) return; var s2 = b.dataset.s; p.hidden = true; HOT = null;
       if (s2 === 'port' || s2 === 'stbd') { B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: s2 }); saveB(); }
       else if (s2 === 'del') { B.marks.splice(inIdx, 1); saveB(); }
@@ -331,16 +341,19 @@
     b = document.createElement('div'); b.id = 'solStep'; b.className = 'solstep'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-label', 'Solent race, step by step'); document.body.appendChild(b);
     var pos = ld('fs-solstep-pos', null); if (pos) place(b, pos.x, pos.y);
     b.addEventListener('click', function (e) { var t = e.target.closest('button'); if (!t || !b.contains(t)) return; var k = t.dataset.k, v = t.dataset.v, w = B.wl;
-      if (k === 'x') { wzOpen(0); return; } if (k === 'back') { WZ.n = Math.max(1, WZ.n - 1); } else if (k === 'next') { if (wzOk(wzKey())) WZ.n = Math.min(wzSteps().length, WZ.n + 1); }
+      if (k === 'x') { wzOpen(0); return; } if (k === 'back' || k === 'next') WZ.msg = '';
+      if (k === 'back') { WZ.n = Math.max(1, WZ.n - 1); } else if (k === 'next') { if (wzOk(wzKey())) WZ.n = Math.min(wzSteps().length, WZ.n + 1); }
       else if (k === 'go') { if (go()) wzOpen(0); return; }
       else if (k === 'wk') w.wkind = v; else if (k === 'lk') { w.lkind = v; if (v === 'gate') { w.lcode = ''; w.lcode2 = ''; } }
       else if (k === 'fc') { b.dataset.msg = fcWind(); } else if (k === 'lap') w.laps = Math.max(1, Math.min(6, (w.laps || 1) + (+v))); else if (k === 'wf') w.fin = v; else if (k === 'sd') w.side = v;
       else if (k === 'fin') { B.fin = v; if (v === 'start') B.finish = null; } else if (k === 'undo') B.marks.pop(); else if (k === 'list') { list(true); return; }
+      else if (k === 'code') { wzCode(v); return; }
       else if (k === 'side') { var m = B.marks[+v]; m.side = m.side === 'stbd' || m.side === 'starboard' ? 'port' : 'stbd'; }
       saveB(); wzRender(); redraw(); });
     b.addEventListener('change', function (e) { var t = e.target, w = B.wl;
-      if (t.id === 'solSbrg') { var v = +t.value; w.brg = t.value === '' ? null : ((v % 360) + 360) % 360; } else if (t.id === 'solSdist') w.dist = Math.max(0.2, Math.min(10, +t.value || 1)); else if (t.id === 'solSname') B.name = t.value.trim() || 'Solent race';
+      if (t.id === 'solSbrg') { var v = +t.value; w.brg = t.value === '' ? null : ((v % 360) + 360) % 360; } else if (t.id === 'solSdist') w.dist = Math.max(0.2, Math.min(10, +t.value || 1)); else if (t.id === 'solSname') B.name = t.value.trim() || 'Solent race'; else if (t.id === 'solStartT') { var tp = Date.parse(t.value); if (tp === tp) B.startAt = Math.round(tp / 1000); } else if (t.id === 'solCode') return;
       saveB(); wzRender(); redraw(); });
+    b.addEventListener('keydown', function (e) { if (e.target.id === 'solCode' && e.key === 'Enter') { e.preventDefault(); wzCode(wzKey() === 'marks' ? 'port' : null); } });
     /* drag by the grip */
     var drag = null;
     b.addEventListener('pointerdown', function (e) { if (!e.target.closest('.solgrip')) return; var r = b.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, id: e.pointerId }; try { b.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); });
@@ -351,17 +364,24 @@
     return b;
   }
   function place(b, x, y) { var w = b.offsetWidth || 300, h = b.offsetHeight || 160; x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - Math.min(h, 120), y)); b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; b.style.margin = '0'; }
-  function wzTap(la, lo, x, y) {
-    var k = wzKey(), m = hit(x, y), w = B.wl;
+  /* F17 (Stuart 16 Nov 12:46): a click that misses says so in the box, naming the nearest buoy; a buoy can also be typed by its code */
+  function nearest(la, lo) { var best = null, bd = 1e9; (MK || []).forEach(function (m) { var dx = (m.lon - lo) * Math.cos(la * R) * 60, dy = (m.lat - la) * 60, d = Math.hypot(dx, dy); if (d < bd) { bd = d; best = m; } }); return best ? { m: best, nm: bd } : null; }
+  function miss(la, lo) { var n = nearest(la, lo); WZ.msg = 'No buoy there.' + (n ? ' Nearest: ' + n.m.id + ' ' + n.m.name + ', ' + (n.nm < 0.1 ? Math.round(n.nm * 1852) + ' m' : n.nm.toFixed(1) + ' nm') + ' away. Click on its dot, or type its code below.' : ''); wzRender(); return true; }
+  function wzUse(m, la, lo, side, x, y) {   /* one buoy (or point) for the step in hand; m null = a point on the chart */
+    var k = wzKey(), w = B.wl; WZ.msg = '';
     if (k === 'start') { B.start = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
-    else if (k === 'wind' && w.wkind === 'buoy') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } w.wcode = m.id; }
-    else if (k === 'lee' && w.lkind === 'buoy') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } w.lcode = m.id; }
-    else if (k === 'lee' && w.lkind === 'gate') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } if (!mark(w.lcode) || (mark(w.lcode) && mark(w.lcode2))) { w.lcode = m.id; w.lcode2 = ''; } else if (m.id !== w.lcode) w.lcode2 = m.id; }
-    else if (k === 'marks') { if (!m) { toast('Tap one of the Solent buoys.'); return true; } sidePop(m, x, y); return true; }
+    else if (k === 'wind' && w.wkind === 'buoy') { if (!m) return miss(la, lo); w.wcode = m.id; }
+    else if (k === 'lee' && w.lkind === 'buoy') { if (!m) return miss(la, lo); w.lcode = m.id; }
+    else if (k === 'lee' && w.lkind === 'gate') { if (!m) return miss(la, lo); if (!mark(w.lcode) || (mark(w.lcode) && mark(w.lcode2))) { w.lcode = m.id; w.lcode2 = ''; } else if (m.id !== w.lcode) w.lcode2 = m.id; }
+    else if (k === 'marks') { if (!m) return miss(la, lo); if (side) { B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: side }); } else { sidePop(m, x, y); wzRender(); return true; } }
     else if (k === 'fin' && B.fin === 'mark') { B.finish = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
     else return false;
     saveB(); wzRender(); redraw(); return true;
   }
+  function wzTap(la, lo, x, y) { return wzUse(hit(x, y), la, lo, null, x, y); }
+  function wzCode(side) { var e = $('solCode'), v = e ? e.value.trim().toUpperCase() : '', m = mark(v); if (!v) return; if (!m) { WZ.msg = 'No Solent mark ' + v + ' in the 2026 list. Check the code on the course board.'; wzRender(); return; } wzUse(m, m.lat, m.lon, side || null, innerWidth / 2, innerHeight / 3); }
+  function codeRow(k) { var w = B.wl, need = k === 'start' || (k === 'wind' && w.wkind === 'buoy') || (k === 'lee' && w.lkind !== 'start') || k === 'marks' || (k === 'fin' && B.fin === 'mark'); if (!need) return '';
+    return '<div class="solcl"><input id="solCode" class="solcode" maxlength="3" autocomplete="off" autocapitalize="characters" placeholder="Code, e.g. 3G" aria-label="Mark code">' + (k === 'marks' ? '<button class="btn" data-k="code" data-v="port">Add, Port</button><button class="btn" data-k="code" data-v="stbd">Add, Starboard</button>' : '<button class="btn" data-k="code" data-v="">Use</button>') + '</div>'; }
   function wzRender() {
     var b = $('solStep'); if (!b || !WZ.on) return; var k = wzKey(), w = B.wl, N = wzSteps().length, ok = wzOk(k);
     var seg = function (key, cur, opts) { return '<span class="seg">' + opts.map(function (o) { return '<button type="button" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</span>'; };
@@ -375,6 +395,13 @@
     else if (k === 'marks') { var n = B.marks.length; ask = n ? 'Tap the next buoy' : 'Tap the first buoy'; h = got('Then choose Port or Starboard. Tap a chip below to swap sides.') + '<div class="solchips">' + (n ? B.marks.map(function (m, i) { var st = m.side === 'stbd' || m.side === 'starboard'; return '<button class="solchip ' + (st ? 'stbd' : 'port') + '" data-k="side" data-v="' + i + '">' + (i + 1) + '. ' + esc(m.code || m.name) + ' ' + (st ? 'S' : 'P') + '</button>'; }).join('') : '<span class="soln">No buoys yet.</span>') + '</div><div class="solcl"><button class="btn" data-k="undo"' + (n ? '' : ' disabled') + '>Undo</button><button class="btn" data-k="list">All the buoys</button></div>'; }
     else if (k === 'fin') { ask = B.fin === 'mark' ? 'Tap the finish on the chart' : 'Finish at the start line'; h = '<div class="solcl">' + seg('fin', B.fin === 'mark' ? 'mark' : 'start', [['start', 'Start line'], ['mark', 'A buoy or point']]) + '</div>' + (B.fin === 'mark' ? got(B.finish ? 'Finish: <b>' + esc(B.finish.name) + '</b>' : 'Tap it on the chart.') : ''); }
     else { var c = build(); ask = c.err ? 'Something is missing' : 'Check the course'; h = c.err ? got(esc(c.err)) : got('<b>' + c.marks.length + ' marks, about ' + nm(c) + ' nm.</b> ' + esc([c.start].concat(c.marks).concat([c.finish]).map(function (q) { return (q.gate ? 'Gate' : (q.name || '').replace(/^(Start|Finish), /, '').split(' ')[0]) + (q.side ? (q.side === 'starboard' ? ' S' : ' P') : ''); }).join(' → '))) + '<div class="solcl"><label class="solk" for="solSname">Name</label><input id="solSname" class="solname" maxlength="60" value="' + esc(B.name || 'Solent race') + '"></div>'; ok = !c.err; }
+    h += codeRow(k);
+    if (WZ.msg) h = '<p class="solmsg" role="status">' + esc(WZ.msg) + '</p>' + h;
+    if (k === 'check') { var sn = window.__fsStartNow ? window.__fsStartNow() : null, now = Date.now() / 1000, ep = B.startAt && B.startAt > now - 600 ? B.startAt : (sn && sn.chosen && sn.ep > now ? sn.ep : Math.ceil((now + 1800) / 300) * 300);
+      B.startAt = ep; var d = new Date(ep * 1000), pad = function (v) { return ('0' + v).slice(-2); }, loc = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      var rg = sn && sn.range, outR = rg && (ep < rg[0] - 3600 || ep > rg[1]);
+      h += '<div class="solcl"><label class="solk" for="solStartT">Start</label><input id="solStartT" type="datetime-local" step="60" value="' + loc + '"><span class="soln">' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ' UTC</span></div>' + (outR ? '<p class="solmsg">That start is outside the forecasts on board. Choose a time within the next few days.</p>' : '');
+      if (outR) ok = false; }
     var last = WZ.n === N;
     b.innerHTML = '<div class="solgrip" title="Drag to move"><span></span></div><div class="solhd"><span class="solstepn">Step ' + WZ.n + ' of ' + N + '</span><b>' + ask + '</b><button class="close" data-k="x" aria-label="Cancel">×</button></div>' + h +
       '<div class="solnav"><button class="btn" data-k="back"' + (WZ.n > 1 ? '' : ' disabled') + '>Back</button>' + (last ? '<button class="btn primary" data-k="go"' + (ok ? '' : ' disabled') + '>Route this race</button>' : '<button class="btn primary" data-k="next"' + (ok ? '' : ' disabled') + '>Next</button>') + '</div>';
