@@ -49,6 +49,9 @@
     var T1 = turn(P.m1, L1.brg, now), r = { here: here, sp: sp, m1: P.m1, m2: P.m2, L1: L1, T1: T1, now: now };
     if (T1.t) { r.margin = (T1.t - L1.eta) / 60000; if (T1.now === 'fair' && r.margin < 0) r.need = need(here, P.m1, T1.t, now); }
     var late = sail(here, P.m1, sp.s, now + 30 * 60000); r.late = late.mins - L1.mins;
+    /* the course to steer to hold the line to the mark across the tide here and now (research step 7): the boat's water track
+       plus the tide must lie along the leg, so sin(H - B) = -cross / s, the cross-tide positive to starboard of the line */
+    var tdN = tideAt(here.lat, here.lon, now); if (tdN) { var bb = L1.brg * R, cross = tdN[0] * Math.cos(bb) - tdN[1] * Math.sin(bb); if (Math.abs(cross) < sp.s * 0.95) r.cts = { h: (L1.brg - Math.asin(cross / sp.s) / R + 360) % 360, cross: cross }; }
     if (P.m2) { r.L2 = sail(P.m1, P.m2, sp.s, L1.eta); r.T2 = turn(P.m2, r.L2.brg, L1.eta); }
     r.rivals = rivals(r, o);
     return r;
@@ -88,17 +91,21 @@
     if (r.why) { p.querySelector('.tgb').innerHTML = '<p>' + esc(r.why) + '</p>'; return; }
     var L1 = r.L1, h = '<div class="tgtop">' + ring(r) + '<div><b>' + esc(r.m1.name || 'Next mark') + '</b><span>' + L1.nm.toFixed(1) + ' nm, ' + ('00' + Math.round(L1.brg)).slice(-3) + '°T, ' + mins(L1.mins) + ' at ' + r.sp.s.toFixed(1) + ' kn (' + r.sp.src + ')</span><span>Tide along the leg: ' + (L1.factor >= 0 ? '+' : '') + L1.factor.toFixed(1) + ' kn, ' + (L1.pct >= 0 ? '+' : '') + Math.round(L1.pct) + '% of boat speed</span></div></div>' +
       '<p class="tgv ' + (r.margin >= 0 || r.T1.now === 'foul' ? 'ok' : 'bad') + '">' + verdict(r) + '</p>' + bar(r);
+    if (r.cts && Math.abs(r.cts.cross) >= 0.1) h += '<p class="tgn"><b>Steer ' + ('00' + Math.round(r.cts.h)).slice(-3) + '°T</b> to hold the line to the mark: the tide here sets ' + Math.abs(r.cts.cross).toFixed(1) + ' kn to ' + (r.cts.cross > 0 ? 'starboard' : 'port') + ' of it. On a beat or a run, take the tack or gybe that keeps you in the fairer tide.</p>';
     if (r.need) h += '<p class="tgv bad">To make it: ' + r.need.toFixed(1) + ' kn speed made good, now ' + r.sp.s.toFixed(1) + ': ' + (r.need - r.sp.s).toFixed(1) + ' kn more.</p>';
     else if (r.margin < 0 && r.T1.now === 'fair') h += '<p class="tgv bad">Not reachable before the turn at any speed.</p>';
     h += '<p class="tgn">Arriving 30 minutes later would take ' + (r.late >= 0 ? mins(r.late) + ' longer' : mins(-r.late) + ' less') + ' on this leg.</p>';
     if (r.L2) h += '<h4>Next leg: ' + esc(r.m2.name || 'mark') + '</h4><p class="tgn">' + r.L2.nm.toFixed(1) + ' nm, ' + mins(r.L2.mins) + ', tide along ' + (r.L2.factor >= 0 ? '+' : '') + r.L2.factor.toFixed(1) + ' kn (' + Math.round(r.L2.pct) + '%). ' + (r.T2 && r.T2.t ? 'At that mark the tide turns ' + r.T2.to + ' at ' + hm(r.T2.t) + ', ETA ' + hm(r.L2.eta) + ' (' + mins(Math.abs(r.T2.t - r.L2.eta) / 60000) + (r.T2.t >= r.L2.eta ? ' in hand' : ' after the turn') + ').' : 'No turn there in the next 12 hours.') + '</p>';
     h += '<h4>Rivals at the mark</h4><div class="tgtw"><table class="tgt"><tr><th>Boat</th><th>TCC</th><th>ETA</th><th>Tide there</th><th>Elapsed</th><th>Corrected</th></tr>' + r.rivals.map(function (q) { return '<tr><td>' + esc(q.name) + '<small>' + esc(q.src) + '</small></td><td>' + q.tcc.toFixed(3) + '</td><td>' + hm(q.etaAis || q.etaPol) + (q.etaAis ? '<small>polar ' + hm(q.etaPol) + '</small>' : '') + '</td><td>' + esc(q.made || '--') + '</td><td>' + (q.el >= 0 ? '+' : '') + Math.round(q.el) + ' min</td><td>' + (q.co == null ? '--' : (q.co >= 0 ? '+' : '') + Math.round(q.co) + ' min') + '</td></tr>'; }).join('') + '</table></div><p class="tgn">+ means they reach the mark after us (we gain); corrected uses the start time and each TCC. Bands and typed boats are placed where we are now.</p>' +
-      '<div class="tgadd"><input id="tgName" placeholder="Boat name" maxlength="30"><input id="tgTcc" type="number" step="0.001" min="0.8" max="1.8" placeholder="TCC"><button class="btn" id="tgAdd">Add</button></div>' + (C.rivals.length ? '<p class="tgn">' + C.rivals.map(function (q, i) { return esc(q.name) + ' ' + q.tcc.toFixed(3) + ' <button class="linkbtn" data-rm="' + i + '">remove</button>'; }).join(' · ') + '</p>' : '') + aisRows() +
+      '<div class="tgadd"><input id="tgName" placeholder="Boat name" maxlength="30"><input id="tgTcc" type="number" step="0.001" min="0.8" max="1.8" placeholder="TCC"><button class="btn" id="tgAdd">Add</button></div><details class="tgn"><summary>Paste an entry list</summary><textarea id="tgList" rows="4" style="width:100%;margin-top:4px" placeholder="One boat a line with its TCC, for example: Jolly Jack 1.012 (copied from the published entry list)"></textarea><button class="btn" id="tgListGo">Add these boats</button><span id="tgListN"></span></details>' + (C.rivals.length ? '<p class="tgn">' + C.rivals.map(function (q, i) { return esc(q.name) + ' ' + q.tcc.toFixed(3) + ' <button class="linkbtn" data-rm="' + i + '">remove</button>'; }).join(' · ') + '</p>' : '') + aisRows() +
       '<div class="tgset"><label>Our speed made good <input id="tgSpd" type="number" step="0.1" min="0" max="30" value="' + (C.spd || '') + '" placeholder="' + r.sp.s.toFixed(1) + '" style="width:70px"> kn (blank: VMC or SOG)</label><label><input type="checkbox" id="tgAlarm"' + (C.alarm ? ' checked' : '') + '> Alarm 15 minutes before the gate closes while we would miss it</label></div>';
     p.querySelector('.tgb').innerHTML = h; wire(p);
   }
   function aisRows() { var a = window.__fsAisList ? window.__fsAisList().slice(0, 12) : []; if (!a.length) return ''; return '<p class="tgn">AIS boats: give one a TCC to put it in the table.</p>' + a.map(function (x) { return '<div class="tgadd"><span>' + esc(x.name || 'MMSI ' + x.mmsi) + '</span><input type="number" step="0.001" min="0.8" max="1.8" data-ais="' + x.mmsi + '" value="' + (C.ais[x.mmsi] || '') + '" placeholder="TCC"></div>'; }).join(''); }
+  /* a pasted entry list: each line with a TCC (0.800 to 1.800); the name is the rest of the line, sail numbers and classes kept as written */
+  function parseList(t) { var out = []; String(t || '').split(/\r?\n/).forEach(function (l) { var m = l.match(/(^|[\s,;\t])([01]\.\d{3})(?=$|[\s,;\t])/); if (!m) return; var v = +m[2]; if (!(v >= 0.8 && v <= 1.8)) return; var n = (l.slice(0, m.index) + ' ' + l.slice(m.index + m[0].length)).replace(/[\t,;]+/g, ' ').replace(/\s+/g, ' ').trim(); if (n) out.push({ name: n.slice(0, 40), tcc: v }); }); return out; }
   function wire(p) {
+    var lg = $('tgListGo'); if (lg) lg.onclick = function () { var a = parseList($('tgList').value), have = {}; C.rivals.forEach(function (q) { have[q.name.toLowerCase()] = 1; }); var n = 0; a.forEach(function (q) { if (have[q.name.toLowerCase()]) return; C.rivals.push(q); n++; }); save(); render(); var e = $('tgListN'); if (e) e.textContent = ' ' + n + ' added.'; };
     var a = $('tgAdd'); if (a) a.onclick = function () { var n = $('tgName').value.trim(), t = +$('tgTcc').value; if (!n || !(t > 0.5)) return; C.rivals.push({ name: n, tcc: t }); save(); render(); };
     [].forEach.call(p.querySelectorAll('[data-rm]'), function (b) { b.onclick = function () { C.rivals.splice(+b.dataset.rm, 1); save(); render(); }; });
     [].forEach.call(p.querySelectorAll('[data-ais]'), function (i) { i.onchange = function () { var v = +i.value; if (v > 0) C.ais[i.dataset.ais] = v; else delete C.ais[i.dataset.ais]; save(); render(); }; });
@@ -140,6 +147,6 @@
     var after = $('fsDeckBtn') || plotB; after.parentNode.insertBefore(b, after.nextSibling); return true;
   }
   function init() { if (!button()) return setTimeout(init, 1000); setInterval(tick, 30000); }
-  window.FSTideGate = { open: open, work: work, sail: sail, turn: turn, need: need, C: C, tick: tick, along: along };
+  window.FSTideGate = { parseList: parseList, open: open, work: work, sail: sail, turn: turn, need: need, C: C, tick: tick, along: along };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else setTimeout(init, 500);
 })();

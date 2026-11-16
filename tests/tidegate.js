@@ -24,5 +24,9 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => { const d = document.getElementById('fsDeckBtn'); if (d) d.click(); FSTideGate.tick(); }); await p.waitForTimeout(800);
   const st = await p.evaluate(() => { const s = document.getElementById('tgStrip'); return s ? { shown: !s.hidden, t: s.textContent } : null; });
   ok(!st || !st.shown || /^TIDE (FAIR|FOUL|SLACK) · turns \d\d:\d\d · ETA \d\d:\d\d · [+-]\d+ min$/.test(st.t), 'on the deck screen the strip gives the gate in one line', st && st.t);
+  const pl = await p.evaluate(() => FSTideGate.parseList('Jolly Jack 1.012\nGBR 1234 Fox\t0.987\nno rating here\nSail 9, Big Boat, 1.105'));
+  ok(pl.length === 3 && pl[0].name === 'Jolly Jack' && pl[0].tcc === 1.012 && pl[1].tcc === 0.987 && /Big Boat/.test(pl[2].name), 'a pasted entry list gives each boat with its TCC', JSON.stringify(pl));
+  const ct = await p.evaluate(() => { const real = window.__fsTideAt; window.__fsTideAt = () => [0.5, 0]; const r = FSTideGate.work(); window.__fsTideAt = real; if (r.why || !r.cts) return { why: r.why, cts: r.cts }; const b = r.L1.brg * Math.PI / 180, cross = 0.5 * Math.cos(b), want = (r.L1.brg - Math.asin(cross / r.sp.s) * 180 / Math.PI + 360) % 360; return { h: r.cts.h, want, brg: r.L1.brg }; });
+  ok(ct.h != null && Math.abs(ct.h - ct.want) < 0.01 || /Needs|Waiting|No/.test(ct.why || ''), 'the course to steer allows for the cross-tide (0.5 kn east here)', JSON.stringify(ct));
   ok(errs.length === 0, 'no page errors', errs.slice(0, 3).join(' | '));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
