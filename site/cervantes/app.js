@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.29';
+  var VERSION = 'FirstShift Route v0.12.30';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -301,7 +301,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.29 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = 'Route v0.12.30 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -404,7 +404,7 @@
       else if (!$('panel').hidden && !$('panel').classList.contains('collapsed')) closePanel();
     });
     $('dataChip').onclick = function () { $('panel').hidden = false; openTab('data'); };
-    $('layersBtn').onclick = function () { var p = $('layers'); if (!p.hidden) { closeLayers(); return; } p.hidden = false; layDepth = +$('depth').value; $('layersBtn').setAttribute('aria-expanded', 'true'); layersPop(); };
+    $('layersBtn').onclick = function () { var p = $('layers'); if (!p.hidden) { closeLayers(); return; } p.hidden = false; layDepth = +$('depth').value; $('layersBtn').setAttribute('aria-expanded', 'true'); layersPop(); popBelowTop(p); };
     [].forEach.call($('plans').children, function (b) { b.onclick = function () { applyPlan(b.dataset.plan); }; });
     $('dlBtn').onclick = function () { download(); };
     $('ovChk').onchange = dataTable;
@@ -469,6 +469,8 @@
     $('tideSel').innerHTML = opts('tide', 'No tide'); $('waveSel').innerHTML = opts('wave', 'Ignore sea state'); $('windShow').innerHTML = opts('wind', 'No arrows');
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
+  /* Screen rules (UI review step 1, 16 Nov): a window opens below the top bar, never over its second row of buttons (tablet sideways, PC) */
+  function popBelowTop(p) { try { var t = document.querySelector('.top'), par = p.offsetParent || document.body; if (!t) return; var tb = t.getBoundingClientRect().bottom; var ns = document.getElementById('navStrip'); if (ns && !ns.hidden && ns.getClientRects().length) tb = Math.max(tb, ns.getBoundingClientRect().bottom); tb = tb - par.getBoundingClientRect().top + 6; p.style.top = Math.max(60, Math.round(tb)) + 'px'; p.style.maxHeight = 'calc(100% - ' + (Math.max(60, Math.round(tb)) + 20) + 'px)'; } catch (e) {} }
   function layersPop() {
     var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lCourse">Just the course</button><button class="btn" id="lRoute">Just the route</button></div>' +
       '<div class="ldepth"><label for="lDepth">No-go depth</label><input type="range" id="lDepth" min="0" max="20" step="0.5" value="' + (+$('depth').value) + '" aria-label="No-go depth (the safety depth)"><b id="lDepthV" style="font-family:var(--f-data)">' + (+$('depth').value).toFixed(1) + ' m</b></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
@@ -786,7 +788,7 @@
       window.addEventListener('resize', load); load(); })();
     /* MOB floats just above whatever sits at the bottom: the bar, or on a phone the panel sheet when it is open */
     (function () { var bar = $('bar'), pn = $('panel'); if (!bar) return;
-      function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; } var lb = $('liveBox'); if (lb && !lb.hidden) { var q = lb.getBoundingClientRect(); if (q.height && q.left < 60 && q.top > innerHeight * 0.3 && q.top < top) top = q.top; }   /* and above the Live GPS pill */ document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
+      function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; }   /* the GPS window keeps clear of man overboard's column now (screen rules, 16 Nov), so MOB no longer has to jump above it */ document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
       bh(); window.addEventListener('resize', bh); if (window.ResizeObserver) { var ro = new ResizeObserver(bh); ro.observe(bar); if (pn) ro.observe(pn); } setInterval(bh, 700); })();
     hold($('mobEnd'), 1500, mobEnd);
     $('mobCentre').onclick = function (e) { e.stopPropagation(); var m = mobGet(); if (!m) return; var small = $('mob').classList.toggle('small'); this.textContent = small ? 'Full panel' : 'Show on chart'; if (small) { view.la = m.lat; view.lo = m.lon; view.s = Math.max(view.s, 4000); } closePanel(); draw(); };
@@ -975,7 +977,7 @@
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.29) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.30) */
       var b = $('updBar'); if (!b) return; b.textContent = 'Route v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -3432,8 +3434,32 @@
   var WINS = ['.sheet', '#tip', '#fsMeas', '#solChain', '#solSide', '#solList', '#solPick', '#solCard', '#solPop', '#tgPop', '#astroPop', '#trkCard', '#fsFilm', '#solStep', '#navPanel', '.navpanel', '#navLog', '#layers'];
   var phone = window.matchMedia ? window.matchMedia('(max-width: 600px), (max-height: 500px)') : { matches: false };
   function open() { for (var i = 0; i < WINS.length; i++) { var l = document.querySelectorAll(WINS[i]); for (var j = 0; j < l.length; j++) { var e = l[j]; if (!e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden') return true; } } return false; }
-  function tick() { var sb = document.getElementById('solStep'), on = (phone.matches && open()) || !!(sb && !sb.hidden);   /* the Solent step box on any screen */ if (document.body && document.body.classList.contains('fabsoff') !== on) document.body.classList.toggle('fabsoff', on); }
-  function css() { if (document.getElementById('fabsOffCss')) return; var s = document.createElement('style'); s.id = 'fabsOffCss'; s.textContent = 'body.fabsoff .fabhelp{display:none!important}'; document.head.appendChild(s); }
+  /* Screen rules (UI review step 1, 16 Nov): on any screen, a round button that an open window would cover steps out of the way
+     until the window closes (Layers, the GPS window, a card) */
+  var COVER = ['#layers', '.livebox:not(.mini)', '#liveBig', '.sheet', '#tip', '#sessBox', '#errBox', '#solCard', '#trkCard'];
+  function vis(e) { if (e.hidden || !e.getClientRects().length) return false; var c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }
+  function covers() { var wins = []; COVER.forEach(function (q) { [].forEach.call(document.querySelectorAll(q), function (e) { if (vis(e)) wins.push(e.getBoundingClientRect()); }); });
+    [].forEach.call(document.querySelectorAll('.fabhelp'), function (f) { var was = f.classList.contains('fabcov'); if (was) f.classList.remove('fabcov'); var r = f.getBoundingClientRect(), hit = r.width > 0 && wins.some(function (w) { return Math.min(r.right, w.right) - Math.max(r.left, w.left) > 2 && Math.min(r.bottom, w.bottom) - Math.max(r.top, w.top) > 2; }); if (hit) f.classList.add('fabcov'); }); }
+  /* Screen rules (UI review step 1): on a phone held sideways the chart is about 220 points high, too short for the column of round
+     buttons (one sat above the screen, one under the top bar), so they line up along the foot of the chart, right to left, in a second
+     row if the first is full. A button the user has dragged somewhere keeps its place. Windows stay below the top bar and the
+     instrument strip, and the GPS window keeps to the space between them and the foot of the chart. */
+  var short = window.matchMedia ? window.matchMedia('(orientation: landscape) and (max-height: 500px)') : { matches: false };
+  var ORDER = ['helpBtn', 'editFab', 'oriBtn', 'navClearBtn', 'fsRulerBtn', 'fromHere', 'navCentreBtn'];
+  function fabRow() { var fabs = [].slice.call(document.querySelectorAll('.fabhelp')).filter(function (f) { return !f.style.translate; });
+    fabs.sort(function (a, b) { var i = ORDER.indexOf(a.id), j = ORDER.indexOf(b.id); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
+    if (!short.matches) { fabs.forEach(function (f) { if (f.dataset.fr === '1') { f.style.removeProperty('bottom'); f.style.removeProperty('right'); delete f.dataset.fr; } }); return; }
+    var host = fabs[0] && fabs[0].offsetParent; if (!host) return; var W = host.clientWidth, n = 0;
+    var perRow = Math.max(1, Math.floor((W - 60 - 12) / 52));   /* clear of man overboard on the left */
+    fabs.forEach(function (f) { if (getComputedStyle(f).display === 'none') return; var row = Math.floor(n / perRow), col = n % perRow; n++;
+      f.dataset.fr = '1'; f.style.setProperty('bottom', 'calc(' + (8 + row * 52) + 'px + env(safe-area-inset-bottom, 0px))', 'important'); f.style.setProperty('right', 'calc(max(12px, env(safe-area-inset-right, 0px)) + ' + (col * 52) + 'px)', 'important'); }); }
+  function underTop() { var y = 0; ['.top', '#navStrip'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
+  function liveFit() { var lb = document.getElementById('liveBox'), big = !!(lb && vis(lb) && !lb.classList.contains('mini') && short.matches); if (document.body.classList.contains('gpsbigshort') !== big) document.body.classList.toggle('gpsbigshort', big); if (!lb || !vis(lb)) return; var ut = underTop(), par = lb.offsetParent; if (!par) return; var pr = par.getBoundingClientRect();
+    if (lb.style.translate) return; if (lb.classList.contains('mini')) { if (short.matches) { lb.style.top = Math.round(ut - pr.top + 6) + 'px'; lb.style.bottom = 'auto'; } else if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; } lb.style.maxHeight = ''; return; }
+    if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; }
+    var r = lb.getBoundingClientRect(); lb.style.maxHeight = Math.max(120, Math.round(r.bottom - ut - 6)) + 'px'; }
+  function tick() { try { fabRow(); liveFit(); } catch (e) {} var sb = document.getElementById('solStep'), on = (phone.matches && open()) || !!(sb && !sb.hidden);   /* the Solent step box on any screen */ if (document.body && document.body.classList.contains('fabsoff') !== on) document.body.classList.toggle('fabsoff', on); try { covers(); } catch (e) {} }
+  function css() { if (document.getElementById('fabsOffCss')) return; var s = document.createElement('style'); s.id = 'fabsOffCss'; s.textContent = 'body.fabsoff .fabhelp,.fabhelp.fabcov{display:none!important}body.gpsbigshort #navStrip{display:none!important}';   /* a phone held sideways has no room for the instrument strip and the GPS window together; the GPS window shows SOG and COG */ document.head.appendChild(s); }
   function start() { css(); tick(); setInterval(tick, 300); }
   window.__fsFabsTick = tick;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

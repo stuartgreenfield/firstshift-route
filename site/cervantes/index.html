@@ -79,7 +79,7 @@ body.editing #prog{display:none!important}
 .cvf.all{background:#4CC38A}.cvf.part{background:var(--warn)}.cvt{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink)}
 .cvold{color:var(--warn)}.cvnew svg{width:12px;height:12px;vertical-align:-1px;fill:none;stroke:#4CC38A;stroke-width:2}
 .livebtn{font-weight:700;letter-spacing:.04em}.livebtn[aria-pressed="true"]{background:#4CC38A!important;color:#0E1C2D!important;border-color:#4CC38A!important}
-.livebox{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(96vw,560px);z-index:9;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.livebox{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(calc(100% - 16px),560px);z-index:9;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 10px;display:grid;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .livebox.alarm,.livebig.alarm{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn)}
 .lvg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px 8px}.lvg div{display:flex;flex-direction:column;min-width:0}
 .lvg small{font:600 10px var(--f-body);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}.lvg b{font:600 16px var(--f-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -363,6 +363,9 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
   .now{display:flex;gap:2px 10px;overflow-x:auto}.now b{font-size:14px}.clock{font-size:12px}
 }
 @media (orientation:landscape) and (max-height:500px){.brand{min-width:120px;flex:1 1 auto}.rerow .note{display:none}}
+/* Screen rules: a phone held sideways (up to 950 wide) has no room for every top-bar button, and the start time slid under From here;
+   Night is in Settings, Screen and Astro in Layers, so those two leave the top bar there */
+@media (orientation:landscape) and (max-height:500px) and (max-width:950px){#nightBtn,#astroBtn{display:none}}
 @media (orientation:landscape) and (max-height:500px) and (max-width:700px){.ib{min-width:34px;height:34px;padding:0 4px}#nightBtn{display:none}.tools{gap:3px}.lead{max-width:calc(100% - 210px)}.brand{min-width:0}}
 .nogps{opacity:.55}
 .fit{margin:10px 0 0;padding:9px 11px;border-radius:9px;border:1px solid var(--good);background:color-mix(in srgb,var(--good) 10%,var(--panel));font-size:13px;line-height:1.4}.fit.tight{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--panel))}.fit.no{border-color:#E5484D;background:color-mix(in srgb,#E5484D 12%,var(--panel))}.fit ul{margin:4px 0 0;padding-left:18px}.fit summary{cursor:pointer;margin-top:4px;font-weight:600}
@@ -411,6 +414,11 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (orientation:landscape) and (max-height:500px){.brand{min-width:70px!important;flex:1 1 auto}.stbtn .stl{display:none}.stbtn{height:38px;padding:2px 6px}.lead{max-width:calc(100% - 228px)!important;min-width:0}.logobox{width:54px!important;height:40px!important;padding:0!important}.logobox .mk-r{display:none}.logobox .mk-s{display:block;width:46px}}
 .fabhelp{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:52px;z-index:3;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.3);color:var(--ink);cursor:pointer;padding:0}
 .fabedit{bottom:104px}
+/* Screen rules (UI review step 1, 16 Nov): on a phone held sideways the chart is about 220 points high, too short for the column of round
+   buttons (the top one sat above the screen and one under the top bar), so they line up along the foot of the chart instead, right to left */
+/* Screen rules: man overboard sits bottom left over everything, so on a phone the GPS window and pop-ups keep clear of its column */
+@media (max-width:600px),(max-height:500px){.livebox:not(.mini){left:calc(58px + env(safe-area-inset-left,0px));right:8px;width:auto;max-width:560px;transform:none}.pop{max-width:calc(100% - 66px)}.livebox.mini{left:auto;right:max(8px,env(safe-area-inset-right,0px));transform:none;max-width:calc(100% - 66px)}.lvmini{gap:7px;padding:0 10px}.lvmini .lvlab{display:none}}
+@media (orientation:landscape) and (max-height:500px){.livebox:not(.mini){overflow:auto}}
 .fabhelp svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .fitbox.later{border:2px solid var(--warn);border-radius:12px;padding:10px 12px;margin:8px 0;line-height:1.45}.fitbox.later b{color:var(--warn)}
 .setup{display:grid;gap:8px;margin:0 0 12px}
@@ -654,7 +662,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.29</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.30</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
