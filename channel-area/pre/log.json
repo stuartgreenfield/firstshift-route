@@ -1,0 +1,123 @@
+{
+ "at": "2026-11-16T09:59:54.807Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 22,
+   "note": "Routed in 11.1 s. First answer in 8.2 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 31,
+   "note": "Routed in 7.3 s. Met Office UKV: No way through on the leg to Needles Fairway near 50.78 N 1.29 W after 1 h. Try a small"
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 42,
+   "note": "Routed in 8.0 s. First answer in 2.2 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 51,
+   "note": "Routed in 7.2 s. First answer in 2.1 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 60,
+   "note": "Routed in 6.8 s. First answer in 1.8 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 68,
+   "note": "Routed in 6.0 s. First answer in 1.5 s."
+  },
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 55,
+   "note": "Routed in 40.8 s. The forecasts end before the finish on 2 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 74,
+   "note": "Routed in 14.1 s. Met Office UKV: No way through on the leg to Needles Fairway near 50.78 N 1.29 W after 1 h. Try a smal"
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 96,
+   "note": "Routed in 17.6 s. First answer in 4.7 s."
+  },
+  {
+   "race": "deguingand",
+   "stopped": "page.waitForFunction: Timeout 1500000ms exceeded.",
+   "s": 1500
+  },
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 42,
+   "note": "Routed in 29.9 s. The forecasts end before the finish on 2 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 53,
+   "note": "Routed in 6.9 s. Met Office UKV: No way through on the leg to Needles Fairway near 50.78 N 1.29 W after 1 h. Try a small"
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 65,
+   "note": "Routed in 9.1 s. First answer in 3.2 s."
+  },
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 24,
+   "note": "Routed in 12.4 s. First answer in 8.8 s."
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 36,
+   "note": "Routed in 8.8 s. Met Office UKV: No way through on the leg to Needles Fairway near 50.78 N 1.29 W after 1 h. Try a small"
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 52,
+   "note": "Routed in 11.2 s. First answer in 4.1 s."
+  },
+  {
+   "race": "channel",
+   "stopped": "page.waitForFunction: Timeout 1500000ms exceeded.",
+   "s": 1500
+  },
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 19,
+   "note": "Routed in 9.0 s. First answer in 8.2 s."
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 28,
+   "note": "Routed in 6.6 s. Met Office UKV: No way through on the leg to Needles Fairway near 50.78 N 1.29 W after 1 h. Try a small"
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 39,
+   "note": "Routed in 8.1 s. First answer in 2.1 s."
+  }
+ ]
+}
