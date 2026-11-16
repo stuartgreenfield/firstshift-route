@@ -1,4 +1,4 @@
-/* FirstShift Route and Navigate: the tide gate, "beat the tide to the mark" (Stuart 15 Nov 11:26 to 11:39; research and his answers
+/* FirstShift Route and Route+: the tide gate, "beat the tide to the mark" (Stuart 15 Nov 11:26 to 11:39; research and his answers
    in docs/TIDE-GATE-RESEARCH-2026-11-15.md). Built overnight 15 to 16 Nov, first version.
    For the next mark and the leg after it:
    - the tide along the leg (knots, and as a share of boat speed: the tide factor), from the chosen tide model along the boat's own
@@ -10,7 +10,7 @@
      by their TCC): when each reaches the mark, whether they make the gate, and the gain or loss on us, elapsed and corrected;
    - an alarm 15 minutes before the gate closes while we would miss it (on or off);
    - a strip on the deck screen, a bar along the leg and a clock ring.
-   Speed made good: Navigate's VMC from the instruments, else the GPS speed towards the mark, else 5 kn, which the crew can override. */
+   Speed made good: Route+'s VMC from the instruments, else the GPS speed towards the mark, else 5 kn, which the crew can override. */
 (function () {
   'use strict';
   var KEY = 'fs-tidegate', R = Math.PI / 180, SLACK = 0.3;
@@ -42,7 +42,7 @@
   function pts(o) { var c = o.c, P = c ? c.marks.concat([c.finish]) : []; return { m1: P[o.i] || o.m, m2: P[o.i + 1] || null }; }
   /* everything for the panel */
   function work() {
-    var o = calcNow(); if (!o || !o.ok || !o.f) return { why: (o && o.why) || 'Needs a position and a course: Live GPS (Route) or the boat link (Navigate), and a race.' };
+    var o = calcNow(); if (!o || !o.ok || !o.f) return { why: (o && o.why) || 'Needs a position and a course: Live GPS (Route) or the boat link (Route+), and a race.' };
     var here = { lat: o.f.la != null ? o.f.la : o.f.lat, lon: o.f.lo != null ? o.f.lo : o.f.lon }, now = Date.now(), sp = speed(o), P = pts(o);
     if (!P.m1) return { why: 'No next mark.' };
     var L1 = sail(here, P.m1, sp.s, now); if (!L1.tide) return { why: 'No tide model here: choose one in Settings, Forecasts (Tide).' };

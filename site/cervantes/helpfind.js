@@ -1,4 +1,4 @@
-/* FirstShift Route and Navigate: Help as pages, one thing on the screen at a time (Stuart 15 Nov 2026, 21:50: "Cards, list, topic page";
+/* FirstShift Route and Route+: Help as pages, one thing on the screen at a time (Stuart 15 Nov 2026, 21:50: "Cards, list, topic page";
    "Emma, as the films"; "Play and Stop"; "Sections and every topic"). Research: docs/HELP-REDESIGN-RESEARCH-2026-11-15.md.
    Help home: a search box (part of the page, never over the text) and a card for each main section with its screenshot.
    A section: its screenshot and its topics, each with a one-line summary. A topic: its screenshot, the text, Play (Stop while it
@@ -139,7 +139,7 @@
     build(); var all = grouped(), tp = all.filter(function (x) { return x.t === key || x.s === key || x.el.dataset.k === key; })[0];
     if (!tp) return null; go('topic', { t: tp.s, from: 'sec', sec: tp.sec.id }); return tp.el;
   }
-  /* Help is filled when it is first opened (and Navigate adds its own topics): build each time it opens, back to Help home */
+  /* Help is filled when it is first opened (and Route+ adds its own topics): build each time it opens, back to Help home */
   function watch() { var h = $('help'); if (!h) return setTimeout(watch, 500); new MutationObserver(function () { if (!h.hidden) setTimeout(function () { if (!V.keep) { built = false; } V.keep = false; build(); }, 60); else stop(); }).observe(h, { attributes: true, attributeFilter: ['hidden'] }); if (!h.hidden) build(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
   window.FSHelpFind = { build: build, open: function (k) { V.keep = true; return open(k); }, search: function (q) { build(); find(q); return V.list.length; }, home: function () { go('home', {}); }, view: function () { return { view: V.view, sec: V.sec, t: V.t, q: V.q, n: V.list.length, playing: playing }; }, topics: function () { return grouped().map(function (x) { return { t: x.t, s: x.s, sec: x.sec.id, text: x.text }; }); }, sections: function () { grouped(); return SECTIONS.map(function (s) { return { id: s.id, name: s.name, n: s.items.length }; }); }, stop: stop, hash: hash };

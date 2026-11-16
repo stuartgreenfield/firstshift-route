@@ -2,7 +2,7 @@
    direction by hand and re-route"). Type the wind you can see; Route works out how far the routed forecast is from it at the
    middle of the chart (the boat, when Live GPS is following it), shifts the forecast by that much (up to 40° and 40%, in
    5 steps), and routes again. For 3, 6 or 12 hours it then fades back to the forecast over two hours; or for the whole race.
-   Back to the forecast undoes it. Shared with Navigate, which also compares the boat's own measured wind. */
+   Back to the forecast undoes it. Shared with Route+, which also compares the boat's own measured wind. */
 (function () {
   'use strict';
   function $(id) { return document.getElementById(id); }

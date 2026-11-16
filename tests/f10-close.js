@@ -6,7 +6,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
 (async () => { const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' });
   await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + '/channel-area/'); await p.waitForFunction(() => window.__fsUseCourse && window.FSSolent && window.__navFc, null, { timeout: 300000 }); await p.waitForTimeout(3000);
+  await p.goto(BASE + '/mark/'); await p.waitForFunction(() => window.__fsUseCourse && window.FSSolent && window.__navFc, null, { timeout: 300000 }); await p.waitForTimeout(3000);
   const course = await p.evaluate(async () => { await FSSolent.load(); const m = id => FSSolent.marks().find(x => x.id === id); const s = m('3G'), a = m('2C'), b2 = m('3F'), f = m('3G');
     const c = { name: 'F10 test', start: { name: '3G start', lat: s.lat, lon: s.lon }, marks: [{ name: '2C ' + a.name, lat: a.lat, lon: a.lon, side: 'port' }, { name: '3F ' + b2.name, lat: b2.lat, lon: b2.lon, side: 'stbd' }], finish: { name: 'Finish 3G', lat: f.lat + 0.002, lon: f.lon } };
     window.__fsUseCourse(c); return c; });

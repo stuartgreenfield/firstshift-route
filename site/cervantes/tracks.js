@@ -1,7 +1,7 @@
-/* FirstShift Route and Navigate: tracks (job N, Stuart 15 Nov 2026). "File this track button (saves the trail as a log, GPX export,
+/* FirstShift Route and Route+: tracks (job N, Stuart 15 Nov 2026). "File this track button (saves the trail as a log, GPX export,
    clears it from the chart) and a Hide all tracks switch." 20:45: filed tracks kept "A list on the phone". Chosen overnight while
    Stuart was away (his other three questions still open, docs/N-TRACKS-QUESTIONS-2026-11-15.md): Live GPS keeps running with a
-   fresh trail; Hide all tracks is a switch in Layers; in Navigate a filed track goes into this same list, the log is untouched. */
+   fresh trail; Hide all tracks is a switch in Layers; in Route+ a filed track goes into this same list, the log is untouched. */
 (function () {
   'use strict';
   var KEY = 'fs-tracks', MAX = 30, PTS = 2000, SHOWN = {};

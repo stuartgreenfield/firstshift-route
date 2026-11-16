@@ -20,10 +20,10 @@ import io
 _b = io.BytesIO(); _t = TTFont(sys.argv[1]); _t.flavor = None; _t.save(_b)   # HarfBuzz reads plain TrueType, not woff
 HBF = hb.Font(hb.Face(hb.Blob(_b.getvalue())))
 TRACK = -0.04 * f['head'].unitsPerEm  # -0.04 em per letter, as the landing page heading (letter-spacing:-.04em)
-def outline(text):
+def outline(text, end='.'):
     """The name plus a full stop, shaped with the font's own kerning (HarfBuzz) and the landing page's tracking.
     Returns draw(x0, base, s) -> (name path, dot path), the width in font units and the cap height."""
-    buf = hb.Buffer(); buf.add_str(text + '.'); buf.guess_segment_properties(); hb.shape(HBF, buf, {'kern': True, 'liga': True})
+    buf = hb.Buffer(); buf.add_str(text + end); buf.guess_segment_properties(); hb.shape(HBF, buf, {'kern': True, 'liga': True})
     gl = [(order[i.codepoint], p.x_advance, p.x_offset) for i, p in zip(buf.glyph_infos, buf.glyph_positions)]
     bp = BoundsPen(gs); x = 0
     for n, adv, off in gl: gs[n].draw(TransformPen(bp, (1, 0, 0, 1, x + off, 0))); x += adv + TRACK
@@ -47,9 +47,11 @@ def sails(x, y, h):
         fb = '#042D5E' if c == 'navy' else '#3574BA'
         out.append(f'<path d="M{" L".join("%g %g" % q for q in p)} Z" style="stroke:var(--mk-{c},{fb})"/>')
     out.append('</g>'); return ''.join(out), (SX1 - SX0) * s
-TOOLS = {'route': ('Route', '#B0127A', '#FF4FB4'), 'navigate': ('Navigate', '#0E7C86', '#3CCFD9')}
-for key, (name, light, dark) in TOOLS.items():
-    draw, wid, cap = outline(name)
+TOOLS = {'route': ('Route', '.'), 'navigate': ('Navigate', '.'), 'routeplus': ('Route', '+'), 'mark': ('Mark', '.'), 'markplus': ('Mark', '+')}
+# 16 Nov 2026 19:52 (Stuart): the range is Route, Route+ (was Navigate), Mark and Mark+. The + takes the full stop's place, in the same blue.
+for key, (name, end) in TOOLS.items():
+    draw, wid, cap = outline(name, end)
+    full = name + ('+' if end == '+' else '')
     INK = 'style="fill:var(--mk-ink,#042D5E)"'; DOT = 'style="fill:var(--mk-dot,#3574BA)"'
     # stack: 120 x 100. Name fitted to 112 wide or 28 cap high, whichever is smaller; sails above it.
     s = min(112 / wid, 28 / cap); tw = wid * s; base = 93
@@ -60,11 +62,11 @@ for key, (name, light, dark) in TOOLS.items():
     s2 = 26 / cap; tw2 = wid * s2; sg2, sw2 = sails(3, 4, 52); x2 = 3 + sw2 + 9; W = round(x2 + tw2 + 4)
     a2, d2 = draw(x2, 47, s2)
     row = f'{sg2}<path d="{a2}" {INK}/><path d="{d2}" {DOT}/>'
-    desc = (f'FirstShift {name}: the sails and the name. Two layouts, stack (120 x 100) and row ({W} x 60). '
+    desc = (f'FirstShift {full}: the sails and the name. Two layouts, stack (120 x 100) and row ({W} x 60). '
             'Colours: --mk-navy, --mk-blue, --mk-ink and --mk-dot (the full stop, as the landing page); fallbacks are the light theme. '
             'Made by tools/make_marks.py from Inter 700 with the font kerning and -0.04 em tracking, as the landing page heading (SIL Open Font Licence).')
     master = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {120 + 20 + W} 100" width="{120 + 20 + W}" height="100">'
-              f'<title>FirstShift {name}</title><desc>{desc}</desc>'
+              f'<title>FirstShift {full}</title><desc>{desc}</desc>'
               f'<svg id="{key}-stack" x="0" y="0" width="120" height="100" viewBox="0 0 120 100">{stack}</svg>'
               f'<svg id="{key}-row" x="140" y="20" width="{W}" height="60" viewBox="0 0 {W} 60">{row}</svg></svg>\n')
     open(os.path.join(ROOT, f'{key}-mark.svg'), 'w').write(master)

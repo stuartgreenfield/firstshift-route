@@ -497,7 +497,7 @@
 
   /* NMEA 2000 from a Yacht Devices gateway server set to the RAW protocol (Stuart 15 Nov 2026, F: Polar Live reads NMEA 2000 as well):
      one message a line, for example "17:33:21.107 R 19F51323 01 2F 30 70 00 2F 30 70" (time, R from the bus, the 29-bit identifier,
-     the data bytes; YDWG-02 manual). Single-frame messages only, decoded as Navigate does (navigate.js, open canboat definitions):
+     the data bytes; YDWG-02 manual). Single-frame messages only, decoded as Route+ does (navigate.js, open canboat definitions):
      128259 speed through water, 130306 wind (apparent, or true to the boat), 127250 heading, 129026 speed over ground.
      A wind message completes a sample, as MWV does in NMEA 0183. */
   var N2K_RE = /^(\d\d:\d\d:\d\d\.\d+\s+)?[RT]?\s*[0-9A-F]{8}(\s+[0-9A-F]{2}){1,8}\s*$/i, KN_MS = 1.94384, DEG = 180 / Math.PI;

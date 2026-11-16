@@ -1,4 +1,4 @@
-/* FirstShift Route (and Navigate): the simple log as a PDF, in the style of the RYA's own log pages (Route catch-up stage 2,
+/* FirstShift Route (and Route+): the simple log as a PDF, in the style of the RYA's own log pages (Route catch-up stage 2,
    Stuart 13 Nov: "the simple log with RYA-style PDF"). From a filed track or the trail now: an entry every hour on the hour and at the
    start and end, with time, position, course and speed made good over the hour, distance run, the forecast wind there and then,
    and remarks (dead reckoning, a gap in the GPS). A header block for the boat, the race, the skipper and the crew to fill in by hand.

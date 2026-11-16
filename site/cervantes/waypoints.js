@@ -1,4 +1,4 @@
-/* FirstShift Route and Navigate: the waypoint store and the measuring tool (Stuart 15 Nov 2026, job K; Q&A 13:40).
+/* FirstShift Route and Route+: the waypoint store and the measuring tool (Stuart 15 Nov 2026, job K; Q&A 13:40).
    08:33: "a store for waypoints on both tools that can be used to build courses and a tool which allows a cursor on screen to measure
    heading and distance between two places and what the wind angles speed VMC would be based on the current gribs for your boat".
    Q&A: grow My marks (one place for every point); add by a tap on the chart, typed position, Here (GPS), or GPX or CSV import, and export

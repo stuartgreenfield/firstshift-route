@@ -7,8 +7,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
 (async () => { const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: W, height: H }, isMobile: W < 900, hasTouch: true, serviceWorkers: 'block' });
   await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + '/channel-area/'); await p.waitForFunction(() => window.FSSolent && FSSolent.start && window.__fsRedraw && document.getElementById('rmSolent'), null, { timeout: 300000 }); await p.waitForTimeout(1500);
-  await p.evaluate(() => document.getElementById('rmSolent').click()); await p.waitForTimeout(500);
+  await p.goto(BASE + '/mark/'); await p.waitForFunction(() => window.FSSolent && FSSolent.start && window.__fsRedraw , null, { timeout: 300000 }); await p.waitForTimeout(1500);
+  await p.evaluate(() => document.getElementById('raceBtn').click()); await p.waitForTimeout(500);
   const card = await p.evaluate(() => { const c = document.getElementById('solCard'); return c && !c.hidden ? [...c.querySelectorAll('.solcards b')].map(b => b.textContent) : null; });
   ok(card && card[0] === 'Round the cans' && card[1] === 'Windward-leeward', 'Solent races in the race menu opens a card: Round the cans or Windward-leeward', JSON.stringify(card));
   await p.evaluate(() => { FSSolent.set({ start: { code: '3G', name: '3G start', lat: 50.7665, lon: -1.2995 } }); }); 

@@ -1,5 +1,5 @@
 /* FirstShift Route: the basic plotter (Stuart 13 Nov 2026, decided at 13:21: "a basic plotter (BTW, DTW, ETA, VMC, XTE;
-   laylines and time to layline stay in Navigate)"; built 14 Nov). From the phone's own GPS (Live GPS), no boat connection.
+   laylines and time to layline stay in Route+)"; built 14 Nov). From the phone's own GPS (Live GPS), no boat connection.
    The next mark: bearing (BTW), distance (DTW), speed made good towards it (VMC), ETA at that VMC, and cross-track error (XTE)
    from the leg, the rhumb line from the last mark (or the start) to this one. Within the arrival distance the next mark becomes
    active. Bearings are true: a phone's GPS gives no variation. On the chart: the bearing line, a ring on the next mark and a

@@ -1,4 +1,4 @@
-/* FirstShift Route and Navigate: the deck screen (Stuart 15 Nov 2026, 10:54, with a sketch; Q&A 12:40).
+/* FirstShift Route and Route+: the deck screen (Stuart 15 Nov 2026, 10:54, with a sketch; Q&A 12:40).
    "a deck screen option that put 4 big numbers above a map picture below, works in portrait and landscape mode - the map view can be
    changed to any of routes, plan, fleet or data views". The crew picks the four numbers (11:00); each box has a trend arrow, a colour
    against the polar target and a one-minute average (12:40); the view below changes by a button or a swipe; a DECK button on the chart.
@@ -57,7 +57,7 @@
   };
   var ORDER = ['spd', 'cog', 'bsp', 'hdg', 'perf', 'tgt', 'tws', 'twa', 'twd', 'awa', 'aws', 'dtw', 'btw', 'vmc', 'eta', 'xte', 'lay', 'gate', 'gun', 'dpt', 'burn', 'place'];
   var VIEWS = [['chart', 'Chart'], ['decision', 'Routes'], ['plan', 'Plan'], ['fleet', 'Fleet'], ['data', 'Data']];
-  function views() { return window.NavTact ? [['tact', 'Tactician']].concat(VIEWS) : VIEWS; }   /* Navigate: the Solent tactician view (Stuart 15 Nov 11:39) */
+  function views() { return window.NavTact ? [['tact', 'Tactician']].concat(VIEWS) : VIEWS; }   /* Route+: the Solent tactician view (Stuart 15 Nov 11:39) */
 
   /* ---- history: the trend arrow and the one-minute average ---- */
   var H = {};

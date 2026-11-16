@@ -1,4 +1,4 @@
-/* FirstShift Route and Navigate: Astro (Stuart 15 Nov 11:45 and 11:47): "sunrise, sunset, moonrise, moonset and how much of the moon
+/* FirstShift Route and Route+: Astro (Stuart 15 Nov 11:45 and 11:47): "sunrise, sunset, moonrise, moonset and how much of the moon
    is lit (a full moon high in a clear sky is great for racing), as text and graphics on screen, shown or hidden; under a button
    called Astro, with room for other astronomical tools". Worked out on the phone with no internet by SunCalc (below, unchanged,
    BSD-2-Clause, Vladimir Agafonkin). Built overnight 15 to 16 Nov while Stuart was away: the questions that were to follow are in

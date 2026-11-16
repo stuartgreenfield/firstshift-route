@@ -5,7 +5,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
 (async () => { const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' });
   await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + '/channel-area/'); await p.waitForFunction(() => window.__fsUseCourse && document.getElementById('adjTdir'), null, { timeout: 300000 }); await p.waitForTimeout(1500);
+  await p.goto(BASE + '/mark/'); await p.waitForFunction(() => window.__fsUseCourse && document.getElementById('adjTdir'), null, { timeout: 300000 }); await p.waitForTimeout(1500);
   const r1 = await p.evaluate(() => { const e = document.getElementById('adjTdir'); e.value = 30; e.oninput(); return { v: document.getElementById('adjTdirV').textContent, pill: document.getElementById('adjPillTxt').textContent, shown: !document.getElementById('adjPill').hidden }; });
   ok(r1.v === '+30° clockwise' && r1.shown && /tide \+30° clockwise/.test(r1.pill), 'Tide direction slider, labelled, and the chart note says so', JSON.stringify(r1));
   await p.evaluate(() => document.getElementById('adjReset').click());

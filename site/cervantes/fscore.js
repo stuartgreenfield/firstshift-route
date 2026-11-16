@@ -1,4 +1,4 @@
-/* FirstShift Route: screen and offline helpers shared with Navigate (13 Nov 2026).
+/* FirstShift Route: screen and offline helpers shared with Route+ (13 Nov 2026).
    Offline store, clear screen, reopen where it left off, notes, and the forecast models guide in Help. No boat code here. */
 (function () {
   'use strict';

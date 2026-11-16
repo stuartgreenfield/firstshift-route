@@ -1,4 +1,4 @@
-/* FirstShift Route and Navigate: Solent race marks and the Solent race builder (Stuart 15 Nov 2026, job J).
+/* FirstShift Route and Route+: Solent race marks and the Solent race builder (Stuart 15 Nov 2026, job J).
    Stuart, 08:24: "add this to both tools route and navigate with an on off button in settings under charts so when racing in Solent it
    can be used. Have a racing in Solent button in charts which creates a Solent racing drop down that gives a build a Solent race tool
    that allows you to pick a start line point of mark on the chart then build the course using the marks inc port and starboard also give
@@ -7,6 +7,8 @@
    08:26: "the Solent race took can use mark downloads or build on screen of course once the Solent marks have been switched on".
    The marks: JOG / SCRA "Solent Area Mark Codes 2026" (list dated 23 February 2026), in ../courses/solent-marks.json. */
 (function () {
+  /* FirstShift Solent only (Stuart 16 Nov 19:35): Route and Route+ have no Solent screens, marks or settings */
+  if (!window.FS_SOLENT) { window.FSSolent = { isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; } }; return; }
   'use strict';
   var R = Math.PI / 180, KEY = 'fs-solent', BKEY = 'fs-solent-b';
   function ld(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
@@ -90,10 +92,13 @@
   function offset(p, brg, nm) { return { lat: p.lat + nm * Math.cos(brg * R) / 60, lon: p.lon + nm * Math.sin(brg * R) / (60 * Math.cos(p.lat * R)) }; }
   function windward() {
     var w = B.wl; if (w.wkind === 'buoy') { var m = mark(w.wcode); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : null; }
+    if (w.wkind === 'pt') return w.wpt ? { code: w.wpt.code || null, name: w.wpt.name || 'Windward mark', lat: w.wpt.lat, lon: w.wpt.lon } : null;   /* a tapped or pinged point (18:40) */
     if (!B.start || !(w.brg >= 0 && w.brg <= 360) || !(w.dist > 0)) return null; var q = offset(B.start, w.brg, w.dist); return { code: null, name: 'Windward mark, ' + ('00' + Math.round(w.brg)).slice(-3) + '°T ' + w.dist + ' nm', lat: q.lat, lon: q.lon };
   }
+  function gpt(i) { var w = B.wl, p = w['g' + i], m = mark(i === 1 ? w.lcode : w.lcode2); if (p) return { lat: p.lat, lon: p.lon, short: p.code || p.short || (i === 1 ? 'A' : 'B') }; return m ? { lat: m.lat, lon: m.lon, short: m.id } : null; }
   function leeward() { var w = B.wl;
-    if (w.lkind === 'gate') { var g1 = mark(w.lcode), g2 = mark(w.lcode2); if (!g1 || !g2) return null; return { code: null, name: 'Leeward gate ' + g1.id + ' and ' + g2.id, lat: (g1.lat + g2.lat) / 2, lon: (g1.lon + g2.lon) / 2, gate: { a: [g1.lat, g1.lon], b: [g2.lat, g2.lon] } }; }   /* J3: a gate of two buoys; round either */
+    if (w.lkind === 'gate') { var g1 = gpt(1), g2 = gpt(2); if (!g1 || !g2) return null; return { code: null, name: 'Leeward gate ' + g1.short + ' and ' + g2.short, lat: (g1.lat + g2.lat) / 2, lon: (g1.lon + g2.lon) / 2, gate: { a: [g1.lat, g1.lon], b: [g2.lat, g2.lon] } }; }   /* J3: a gate of two buoys; round either. 18:40: or any two points, tapped or pinged */
+    if (w.lkind === 'pt') return w.lpt ? { code: null, name: w.lpt.name || 'Leeward mark', lat: w.lpt.lat, lon: w.lpt.lon } : null;
     if (w.lkind === 'buoy') { var m = mark(w.lcode); return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : null; } return B.start ? { code: B.start.code, name: 'Leeward mark (start line)', lat: B.start.lat, lon: B.start.lon } : null; }
   function build(soft) {
     if (!B.start) return soft ? null : { err: 'Choose the start: tap Start, then a mark or a point on the chart.' };
@@ -139,6 +144,8 @@
       '@media (min-width:1000px) and (min-height:600px){.solstep{right:16px;left:auto;bottom:auto;top:128px;margin:0;width:380px;max-height:calc(100vh - 210px)}}' +
       '.solmsg{margin:0;padding:6px 8px;border-radius:8px;background:rgba(245,158,11,.15);color:var(--ink,#000);font-size:13px}.solstep .solcode{width:120px;text-transform:uppercase}.solstep input[type=datetime-local]{width:auto;min-height:34px;font-size:15px}#solAfter{z-index:65}' +
       '.solcards{display:flex;flex-direction:column;gap:10px}.solcards .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:12px;min-height:64px;gap:2px}.solcards span{font-size:12px;opacity:.85;font-weight:400}';
+    st.textContent += '.solpop.sollegs{left:max(12px,env(safe-area-inset-left,0px));right:auto;transform:none;top:calc(env(safe-area-inset-top,0px) + 112px);bottom:auto;max-width:min(calc(100vw - 16px),460px);max-height:calc(100vh - 200px);overflow:auto;gap:6px;background:var(--panel,#fff)}.sollt{overflow-x:auto}.sollt table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}.sollt td{padding:4px 6px;border-bottom:1px solid var(--line,#e2e8f0);vertical-align:top}.sollt td:nth-child(3),.sollt td:nth-child(4){white-space:nowrap;text-align:right}.sollt td:nth-child(2){min-width:0}.sollty{color:var(--muted,#667);font-size:12px}.sollegs .xrow{display:flex;gap:8px;flex-wrap:wrap}.sollegs .xrow .btn{min-height:44px}@media (max-width:600px),(max-height:500px){.solpop.sollegs{top:auto;left:calc(58px + env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 8px);max-height:55vh}}';
+    st.textContent += '.solmulti{flex-wrap:wrap}';
     document.head.appendChild(st);
   }
   function openBuilder() {
@@ -229,13 +236,13 @@
     on('solBoardGo', 'onclick', function () { var r = parseBoard($('solBoard').value), n = $('solBoardNote'); if (r.marks.length) { B.marks = r.marks; saveB(); render(); redraw(); n = $('solBoardNote'); } n.textContent = (r.marks.length ? r.marks.length + ' marks set.' : 'No mark codes found.') + (r.bad.length ? ' Not on the list: ' + r.bad.join(', ') + '.' : ''); });
     on('solClear', 'onclick', function () { B = { type: B.type, name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } }; saveB(); render(); redraw(); });
     [].forEach.call(document.querySelectorAll('#solSheet select.soltide'), function (el) { el.onchange = function () { var L = B.legTide = B.legTide || []; var i = +el.dataset.leg - 1; L[i] = L[i] || {}; L[i][el.dataset.k] = +el.value; sv(BKEY, B); }; });
-    on('solGo', 'onclick', go);
+    on('solGo', 'onclick', function () { B.plan = 'route'; saveB(); go(); });   /* the full Solent sheet's button says Route this race, so it routes */
   }
   function go() { var c = build(); if (c.err) { toast(c.err); return false; } if (WZ.on && B.startAt) window.__fsPendingStart = B.startAt; zoomMax(); if (B.legTide && B.legTide.some(function (q) { return q && (q.p || q.d); })) c.legTide = B.legTide.slice();
     /* the date and time added to the name in Saved routes (Stuart 15 Nov J Q&A; 16 Nov "Solent race with date time stamp so it can be rerun after the event") */
     var t = WZ.on && B.startAt ? B.startAt : window.__fsStartAt ? window.__fsStartAt() : null, d = new Date(t ? t * 1000 : Date.now()), ds = d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-    c.name = (c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d\d:\d\d)?$/, '') + ' ' + ds).slice(0, 70); c.solent = true;
-    if ($('solSheet')) $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); setTimeout(startCardAfter, 600); return true; }
+    c.name = (c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)( \d\d:\d\d)?$/, '') + ' ' + ds).slice(0, 70); c.solent = true; c.solPlan = { route: B.plan === 'route', model: B.model || 'ukv', models: (B.models && B.models.length ? B.models : [B.model || 'ukv']) };
+    if ($('solSheet')) $('solSheet').hidden = true; if (window.__fsUseCourse) window.__fsUseCourse(c); if (B.plan === 'route') setTimeout(startCardAfter, 600); return true; }
   /* After routing (Stuart 16 Nov 12:46): "a connection to the usual start sequence with count down distance from line": the GPS window has Gun in, Ping boat and Ping pin, distance to the line and time to burn */
   function startCardAfter() {
     css(); var c = $('solAfter'); if (!c) { c = document.createElement('div'); c.id = 'solAfter'; c.className = 'solpop'; c.setAttribute('role', 'dialog'); document.body.appendChild(c); }
@@ -244,6 +251,30 @@
     c.querySelector('[data-k="gps"]').onclick = function () { c.hidden = true; if (window.__fsLiveOpen) window.__fsLiveOpen(); };
     clearTimeout(startCardAfter.t); startCardAfter.t = setTimeout(function () { c.hidden = true; }, 20000);
   }
+  /* the course as a list (Stuart 16 Nov 18:30, decided 18:40): bearing, distance and leg type for each leg; Route it; New course */
+  function legType(brg, twd) { var twa = Math.abs(((brg - twd + 540) % 360) - 180), t;
+    if (twa < 50) { var s1 = Math.abs(((brg - (twd - 45) + 540) % 360) - 180), p1 = Math.abs(((brg - (twd + 45) + 540) % 360) - 180); t = 'beat, ' + (Math.abs(s1 - p1) < 6 ? 'square' : (s1 < p1 ? 'starboard' : 'port') + ' tack favoured'); }
+    else if (twa < 80) t = 'close reach'; else if (twa < 110) t = 'beam reach'; else if (twa < 150) t = 'broad reach';
+    else { var sg = Math.abs(((brg - (twd + 180 - 30) + 540) % 360) - 180), pg = Math.abs(((brg - (twd + 180 + 30) + 540) % 360) - 180); t = 'run, ' + (Math.abs(sg - pg) < 6 ? 'dead downwind' : (sg < pg ? 'starboard' : 'port') + ' gybe favoured'); }
+    return t; }
+  function showList() {
+    css(); var cc = window.__navCourse && window.__navCourse(); if (!cc) return; var pts = [cc.start].concat(cc.marks || [], [cc.finish]), w = windRef(), tot = 0, rows = [];
+    for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], q = pts[i], k = Math.cos(a.lat * R), dx = (q.lon - a.lon) * k * 60, dy = (q.lat - a.lat) * 60, d = Math.hypot(dx, dy), br = (Math.atan2(dx, dy) / R + 360) % 360; tot += d;
+      rows.push('<tr><td>' + i + '</td><td>' + esc(String(q.name || '').replace(/^(Start|Finish), /, '')) + (q.side ? ' <small>' + (q.side === 'starboard' || q.side === 'stbd' ? 'S' : 'P') + '</small>' : '') + (w && w.twd != null ? '<br><small class="sollty">' + legType(br, w.twd) + '</small>' : '') + '</td><td><b>' + ('00' + Math.round(br)).slice(-3) + '°T</b></td><td>' + d.toFixed(1) + ' nm</td></tr>'); }
+    var c = $('solLegs'); if (!c) { c = document.createElement('div'); c.id = 'solLegs'; c.className = 'solpop sollegs'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', 'The course, leg by leg'); document.body.appendChild(c); }
+    c.innerHTML = '<button class="close" aria-label="Close">×</button><b>' + esc(cc.name) + '</b><span class="soln">' + (pts.length - 1) + ' legs, ' + tot.toFixed(1) + ' nm' + (w && w.twd != null ? ' · wind from ' + ('00' + Math.round(w.twd)).slice(-3) + '°' : ' · give the wind for leg types') + (lineInfo() ? ' · ' + esc(lineInfo()) : '') + '</span><div class="sollt"><table><tbody>' + rows.join('') + '</tbody></table></div><div class="xrow"><button class="btn" data-k="gps">GPS</button><button class="btn" data-k="route">Route it</button><button class="btn primary" data-k="new">New course</button></div>';
+    c.hidden = false; c.querySelector('.close').onclick = function () { c.hidden = true; };
+    c.onclick = function (e) { var b = e.target.closest('[data-k]'); if (!b) return; var k = b.dataset.k;
+      if (k === 'gps') { c.hidden = true; if (window.__fsLiveOpen) window.__fsLiveOpen(); }
+      else if (k === 'route') { c.hidden = true; B.plan = 'route'; saveB(); if (window.__fsSolPlan) window.__fsSolPlan({ route: true, model: B.model || 'ukv', models: (B.models && B.models.length ? B.models : [B.model || 'ukv']) }); }
+      else if (k === 'new') newCourse(); };
+  }
+  /* clear down for the next race (18:40): the course stays in Saved races, the track is filed if one was sailed; the marks go, the start line and the wind stay */
+  function newCourse() { ['solLegs', 'solAfter'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; });
+    var sailed = false; try { var f = window.__fsLiveFix && window.__fsLiveFix(); sailed = !!f; } catch (e) {}
+    if (sailed && window.__fsEndRace) window.__fsEndRace(); else if (window.__fsClearCourse) window.__fsClearCourse();
+    B.marks = []; B.finish = null; B.fin = 'start'; B.legTide = []; B.startAt = null; B.wl.wcode = ''; B.wl.wpt = null; B.wl.lcode = ''; B.wl.lcode2 = ''; B.wl.lpt = null; B.wl.g1 = null; B.wl.g2 = null; B.wl.brg = null;
+    B.start = B.sk === 'line' ? lineStart() : null; saveB(); startCard(); }
   function pickStart(what) {
     pickStart.back = pick === 'chain'; if ($('solChain')) $('solChain').hidden = true; pick = what; if ($('solSheet')) $('solSheet').hidden = true; var bar = $('solPick');
     if (!bar) { bar = document.createElement('div'); bar.id = 'solPick'; bar.className = 'solpick'; document.body.appendChild(bar); }
@@ -307,14 +338,15 @@
   /* from the race list: a two-button card, Round the cans or Windward-leeward (Stuart 15 Nov 17:32) */
   function startCard() {
     css(); var c = $('solCard'); if (!c) { c = document.createElement('div'); c.id = 'solCard'; c.className = 'sheet'; c.hidden = true; document.body.appendChild(c); }
-    var prev = window.__fsOffshorePrev ? window.__fsOffshorePrev() : null, has = !!B.start && (B.type === 'wl' || (B.marks || []).length);
+    var prev = null, has = !!B.start && (B.type === 'wl' || (B.marks || []).length);
     c.innerHTML = '<div class="in" role="dialog" aria-label="Solent race"><div class="shead"><h2>Solent race</h2><button class="close" id="solCardX" aria-label="Close">×</button></div><div class="sbody"><p class="note">Marks from the JOG / SCRA Solent mark list 2026. The chart prompts you one step at a time.</p><div class="solcards"><button class="btn primary" id="solCardM"><b>Round the cans</b><span>Start, then tap each buoy with Port or Starboard, then the finish</span></button><button class="btn" id="solCardW"><b>Windward-leeward</b><span>Start, windward mark, leeward mark or gate, laps</span></button></div>' +
       (has ? '<p class="note">Your last course: ' + esc(B.type === 'wl' ? 'windward-leeward' : B.marks.length + ' marks') + '. <button class="linkbtn" id="solCardOld">Open it</button></p>' : '') +
       (prev ? '<p class="note">' + esc(prev.name) + ' is kept with its routes. <button class="linkbtn" id="solCardOff">Back to ' + esc(prev.short || prev.name) + '</button></p>' : '') + '</div></div>';
     c.hidden = false; $('solCardX').onclick = function () { c.hidden = true; };
+    if (!B.plan) B.plan = 'list';
     $('solCardM').onclick = function () { c.hidden = true; B.type = 'marks'; B.marks = []; B.legTide = []; B.fin = 'start'; B.finish = null; saveB(); wzOpen(1); };
     $('solCardW').onclick = function () { c.hidden = true; B.type = 'wl'; B.legTide = []; saveB(); wzOpen(1); };
-    if ($('solCardOld')) $('solCardOld').onclick = function () { c.hidden = true; wzOpen(B.type === 'wl' ? 5 : 4); };
+    if ($('solCardOld')) $('solCardOld').onclick = function () { c.hidden = true; wzOpen(wzSteps().length); };
     if ($('solCardOff')) $('solCardOff').onclick = function () { c.hidden = true; wzOpen(0); if (window.__fsInshore) window.__fsInshore(false); };
   }
 
@@ -324,10 +356,34 @@
      screen; it remembers where. Windward-leeward: 1 start, 2 windward mark, 3 leeward mark or gate, 4 laps and finish, 5 check and route.
      Round the cans: 1 start, 2 the buoys, 3 finish, 4 check and route. ---- */
   var WZ = { on: false, n: 1 };
-  function wzSteps() { return B.type === 'wl' ? ['start', 'wind', 'lee', 'laps', 'wt', 'check'] : ['start', 'marks', 'fin', 'wt', 'check']; }
+  /* Simpler Solent racing (Stuart 16 Nov 18:30, decided 18:40): the first step asks Route or not (No routing first) and the wind;
+     the start can be a line of two ends, tapped or pinged and kept for the next course; windward and leeward marks can be any point,
+     tapped or pinged, and a gate any two points. Not routed, the course shows as a list of bearings, distances and leg types. */
+  function wzSteps() { var rt = B.plan === 'route'; return B.type === 'wl' ? ['plan', 'start', 'wind', 'lee', 'laps'].concat(rt ? ['wt'] : [], ['check']) : ['plan', 'start', 'marks', 'fin'].concat(rt ? ['wt'] : [], ['check']); }
+  function P(m, la, lo, label) { return m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: label === 'A' || label === 'B' ? 'Gate ' + label : label + ' mark', short: label, lat: la, lon: lo }; }
+  function lineNow() { var l = window.__fsLine ? window.__fsLine() : {}; return l && l.boat && l.pin ? l : null; }
+  function lineStart() { var l = lineNow(); if (!l) return null; return { code: null, name: 'Start line', lat: (l.boat[0] + l.pin[0]) / 2, lon: (l.boat[1] + l.pin[1]) / 2, line: true }; }
+  function lineInfo() { var l = lineNow(); if (!l) return ''; var a = { lat: l.boat[0], lon: l.boat[1] }, b = { lat: l.pin[0], lon: l.pin[1] }, k = Math.cos(a.lat * R), dx = (b.lon - a.lon) * k * 60, dy = (b.lat - a.lat) * 60, len = Math.hypot(dx, dy) * 1852, t = 'Line ' + Math.round(len) + ' m';
+    var w = windRef(); if (w && w.twd != null) { var ux = Math.sin(w.twd * R), uy = Math.cos(w.twd * R), up = (dx * ux + dy * uy) * 1852; t += Math.abs(up) < 2 ? ', square to the wind' : ', ' + (up > 0 ? 'pin' : 'committee boat') + ' end favoured by ' + Math.round(Math.abs(up)) + ' m'; } return t + '.'; }
+  function ping(fn) { var f = null; try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} if (!f || f.dr || Date.now() - f.at > 30000) { if (window.__fsLiveOpen) window.__fsLiveOpen(); WZ.msg = 'No GPS fix yet: the GPS is starting. Tap Ping again in a moment.'; wzRender(); return; } fn(f.la, f.lo); }
+  /* the race's wind: typed, head to wind, or the boat's instruments (Route+); used for the leg list, line bias and header or lift */
+  function windRef() { if (B.wind && B.wind.twd != null) return B.wind; var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} if (nw && nw[1] != null) { B.wind = { twd: Math.round(nw[1]), src: 'boat', at: Date.now() }; saveB(); return B.wind; } return null; }
+  function headToWind() { var done = false, fin = function (h, src) { if (done) return; done = true; window.removeEventListener('deviceorientationabsolute', onO, true); window.removeEventListener('deviceorientation', onO, true); B.wind = { twd: Math.round(((h % 360) + 360) % 360), src: src, at: Date.now() }; saveB(); WZ.msg = 'Wind set from ' + src + ': ' + ('00' + B.wind.twd).slice(-3) + '°.'; wzRender(); };
+    var dr = null; try { dr = window.__navDR && window.__navDR(); } catch (e) {} if (dr && dr.hdg != null) return fin(dr.hdg, 'the boat\'s heading');
+    function onO(e) { var h = e.webkitCompassHeading != null ? e.webkitCompassHeading : (e.absolute && e.alpha != null ? 360 - e.alpha : null); if (h != null) fin(h, 'the phone\'s compass (magnetic, within a degree in the Solent)'); }
+    var go2 = function () { window.addEventListener('deviceorientationabsolute', onO, true); window.addEventListener('deviceorientation', onO, true); setTimeout(function () { if (!done) { done = true; window.removeEventListener('deviceorientationabsolute', onO, true); window.removeEventListener('deviceorientation', onO, true); WZ.msg = 'No compass on this device: type the wind direction instead.'; wzRender(); } }, 3000); };
+    try { if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().then(function (r) { if (r === 'granted') go2(); else { WZ.msg = 'Compass not allowed: type the wind direction instead.'; wzRender(); } }, function () { go2(); }); else go2(); } catch (e) { go2(); } }
+  /* the wind from the two tacks (as Vakaros and Velocitek, research 16 Nov): close-hauled on each tack, tap; the wind is midway between the two headings and half the angle is the boat's own angle to the wind */
+  function tackRef(side) { var h = null, src = ''; try { var dr = window.__navDR && window.__navDR(); if (dr && dr.hdg != null) { h = dr.hdg; src = 'heading'; } } catch (e) {} if (h == null) { try { h = window.__fsCog ? window.__fsCog() : null; src = 'course made good'; } catch (e) {} }
+    if (h == null) { if (window.__fsLiveOpen) window.__fsLiveOpen(); WZ.msg = 'Needs the boat moving with GPS on (or the boat\'s compass): sail close-hauled for half a minute, then tap again.'; wzRender(); return; }
+    B.tref = B.tref || {}; B.tref[side] = Math.round(h); var s1 = B.tref.stbd, p1 = B.tref.port;
+    if (s1 != null && p1 != null) { var d = ((p1 - s1 + 540) % 360) - 180, mid = (s1 + d / 2 + 360) % 360, ba = Math.abs(d) / 2; if (ba < 25 || ba > 65) { WZ.msg = 'The two headings are ' + Math.round(Math.abs(d)) + '° apart, not a tack: record each tack again.'; B.tref = {}; } else { B.wind = { twd: Math.round(mid), ba: Math.round(ba), src: 'your two tacks (' + src + ')', at: Date.now() }; WZ.msg = 'Wind from ' + ('00' + B.wind.twd).slice(-3) + '°, tacking through ' + Math.round(Math.abs(d)) + '°.'; } }
+    else WZ.msg = (side === 'stbd' ? 'Starboard' : 'Port') + ' tack recorded: ' + ('00' + Math.round(h)).slice(-3) + '°. Now the other tack.';
+    saveB(); wzRender(); }
+  function models() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return !c.disabled; }).map(function (c) { var l = c.closest('label'), t = l ? l.textContent.trim().split(/\s{2,}|\n|·|\(/)[0].trim() : c.getAttribute('data-m'); return { id: c.getAttribute('data-m'), name: t.slice(0, 18) }; }); }
   function wzKey() { return wzSteps()[WZ.n - 1]; }
   function wzOk(k) { var w = B.wl;
-    if (k === 'start') return !!B.start; if (k === 'wind') return !!windward(); if (k === 'lee') return !!leeward(); if (k === 'marks') return (B.marks || []).length > 0;
+    if (k === 'start') return B.sk === 'line' ? !!lineNow() : !!B.start; if (k === 'wind') return !!windward(); if (k === 'lee') return !!leeward(); if (k === 'marks') return (B.marks || []).length > 0;
     if (k === 'fin') return B.fin !== 'mark' || !!B.finish; return true; }
   function wzOpen(n) {
     css(); if (!n) { WZ.on = false; var b0 = $('solStep'); if (b0) b0.hidden = true; pick = null; redraw(); return; }
@@ -344,14 +400,22 @@
       if (k === 'x') { wzOpen(0); return; } if (k === 'back' || k === 'next') WZ.msg = '';
       if (k === 'back') { WZ.n = Math.max(1, WZ.n - 1); } else if (k === 'next') { if (wzOk(wzKey())) WZ.n = Math.min(wzSteps().length, WZ.n + 1); }
       else if (k === 'go') { if (go()) wzOpen(0); return; }
-      else if (k === 'wk') w.wkind = v; else if (k === 'lk') { w.lkind = v; if (v === 'gate') { w.lcode = ''; w.lcode2 = ''; } }
+      else if (k === 'wk') w.wkind = v; else if (k === 'lk') { w.lkind = v; if (v === 'gate') { w.lcode = ''; w.lcode2 = ''; w.g1 = null; w.g2 = null; } }
       else if (k === 'fc') { b.dataset.msg = fcWind(); } else if (k === 'lap') w.laps = Math.max(1, Math.min(6, (w.laps || 1) + (+v))); else if (k === 'wf') w.fin = v; else if (k === 'sd') w.side = v;
       else if (k === 'fin') { B.fin = v; if (v === 'start') B.finish = null; } else if (k === 'undo') B.marks.pop(); else if (k === 'list') { list(true); return; }
       else if (k === 'code') { wzCode(v); return; }
+      else if (k === 'plan') { B.plan = v; } else if (k === 'model') { B.model = v; }
+      else if (k === 'models') { var cur = (B.models && B.models.length ? B.models : [B.model || 'ukv']).slice(), ix = cur.indexOf(v); if (ix >= 0) { if (cur.length > 1) cur.splice(ix, 1); } else cur.push(v); B.models = cur; B.model = cur[0]; }
+      else if (k === 'tref') { tackRef(v); return; } else if (k === 'htw') { headToWind(); return; }
+      else if (k === 'bw') { var nw = null; try { nw = window.__navWind && window.__navWind(); } catch (x) {} if (nw) { B.wind = { twd: Math.round(nw[1]), src: 'boat', at: Date.now() }; WZ.msg = ''; } else WZ.msg = 'No wind from the boat yet.'; }
+      else if (k === 'sk') { B.sk = v; WZ.end = null; B.start = v === 'line' ? lineStart() : (B.start && B.start.line ? null : B.start); }
+      else if (k === 'lping') { ping(function (la, lo) { if (window.__fsSetLine) window.__fsSetLine(v, la, lo); B.start = lineStart(); saveB(); wzRender(); redraw(); }); return; }
+      else if (k === 'lclr') { if (window.__fsSetLine) { window.__fsSetLine('boat', null); window.__fsSetLine('pin', null); } B.start = null; WZ.end = 'boat'; }
+      else if (k === 'pping') { ping(function (la, lo) { if (v === 'w') w.wpt = P(null, la, lo, 'Windward'); else if (v === 'l') w.lpt = P(null, la, lo, 'Leeward'); else { var gp = P(null, la, lo, w.g1 && !w.g2 ? 'B' : 'A'); if (!w.g1 || w.g2) { w.g1 = gp; w.g2 = null; } else w.g2 = gp; } saveB(); wzRender(); redraw(); }); return; }
       else if (k === 'side') { var m = B.marks[+v]; m.side = m.side === 'stbd' || m.side === 'starboard' ? 'port' : 'stbd'; }
       saveB(); wzRender(); redraw(); });
     b.addEventListener('change', function (e) { var t = e.target, w = B.wl;
-      if (t.id === 'solSbrg') { var v = +t.value; w.brg = t.value === '' ? null : ((v % 360) + 360) % 360; } else if (t.id === 'solSdist') w.dist = Math.max(0.2, Math.min(10, +t.value || 1)); else if (t.id === 'solSname') B.name = t.value.trim() || 'Solent race'; else if (t.id === 'solStartT') { var tp = Date.parse(t.value); if (tp === tp) B.startAt = Math.round(tp / 1000); } else if (t.id === 'solCode') return;
+      if (t.id === 'solTwd') { var tv = +t.value; B.wind = t.value === '' ? null : { twd: ((tv % 360) + 360) % 360, src: 'typed', at: Date.now() }; } else if (t.id === 'solSbrg') { var v = +t.value; w.brg = t.value === '' ? null : ((v % 360) + 360) % 360; } else if (t.id === 'solSdist') w.dist = Math.max(0.2, Math.min(10, +t.value || 1)); else if (t.id === 'solSname') B.name = t.value.trim() || 'Solent race'; else if (t.id === 'solStartT') { var tp = Date.parse(t.value); if (tp === tp) B.startAt = Math.round(tp / 1000); } else if (t.id === 'solCode') return;
       saveB(); wzRender(); redraw(); });
     b.addEventListener('keydown', function (e) { if (e.target.id === 'solCode' && e.key === 'Enter') { e.preventDefault(); wzCode(wzKey() === 'marks' ? 'port' : null); } });
     /* drag by the grip */
@@ -369,10 +433,13 @@
   function miss(la, lo) { var n = nearest(la, lo); WZ.msg = 'No buoy there.' + (n ? ' Nearest: ' + n.m.id + ' ' + n.m.name + ', ' + (n.nm < 0.1 ? Math.round(n.nm * 1852) + ' m' : n.nm.toFixed(1) + ' nm') + ' away. Click on its dot, or type its code below.' : ''); wzRender(); return true; }
   function wzUse(m, la, lo, side, x, y) {   /* one buoy (or point) for the step in hand; m null = a point on the chart */
     var k = wzKey(), w = B.wl; WZ.msg = '';
-    if (k === 'start') { B.start = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
+    if (k === 'start' && B.sk === 'line') { var l0 = window.__fsLine ? window.__fsLine() : {}, end = WZ.end || (l0.boat && !l0.pin ? 'pin' : 'boat'), q0 = m || { lat: la, lon: lo }; if (end === 'pin' && l0.boat && Math.hypot(q0.lat - l0.boat[0], (q0.lon - l0.boat[1]) * Math.cos(q0.lat * R)) * 60 < 0.005) { WZ.msg = 'That is the committee boat end: tap the pin end.'; wzRender(); return true; } if (window.__fsSetLine) window.__fsSetLine(end, q0.lat, q0.lon); WZ.end = end === 'boat' ? 'pin' : 'boat'; B.start = lineStart(); }
+    else if (k === 'start') { B.start = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
     else if (k === 'wind' && w.wkind === 'buoy') { if (!m) return miss(la, lo); w.wcode = m.id; }
+    else if (k === 'wind' && w.wkind === 'pt') { w.wpt = P(m, la, lo, 'Windward'); }
     else if (k === 'lee' && w.lkind === 'buoy') { if (!m) return miss(la, lo); w.lcode = m.id; }
-    else if (k === 'lee' && w.lkind === 'gate') { if (!m) return miss(la, lo); if (!mark(w.lcode) || (mark(w.lcode) && mark(w.lcode2))) { w.lcode = m.id; w.lcode2 = ''; } else if (m.id !== w.lcode) w.lcode2 = m.id; }
+    else if (k === 'lee' && w.lkind === 'pt') { w.lpt = P(m, la, lo, 'Leeward'); }
+    else if (k === 'lee' && w.lkind === 'gate') { var gp = P(m, la, lo, w.g1 && !w.g2 ? 'B' : 'A'); if (!w.g1 || w.g2) { w.g1 = gp; w.g2 = null; } else if (Math.hypot(gp.lat - w.g1.lat, (gp.lon - w.g1.lon) * Math.cos(gp.lat * R)) * 60 < 0.01) { WZ.msg = 'That is the same mark as the first: tap the other end of the gate.'; wzRender(); return true; } else w.g2 = gp; w.lcode = ''; w.lcode2 = ''; }
     else if (k === 'marks') { if (!m) return miss(la, lo); if (side) { B.marks.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: side }); } else { sidePop(m, x, y); wzRender(); return true; } }
     else if (k === 'fin' && B.fin === 'mark') { B.finish = m ? { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } : { code: null, name: 'Point ' + la.toFixed(4) + ', ' + lo.toFixed(4), lat: la, lon: lo }; }
     else return false;
@@ -386,11 +453,18 @@
     var b = $('solStep'); if (!b || !WZ.on) return; var k = wzKey(), w = B.wl, N = wzSteps().length, ok = wzOk(k);
     var seg = function (key, cur, opts) { return '<span class="seg">' + opts.map(function (o) { return '<button type="button" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</span>'; };
     var got = function (t) { return '<p class="solgot">' + t + '</p>'; }, h = '', ask = '';
-    if (k === 'start') { ask = 'Tap the start on the chart'; h = got(B.start ? 'Start: <b>' + esc(B.start.name) + '</b>. Tap again to change it.' : 'A buoy, or a point on the start line.'); }
-    else if (k === 'wind') { ask = w.wkind === 'buoy' ? 'Tap the windward buoy' : 'Windward mark: heading and distance'; h = '<div class="solcl">' + seg('wk', w.wkind === 'buoy' ? 'buoy' : 'brg', [['buoy', 'A buoy'], ['brg', 'Heading']]) + '</div>';
-      h += w.wkind === 'buoy' ? got(mark(w.wcode) ? 'Windward: <b>' + esc(w.wcode + ' ' + mark(w.wcode).name) + '</b>' : 'Tap it on the chart.') : '<div class="solcl"><input id="solSbrg" type="number" inputmode="numeric" min="0" max="360" value="' + (w.brg == null ? '' : w.brg) + '" aria-label="Heading from the start, degrees true" placeholder="°T">°T <input id="solSdist" type="number" inputmode="decimal" min="0.2" max="10" step="0.1" value="' + w.dist + '" aria-label="Distance, nautical miles"> nm <button class="btn" data-k="fc">Forecast wind</button></div>' + (b.dataset.msg ? got(esc(b.dataset.msg)) : ''); }
-    else if (k === 'lee') { ask = w.lkind === 'buoy' ? 'Tap the leeward buoy' : w.lkind === 'gate' ? (mark(w.lcode) && !mark(w.lcode2) ? 'Tap the second gate buoy' : 'Tap the two gate buoys') : 'Leeward mark: the start line'; h = '<div class="solcl">' + seg('lk', w.lkind || 'start', [['start', 'Start line'], ['buoy', 'A buoy'], ['gate', 'A gate']]) + '</div>';
-      h += got(w.lkind === 'buoy' ? (mark(w.lcode) ? 'Leeward: <b>' + esc(w.lcode + ' ' + mark(w.lcode).name) + '</b>' : 'Tap it on the chart.') : w.lkind === 'gate' ? 'Gate: <b>' + (mark(w.lcode) ? esc(w.lcode) : '?') + '</b> and <b>' + (mark(w.lcode2) ? esc(w.lcode2) : '?') + '</b>. Round either buoy.' : 'The boats round the start line.'); }
+    if (k === 'plan') { ask = 'Route this race, or not?'; var mm = models(); if (B.plan === 'route' && (!B.model || !mm.some(function (q) { return q.id === B.model; }))) B.model = (mm.filter(function (q) { return q.id === 'ukv'; })[0] || mm[0] || {}).id;
+      h = '<div class="solcl">' + seg('plan', B.plan === 'route' ? 'route' : 'list', [['list', 'No routing'], ['route', 'Route it']]) + '</div>' + got(B.plan === 'route' ? 'Routes on one forecast model, plus a Fixed wind route if you give the wind on the water.' : 'The course as a list: bearing, distance and leg type for each leg. Route is one tap away later.');
+      if (B.plan === 'route' && mm.length) { var sel = (B.models && B.models.length ? B.models : [B.model || 'ukv']); h += '<div class="solcl"><span class="solk">Models</span><span class="seg solmulti">' + mm.map(function (q) { return '<button type="button" data-k="models" data-v="' + q.id + '" aria-pressed="' + (sel.indexOf(q.id) >= 0) + '">' + esc(q.name) + '</button>'; }).join('') + '</span></div>' + got('Tick 1 to ' + mm.length + ' models; each gives its own route. Finer models (UKV, AROME) see more of the Solent.'); }
+      var wr = B.wind; h += '<div class="solcl"><label class="solk" for="solTwd">Wind from</label><input id="solTwd" type="number" inputmode="numeric" min="0" max="360" value="' + (wr && wr.twd != null ? wr.twd : '') + '" placeholder="°T" aria-label="Wind direction, degrees true">°T <button class="btn" data-k="htw" title="Point the bow into the wind, then tap">Head to wind</button><button class="btn" data-k="tref" data-v="stbd" title="Sailing close-hauled on starboard, tap to record the heading">Starboard tack' + (B.tref && B.tref.stbd != null ? ' ✓' : '') + '</button><button class="btn" data-k="tref" data-v="port" title="Sailing close-hauled on port, tap to record the heading">Port tack' + (B.tref && B.tref.port != null ? ' ✓' : '') + '</button>' + (window.__navWind ? '<button class="btn" data-k="bw">From the boat</button>' : '') + '</div>' + got(wr && wr.twd != null ? 'For leg types, line bias and header or lift' + (wr.src && wr.src !== 'typed' ? ' (from ' + esc(wr.src) + ')' : '') + '.' : 'Optional: for leg types, line bias and header or lift.'); }
+    else if (k === 'start') { var ln = B.sk === 'line'; ask = ln ? (WZ.end === 'pin' || (window.__fsLine && window.__fsLine().boat && !window.__fsLine().pin) ? 'Tap or ping the pin end' : lineNow() ? 'Start line set' : 'Tap or ping the committee boat end') : 'Tap the start on the chart';
+      h = '<div class="solcl">' + seg('sk', ln ? 'line' : 'buoy', [['buoy', 'A buoy or point'], ['line', 'A line: two ends']]) + '</div>';
+      if (ln) { var l1 = window.__fsLine ? window.__fsLine() : {}; h += got('Committee boat: <b>' + (l1.boat ? 'set' : '?') + '</b> · Pin: <b>' + (l1.pin ? 'set' : '?') + '</b>. ' + esc(lineInfo())) + '<div class="solcl"><button class="btn" data-k="lping" data-v="boat">Ping boat end</button><button class="btn" data-k="lping" data-v="pin">Ping pin end</button>' + (l1.boat || l1.pin ? '<button class="btn" data-k="lclr">Clear line</button>' : '') + '</div>'; }
+      else h += got(B.start ? 'Start: <b>' + esc(B.start.name) + '</b>. Tap again to change it.' : 'A buoy, or a point on the start line.'); }
+    else if (k === 'wind') { var wk = w.wkind === 'buoy' || w.wkind === 'pt' ? w.wkind : 'brg'; ask = wk === 'buoy' ? 'Tap the windward buoy' : wk === 'pt' ? 'Tap or ping the windward mark' : 'Windward mark: heading and distance'; h = '<div class="solcl">' + seg('wk', wk, [['buoy', 'A buoy'], ['pt', 'A point'], ['brg', 'Heading']]) + '</div>';
+      h += wk === 'buoy' ? got(mark(w.wcode) ? 'Windward: <b>' + esc(w.wcode + ' ' + mark(w.wcode).name) + '</b>' : 'Tap it on the chart.') : wk === 'pt' ? got(w.wpt ? 'Windward: <b>' + esc(w.wpt.name) + '</b>' : 'Tap it on the chart, or ping it as you pass.') + '<div class="solcl"><button class="btn" data-k="pping" data-v="w">Ping here</button></div>' : '<div class="solcl"><input id="solSbrg" type="number" inputmode="numeric" min="0" max="360" value="' + (w.brg == null ? (B.wind && B.wind.twd != null ? B.wind.twd : '') : w.brg) + '" aria-label="Heading from the start, degrees true" placeholder="°T">°T <input id="solSdist" type="number" inputmode="decimal" min="0.2" max="10" step="0.1" value="' + w.dist + '" aria-label="Distance, nautical miles"> nm <button class="btn" data-k="fc">Forecast wind</button></div>' + (b.dataset.msg ? got(esc(b.dataset.msg)) : ''); }
+    else if (k === 'lee') { var lk = w.lkind || 'start', g1 = gpt(1), g2 = gpt(2); ask = lk === 'buoy' ? 'Tap the leeward buoy' : lk === 'pt' ? 'Tap or ping the leeward mark' : lk === 'gate' ? (g1 && g2 ? 'Leeward gate set' : g1 ? 'Tap or ping the second gate mark' : 'Tap or ping the two gate marks') : 'Leeward mark: the start line'; h = '<div class="solcl">' + seg('lk', lk, [['start', 'Start line'], ['buoy', 'A buoy'], ['pt', 'A point'], ['gate', 'A gate']]) + '</div>';
+      h += got(lk === 'buoy' ? (mark(w.lcode) ? 'Leeward: <b>' + esc(w.lcode + ' ' + mark(w.lcode).name) + '</b>' : 'Tap it on the chart.') : lk === 'pt' ? (w.lpt ? 'Leeward: <b>' + esc(w.lpt.name) + '</b>' : 'Tap it on the chart, or ping it.') : lk === 'gate' ? 'Gate: <b>' + (g1 ? esc(g1.short) : '?') + '</b> and <b>' + (g2 ? esc(g2.short) : '?') + '</b>. Two buoys or any two points. Round either.' : 'The boats round the start line.') + (lk === 'pt' || lk === 'gate' ? '<div class="solcl"><button class="btn" data-k="pping" data-v="' + (lk === 'pt' ? 'l' : 'g') + '">Ping here</button></div>' : ''); }
     else if (k === 'laps') { ask = 'Laps and finish'; h = '<div class="solcl"><span class="solk">Laps</span><span class="seg"><button type="button" data-k="lap" data-v="-1" aria-label="One lap fewer">−</button><button type="button" aria-pressed="true" disabled>' + (w.laps || 1) + '</button><button type="button" data-k="lap" data-v="1" aria-label="One lap more">+</button></span></div><div class="solcl"><span class="solk">Finish at</span>' + seg('wf', w.fin || 'lee', [['lee', 'Leeward'], ['start', 'Start line'], ['wind', 'Windward']]) + '</div><div class="solcl"><span class="solk">Leave marks to</span>' + seg('sd', w.side === 'starboard' ? 'starboard' : 'port', [['port', 'Port'], ['starboard', 'Starboard']]) + '</div>'; }
     else if (k === 'marks') { var n = B.marks.length; ask = n ? 'Tap the next buoy' : 'Tap the first buoy'; h = got('Then choose Port or Starboard. Tap a chip below to swap sides.') + '<div class="solchips">' + (n ? B.marks.map(function (m, i) { var st = m.side === 'stbd' || m.side === 'starboard'; return '<button class="solchip ' + (st ? 'stbd' : 'port') + '" data-k="side" data-v="' + i + '">' + (i + 1) + '. ' + esc(m.code || m.name) + ' ' + (st ? 'S' : 'P') + '</button>'; }).join('') : '<span class="soln">No buoys yet.</span>') + '</div><div class="solcl"><button class="btn" data-k="undo"' + (n ? '' : ' disabled') + '>Undo</button><button class="btn" data-k="list">All the buoys</button></div>'; }
     else if (k === 'fin') { ask = B.fin === 'mark' ? 'Tap the finish on the chart' : 'Finish at the start line'; h = '<div class="solcl">' + seg('fin', B.fin === 'mark' ? 'mark' : 'start', [['start', 'Start line'], ['mark', 'A buoy or point']]) + '</div>' + (B.fin === 'mark' ? got(B.finish ? 'Finish: <b>' + esc(B.finish.name) + '</b>' : 'Tap it on the chart.') : ''); }
@@ -405,7 +479,7 @@
       if (outR) ok = false; }
     var last = WZ.n === N;
     b.innerHTML = '<div class="solgrip" title="Drag to move"><span></span></div><div class="solhd"><span class="solstepn">Step ' + WZ.n + ' of ' + N + '</span><b>' + ask + '</b><button class="close" data-k="x" aria-label="Cancel">×</button></div>' + h +
-      '<div class="solnav"><button class="btn" data-k="back"' + (WZ.n > 1 ? '' : ' disabled') + '>Back</button>' + (last ? '<button class="btn primary" data-k="go"' + (ok ? '' : ' disabled') + '>Route this race</button>' : '<button class="btn primary" data-k="next"' + (ok ? '' : ' disabled') + '>Next</button>') + '</div>';
+      '<div class="solnav"><button class="btn" data-k="back"' + (WZ.n > 1 ? '' : ' disabled') + '>Back</button>' + (last ? '<button class="btn primary" data-k="go"' + (ok ? '' : ' disabled') + '>' + (B.plan === 'route' ? 'Route this race' : 'Show the course') + '</button>' : '<button class="btn primary" data-k="next"' + (ok ? '' : ' disabled') + '>Next</button>') + '</div>';
     b.hidden = false; if (b.style.top) { var r = b.getBoundingClientRect(); place(b, r.left, r.top); }
     if (k === 'wt' && window.__fsFix) window.__fsFix.bind($('solFix'));
   }
@@ -419,7 +493,7 @@
   }
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   window.__fsTapHook = tapHook;
-  window.FSSolent = { start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
+  window.FSSolent = { showList: showList, newCourse: newCourse, windRef: windRef, legType: legType, start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
   if (C.on) load();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookSettings); else hookSettings();
 })();

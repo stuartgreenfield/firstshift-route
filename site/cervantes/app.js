@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.30';
+  var VERSION = 'FirstShift Route v0.12.31';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -163,14 +163,14 @@
     if ($('spTour')) { S.splashDone = function () {}; sp.addEventListener('click', hide); return; }   /* Show me round? Yes or No, asked every time: the splash waits for the answer (Stuart 14 Nov) */
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
-  fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
+  fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
     meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); mfInit(); wizInit(); crewInit(); shareInit(); askInit(); bcInit();
     /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
     /* Shallow water shown: two buttons rather than a drop-down (Stuart 15 Nov 08:13: the drop-down would not open or select on the Android tablet) */
     (function () { var dv = $('depthView'), zm = $('zoomMax'), sg = $('depthViewSeg'); if (dv && sg) { var setV = function (v) { dv.value = v === 'squares' ? 'squares' : 'smooth'; [].forEach.call(sg.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === dv.value)); }); }; setV(store('fs-depthView')); [].forEach.call(sg.querySelectorAll('button'), function (b) { b.onclick = function () { setV(b.dataset.v); store('fs-depthView', dv.value); buildDepth(); draw(); }; }); }
       if (zm) { var z = store('fs-zoomMax'); if (z != null) zm.value = z; var f = function () { var k = +zm.value || 1; $('zoomMaxV').textContent = (k === 1 ? 'Standard, ' : k + ' times, ') + 'about ' + (Math.max(320, Math.min(W || 400, 1400)) * 60 / (20000 * k)).toFixed(k > 3 ? 2 : 1) + ' nm across'; }; zm.oninput = function () { store('fs-zoomMax', zm.value); f(); if (view.s > ZMAX()) { view.s = ZMAX(); draw(); } }; f(); } })();
     ['windDim', 'tideDim'].forEach(function (id) { var el = $(id), v = store('fs-' + id); if (v != null) el.value = v; var f = function () { $(id + 'V').textContent = el.value + '%'; store('fs-' + id, el.value); draw(); }; el.oninput = f; $(id + 'V').textContent = el.value + '%'; }); if (W) { fit(); fitted = true; }
-    fetch('pack/' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
+    fetch((window.FS_PACK || 'pack/') + '' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return loadPre().then(function () { earlyPre(); return download(); });
   }).then(function () { return omFallback(); }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; errShow('Could not load the forecasts: ' + e.message); });
@@ -180,7 +180,7 @@
   function watchForNew() {
     if (!meta.live) return;
     setInterval(function () {
-      fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
+      fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
         if ((m.built || m.t0) === (meta.built || meta.t0) || (nextMeta && (nextMeta.built || nextMeta.t0) === (m.built || m.t0))) return;
         nextMeta = m;
         $('newData').hidden = false;
@@ -242,7 +242,7 @@
   function download() {
     var todo = meta.layers.filter(function (L) { if (L.device) return false; var c = S.choice[L.id] || 'off'; return c !== S.loaded[L.id] && !(c === 'off' && !S.loaded[L.id]); });
     var ovJob = Promise.resolve();
-    if (meta.overview && $('ovChk').checked && !S.ov) ovJob = fetch('pack/' + meta.overview.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { S.ov = b; layersPop(); });
+    if (meta.overview && $('ovChk').checked && !S.ov) ovJob = fetch((window.FS_PACK || 'pack/') + '' + meta.overview.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { S.ov = b; layersPop(); });
     if (!$('ovChk').checked && S.ov) { S.ov = null; if (S.big) toggleBig(); }
     if (!todo.length) { return ovJob.then(function () { chip(); dataTable(); $('dlNote').textContent = 'Up to date.'; }); }
     busy('');
@@ -258,8 +258,8 @@
         return all(function () { return { msg: { type: 'drop', kind: L.kind, lid: L.id } }; });
       }
       var v = L[c];
-      var runs = v.runs ? fetch('pack/' + v.runs).then(function (r) { return r.json(); }) : Promise.resolve(null);
-      return Promise.all([fetch('pack/' + v.file).then(function (r) { if (!r.ok) throw new Error(L.name + ' did not download'); return r.arrayBuffer(); }), runs]).then(function (two) {
+      var runs = v.runs ? fetch((window.FS_PACK || 'pack/') + '' + v.runs).then(function (r) { return r.json(); }) : Promise.resolve(null);
+      return Promise.all([fetch((window.FS_PACK || 'pack/') + '' + v.file).then(function (r) { if (!r.ok) throw new Error(L.name + ' did not download'); return r.arrayBuffer(); }), runs]).then(function (two) {
         var buf = two[0], spec = Object.assign({ kind: L.kind, id: L.id, name: L.name }, v); if (two[1]) spec.druns = two[1];
         FSRouter.addLayer(P, spec, buf); S.loaded[L.id] = c; (S.gotAt = S.gotAt || {})[L.id] = Date.now(); dlDone++; dlGot += buf.byteLength; dlShow();
         return all(function () { var copy = buf.slice(0); return { msg: { type: 'layer', L: spec, buf: copy }, tr: [copy] }; });
@@ -301,7 +301,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = 'Route v0.12.30 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.31 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -595,7 +595,7 @@
     return { blend: store('nav-blend') === '1', models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
       sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, margin: +($('margin') ? $('margin').value : 1), nogo: nogoRings(), maxHours: HMAX() + 2, tackS: +$('tackS').value, gybeS: +$('gybeS').value, adj: adjVals(), tideWind: $('tideWind') ? $('tideWind').checked : true, polZ: polZ(), stab: $('stabOn') ? $('stabOn').checked : true };
   }
-  /* the height the polar's wind speeds refer to: 10 m (ORC, designers, FirstShift and Navigate's learned polars) or the masthead (D, 14 Nov 2026) */
+  /* the height the polar's wind speeds refer to: 10 m (ORC, designers, FirstShift and Route+'s learned polars) or the masthead (D, 14 Nov 2026) */
   function polZ() { var z = $('polZ') && $('polZ').value === 'mast' ? +$('mastZ').value : 10; return z > 0 ? z : 10; }
   /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
   var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60], ['adjTdir', 'tdir', '°', 1]];
@@ -710,7 +710,8 @@
       }
       if (my) setTimeout(function () { openMy(my, true); if (last && last.start && [].some.call($('startSel').options, function (o) { return o.value === last.start; })) { $('startSel').value = last.start; } }, 0);
       if (qs.get('view')) setTimeout(function () { viewOpen(qs.get('view')); }, 1500);   /* a crew phone opens on the navigator's page */
-      if (qs.get('new')) { setTimeout(function () { startEdit(null); }, 400); } else wizBoot(qs);
+      if (window.FS_SOLENT) { setTimeout(function () { if (!S.inshore) { window.__fsInshore(true); if (window.FSSolent) { FSSolent.on(true); FSSolent.start(); } } }, my ? 1500 : 200); }   /* FirstShift Solent opens straight into inshore racing: the last course, or the course card */
+      else if (qs.get('new')) { setTimeout(function () { startEdit(null); }, 400); } else wizBoot(qs);
       if (S.pendingCourse) { applyCourseObj(asRace(S.pendingCourse)); S.pendingCourse = null; }
       var linkSt = QS0.get('start'), fromLink = S.pendingStart && linkSt === S.pendingStart;
       if (S.pendingStart && [].some.call($('startSel').options, function (o) { return o.value === S.pendingStart; })) $('startSel').value = S.pendingStart;
@@ -931,7 +932,7 @@
     document.addEventListener('click', function (e) { if (!$('spdMenu').hidden && !$('spdMenu').contains(e.target)) $('spdMenu').hidden = true; }); $('speed').addEventListener('change', spdLabel); spdLabel(); $('followBtn').onclick = function () { followSet(!follow); }; followSet(follow); }
   /* ---------- send to the crew: a summary and a link that opens the same course and start in Route ---------- */
   /* links and QR codes carry FirstShift's own address (Stuart 14 Nov, option A); the pages.dev address keeps working.
-     Navigate also runs at the pages.dev address, so its links use this too, and open in Navigate where it is installed (option C). */
+     Route+ also runs at the pages.dev address, so its links use this too, and open in Route+ where it is installed (option C). */
   function pubOrigin() { return /(^|\.)firstshift-route\.pages\.dev$|^route\.firstshiftsailing\.com$/.test(location.hostname) ? 'https://route.firstshiftsailing.com' : location.origin; }
   function crewLink() {
     var c = meta.course, base = pubOrigin() + location.pathname, st = $('startSel').value;
@@ -977,8 +978,8 @@
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.30) */
-      var b = $('updBar'); if (!b) return; b.textContent = 'Route v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.31) */
+      var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
   function crewText() {
@@ -1195,7 +1196,7 @@
   }
   function courseCopy() { var c = meta.course; return { name: c.name, start: Object.assign({}, c.start), marks: c.marks.map(function (m) { return m.via ? { name: m.name, lat: m.lat, lon: m.lon, via: true, must: !!m.must } : { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: Object.assign({}, c.finish) }; }
   function courseNm(c) { var p = [c.start].concat(c.marks).concat([c.finish]), d = 0; for (var i = 1; i < p.length; i++) d += FSRouter.dist(p[i - 1].lat, p[i - 1].lon, p[i].lat, p[i].lon); return Math.round(d); }
-  function asRace(c, id) { return { id: id || 'my', custom: true, courseStatus: 'published', name: c.name, start: c.start, marks: c.marks, finish: Object.assign({ radius_nm: 0.4 }, c.finish), nm: courseNm(c), legTide: c.legTide || null, solent: !!c.solent }; }
+  function asRace(c, id) { return { id: id || 'my', custom: true, courseStatus: 'published', name: c.name, start: c.start, marks: c.marks, finish: Object.assign({ radius_nm: 0.4 }, c.finish), nm: courseNm(c), legTide: c.legTide || null, solent: !!c.solent, solPlan: c.solPlan || null }; }   /* solPlan (Stuart 16 Nov 18:40): {route: bool, model} for a Solent race */
   function saveMyRace(name) {
     var a = myRaces(), c = courseCopy(); c.name = name || c.name;
     var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var set = snapSettings(); set.__src = src && src.src;
@@ -1210,6 +1211,7 @@
   function lastSet(o) { if (S.booting) return; var old = lastGet() || {}, same = old.race === o.race && old.my === o.my; o.start = o.start || (same ? old.start : null); o.chosen = same ? !!old.chosen : false; if (!same) { S.startChosen = false; } store('fs-last-' + HERE, JSON.stringify(o)); chipStart(); }
   function openMy(id, boot) {
     var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
+    if (window.FS_SOLENT) rec.page = HERE;   /* FirstShift Solent keeps its own races on its own page */
     if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
     if (courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
     S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); if (window.__fsPendingStart) { var pse = window.__fsPendingStart; window.__fsPendingStart = null; try { setStart(pse); startChosen(true); } catch (e) {} }   /* F17: the start time chosen in the Solent step box, so Route this race routes at once */ $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
@@ -1517,6 +1519,7 @@
     READY[HERE] = true;
     /* the race box next to the logo opens a short menu (Stuart 12 Nov): new course, saved routes, RORC races, edit */
     $('raceBtn').onclick = function (e) {
+      if (window.FS_SOLENT) { if (window.FSSolent) FSSolent.start(); return; }   /* FirstShift Solent: the race button opens the course card */
       var m = $('raceMenu'); if (!m.hidden) { m.hidden = true; return; }
       var n = myRaces().length + oldRoutes().length; $('rmSaved').textContent = '☰ Saved routes' + (n ? ' (' + n + ')' : '');
       var r = $('raceBtn').getBoundingClientRect(); m.style.left = Math.max(8, Math.min(innerWidth - 250, r.left)) + 'px'; m.style.top = (r.bottom + 6) + 'px'; m.style.bottom = ''; m.hidden = false; if (e) e.stopPropagation();
@@ -1787,7 +1790,8 @@
   window.__navAdjust = function (wdir, wspd) { [['adjWdir', wdir], ['adjWspd', wspd]].forEach(function (x) { var el = $(x[0]); if (!el) return; el.value = x[1]; if (el.oninput) el.oninput(); }); adjPill(); };
   window.__navCourse = function () { var c = meta && meta.course; if (S.cleared || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
-  window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };   /* the phone's own GPS fix, for the basic plotter */
+  window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };
+  window.__fsCog = function () { var t = (LIVE.pbuf || []).filter(function (q) { return Date.now() - q[2] < 15000; }); if (!LIVE.on || t.length < 3) return null; var a = t[0], b = t[t.length - 1], r = rhumb({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] }); return r.nm > 0.008 ? r.brg : null; };   /* the course made good over the last 15 seconds, for setting the wind from each tack */
   window.__fsRedraw = function () { draw(); };
   window.__navFollow = function (on) { if (on == null) return follow; followSet(!!on); };
   window.__navScale = function (nm) { view.s = Math.max(20, Math.min(ZMAX(), H * 0.22 / (nm / 60))); followSet(true); draw(); };   /* the boat and the next mark on screen */
@@ -2022,7 +2026,7 @@
     if (f.sog != null && f.sog > 40) f.sog = null;
     if (pv && pv.dr) { pv = LIVE.real; if (pv && (f.sog == null || f.cog == null)) { var r2 = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dt2 = (f.at - pv.at) / 3600000; if (dt2 > 0 && r2.nm / dt2 < 40) { if (f.sog == null) f.sog = r2.nm / dt2; if (f.cog == null) f.cog = r2.brg; } } if (f.acc <= 150) drEnd(f); }
     if (f.acc <= 150) { LIVE.real = f; if (!LIVE.realSaved || f.at - LIVE.realSaved > 5000) { LIVE.realSaved = f.at; store('fs-livereal', JSON.stringify({ la: f.la, lo: f.lo, at: f.at, acc: f.acc, sog: f.sog, cog: f.cog })); } }
-    LIVE.fix = f;
+    LIVE.fix = f; if (f.acc <= 50) { (LIVE.pbuf = (LIVE.pbuf || []).filter(function (q) { return f.at - q[2] < 30000; })).push([f.la, f.lo, f.at]); }   /* the last 30 seconds of good fixes, for the course made good */
     if (f.acc > 150) { LIVE.calc = null; liveShow(); draw(); return; }   /* rough network position: no tail, no plan sums */
     /* the long tail: a point every 10 s (or 50 m), about 8 hours, kept on the phone so it survives closing Route */
     var lt = LIVE.trail[LIVE.trail.length - 1];
@@ -2031,7 +2035,7 @@
     try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();
   }
   /* ---- dead reckoning: no GPS fix for DRT seconds, so the boat carries on from the last good fix ----
-     Velocity: Navigate's instruments (true heading and log speed, window.__navDR) with the forecast tidal stream added, while they
+     Velocity: Route+'s instruments (true heading and log speed, window.__navDR) with the forecast tidal stream added, while they
      are fresh; otherwise the last course and speed over the ground from the GPS (which already includes the tide). The circle of
      doubt grows with the distance run: 0.05 nm plus a share of it, 10% unless set otherwise in the Course tab (5 to 25%). Nothing is added to the GPS trail; the reckoned track is kept apart. */
   function drAfter() { return ($('gpsMode') && $('gpsMode').value === 'battery' ? 45 : 10) * 1000; }
@@ -2047,7 +2051,7 @@
     return null;
   }
   /* a Mac or PC has no GPS: its Wi-Fi position comes every half minute or so, and each gap started and ended the reckoning with a beep
-     (Stuart 16 Nov 15:47: "route on mac is giving two beeps every 30sec"). Quiet on a computer; phones, tablets and Navigate still beep. */
+     (Stuart 16 Nov 15:47: "route on mac is giving two beeps every 30sec"). Quiet on a computer; phones, tablets and Route+ still beep. */
   function drQuiet() { try { return !window.__navDR && !matchMedia('(any-pointer: coarse)').matches && !('ontouchstart' in window); } catch (e) { return false; } }
   function drTick() {
     if (!LIVE.on) return; var r = LIVE.real, now = Date.now();
@@ -2072,7 +2076,9 @@
   window.__fsBurn = function () { var p = LIVE.calc && LIVE.calc.pre; return p && p.line && p.line.burn != null ? p.line.burn : null; };   /* time to burn at the start, for the deck screen */
   /* for the Solent race builder (solent.js, Stuart 15 Nov): route a built course as one of My races, the safety depth, and the
      forecast wind at a place and time (true, from), from the models the set-up card would use */
-  window.__fsUseCourse = function (c) { archiveRoutes(); var a = myRaces(), rg = regionFor(c), rec = { id: 'r' + Date.now().toString(36), name: c.name, page: rg ? rg.id : HERE, course: c, settings: snapSettings(), savedAt: Date.now(), summary: '' };
+  window.__fsSolPlan = function (plan) { if (!meta || !meta.course || !meta.course.race) return; meta.course.race.solPlan = plan; if (S.myId) { var a = myRaces(); a.forEach(function (x) { if (x.id === S.myId && x.course) x.course.solPlan = plan; }); setMyRaces(a); } S.routes = []; S.sel = null; run(); };
+  window.__fsClearCourse = function () { S.gen = (S.gen || 0) + 1; S.running = false; busy(''); prog(''); LIVE.mk = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; S.cleared = true; sessDrop(); if ($('finBox')) $('finBox').innerHTML = ''; if ($('runNote')) $('runNote').textContent = ''; draw(); };   /* Solent: clear the chart for the next course; the course stays in Saved races */
+  window.__fsUseCourse = function (c) { archiveRoutes(); var a = myRaces(), rg = regionFor(c), rec = { id: 'r' + Date.now().toString(36), name: c.name, page: window.FS_SOLENT ? HERE : rg ? rg.id : HERE, course: c, settings: snapSettings(), savedAt: Date.now(), summary: '' };
     a.unshift(rec); setMyRaces(a); openMy(rec.id); return rec.id; };
   /* Inshore Solent racing (Stuart 16 Nov 08:00): "the top left name should change to Solent race and if any routing for an offshore race
      is on screen this should be saved away so the map is clear. If you want to go back to offshore race you can toggle this. So you have a
@@ -2127,7 +2133,7 @@
   window.__fsMarksSet = function (a) { myMarksSet(a); draw(); };
   window.__fsTimeH = function () { return S.t; };
   window.__fsWindAt = function (la, lo, ep) { try { var W = FSRouter.windSampler(P0(), cardModels())(la, lo, ((ep || Date.now() / 1000) - T0) / 3600); return W && W[0] === W[0] ? { tws: W[0], twd: W[1] } : null; } catch (e) { return null; } };   /* for the reopen test */
-  window.__fsDR = function () { var f = LIVE.fix; return { on: drOn(), active: !!(f && f.dr), fix: f && f.dr ? { la: f.la, lo: f.lo, sog: f.sog, cog: f.cog, run: f.run, rad: f.rad, src: f.src, since: f.since } : null, last: LIVE.drLast || null, msg: LIVE.drMsg || null }; };   /* for Navigate and the automatic tests */
+  window.__fsDR = function () { var f = LIVE.fix; return { on: drOn(), active: !!(f && f.dr), fix: f && f.dr ? { la: f.la, lo: f.lo, sog: f.sog, cog: f.cog, run: f.run, rad: f.rad, src: f.src, since: f.since } : null, last: LIVE.drLast || null, msg: LIVE.drMsg || null }; };   /* for Route+ and the automatic tests */
   /* the heading that makes good bearing B through the water and tide, and the speed over the ground it gives; on a beat or a run, the best VMG */
   function liveSteer(B, tws, twd, cu, cv, spd) {
     var best = null, vmg = null;
@@ -2137,11 +2143,13 @@
   }
   /* start-line tools (Stuart 12 Nov): ping each end with the phone's GPS; distance to the line, time to it, time to burn, favoured end */
   function lineKey() { return 'fs-line-' + raceKey(); }
-  function lineGet() { try { return JSON.parse(store(lineKey()) || 'null') || {}; } catch (e) { return {}; } }
+  function lineGet() { try { var l = JSON.parse(store(lineKey()) || 'null'); if ((!l || (!l.boat && !l.pin)) && S.inshore) l = JSON.parse(store('fs-line-solent') || 'null'); return l || {}; } catch (e) { return {}; } }   /* Solent (18:40): the start line is kept from one course to the next */
+  window.__fsSetLine = function (end, la, lo) { var l = lineGet(); if (la == null) delete l[end]; else l[end] = [+la.toFixed(6), +lo.toFixed(6), Date.now(), 0]; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); try { if (LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {} draw(); };
+  window.__fsLine = function () { return lineGet(); };
   /* J3 (Stuart 15 Nov): the ping is where the bow is: the GPS position moved forward by the bow offset along the heading (the boat's
-     compass in Navigate, else the course over the ground when moving) */
+     compass in Route+, else the course over the ground when moving) */
   function bowPos(f) { var d = +(($('bowOff') || {}).value || 0); if (!(d > 0)) return [f.la, f.lo, null]; var h = null; try { if (window.__navHdg) h = window.__navHdg(); } catch (e) {} if (h == null && f.sog > 0.5 && f.cog != null) h = f.cog; if (h == null) return [f.la, f.lo, 'no heading: GPS position used']; var n = d / 1852; return [f.la + n * Math.cos(h * R) / 60, f.lo + n * Math.sin(h * R) / (60 * Math.cos(f.la * R)), null]; }
-  function linePing(end) { var f = LIVE.fix; if (!f) return; var l = lineGet(), bp = bowPos(f); l[end] = [+bp[0].toFixed(6), +bp[1].toFixed(6), Date.now(), Math.round(f.acc || 0)]; if (bp[2]) busy('Bow offset not used: ' + bp[2] + '.'); store(lineKey(), JSON.stringify(l)); LIVE.calc = liveCalc(f); liveShow(); draw(); }
+  function linePing(end) { var f = LIVE.fix; if (!f) return; var l = lineGet(), bp = bowPos(f); l[end] = [+bp[0].toFixed(6), +bp[1].toFixed(6), Date.now(), Math.round(f.acc || 0)]; if (bp[2]) busy('Bow offset not used: ' + bp[2] + '.'); store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); LIVE.calc = liveCalc(f); liveShow(); draw(); }
   function lineCalc(f, gun) {
     var l = lineGet(); if (!l.boat || !l.pin) return { boat: l.boat, pin: l.pin };
     var la0 = (l.boat[0] + l.pin[0]) / 2, kx = Math.cos(la0 * R) * 60, xy = function (la, lo) { return [(lo - l.boat[1]) * kx, (la - l.boat[0]) * 60]; };
@@ -2240,10 +2248,29 @@
     var nx = legs[Math.min(M.i, legs.length - 1)], tg = (nx.gate && nx.gate.mark) || nx.at || nx.point;
     return { name: nx.name, n: M.i + 1, of: legs.length, finish: M.i >= legs.length - 1, to: rhumb({ lat: f.la, lon: f.lon != null ? f.lon : f.lo }, { lat: tg[0], lon: tg[1] }), side: nx.gate && nx.gate.side, last: M.done[M.done.length - 1], fresh: M.just && Date.now() - M.just < 20000 };
   }
+  /* Header or lift on a beat (Stuart 16 Nov 18:30, decided 18:40): against the wind set for the race (typed, head to wind, or the boat's
+     instruments). With instruments the wind's own shift is used; without, the boat's course over the last 20 seconds, assuming she
+     sails the same angle to the wind (42 degrees, or the polar's best upwind angle). Starboard tack: a veer is a lift; port: a back. */
+  function shiftCalc(f) {
+    var ref = window.FSSolent && FSSolent.windRef ? FSSolent.windRef() : null; if (!S.inshore || !ref || ref.twd == null) return null;
+    /* the course made good over the last 20 seconds of fixes, so one-second fixes without a heading still give it */
+    var H = LIVE.cogH = (LIVE.cogH || []).filter(function (q) { return Date.now() - q[2] < 20000; }); H.push([f.la, f.lo, Date.now()]); if (H.length < 3) return null;
+    var cm = rhumb({ lat: H[0][0], lon: H[0][1] }, { lat: f.la, lon: f.lo }); if (cm.nm < 0.008) return null; var cog = cm.brg;
+    var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {}
+    var twdNow = nw && nw[1] != null ? nw[1] : null, wd = twdNow != null ? twdNow : ref.twd, rel = ((wd - cog + 540) % 360) - 180;
+    if (Math.abs(rel) > 70 || Math.abs(rel) < 15) return { off: true };   /* only on a beat */
+    var tack = rel > 0 ? 'starboard' : 'port', BA = ref.ba || 42, d;
+    if (twdNow != null) { var sh = ((twdNow - ref.twd + 540) % 360) - 180; d = tack === 'starboard' ? sh : -sh; }
+    else d = tack === 'starboard' ? ((cog - (ref.twd - BA) + 540) % 360) - 180 : (((ref.twd + BA) - cog + 540) % 360) - 180;
+    var kind = Math.abs(d) < 3 ? 'steady' : d > 0 ? 'lift' : 'header', deg = Math.round(Math.abs(d));
+    if (kind === 'header' && deg >= 8) { if (!LIVE.hdrBeep) { LIVE.hdrBeep = true; try { liveBeep(); } catch (e) {} } } else if (deg < 3 || kind === 'lift') LIVE.hdrBeep = false;
+    return { kind: kind, deg: deg, tack: tack, src: twdNow != null ? 'the boat\'s wind' : 'your course' };
+  }
   function liveCalc(f) {
     var o = { fix: f }, nowH = (Date.now() / 1000 - T0) / 3600, s = S.sel; o.nowH = nowH;
     /* before the gun (Stuart 12 Nov): course and distance to the start and the countdown, not ahead or behind a plan that has not begun */
     var gun = +$('startSel').value; try { var fu = futureGet(); if (fu && fu.ep) gun = fu.ep; } catch (e) {}
+    try { o.shift = shiftCalc(f); } catch (e) { o.shift = null; }   /* header or lift before the gun too: crews check the shifts on the line */
     if (gun && Date.now() / 1000 < gun && meta && meta.course && meta.course.start) { o.pre = { to: rhumb({ lat: f.la, lon: f.lo }, meta.course.start), secs: gun - Date.now() / 1000, name: meta.course.start.name || 'the start' }; o.pre.line = lineCalc(f, gun); return o; }
     try { o.mark = markTrack(f); } catch (e) { o.mark = null; }
     if (!s || !s.r || !s.r.path) return o;
@@ -2295,6 +2322,8 @@
       h = '<div class="lvl lvdr lvwarn" role="alert"><b>DEAD RECKONING: no GPS for ' + age + '.</b> Carrying on ' + (f.cog != null && f.sog > 0.05 ? ('00' + Math.round(f.cog)).slice(-3) + '°T at ' + f.sog.toFixed(1) + ' kn, from the ' + f.src : f.src) + '. Position good to about ' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '. <button class="btn" id="drStop">Stop dead reckoning</button></div>'; }
     else if (LIVE.drMsg) h = '<div class="lvl lvdr">' + LIVE.drMsg + '</div>';
     if (LIVE.mini && !LIVE.big) { b.classList.toggle('drmode', !!(f && f.dr)); return; }   /* the small GPS pill: no extra lines spilling over the chart (16 Nov, seen in Stuart's Chrome) */
+    var shf = LIVE.calc && LIVE.calc.shift, osh = b.querySelector('.lvsh'); if (osh) osh.remove();
+    if (shf && !shf.off) b.insertAdjacentHTML('afterbegin', '<div class="lvl lvsh ' + shf.kind + '" role="status"><b>' + (shf.kind === 'steady' ? 'ON THE WIND' : shf.kind === 'lift' ? 'LIFT ' + shf.deg + '°' : 'HEADER ' + shf.deg + '°') + '</b> <span>' + shf.tack + ' tack, from ' + shf.src + '</span></div>');
     var mk = LIVE.calc && LIVE.calc.mark, om = b.querySelector('.lvmk'); if (om) om.remove();
     if (mk && !(LIVE.calc && LIVE.calc.pre)) { var nm1 = mk.to.nm < 0.1 ? Math.round(mk.to.nm * 1852) + ' m' : (mk.to.nm < 10 ? mk.to.nm.toFixed(1) : Math.round(mk.to.nm)) + ' nm';
       b.insertAdjacentHTML('afterbegin', '<div class="lvl lvmk"' + (mk.fresh ? ' role="status"' : '') + '>' + (mk.fresh && mk.last ? '<b class="lvok">✓ ' + escMk(mk.last.name) + ' rounded.</b> ' : '') + (mk.finish ? 'To the finish: ' : 'Next mark ' + mk.n + ' of ' + (mk.of - 1) + ': ') + '<b>' + escMk(mk.name) + '</b>' + (mk.side ? ' to ' + mk.side : '') + ' · <b>' + ('00' + Math.round(mk.to.brg)).slice(-3) + '°T ' + nm1 + '</b>' + (S.inshore ? ' <button class="btn sm" id="mkEnd" title="File the track, keep the result, clear the chart">' + (LIVE.endArm && Date.now() - LIVE.endArm < 5000 ? 'Tap again to end' : 'End race') + '</button>' : '') + (mk.finish ? '' : ' <button class="btn sm" id="mkSkip" title="Count this mark as rounded">Rounded</button>') + (LIVE.mk && LIVE.mk.i > 0 ? ' <button class="btn sm" id="mkBack" title="Go back one mark">Back</button>' : '') + '</div>');
@@ -2325,7 +2354,7 @@
         '<div class="lvx"><button class="btn lvmin" id="lvMin" aria-label="Minimise to a small pill" title="Minimise to a small pill">MIN</button><button class="btn primary" id="lvBig">Big</button><button class="btn" id="lvStop">Stop</button><button class="btn" id="lvFile" title="Keep this track in Tracks, offer it as GPX and start a fresh one">File track</button><button class="btn" id="lvClr">Clear track</button><button class="btn lvi" id="lvInfo" aria-label="What these mean" title="What these mean">i</button><span class="lvl" style="align-self:center;margin-left:auto">' + (f.dr ? '<b class="lvwarn">DR ±' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '</b>' : 'GPS ±' + Math.round(f.acc || 0) + ' m') + '</span></div>';
       $('lvMin').onclick = function () { LIVE.mini = true; LIVE.info = false; store('fs-livemini', '1'); liveShow(); followBoat(); draw(); }; $('lvInfo').onclick = function () { LIVE.info = !LIVE.info; liveShow(); }; if ($('lvInfoX')) $('lvInfoX').onclick = function () { LIVE.info = false; liveShow(); };
       $('lvStop').onclick = function () { liveStop(); }; $('lvClr').onclick = function () { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }; if ($('lvFile')) $('lvFile').onclick = function () { if (!window.FSTracks) return; var ok = FSTracks.file(LIVE.trail.slice(), (meta && meta.course && meta.course.name) || ''); if (ok) { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); } }; $('lvBig').onclick = function () { LIVE.big = true; liveShow(); };
-      $('lnBoat').onclick = function () { linePing('boat'); }; $('lnPin').onclick = function () { linePing('pin'); }; if ($('lnClr')) $('lnClr').onclick = function () { store(lineKey(), ''); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }; if ($('lnUse')) $('lnUse').onclick = function () { var l = lineGet(); if (!l.boat || !l.pin || !meta.course || !meta.course.start) return; meta.course.start = Object.assign({}, meta.course.start, { lat: +((l.boat[0] + l.pin[0]) / 2).toFixed(6), lon: +((l.boat[1] + l.pin[1]) / 2).toFixed(6), fromLine: true }); busy('Start moved to the middle of the pinged line: routing again…'); S.from = null; run(); };   /* J3: pinging each end updates the start position */
+      $('lnBoat').onclick = function () { linePing('boat'); }; $('lnPin').onclick = function () { linePing('pin'); }; if ($('lnClr')) $('lnClr').onclick = function () { store(lineKey(), ''); if (S.inshore) store('fs-line-solent', ''); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }; if ($('lnUse')) $('lnUse').onclick = function () { var l = lineGet(); if (!l.boat || !l.pin || !meta.course || !meta.course.start) return; meta.course.start = Object.assign({}, meta.course.start, { lat: +((l.boat[0] + l.pin[0]) / 2).toFixed(6), lon: +((l.boat[1] + l.pin[1]) / 2).toFixed(6), fromLine: true }); busy('Start moved to the middle of the pinged line: routing again…'); S.from = null; run(); };   /* J3: pinging each end updates the start position */
       $('liveBig').hidden = !LIVE.big; $('liveBig').classList.remove('alarm');
       if (LIVE.big) { var cl = function (k, v, sub) { return '<div><small>' + k + '</small><b>' + v + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>'; };
         $('liveBig').innerHTML = '<div class="lbg">' + cl('SOG', sog) + cl('COG', cog) + (ln.d != null ? cl(ln.over ? 'Over: course side' : 'To the line', ln.d < 0.1 ? Math.round(ln.d * 1852) + ' m' : n1(ln.d) + ' nm', ln.fav ? (ln.fav === 'pin' ? 'Pin' : 'Boat') + ' end favoured by ' + Math.round(ln.favM) + ' m' : '') + cl('Time to burn', ln.burn != null ? mmss(ln.burn) : '--', ln.ttl != null ? mmss(ln.ttl) + ' to the line at this speed' : 'not closing the line') : cl('To the start', p3(pr.to.brg), n1(pr.to.nm) + ' nm to ' + wizEsc(pr.name))) + cl('Gun in', gun, 'class start ' + clockAbs(+$('startSel').value).slice(-5) + ' UTC') + '</div><div class="lvx"><button class="btn primary" id="lbChart">Chart</button><button class="btn" id="lbStop">Stop GPS</button></div>';
@@ -2391,6 +2420,7 @@
       var rpx = Math.max(10, f.rad / 60 * view.s); ctx.save(); ctx.beginPath(); ctx.arc(X(f.lo), Y(f.la), rpx, 0, 2 * Math.PI); ctx.fillStyle = nNight ? 'rgba(138,42,32,.12)' : 'rgba(242,178,51,.14)'; ctx.fill(); ctx.setLineDash([4, 4]); ctx.strokeStyle = nNight ? '#8A2A20' : '#F2B233'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
     }
     var x = X(f.lo), y = Y(f.la);
+    var shc = c.shift; if (shc && !shc.off && shc.kind !== 'steady') { ctx.save(); var col = shc.kind === 'lift' ? '#3DDC84' : '#E5484D', tx = x + 18, ty = y - 26, lab = (shc.kind === 'lift' ? '▲ LIFT ' : '▼ HEADER ') + shc.deg + '°'; ctx.font = '700 13px Inter, sans-serif'; var tw = ctx.measureText(lab).width; ctx.fillStyle = 'rgba(10,20,30,.8)'; ctx.fillRect(tx - 4, ty - 13, tw + 8, 19); ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(lab, tx, ty + 1); ctx.restore(); }   /* header or lift beside the boat (18:40) */
     var lnd = lineGet(); if (lnd.boat || lnd.pin) { ctx.save(); ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ['boat', 'pin'].forEach(function (k) { var q = lnd[k]; if (!q) return; ctx.beginPath(); ctx.arc(X(q[1]), Y(q[0]), 5, 0, 7); ctx.fill(); ctx.fillText(k === 'boat' ? 'BOAT' : 'PIN', X(q[1]) + 8, Y(q[0]) - 6); });
       if (lnd.boat && lnd.pin) { ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(lnd.boat[1]), Y(lnd.boat[0])); ctx.lineTo(X(lnd.pin[1]), Y(lnd.pin[0])); ctx.stroke(); var lf = c.pre && c.pre.line && c.pre.line.fav; if (lf) { var q2 = lnd[lf]; ctx.fillText('FAVOURED', X(q2[1]) + 8, Y(q2[0]) + 8); } } ctx.restore(); }
     if (c.pre && !(lnd.boat && lnd.pin) && meta.course && meta.course.start) { var sx = X(meta.course.start.lon), sy = Y(meta.course.start.lat); ctx.strokeStyle = '#4CC38A'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]); }   /* before the gun: the way to the start */
@@ -2441,7 +2471,12 @@
     var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' UTC is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' UTC. Route will work out the routes once the forecasts reach the start, about ten days before. Choose an earlier start to route now.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
     S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
-    var ms = selectedModels(); if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
+    var sp = S.inshore && meta.course && meta.course.race && meta.course.race.solPlan;
+    if (sp && !sp.route && !S.from && !S.to) {   /* a Solent race without routing (Stuart 16 Nov 18:30): the course and a list of bearings and distances, no forecasts */
+      S.gen = (S.gen || 0) + 1; S.routes = []; S.sel = null; S.ghosts = []; S.legs = legsFor(null); S.running = false; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = '';
+      if ($('runNote')) $('runNote').textContent = 'Not routed: the course list shows the bearing and distance of each leg.'; try { if (window.FSSolent && FSSolent.showList) FSSolent.showList(); } catch (e) {} draw(); return; }
+    var ms = selectedModels(); if (sp && sp.route) { var pick = (sp.models && sp.models.length ? sp.models : sp.model ? [sp.model] : []).filter(function (m) { return ms.indexOf(m) >= 0; }); if (pick.length) ms = pick; }   /* FirstShift Mark routes on the models chosen, 1 to 6, plus Fixed wind (Stuart 16 Nov 19:35) */
+    if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
     var issue = courseIssue(meta.course); if (issue) { openTab('decision'); $('runNote').textContent = issue; busy(issue); setTimeout(function () { busy(''); }, 4000); return; }
     if (!S.from && !S.resumeTried) { S.resumeTried = true; var own = (!S.resume || S.resume.rk !== raceKey()) && sessFor(raceKey()); if (own) { S.resume = own; if (+own.startVal > 0) setStart(+own.startVal, true); S.startChosen = true; } }   /* first routing after opening: this race's own kept routes */
@@ -3431,12 +3466,12 @@
 /* Phone: the round chart buttons hide while a window or bar is open, and come back when it closes (Stuart 16 Nov 07:39 "be sure phone
    tools don't obscure tool windows"; 07:48 Decided "Hide while open"). Man overboard stays. */
 (function () {
-  var WINS = ['.sheet', '#tip', '#fsMeas', '#solChain', '#solSide', '#solList', '#solPick', '#solCard', '#solPop', '#tgPop', '#astroPop', '#trkCard', '#fsFilm', '#solStep', '#navPanel', '.navpanel', '#navLog', '#layers'];
+  var WINS = ['.sheet', '#tip', '#fsMeas', '#solChain', '#solSide', '#solList', '#solPick', '#solCard', '#solPop', '#tgPop', '#astroPop', '#trkCard', '#fsFilm', '#solStep', '#navPanel', '.navpanel', '#navLog', '#layers', '#solLegs'];
   var phone = window.matchMedia ? window.matchMedia('(max-width: 600px), (max-height: 500px)') : { matches: false };
   function open() { for (var i = 0; i < WINS.length; i++) { var l = document.querySelectorAll(WINS[i]); for (var j = 0; j < l.length; j++) { var e = l[j]; if (!e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden') return true; } } return false; }
   /* Screen rules (UI review step 1, 16 Nov): on any screen, a round button that an open window would cover steps out of the way
      until the window closes (Layers, the GPS window, a card) */
-  var COVER = ['#layers', '.livebox:not(.mini)', '#liveBig', '.sheet', '#tip', '#sessBox', '#errBox', '#solCard', '#trkCard'];
+  var COVER = ['#layers', '.livebox:not(.mini)', '#liveBig', '.sheet', '#tip', '#sessBox', '#errBox', '#solCard', '#trkCard', '#solLegs', '#solStep'];
   function vis(e) { if (e.hidden || !e.getClientRects().length) return false; var c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }
   function covers() { var wins = []; COVER.forEach(function (q) { [].forEach.call(document.querySelectorAll(q), function (e) { if (vis(e)) wins.push(e.getBoundingClientRect()); }); });
     [].forEach.call(document.querySelectorAll('.fabhelp'), function (f) { var was = f.classList.contains('fabcov'); if (was) f.classList.remove('fabcov'); var r = f.getBoundingClientRect(), hit = r.width > 0 && wins.some(function (w) { return Math.min(r.right, w.right) - Math.max(r.left, w.left) > 2 && Math.min(r.bottom, w.bottom) - Math.max(r.top, w.top) > 2; }); if (hit) f.classList.add('fabcov'); }); }

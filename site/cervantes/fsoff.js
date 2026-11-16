@@ -11,8 +11,8 @@
   function $(id) { return document.getElementById(id); }
   function mb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
   function fc() { try { return window.__navFc && window.__navFc(); } catch (e) { return null; } }
-  function meta() { return fetch('pack/pack.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('server'); return r.json(); }); }
-  function base() { return new URL('pack/', location.href).href; }
+  function meta() { return fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('server'); return r.json(); }); }
+  function base() { return new URL(window.FS_PACK || 'pack/', location.href).href; }
   /* the files the chosen plan needs, with their download sizes */
   function want(m, choice) {
     var out = [], b = base();

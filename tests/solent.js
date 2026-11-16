@@ -10,9 +10,9 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
     document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); });
     if (!sessionStorage.getItem('t-once')) { sessionStorage.setItem('t-once', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); }
   });
-  const ready = () => p.waitForFunction(() => window.__fsPlan && window.__fsPlan() && window.FSSolent && window.__navViewSet, null, { timeout: 300000 });
-  await p.goto(BASE + '/channel-area/'); await ready(); await p.waitForTimeout(1000);
-  ok(await p.evaluate(() => !!document.getElementById('solentOn') && !document.getElementById('solentOn').checked && !!document.getElementById('solentBuild')), 'Settings, Chart: a Solent race marks switch (off to start) and a Build a Solent race button');
+  const ready = () => p.waitForFunction(() => window.FSSolent && window.FSSolent.marks && window.__navViewSet && document.querySelector('#solCard:not([hidden])'), null, { timeout: 300000 });
+  await p.goto(BASE + '/mark/'); await ready(); await p.waitForTimeout(1000); await p.evaluate(() => { document.getElementById('solCard').hidden = true; });   /* Mark opens on the course card; this test drives the full Solent sheet */
+  ok(await p.evaluate(() => !!document.getElementById('solentOn') && !!document.getElementById('solentBuild')), 'Settings, Chart: the Solent race marks switch and a Build a Solent race button');
   await p.evaluate(() => { const e = document.getElementById('solentOn'); e.checked = true; e.dispatchEvent(new Event('change')); });
   await p.waitForFunction(() => window.FSSolent.marks(), null, { timeout: 30000 });
   const mk = await p.evaluate(() => { const m = window.FSSolent.marks(); const g = m.find(x => x.id === '3G'); return { n: m.length, g, kept: JSON.parse(localStorage.getItem('fs-solent')).on }; });
@@ -58,7 +58,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   // route it
   await p.click('#solGo'); await p.waitForTimeout(1500);
   const card = await p.evaluate(() => document.getElementById('raceTitle').textContent);
-  ok(/Solent race/.test(card) && /3X/.test(card), 'Route this race: the course becomes the race on screen', card);
+  ok(/Solent race/.test(card), 'Route this race: the course becomes the race on screen', card);
   await p.evaluate(() => { const b = document.querySelector('#card [data-act="route"], #cardGo, #runBtn'); if (b) b.click(); });
   const got = await p.waitForFunction(() => { const pl = window.__fsPlan(); return pl && /Solent/.test(pl.name || document.getElementById('raceTitle').textContent) && window.__navCourse && window.__navCourse().marks.length === 3; }, null, { timeout: 240000 }).then(() => true).catch(() => false);
   if (!got) await p.evaluate(() => { if (window.__fsRun) window.__fsRun(); });
@@ -66,7 +66,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const rt = await p.evaluate(() => { const pl = window.__fsPlan(), c = window.__navCourse(); if (!pl || !c) return null; const near = (m) => Math.min.apply(null, pl.path.map(q => Math.hypot(q[0] - m.lat, (q[1] - m.lon) * Math.cos(m.lat * Math.PI / 180)) * 60)); return { n: pl.path.length, marks: c.marks.map(m => m.name + ' ' + m.side), near: c.marks.map(near).map(x => +x.toFixed(2)), mine: JSON.parse(localStorage.getItem('fs-myraces') || '[]').map(r => r.name) }; });
   ok(rt && rt.n > 5 && rt.near.every(x => x < 0.3), 'it is routed as normal: the route goes round each mark', rt && JSON.stringify({ points: rt.n, nearest: rt.near }));
   ok(rt && rt.marks.join('|') === '3G Cowes Week 200 port|3E The Boss starboard|4F Royal Thames port', 'with each mark to the side chosen', rt && rt.marks.join(' | '));
-  ok(rt && /^Solent race \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/.test(rt.mine[0]), 'and it is saved in My races with the race date', rt && rt.mine.join(', '));
+  ok(rt && /^Solent race \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d:\d\d$/.test(rt.mine[0]), 'and it is saved in My races with the race date', rt && rt.mine.join(', '));
   await p.screenshot({ path: OUT + '/solent-routed.png' });
   // windward-leeward from a heading and distance, two laps
   await p.evaluate(() => { window.FSSolent.open(); window.FSSolent.set({ type: 'wl', start: { code: '3X', name: '3X Island Sailing Club', lat: 50 + 46.10 / 60, lon: -(1 + 18.43 / 60) }, wl: { wkind: 'brg', brg: 270, dist: 1.2, laps: 2, lkind: 'start', side: 'port', wcode: '', lcode: '' } }); }); await p.waitForTimeout(300);

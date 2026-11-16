@@ -1,4 +1,4 @@
-/* FirstShift Route: styles for the newer screens (shared with Navigate, 13 Nov 2026) */
+/* FirstShift Route: styles for the newer screens (shared with Route+, 13 Nov 2026) */
 .nrnote{font-size:13px;color:var(--brand);margin:4px 0;min-height:1em}
 /* clear screen: just the chart, MOB and MENU */
 .navmenub{display:none;min-width:64px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--brand);color:var(--panel);font:700 13px var(--f-data);letter-spacing:.06em;cursor:pointer}
@@ -19,7 +19,7 @@ body.navclear .bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:
 body.navclear .bar>.mobbtn,body.navclear .bar>.navmenub{pointer-events:auto;box-shadow:0 2px 10px rgba(0,0,0,.4)}
 body.navclear .bar>.mobbtn{width:auto;min-width:52px;height:40px;font-size:12px}
 body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px;opacity:.9}
-body.navclear .bar>.navmenub{margin-left:auto}   /* MENU on the right, as in Navigate (Stuart 15 Nov 21:16: "the menu button needs to move to the right side like navigate") */
+body.navclear .bar>.navmenub{margin-left:auto}   /* MENU on the right, as in Route+ (Stuart 15 Nov 21:16: "the menu button needs to move to the right side like navigate") */
 body.navclear .livebox{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 body.navtip .livebox{visibility:hidden}
 :root[data-night] .navtoast{border-color:#3A0A08}

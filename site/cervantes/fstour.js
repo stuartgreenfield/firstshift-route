@@ -1,8 +1,8 @@
 /* FirstShift tour: a walk round the real screen, one button at a time (Stuart 14 Nov 2026).
    Decided 14:14: "a yes no on the landing page" (asked every time), "highlight each button on screen with a more button
-   which takes them to help or more detailed explanation", Route Level 1 only, Navigate all three levels. 13:52: show new
+   which takes them to help or more detailed explanation", Route Level 1 only, Route+ all three levels. 13:52: show new
    users how to use the test modes so they get a feel for the tools, highlighted in the tour and at the top of Help.
-   Navigate adds its levels by setting window.FSTourLevels (see navtour.js); Route has Level 1 only. */
+   Route+ adds its levels by setting window.FSTourLevels (see navtour.js); Route has Level 1 only. */
 (function () {
   'use strict';
   function $(id) { return document.getElementById(id); }
@@ -25,7 +25,7 @@
     { el: '#helpBtn', t: 'Help', x: 'Everything is explained in Help, with a Listen button on each topic. Try it safely first is at the top, and you can take this tour again from there.' }
   ];
   /* Route's own preparation (F14 photo, 15 Nov 19:51: "Nothing to point at" with the menus hidden): bring the menus back from Clear
-     screen and the deck screen's MENU before the tour looks for its buttons. Navigate sets its own (navtour.js). */
+     screen and the deck screen's MENU before the tour looks for its buttons. Route+ sets its own (navtour.js). */
   function prepRoute() {
     try { if (window.NavClear && window.NavClear.on()) window.NavClear.set(false); } catch (e) {}
     try { if (document.body.classList.contains('fsdeck') && !document.body.classList.contains('fsdeckmenu')) document.body.classList.add('fsdeckmenu'); } catch (e) {}
@@ -100,7 +100,7 @@
     card.innerHTML = '<h4>Show me round</h4><p>Choose where to start. Each level takes a couple of minutes.</p><div class="fst-lv">' + L.map(function (l) { return '<button data-fst="lv' + l.n + '"><b>Level ' + l.n + ': ' + l.name + '</b><span>' + (l.note || '') + '</span></button>'; }).join('') + '</div><div class="fst-b"><button class="fst-end" data-fst="end">Not now</button></div>';
     card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
   }
-  function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; T.waits = 0; build().hidden = false; prep();   /* Navigate: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
+  function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; T.waits = 0; build().hidden = false; prep();   /* Route+: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
   function end() { T.on = false; T.paused = false; if (T.root) T.root.hidden = true; try { if (T.lv && T.lv.after) T.lv.after(); } catch (e) {} }
   function finish() {
     var L = levels(), nx = L.filter(function (l) { return T.lv && l.n === T.lv.n + 1; })[0];
@@ -131,9 +131,9 @@
 
 
   /* the how-to film (Stuart 14 Nov 19:11): a thumbnail on the landing page opens a larger player with Go to the tool and End;
-     also a Watch button in Help. Navigate sets window.FSFilmCfg in navtour.js. */
+     also a Watch button in Help. Route+ sets window.FSFilmCfg in navtour.js. */
   function filmCfg() { return window.FSFilmCfg || { tool: 'Route', srcs: ['https://video.wixstatic.com/video/d74d0c_b0d924a6b582446198770eb18f032e10/720p/mp4/file.mp4', '../films/route-how-to.mp4'], poster: '../films/route-how-to.jpg', len: '1 min 39 s' }; }   /* Wix streams on iPhones (it answers range requests); the copy on this site is the fallback */
-  /* in the Navigate app the film plays in Android's own player inside the app, with End and Go to the tool: the page's player did
+  /* in the Route+ app the film plays in Android's own player inside the app, with End and Go to the tool: the page's player did
      nothing when tapped there (Stuart 15 Nov 22:27), and the phone's separate video player lost the way back (22:40) */
   function filmApp() { return !!(window.NativeLink && window.NativeLink.playFilm); }
   function filmOpen() {
@@ -148,7 +148,7 @@
   function filmGo() { filmEnd(); var sp = $('splash'); if (sp && !sp.hidden && !sp.classList.contains('terms')) { var n = $('spTourNo'); if (n) n.click(); } var h = $('help'); if (h && !h.hidden) h.hidden = true; }
   window.FSFilm = { open: filmOpen, end: filmEnd, go: filmGo };
   /* first-time guide (Stuart 14 Nov 13:52): the practice modes highlighted on the landing page. Try it safely closes the landing page
-     and starts the practice: Route plays the race on the chart; Navigate starts its practice boat (FSTryPractice, set by Navigate). */
+     and starts the practice: Route plays the race on the chart; Route+ starts its practice boat (FSTryPractice, set by Route+). */
   function tryWire() { var b = $('spTry'); if (!b || b.__on) return; b.__on = 1; b.addEventListener('click', function (e) { e.stopPropagation(); var n = $('spTourNo'); if (n) n.click(); setTimeout(function () { try { if (window.FSTryPractice) window.FSTryPractice(); else { var pl = $('play'); if (pl && pl.getAttribute('aria-label') !== 'Pause') pl.click(); } } catch (x) {} }, 900); }); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(tryWire, 0); }); else setTimeout(tryWire, 0);
   function filmWire() { var b = $('spFilm'); if (!b) return; var c = filmCfg();
