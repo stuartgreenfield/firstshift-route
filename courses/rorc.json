@@ -1,0 +1,567 @@
+{
+ "note": "RORC races in the FirstShift Route area. Until RORC publishes a 2027 course, each race carries its last published course and the app warns that it will change. Positions are approximate charted positions of the named features, for routing only: check the sailing instructions. Rounding sides marked assumed are FirstShift's assumption.",
+ "updated": "2026-11-11",
+ "races": [
+  {
+   "id": "cervantes",
+   "name": "Cervantes Trophy Race",
+   "date2027": "2027-05-02",
+   "dateSource": "charter listing, not yet confirmed by RORC",
+   "courseYear": 2026,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port",
+     "sideAssumed": true
+    }
+   ],
+   "finish": {
+    "name": "Finish, Le Havre",
+    "lat": 49.49673,
+    "lon": 0.07658,
+    "radius_nm": 0.4
+   },
+   "nm": 110,
+   "source": "https://racing.rorc.org/rorc-offshore-racing-returns-to-europe-04-2026",
+   "region": {
+    "s": 48.9,
+    "n": 51.2,
+    "w": -2.8,
+    "e": 1.2
+   }
+  },
+  {
+   "id": "myth",
+   "name": "Myth of Malham Race",
+   "date2027": "2027-05-23",
+   "dateSource": "charter listing, not yet confirmed by RORC",
+   "courseYear": 2026,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port",
+     "sideAssumed": true
+    },
+    {
+     "name": "Eddystone Lighthouse",
+     "lat": 50.1803,
+     "lon": -4.265,
+     "side": "port",
+     "sideSource": "Stuart Greenfield, 11 Nov 2026"
+    }
+   ],
+   "finish": {
+    "name": "Finish, North Head buoy",
+    "lat": 50.7115,
+    "lon": -1.592,
+    "radius_nm": 0.3,
+    "source": "SCRA 2026 Solent race marks list, 1K North Head G 50 42.69N 01 35.52W"
+   },
+   "nm": 235,
+   "source": "https://www.yachtsandyachting.com/news/296303/RORC-Myth-of-Malham-Race-preview",
+   "page": "channel-area"
+  },
+  {
+   "id": "deguingand",
+   "name": "De Guingand Bowl Race",
+   "date2027": "2027-05-30",
+   "dateSource": "charter listing, not yet confirmed by RORC",
+   "courseYear": 2026,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Solent",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://rorc.org/2026-rorc-racing-programme-unleashed",
+   "setNote": "Course chosen by the race officer from Channel marks and published shortly before the start. Enter it under Course, Edit marks.",
+   "page": "channel-area"
+  },
+  {
+   "id": "northsea",
+   "name": "North Sea Race",
+   "date2027": null,
+   "dateSource": "2027 date not yet published (15 May in 2026)",
+   "courseYear": 2026,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, off Harwich (approximate: check the sailing instructions)",
+    "lat": 51.93,
+    "lon": 1.4
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Scheveningen",
+    "lat": 52.105,
+    "lon": 4.255,
+    "radius_nm": 0.4
+   },
+   "nm": 165,
+   "source": "https://racing.rorc.org/-2026-rorc-north-sea-race-tides-tactics-and-tradition",
+   "setNote": "The 2026 course passed Smith's Knoll; any marks are in the sailing instructions.",
+   "page": "northsea-area"
+  },
+  {
+   "id": "morgan",
+   "name": "Morgan Cup Race",
+   "date2027": "2027-06-12",
+   "dateSource": "charter listing, not yet confirmed by RORC",
+   "courseYear": 2026,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port",
+     "sideAssumed": true
+    }
+   ],
+   "finish": {
+    "name": "Finish, off the Dart",
+    "lat": 50.333,
+    "lon": -3.552,
+    "radius_nm": 0.4
+   },
+   "nm": 110,
+   "source": "https://racing.rorc.org/-salcombe-gin-morgan-cup-race-channel-sprint-to-dartmouth",
+   "setNote": "RORC gave 110 to 160 nm in 2026, so marks may be added.",
+   "page": "channel-area"
+  },
+  {
+   "id": "dinard",
+   "name": "Cowes Dinard St Malo Race",
+   "date2027": "2027-07-03",
+   "dateSource": "charter listing, not yet confirmed by RORC",
+   "courseYear": 2026,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port",
+     "sideAssumed": true
+    }
+   ],
+   "finish": {
+    "name": "Finish, off St Malo",
+    "lat": 48.672,
+    "lon": -2.081,
+    "radius_nm": 0.4
+   },
+   "nm": 150,
+   "source": "https://rorc.org/2026-rorc-racing-programme-unleashed",
+   "page": "channel-area"
+  },
+  {
+   "id": "fastnet",
+   "name": "Rolex Fastnet Race",
+   "date2027": "2027-07-24",
+   "dateSource": "charter listing, not yet confirmed by RORC",
+   "courseYear": 2025,
+   "courseStatus": "last-edition",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port",
+     "sideAssumed": true
+    },
+    {
+     "name": "Fastnet Rock",
+     "lat": 51.38917,
+     "lon": -9.60317,
+     "side": "port",
+     "sideAssumed": false
+    },
+    {
+     "name": "Bishop Rock (Isles of Scilly to port)",
+     "lat": 49.8724,
+     "lon": -6.4453,
+     "side": "port",
+     "sideAssumed": false,
+     "note": "SI: leave the Isles of Scilly, including all rocks and islets within 8 nm of Peninnis Head Lt, to port"
+    }
+   ],
+   "finish": {
+    "name": "Finish, Cherbourg",
+    "lat": 49.677,
+    "lon": -1.66,
+    "radius_nm": 0.4
+   },
+   "nm": 695,
+   "source": "https://rolexfastnetrace.com/files/downloads/RFR%202025%20Sailing%20Instructions.pdf",
+   "setNote": "Biennial: the course and keep-out boxes are from the 2025 sailing instructions (Appendix A and B). The Scilly boxes are not yet entered; traffic separation schemes come with the TSS layer.",
+   "obstructions": [
+    {
+     "name": "Fastnet Rock keep-out",
+     "poly": [
+      [
+       51.35167,
+       -9.61
+      ],
+      [
+       51.38167,
+       -9.455
+      ],
+      [
+       51.285,
+       -9.41
+      ],
+      [
+       51.2575,
+       -9.565
+      ]
+     ]
+    },
+    {
+     "name": "Off Land's End",
+     "poly": [
+      [
+       50.33383,
+       -6.08433
+      ],
+      [
+       50.33383,
+       -5.82633
+      ],
+      [
+       50.0165,
+       -5.82633
+      ],
+      [
+       49.89233,
+       -6.08433
+      ]
+     ]
+    },
+    {
+     "name": "Casquets",
+     "poly": [
+      [
+       50.05833,
+       -2.95667
+      ],
+      [
+       50.14333,
+       -2.47167
+      ],
+      [
+       49.855,
+       -2.35167
+      ],
+      [
+       49.77167,
+       -2.83833
+      ]
+     ]
+    }
+   ],
+   "bandVia": [
+    [
+     50.7769,
+     -1.3051
+    ],
+    [
+     50.6373,
+     -1.6497
+    ],
+    [
+     50.4,
+     -2.45
+    ],
+    [
+     50.1,
+     -3.6
+    ],
+    [
+     49.85,
+     -5.2
+    ],
+    [
+     50.05,
+     -5.95
+    ],
+    [
+     51.3891,
+     -9.6033
+    ],
+    [
+     49.8724,
+     -6.4453
+    ],
+    [
+     49.677,
+     -1.66
+    ]
+   ],
+   "bandMax": 35,
+   "hours": 240,
+   "fleet": [
+    {
+     "name": "Sunrise",
+     "model": "JPK 11.80",
+     "tcc": 1.098,
+     "start": null,
+     "irc": true,
+     "cls": [
+      "IRC 2"
+     ],
+     "track": [],
+     "crew": "fully crewed, 450 kg"
+    }
+   ],
+   "fleetNote": "Demo: Sunrise only. TCC 1.098 confirmed by Stuart 11 Nov 2026; fully crewed, 450 kg crew.",
+   "bandNear": 1,
+   "region": {
+    "s": 48.0,
+    "n": 52.8,
+    "w": -12.5,
+    "e": -0.3
+   }
+  },
+  {
+   "id": "channel",
+   "name": "Channel Race",
+   "date2027": null,
+   "dateSource": "2027 date not yet published (25 July in 2026)",
+   "courseYear": 2026,
+   "courseStatus": "set-on-day",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Solent",
+    "lat": 50.7769,
+    "lon": -1.3051,
+    "radius_nm": 0.4
+   },
+   "nm": null,
+   "source": "https://rorc.org/proven-campaigns-set-for-rorc-channel-race-showdown",
+   "setNote": "RORC publishes the full course the evening before (17:00 Friday in 2026). Enter it under Course, Edit marks.",
+   "page": "channel-area"
+  },
+  {
+   "id": "cherbourg",
+   "name": "Cherbourg Race",
+   "date2027": null,
+   "dateSource": "2027 date not yet published (4 September in 2026)",
+   "courseYear": 2026,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port",
+     "sideAssumed": true
+    }
+   ],
+   "finish": {
+    "name": "Finish, Cherbourg",
+    "lat": 49.677,
+    "lon": -1.66,
+    "radius_nm": 0.4
+   },
+   "nm": 75,
+   "source": "https://afloat.ie/sail/sailing-clubs/royal-ocean-racing-club/item/72826-rorc-cherbourg-race-to-decide-three-offshore-championships",
+   "page": "channel-area"
+  }
+ ],
+ "later": [
+  {
+   "name": "Round Ireland Race",
+   "why": "Round-island course (Wicklow, 704 nm): needs the course editor's round-an-island leg."
+  },
+  {
+   "name": "Round Britain and Ireland Race",
+   "why": "Next edition 2030; round-island course."
+  }
+ ],
+ "regions": [
+  {
+   "id": "channel-area",
+   "name": "English Channel",
+   "region": {
+    "s": 48.0,
+    "n": 51.2,
+    "w": -6.5,
+    "e": 2.5
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, RYS line, Cowes",
+    "lat": 50.7769,
+    "lon": -1.3051
+   },
+   "marks": [
+    {
+     "name": "Needles Fairway",
+     "lat": 50.63733,
+     "lon": -1.64967,
+     "side": "port"
+    }
+   ],
+   "finish": {
+    "name": "Finish, Cherbourg",
+    "lat": 49.677,
+    "lon": -1.66,
+    "radius_nm": 0.4
+   },
+   "note": "Forecasts for the whole Channel from Land's End to Dover: every RORC Channel race and any course of your own inside the box routes here."
+  },
+  {
+   "id": "celtic-area",
+   "name": "Celtic Sea and Western Approaches",
+   "region": {
+    "s": 48.0,
+    "n": 52.6,
+    "w": -12.0,
+    "e": -2.0
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, off Plymouth breakwater (example)",
+    "lat": 50.315,
+    "lon": -4.155
+   },
+   "marks": [
+    {
+     "name": "Fastnet Rock",
+     "lat": 51.38917,
+     "lon": -9.60317,
+     "side": "port",
+     "sideAssumed": false
+    }
+   ],
+   "finish": {
+    "name": "Finish, off Plymouth breakwater (example)",
+    "lat": 50.32,
+    "lon": -4.14,
+    "radius_nm": 0.4
+   },
+   "note": "Forecasts for the whole box from Ushant and north Brittany to the south coast of Ireland, out past Fastnet Rock, overlapping the western Channel. The example course is Plymouth round Fastnet Rock and back; any course of your own inside the box routes here."
+  },
+  {
+   "id": "northsea-area",
+   "name": "Southern North Sea",
+   "region": {
+    "s": 50.8,
+    "n": 55.0,
+    "w": 0.0,
+    "e": 6.5
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, off Harwich",
+    "lat": 51.93,
+    "lon": 1.4
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Scheveningen",
+    "lat": 52.105,
+    "lon": 4.255,
+    "radius_nm": 0.4
+   },
+   "note": "Forecasts for the southern North Sea: the North Sea Race and any course of your own inside the box."
+  },
+  {
+   "id": "irishsea-area",
+   "name": "Irish Sea",
+   "region": {
+    "s": 51.2,
+    "n": 56.0,
+    "w": -8.0,
+    "e": -2.5
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, Pwllheli Fairway buoy",
+    "lat": 52.8833,
+    "lon": -4.3833
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Dun Laoghaire East Pier",
+    "lat": 53.3024,
+    "lon": -6.1271,
+    "radius_nm": 0.4
+   },
+   "note": "Forecasts for the whole Irish Sea from St George's Channel to the North Channel. The example course is Pwllheli to Dun Laoghaire; any course of your own inside the box routes here."
+  },
+  {
+   "id": "biscay-area",
+   "name": "Bay of Biscay",
+   "region": {
+    "s": 43.0,
+    "n": 48.8,
+    "w": -10.5,
+    "e": -0.8
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start, off Les Pierres Noires light",
+    "lat": 48.3112,
+    "lon": -4.9145
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Torre de Hercules, A Coruna",
+    "lat": 43.3859,
+    "lon": -8.4065,
+    "radius_nm": 1.0
+   },
+   "note": "Forecasts for the Bay of Biscay from Ushant to Cape Finisterre and the French coast to the Gironde. The example course is Brest to A Coruna; any course of your own inside the box routes here."
+  }
+ ]
+}
