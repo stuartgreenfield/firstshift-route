@@ -1,0 +1,100 @@
+{
+ "at": "2026-11-17T22:17:04.468Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 15,
+   "note": "Routed in 8.8 s. First answer in 3.5 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 26,
+   "note": "Routed in 8.7 s. First answer in 2.9 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 36,
+   "note": "Routed in 7.4 s. First answer in 2.1 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 46,
+   "note": "Routed in 7.2 s. First answer in 2.1 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 55,
+   "note": "Routed in 7.0 s. First answer in 1.9 s."
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 62,
+   "note": "Routed in 6.1 s. First answer in 1.6 s."
+  },
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 30,
+   "note": "Routed in 21.3 s. First answer in 6.3 s."
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 55,
+   "note": "Routed in 19.6 s. First answer in 4.9 s."
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 79,
+   "note": "Routed in 19.7 s. First answer in 4.7 s."
+  },
+  {
+   "race": "deguingand",
+   "stopped": "page.waitForFunction: Timeout 1500000ms exceeded.",
+   "s": 1500
+  },
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 17,
+   "note": "Routed in 10.6 s. First answer in 4.5 s."
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 31,
+   "note": "Routed in 11.1 s. First answer in 2.9 s."
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 46,
+   "note": "Routed in 11.0 s. First answer in 2.9 s."
+  },
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 20,
+   "note": "Routed in 10.9 s. First answer in 6.5 s."
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 36,
+   "note": "Routed in 11.7 s. First answer in 4.0 s."
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 51,
+   "note": "Routed in 10.3 s. First answer in 4.7 s."
+  }
+ ]
+}
