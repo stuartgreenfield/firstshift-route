@@ -372,7 +372,7 @@
       c.hidden = false; $('solCardX').onclick = function () { c.hidden = true; }; $('solCardE').onclick = function () { c.hidden = true; wzOpen(wzSteps().length); toast('Editing the course of the race under way.'); }; $('solCardN').onclick = function () { c.hidden = true; B.ended = Date.now(); saveB(); newCourse(); }; return; }   /* M15 (Stuart 17 Nov 05:41): after the start, the course changes only through Edit course */
     c.hidden = false; $('solCardX').onclick = function () { c.hidden = true; };
     if (!B.plan) B.plan = 'list';
-    $('solCardM').onclick = function () { c.hidden = true; B.type = 'marks'; B.marks = []; B.legTide = []; B.fin = 'start'; B.finish = null; saveB(); wzOpen(1); };
+    $('solCardM').onclick = function () { c.hidden = true; B.type = 'marks'; B.marks = []; B.legTide = []; B.fin = 'start'; B.finish = null; if (window.FS_MARK) B.sk = 'line'; saveB(); wzOpen(1); };   /* Mark: a start line by default, as most inshore races start */
     $('solCardW').onclick = function () { c.hidden = true; B.type = 'wl'; B.legTide = []; if (window.FS_MARK && !B.wl.wset) { B.wl.wkind = 'buoy'; B.wl.lkind = 'pt'; B.wl.wset = 1; } if (window.FS_MARK) B.sk = 'line'; saveB(); wzOpen(1); };   /* Mark (Stuart 05:49): tap a buoy, then a point anywhere, then the start line */
     if ($('solCardT')) $('solCardT').onclick = function () { c.hidden = true; testStart(); };
     if ($('solCardOld')) $('solCardOld').onclick = function () { c.hidden = true; wzOpen(wzSteps().length); };
