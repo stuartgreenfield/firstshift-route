@@ -500,7 +500,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 .fabhelp{right:12px}.fabhelp.fabhere{right:66px}
 .tabs{min-width:0}.tabs .tab{flex:1 1 0;min-width:0;overflow:hidden}.tabs #panelX{flex:none}
 .livebox{bottom:10px}
-#astroLine{max-width:calc(100% - 128px);overflow:hidden;text-overflow:ellipsis}   /* the sun and moon line never reaches man overboard */   /* the chart ends above the bottom bar, which already keeps clear of the home bar */
+#astroLine{width:max-content;max-width:calc(100% - 24px);white-space:normal;text-align:center}   /* the sun and moon line never reaches man overboard */   /* the chart ends above the bottom bar, which already keeps clear of the home bar */
 </style>
 
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
@@ -680,7 +680,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.39</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.40</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -909,6 +909,7 @@ A4, 125, 180, 18, 60</textarea>
 <script src="astro.js"></script>
 <script src="tidegate.js"></script>
 <script src="markhelp.js"></script>
+<script src="startcoach.js"></script>
 <script src="helpfind.js"></script>
 <script src="fstour.js"></script>
 <script src="fsdemo.js"></script>
