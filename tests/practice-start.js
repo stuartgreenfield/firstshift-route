@@ -1,4 +1,4 @@
-/* Practice: off when the app opens, starts from the phone's position (nearest water), shows the PRACTICE label */
+/* Practice: starts from the phone's position (nearest water), shows the PRACTICE label, overrides GPS = Phone, carries on after a quick restart, is off after a long gap */
 const { chromium, devices } = require('playwright');
 (async () => { const b = await chromium.launch(); let pass = 0, fail = 0; const ok = (n, v, d) => { console.log((v ? 'PASS ' : 'FAIL ') + n + (d ? ' | ' + d : '')); v ? pass++ : fail++; };
   const c = await b.newContext({ ...devices['Galaxy Tab S4'], serviceWorkers: 'block', geolocation: { latitude: 50.9097, longitude: -1.4044, accuracy: 10 }, permissions: ['geolocation'] });   /* Southampton, ashore */
@@ -7,6 +7,7 @@ const { chromium, devices } = require('playwright');
   await p.evaluate(() => { const b = document.getElementById('liveBtn') || [...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'GPS'); b && b.click(); }); await p.waitForTimeout(4000);
   ok('phone fix', await p.evaluate(() => !!window.__fsLiveFix()), JSON.stringify(await p.evaluate(() => { const f = window.__fsLiveFix(); return f && [f.la, f.lo]; })));
   await p.evaluate(() => { document.getElementById('navBoatBtn').click(); }); await p.waitForTimeout(800);
+  await p.evaluate(() => { const g = document.querySelector('[data-gps="phone"]'); if (g) g.click(); }); await p.waitForTimeout(400);
   await p.evaluate(() => { const cb = document.getElementById('navPrac'); cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }); await p.waitForTimeout(500);
   await p.evaluate(() => { const b = [...document.querySelectorAll('#navPanel button')].find(x => /^Connect/i.test(x.textContent.trim())); b && b.click(); }); await p.waitForTimeout(3000);
   const st = await p.evaluate(() => { const t = document.getElementById('navPracTag'); const bt = window.__navBoat && window.__navBoat(); return { tag: t && !t.hidden ? t.textContent : null, boat: bt && [bt.lat, bt.lon] }; });
@@ -14,5 +15,11 @@ const { chromium, devices } = require('playwright');
   await p.screenshot({ path: '/tmp/claude-0/ui/prac.png' });
   await p.reload(); await p.waitForFunction(() => window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(6000);
   const st2 = await p.evaluate(() => { const t = document.getElementById('navPracTag'); return { tag: !!(t && !t.hidden), cfg: Object.keys(localStorage).filter(k => /nav/i.test(k)).map(k => k + '=' + (localStorage.getItem(k) || '').slice(0, 0)).length, prac: (document.getElementById('navPrac') || {}).checked }; });
-  ok('after reopening: practice not running', !st2.tag && !st2.prac, JSON.stringify(st2));
+  ok('quick restart (under 15 min): practice carries on', st2.tag, JSON.stringify(st2));
+  const fixNow = await p.evaluate(() => { const f = window.__fsLiveFix && window.__fsLiveFix(); const b = window.__navBoat && window.__navBoat(); return { boat: b && [b.lat, b.lon], gpsMode: window.__navGpsDbg ? window.__navGpsDbg().mode : null }; });
+  ok('GPS set to Phone: the practice boat is still the position', fixNow.boat && Math.abs(fixNow.boat[0] - 50.9097) > 0.002, JSON.stringify(fixNow));
+  await p.evaluate(() => { for (const k of Object.keys(localStorage)) { try { const o = JSON.parse(localStorage.getItem(k)); if (o && typeof o === 'object' && 'pracAt' in o) { o.pracAt = Date.now() - 20 * 60000; localStorage.setItem(k, JSON.stringify(o)); } } catch (e) {} } });
+  await p.reload(); await p.waitForFunction(() => window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(6000);
+  const st3 = await p.evaluate(() => { const t = document.getElementById('navPracTag'); return !!(t && !t.hidden); });
+  ok('after a long gap (20 min): practice off', !st3);
   ok('no page errors', !errs.length, errs.slice(0, 2).join(' | ')); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); })();

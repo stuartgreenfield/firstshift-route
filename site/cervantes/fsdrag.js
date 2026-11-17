@@ -95,8 +95,11 @@
      and a window that has not moved keeps its grip without a new search (checked again every 5 s) */
   var BC = null;
   function btnsAll() { if (!BC) BC = [].filter.call(document.querySelectorAll('button,select,a[href],[role=button],input'), function (b) { return !b.classList.contains('navgrip2') && b.getClientRects().length && !b.closest('[hidden]'); }).map(function (b) { return b.getBoundingClientRect(); }); return BC; }
+  /* 17 Nov 23:24 (Stuart's photo: dots on top of the Big numbers): no dots or tabs while a full-screen view is up */
+  function fullView() { return ['liveBig', 'navHelm', 'solStartScr'].some(function (id) { var e = $(id); return e && !e.hidden && e.getClientRects().length; }); }
   function place() {
     BC = null; var now = Date.now();
+    if (fullView() && !M.el) { Object.keys(grips).forEach(function (k) { grips[k].hidden = true; grips[k].__key = null; }); Object.keys(tabs).forEach(function (k) { tabs[k].hidden = true; }); return; }
     PANELS.forEach(function (p) { if (p[2] === 'win') tabFor(p); });
     PANELS.forEach(function (p) { if (p[2] !== 'win') return; var el = $(p[0]); if (!grips[p[0]] && el) mkGrip(p); var g = grips[p[0]]; if (!g) return;
       var v = shown(el); g.hidden = !v; if (!v) return; var r = el.getBoundingClientRect(), cx = (r.left + r.right) / 2;
