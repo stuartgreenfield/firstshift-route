@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.39';
+  var VERSION = 'FirstShift Route v0.12.40';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -305,7 +305,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.39 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.40 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -988,7 +988,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.39) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.40) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -2701,7 +2701,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
     ['Forecast models and resolution', 'Resolution is the size of the grid a model works on: the finer it is, the more of the coast it sees. UKV and AROME, at 2 to 2.5 km, see headlands, the Solent and sea breezes, but run only about two days ahead. ICON-EU at 7 km and ARPEGE at 11 km reach three to four days. The global models, ECMWF, AIFS and GFS, come at a quarter of a degree, about 28 km by 18 km here: they cannot see local effects, but they are the best guide to the big picture beyond two days. How often a model gives a value matters too: AIFS gives one only every 6 hours, so it smooths out shifts. When the models disagree, check how old each run is, trust the fine models near the coast and in the first day, and treat light winds with care, because a knot either way changes the time a lot. The list below gives the grid and time step for each source.'],
-    ['Move the GPS window', 'Settings, My set-up, Move panels. A grip appears on the GPS window: drag it where it suits you, then Done. Positions are kept for each screen size and orientation and go into My defaults. Reset positions puts them back.'],
+    ['Move the GPS window', 'Drag the small dots on any window over the chart (the GPS window, the plotter bar, the Layers box or the instrument strip) to move it; let go and it stays. It never covers a button: it slides to the nearest gap. Drag it off the left or right side, or flick it there, and it tucks away to a light blue tab on that edge, clearing the screen for the chart; tap the tab to bring it back. Settings, Window positions: Lock layout, the dots on the left, in the middle or on the right, and Reset to FirstShift layout. Positions are kept for each screen size and orientation.'],
     ['How old is each forecast', 'Under each finish time, and beside each model in Settings, Forecasts, is the time of the model run and how old it is. Runs of different ages can disagree for that reason alone. Leave out model runs older than, in Settings, Forecasts, drops stale runs from the routing; the newest runs always stay in, and ticking a model again keeps it.'],
     ['Ask Route', 'In the Plan tab, Ask Route answers set questions from the chosen route at the replay time: the next mark, the next tack or gybe, the next sail change, the biggest wind shift in the next 12 hours, and what the tide is doing. Read it out speaks the answer.'],
     ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],

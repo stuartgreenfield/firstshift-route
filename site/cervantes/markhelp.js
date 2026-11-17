@@ -148,6 +148,7 @@
     { el: '#solCardStored', before: card, t: 'Stored races', x: 'Every race you set, kept with its date and time, to open again.', help: 'Stored races' },
     { el: '#setBtn', t: 'Settings', x: 'Your boat, the safety depth, your units, and Share for the boat code that keeps the crew in step.', help: 'The crew in step' },
     { el: '#liveBtn', t: 'GPS', x: 'Turns on the phone’s GPS: ping the line ends, then the bearing and distance to every mark.', help: 'Ping the ends' },
+    { el: function () { return [].filter.call(document.querySelectorAll('.navgrip2'), function (g) { return !g.hidden && g.getClientRects().length; })[0] || null; }, alt: '#fsPlotBtn,#navPlotBtn,#liveBtn', t: 'Move or put away any window', x: 'Drag the small dots on any window over the chart, such as the plotter bar or the GPS window, to move it anywhere; let go and it stays. Drag it off the left or right side and it tucks away to a light blue tab on that edge, clearing the screen for the chart; tap the tab to bring it back. Settings, Window positions: Lock layout, and the dots on the left, middle or right.', help: 'Move the GPS window' },
     { el: '#layersBtn', t: 'Layers', x: 'What the chart shows: wind, tide, depth and the racing marks.', help: 'Charts' },
     { el: '#solCard .mkq', before: card, t: 'Help on every panel', x: 'Every panel has a question mark that opens its own Help page: the inshore race guide, in the order of a race day, with a picture and Emma reading each topic. Help is also at the top of Settings.' }
   ];
