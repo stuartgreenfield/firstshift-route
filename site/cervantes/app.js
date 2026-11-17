@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.36';
+  var VERSION = 'FirstShift Route v0.12.37';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -302,7 +302,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.36 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.37 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -985,7 +985,7 @@
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.36) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.37) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -3529,11 +3529,16 @@
      instrument strip, and the GPS window keeps to the space between them and the foot of the chart. */
   var short = window.matchMedia ? window.matchMedia('(orientation: landscape) and (max-height: 500px)') : { matches: false };
   var ORDER = ['helpBtn', 'editFab', 'oriBtn', 'navClearBtn', 'fsRulerBtn', 'fromHere', 'navCentreBtn'];
+  var FROW = { want: null, since: 0, low: false };
   var ROWM = false;   /* round buttons in a row along the foot: the small GPS pill then sits under the top bar */
   function fabRow() { var fabs = [].slice.call(document.querySelectorAll('.fabhelp')).filter(function (f) { return !f.style.translate; });
     fabs.sort(function (a, b) { var i = ORDER.indexOf(a.id), j = ORDER.indexOf(b.id); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
     var vf = fabs.filter(function (f) { return f.offsetParent; }), host = vf[0] && vf[0].offsetParent;
-    var low = !!host && host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) < 300;   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
+    var room = host ? host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) : 999, low0 = !!host && room < (ROWM ? 340 : 300);   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
+    /* Stuart 17 Nov 12:31 (iPhone, Fastnet, panel open): "The gps orange pill is jumping around". The chart's height changes as the panel
+       and the strips under the top bar come and go, and the pill flipped between the foot and the top each time. Now the change needs a
+       margin (in below 300 px, out above 340) and has to hold for a second and a half before anything moves */
+    var now0 = Date.now(); if (low0 !== FROW.want) { FROW.want = low0; FROW.since = now0; } var low = (now0 - FROW.since >= 1500 || FROW.since === 0) ? low0 : FROW.low; FROW.low = low; if (FROW.since === 0) FROW.since = 1;
     ROWM = !!(short.matches || low); if (!short.matches && !low) { fabs.forEach(function (f) { if (f.dataset.fr === '1') { f.style.removeProperty('bottom'); f.style.removeProperty('right'); delete f.dataset.fr; } }); return; }
     if (!host) return; var W = host.clientWidth, n = 0;
     var perRow = Math.max(1, Math.floor((W - 60 - 12) / 52));   /* clear of man overboard on the left */
@@ -3543,7 +3548,7 @@
       f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); }); }
   function underTop() { var y = insets().t; ['.top', '#mkTop', '#fsBadge', '#editBar', '#navStrip', '#fsPlot', '#solSeq', '#fsDemo', '#astroLine', '#errBox'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
   function liveFit() { var lb = document.getElementById('liveBox'), big = !!(lb && vis(lb) && !lb.classList.contains('mini') && short.matches); if (document.body.classList.contains('gpsbigshort') !== big) document.body.classList.toggle('gpsbigshort', big); if (!lb || !vis(lb)) return; var ut = underTop(), par = lb.offsetParent; if (!par) return; var pr = par.getBoundingClientRect();
-    if (lb.style.translate) return; if (lb.classList.contains('mini')) { if (short.matches || ROWM) { lb.style.top = Math.round(ut - pr.top + 6) + 'px'; lb.style.bottom = 'auto'; } else if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; } lb.style.maxHeight = ''; return; }
+    if (lb.style.translate) return; if (lb.classList.contains('mini')) { var tt = Math.round(ut - pr.top + 6), fits = tt + (lb.offsetHeight || 48) <= par.clientHeight - 8; if ((short.matches || ROWM) && fits) { if (Math.abs((parseFloat(lb.style.top) || -99) - tt) > 3) lb.style.top = tt + 'px'; lb.style.bottom = 'auto'; }   /* no room under the strips (the panel open on a phone): the pill stays at the foot of the chart rather than off it */ else if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; } lb.style.maxHeight = ''; return; }
     if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; }
     var r = lb.getBoundingClientRect(); lb.style.maxHeight = Math.max(120, Math.round(r.bottom - ut - 6)) + 'px'; }
   /* Screen rules (Stuart 16 Nov 21:31, iPhone photo: the Plotter bar on top of the sun and moon line): the strips that hang under the
