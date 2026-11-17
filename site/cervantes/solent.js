@@ -309,6 +309,10 @@
     var y = 0; ['.top', '#mkTop', '#navStrip', '#fsPlot', '#solSeq', '#astroLine', '#errBox'].forEach(function (q) { var e = document.querySelector(q); if (e && e.getClientRects().length && !e.hidden) y = Math.max(y, e.getBoundingClientRect().bottom); });
     var t = Math.round(y + 8) + 'px'; if (b.style.top !== t) b.style.top = t; b.hidden = !!($('solLegs') && !$('solLegs').hidden) || !!($('solCE') && !$('solCE').hidden); }
   if (window.FS_MARK) setInterval(ccBtn, 1000);
+  /* Stuart 17 Nov 14:19: "mark first action screen after landing page should open with the start new race box in view". Once the landing
+     page has gone, the Start new race card shows, unless a race is under way, a course is being set or test mode is on */
+  if (window.FS_MARK) (function () { var n = 0, t = setInterval(function () { n++; var sp = document.getElementById('splash'), up = !sp || sp.hidden || getComputedStyle(sp).display === 'none';
+    if (n > 240) { clearInterval(t); return; } if (!up || !MK && n < 40) return; clearInterval(t); if (raceOn() || WZ.on || SIM.on || ($('solCard') && !$('solCard').hidden)) return; try { startCard(); } catch (e) {} }, 500); })();
   /* Stuart 17 Nov 13:27 (tablet photo): "What does the slider do in this set up. If it has no use when used in this senario can it disappear to
      give more screen space then come back when needed". The slider moves the chart's time through the forecast (wind and tide arrows, the
      boats on the routes) for planning. With the GPS live in a race the chart is at now, so on Mark and Mark+ the slider and the UTC and local

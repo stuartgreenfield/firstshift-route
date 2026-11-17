@@ -109,7 +109,7 @@
     var tint = function () { if (!lb) return; var cs = getComputedStyle(lb); ['--mk-navy', '--mk-blue', '--mk-ink', '--mk-dot'].forEach(function (v) { var x = cs.getPropertyValue(v); if (x) bg.style.setProperty(v, x.trim()); }); bg.style.color = cs.color; }; tint(); setInterval(tint, 3000);   /* the logo's own colours, light or dark, as in the top bar */
     var live = function () { bg.classList.toggle('off', !navigator.onLine); bg.title = navigator.onLine ? 'Working and receiving. Tap for the menus.' : 'Offline: using what is saved on this device. Tap for the menus.'; }; live(); window.addEventListener('online', live); window.addEventListener('offline', live);
     if (window.MutationObserver && lb) new MutationObserver(function () { var n = lb.querySelector('svg.mk-s') || lb.querySelector('svg'); if (n && !bg.querySelector('svg')) { bg.textContent = ''; bg.appendChild(n.cloneNode(true)); } else if (n && bg.firstChild && n.outerHTML !== bg.firstChild.outerHTML) { bg.replaceChild(n.cloneNode(true), bg.firstChild); } }).observe(lb, { childList: true, subtree: true });
-    if (C.clear) clearSet(true);
+    if (C.clear) { C.clear = false; save(); }   /* Stuart 17 Nov 14:19: every tool opens with all its menus showing; clear screen is chosen each time */
     /* the GPS pill steps aside while the chart's information box is open (Stuart 13 Nov) */
     var tip = document.getElementById('tip'); if (tip && window.MutationObserver) (function () {   /* Stuart 13 Nov: the GPS pill kept jumping about on the Mac, and vanished when he moved the mouse to use it.
          The pill never hides for the box that follows the mouse: that box moves up out of the pill's way instead. Only a box

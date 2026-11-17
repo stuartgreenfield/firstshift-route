@@ -415,7 +415,7 @@
     if (window.FSSails) FSSails.init({ pts: function () { return S.sel && S.sel.r ? S.sel.r.path : []; }, onChange: function () { plan(); compareTable(); update(); } });
     ['sails', 'mains'].forEach(function (id) { $(id).addEventListener('input', function () { plan(); update(); }); });
     if (!wide()) $('panel').hidden = false;
-    else if (store('fs-panel') !== 'closed') { $('panel').hidden = false; $('panel').classList.remove('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'true'); }   /* on a computer the results open beside the chart unless you closed them */
+    else if (true) {   /* Stuart 17 Nov 14:19: opens with all the menus showing; closing the panel lasts until the next start */ $('panel').hidden = false; $('panel').classList.remove('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'true'); }   /* on a computer the results open beside the chart unless you closed them */
     window.addEventListener('scroll', function () { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); });
     /* iPhone: focusing a field in the set-up can scroll the body or html element itself (overflow:hidden still scrolls by focus), which
        pushes the top bar off the screen and leaves a gap at the bottom. Put it back whenever that happens or the keyboard goes away. */
