@@ -3358,6 +3358,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }, { passive: false, capture: true });
   document.addEventListener('touchend', function (e) { if (e.touches.length < 2) tp = null; }, { capture: true });
   document.addEventListener('touchcancel', function () { tp = null; }, { capture: true });
+  /* 17 Nov 21:16 (Stuart's iPhone photo, a second time: a finger somewhere left the page zoomed and slid sideways): stop the
+     double tap zooming the page (touch-action, and a second tap within 300 ms outside the chart and the text boxes is held back),
+     and if the page still ends up zoomed with no text box in use, set the viewport again so Safari returns to the normal size */
+  (function () { try { var st0 = document.createElement('style'); st0.textContent = 'html,body{touch-action:manipulation}'; document.head.appendChild(st0); } catch (e) {}
+    var lastT = 0; document.addEventListener('touchend', function (e) { var tg = e.target, t = Date.now(); if (e.touches.length || (tg && tg.closest && tg.closest('canvas,input,textarea,select,button,a,label,[role=button],[contenteditable]'))) { lastT = t; return; } if (t - lastT < 300) e.preventDefault(); lastT = t; }, { passive: false });
+    var vv = window.visualViewport, mv = document.querySelector('meta[name=viewport]'), rz = 0; if (!vv || !mv) return; var base = mv.getAttribute('content');
+    vv.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { var a = document.activeElement; if (vv.scale > 1.02 && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) { mv.setAttribute('content', base.replace(/maximum-scale=[^,]*/, 'maximum-scale=1.0001')); setTimeout(function () { mv.setAttribute('content', base); window.scrollTo(0, 0); }, 60); } }, 400); });
+    document.addEventListener('focusout', function () { setTimeout(function () { if (vv.scale > 1.02) vv.dispatchEvent(new Event('resize')); }, 300); }); })();
   /* iPhone and iPad Safari: take the pinch from its own gesture events and stop it zooming the whole page */
   var iosG = 'ongesturestart' in window, gScale = 1, gMid = null, pmid = null;
   cv.addEventListener('touchmove', function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
