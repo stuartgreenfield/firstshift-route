@@ -3553,7 +3553,13 @@
      chart has the keyboard, the window lifts so the field and the window's top stay in view above the keyboard and its bar; it goes
      back when the keyboard closes. The Solent step box has its own (solent.js kbFit). */
   function kbBox(f) { var e = f && f.parentElement, box = null; while (e && e !== document.body) { var c = getComputedStyle(e).position; if (c === 'fixed' || c === 'absolute') box = e; e = e.parentElement; } return box; }
-  function kbLift() { var vv = window.visualViewport; if (!vv) return; var f = document.activeElement, typing = !!(f && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName) && !/^(checkbox|radio|range|button|file|color)$/.test(f.type || '')), kb = innerHeight - vv.height > 120;
+  /* the keyboard is up when the visible part of the page is well short of its height with no field in use (17 Nov, Stuart's iPhone
+     photo: on his Safari the page height shrank with the keyboard, so comparing with it missed the keyboard and the box stayed under it) */
+  var VVH = 0; function typingNow() { var f = document.activeElement; return !!(f && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName) && !/^(checkbox|radio|range|button|file|color)$/.test(f.type || '')); }
+  function vvNote() { var vv = window.visualViewport; if (vv && !typingNow()) VVH = vv.height; }
+  window.__fsKbUp = function () { var vv = window.visualViewport; if (!vv || !typingNow()) return false; if (!VVH) VVH = Math.max(vv.height, innerHeight); return innerHeight - vv.height > 120 || VVH - vv.height > 120; };
+  if (window.visualViewport) { vvNote(); visualViewport.addEventListener('resize', function () { setTimeout(vvNote, 0); }); window.addEventListener('orientationchange', function () { VVH = 0; setTimeout(vvNote, 600); }); }
+  function kbLift() { var vv = window.visualViewport; if (!vv) return; var f = document.activeElement, typing = typingNow(), kb = window.__fsKbUp();
     var box = typing && kb ? kbBox(f) : null; if (box && box.id === 'solStep') box = null;
     [].forEach.call(document.querySelectorAll('[data-kbpad]'), function (e) { if (!(typing && kb && e.contains(f))) { e.style.paddingBottom = e.dataset.kbpad === '-' ? '' : e.dataset.kbpad; delete e.dataset.kbpad; } });
     if (typing && kb && !box) { var bot0 = vv.offsetTop + vv.height - 8, r0 = f.getBoundingClientRect(); if (r0.bottom > bot0) { var sc = f.parentElement; while (sc && sc !== document.body) { var oy = getComputedStyle(sc).overflowY; if ((oy === 'auto' || oy === 'scroll') && sc.clientHeight > 40) break; sc = sc.parentElement; }
