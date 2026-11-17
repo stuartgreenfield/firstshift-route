@@ -102,6 +102,13 @@
       cv.addEventListener('click', function (e) { if (lp && lp.fired) { e.stopImmediatePropagation(); e.preventDefault(); lp = null; } }, true);
       cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     }
+    /* M20 (Stuart 17 Nov 06:05): "On all 4 tools when full screen mode is on (reduced menus) we need the product logo top left with the rotating line to signify it is working and receiving". The product's own sails mark in a ring that turns while the tool is online and receiving; still and grey when offline. A tap brings the menus back. */
+    var lb = document.querySelector('.top .logobox'), bg = el('button', 'fsbadge', ''); bg.id = 'fsBadge'; bg.type = 'button'; bg.setAttribute('aria-label', 'Show the menus');
+    var mk = lb && (lb.querySelector('svg.mk-s') || lb.querySelector('svg') || lb.querySelector('img')); if (mk) bg.appendChild(mk.cloneNode(true)); else bg.textContent = 'FS';
+    document.body.appendChild(bg); bg.onclick = function () { clearPeek(); };
+    var tint = function () { if (!lb) return; var cs = getComputedStyle(lb); ['--mk-navy', '--mk-blue', '--mk-ink', '--mk-dot'].forEach(function (v) { var x = cs.getPropertyValue(v); if (x) bg.style.setProperty(v, x.trim()); }); bg.style.color = cs.color; }; tint(); setInterval(tint, 3000);   /* the logo's own colours, light or dark, as in the top bar */
+    var live = function () { bg.classList.toggle('off', !navigator.onLine); bg.title = navigator.onLine ? 'Working and receiving. Tap for the menus.' : 'Offline: using what is saved on this device. Tap for the menus.'; }; live(); window.addEventListener('online', live); window.addEventListener('offline', live);
+    if (window.MutationObserver && lb) new MutationObserver(function () { var n = lb.querySelector('svg.mk-s') || lb.querySelector('svg'); if (n && !bg.querySelector('svg')) { bg.textContent = ''; bg.appendChild(n.cloneNode(true)); } else if (n && bg.firstChild && n.outerHTML !== bg.firstChild.outerHTML) { bg.replaceChild(n.cloneNode(true), bg.firstChild); } }).observe(lb, { childList: true, subtree: true });
     if (C.clear) clearSet(true);
     /* the GPS pill steps aside while the chart's information box is open (Stuart 13 Nov) */
     var tip = document.getElementById('tip'); if (tip && window.MutationObserver) (function () {   /* Stuart 13 Nov: the GPS pill kept jumping about on the Mac, and vanished when he moved the mouse to use it.

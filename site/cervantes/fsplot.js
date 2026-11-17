@@ -65,7 +65,9 @@
     if (o.vmc != null && o.vmc > 0.3) o.eta = Date.now() + o.dtw / o.vmc * 3600e3;
     /* cross-track error: the boat at the origin, positive cross product means left of the leg looking along it */
     var dx = M.x - A.x, dy = M.y - A.y, L = Math.hypot(dx, dy);
-    if (L > 0.01) { var cr = (dx * (-A.y) - dy * (-A.x)) / L; o.xte = { d: Math.abs(cr), side: cr > 0 ? 'L' : 'R', leg: bear(dx, dy) }; }
+    if (L > 0.01) { var cr = (dx * (-A.y) - dy * (-A.x)) / L; o.xte = { d: Math.abs(cr), side: cr > 0 ? 'L' : 'R', leg: bear(dx, dy) };
+      /* back on the line (Stuart 17 Nov 05:27, Mark's racing window): the course to rejoin the rhumb line 0.2 nm ahead (or at the mark), and how long at this speed */
+      if (o.xte.d >= 0.01) { var ux = dx / L, uy = dy / L, tt = -(A.x * ux + A.y * uy), fx = A.x + tt * ux, fy = A.y + tt * uy, left = Math.hypot(M.x - fx, M.y - fy), ah = Math.min(0.2, left), bx = fx + ux * ah, by = fy + uy * ah; o.back = { brg: bear(bx, by), d: Math.hypot(bx, by) }; if (f.sog > 0.3) o.back.min = o.back.d / f.sog * 60; } }
     if (C.mode === 'route') { var ro = routeCalc(p, f, F); if (ro) { Object.assign(o, ro); return o; } o.noRoute = true; }
     if (o.dtw < C.radius && i < pts.length - 1 && arrived !== c.key + i) { arrived = c.key + i; MKS[c.key] = i + 1; sv(MK, MKS); msg = { t: 'Next mark: ' + (pts[i + 1].name || 'Finish'), until: Date.now() + 8000 }; }
     return o;
@@ -100,6 +102,7 @@
         cell('ETA', o.eta ? clk(o.eta) : '--', o.eta ? 'UTC, in ' + dur((o.eta - Date.now()) / 3600e3) : 'not closing') +
         cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn towards it' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
         cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? (o.m.route ? 'on the route' : 'on the leg') : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the ' + (o.m.route ? 'route' : 'leg')) : '') +
+        (o.back && !o.m.route ? cell('BACK ON', brg(o.back.brg), o.back.min != null ? dist(o.back.d) + ', ' + (o.back.min < 1 ? 'under a minute' : Math.round(o.back.min) + ' min') + ' at this speed' : dist(o.back.d) + ' to the line') : '') +
         cell('SOG · COG', o.sog != null ? n1(o.sog) + ' · ' + (o.cog != null ? ('00' + Math.round(o.cog) % 360).slice(-3) + '°' : '--') : '--', 'this phone’s GPS') + '</div>';
       h += '<p class="rpfoot">' + (o.ok && o.dr ? '<b class="npdr">DEAD RECKONING: no GPS</b> · ' : '') + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + (o.m.route ? 'Steering along the route on the chart' : (o.noRoute ? 'No route on the chart: steering to the mark' : 'Next mark when within ' + C.radius + ' nm')) + ' · bearings true · not for navigation</p>';
     }

@@ -2225,12 +2225,14 @@
   /* End race (Stuart 16 Nov 12:25): file the boat's track with the result, keep the race (it was saved when routed) and clear the chart */
   function endRace() {
     var now = Date.now(), gun = +$('startSel').value; try { var fu = futureGet(); if (fu && fu.ep) gun = fu.ep; } catch (e) {}
+    if (gun && gun > now / 1000) gun = null;   /* 17 Nov (Stuart's photo, 0h 00 from the gun): a gun still to come is not this race's gun */
     var el = gun ? Math.max(0, Math.round(now / 1000 - gun)) : null, hm = function (sec) { return Math.floor(sec / 3600) + 'h ' + ('0' + Math.floor(sec % 3600 / 60)).slice(-2); }, clk = function (ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
     var name = ($('raceTitle').textContent || 'Race') + ' ' + new Date(now).getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(now).getMonth()], M = LIVE.mk || { done: [] };
     var res = { name: name, course: meta && meta.course ? meta.course.name : '', gun: gun || null, end: Math.round(now / 1000), elapsed: el, marks: (M.done || []).map(function (d) { return { name: d.name, t: Math.round(d.t / 1000) }; }) };
     try { var all = JSON.parse(store('fs-results') || '[]'); all.unshift(res); store('fs-results', JSON.stringify(all.slice(0, 50))); } catch (e) {}
     var tn = name + ' · ended ' + clk(now) + (el != null ? ' · ' + hm(el) + ' from the gun' : '') + (res.marks.length ? ' · ' + res.marks.map(function (m) { return m.name.split(' ')[0] + ' ' + clk(m.t * 1000); }).join(', ') : '');
-    var filed = false; try { if (window.FSTracks && LIVE.trail && LIVE.trail.length > 1) filed = FSTracks.file(LIVE.trail.slice(), tn); } catch (e) {}
+    var tr0 = (LIVE.trail || []).slice(); if (gun) { var cut = (gun - 900) * 1000, tr1 = tr0.filter(function (q) { return !q[2] || q[2] >= cut; }); if (tr1.length > 1) tr0 = tr1; } else if (tr0.length && tr0[0][2] && now - tr0[0][2] > 12 * 3600000) { var tr2 = tr0.filter(function (q) { return q[2] && now - q[2] <= 12 * 3600000; }); if (tr2.length > 1) tr0 = tr2; }   /* the race's own track: from 15 minutes before the gun, never a trail left running since the night before (Stuart's photo, 16 Nov 21:44) */
+    var filed = false; try { if (window.FSTracks && tr0.length > 1) filed = FSTracks.file(tr0, tn); } catch (e) {}
     if (filed) { LIVE.trail = []; store('fs-livetrail', '[]'); }
     LIVE.mk = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; S.cleared = true;
     try { liveStop(); } catch (e) {} try { $('finBox').innerHTML = ''; } catch (e) {}
@@ -2437,7 +2439,7 @@
     }
     var x = X(f.lo), y = Y(f.la);
     var shc = c.shift; if (shc && !shc.off && shc.kind !== 'steady') { ctx.save(); var col = shc.kind === 'lift' ? '#3DDC84' : '#E5484D', tx = x + 18, ty = y - 26, lab = (shc.kind === 'lift' ? '▲ LIFT ' : '▼ HEADER ') + shc.deg + '°'; ctx.font = '700 13px Inter, sans-serif'; var tw = ctx.measureText(lab).width; ctx.fillStyle = 'rgba(10,20,30,.8)'; ctx.fillRect(tx - 4, ty - 13, tw + 8, 19); ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(lab, tx, ty + 1); ctx.restore(); }   /* header or lift beside the boat (18:40) */
-    var lnd = lineGet(); if (lnd.boat || lnd.pin) { ctx.save(); ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ['boat', 'pin'].forEach(function (k) { var q = lnd[k]; if (!q) return; ctx.beginPath(); ctx.arc(X(q[1]), Y(q[0]), 5, 0, 7); ctx.fill(); ctx.fillText(k === 'boat' ? 'BOAT' : 'PIN', X(q[1]) + 8, Y(q[0]) - 6); });
+    var lnd = lineGet(); if (!window.FS_MARK && (lnd.boat || lnd.pin)) { ctx.save(); ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ['boat', 'pin'].forEach(function (k) { var q = lnd[k]; if (!q) return; ctx.beginPath(); ctx.arc(X(q[1]), Y(q[0]), 5, 0, 7); ctx.fill(); ctx.fillText(k === 'boat' ? 'BOAT' : 'PIN', X(q[1]) + 8, Y(q[0]) - 6); });
       if (lnd.boat && lnd.pin) { ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(lnd.boat[1]), Y(lnd.boat[0])); ctx.lineTo(X(lnd.pin[1]), Y(lnd.pin[0])); ctx.stroke(); var lf = c.pre && c.pre.line && c.pre.line.fav; if (lf) { var q2 = lnd[lf]; ctx.fillText('FAVOURED', X(q2[1]) + 8, Y(q2[0]) + 8); } } ctx.restore(); }
     if (c.pre && !(lnd.boat && lnd.pin) && meta.course && meta.course.start) { var sx = X(meta.course.start.lon), sy = Y(meta.course.start.lat); ctx.strokeStyle = '#4CC38A'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]); }   /* before the gun: the way to the start */
     if (c.plan) { ctx.strokeStyle = css['--ink']; ctx.setLineDash([3, 4]); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(c.plan.lo), Y(c.plan.la)); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(X(c.plan.lo), Y(c.plan.la), 7, 0, 7); ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.font = '600 10px Inter, sans-serif'; ctx.fillText('PLAN NOW', X(c.plan.lo) + 10, Y(c.plan.la) + 4); }
@@ -2867,6 +2869,7 @@
   };
   var TILES = {}, tileN = 0, tileRaf = 0, chartLog = { asked: 0, loaded: 0, failed: 0 };
   (function () { try { var c = JSON.parse(localStorage.getItem('fs-charts') || '{}'); S.show.cmarks = 'cmarks' in c ? !!c.cmarks : !!window.FS_MARK; } catch (e) {} })();   /* Mark (Stuart 17 Nov 05:15): buoys, beacons and lights on unless turned off */
+  window.__fsChartOn = function (k) { return !!S.show[k]; };   /* Mark: the Solent labels step aside when the OpenSeaMap buoys are on */
   function chartSave() { try { localStorage.setItem('fs-charts', JSON.stringify({ cmarks: !!S.show.cmarks })); } catch (e) {} }
   function tileZoom(c) { var z = Math.round(Math.log(360 * K * view.s * Math.min(dpr || 1, 2) / 256) / Math.LN2); return Math.max(c.zmin, Math.min(c.zmax, z)); }
   function tLon(x, z) { return x / Math.pow(2, z) * 360 - 180; }

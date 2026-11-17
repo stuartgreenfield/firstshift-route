@@ -114,3 +114,13 @@ html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
 :root[data-night] .rplotb[aria-pressed="true"]{background:#3A0A08!important;color:#E0322A!important}
 img.hpic:not([src]){display:none}
 .rpmode{font-size:11px;padding:0 6px;letter-spacing:.04em}   /* F8: MARK or ROUTE */
+
+/* M20 (Stuart 17 Nov 06:05): in clear screen the product's logo top left, with a line turning round it while it is working and receiving; M5: Mark's logo box has the line all the time */
+@property --fsA{syntax:'<angle>';initial-value:0deg;inherits:false}
+#fsBadge{display:none;position:fixed;z-index:30;left:calc(env(safe-area-inset-left,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 10px);width:50px;height:50px;padding:0;border-radius:12px;align-items:center;justify-content:center;cursor:pointer;border:3px solid transparent;background:linear-gradient(var(--panel,#0B1B30),var(--panel,#0B1B30)) padding-box,conic-gradient(from var(--fsA),#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f) border-box;animation:fsring 4s linear infinite;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#fsBadge svg,#fsBadge img{width:36px;height:auto;display:block}
+body.navclear #fsBadge{display:flex}
+#fsBadge.off{animation:none;background:linear-gradient(var(--panel,#0B1B30),var(--panel,#0B1B30)) padding-box,linear-gradient(#64748b,#64748b) border-box}
+.logobox.mkring{border:2px solid transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,conic-gradient(from var(--fsA),#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f) border-box;animation:fsring 6s linear infinite}
+@keyframes fsring{to{--fsA:360deg}}
+@media (prefers-reduced-motion:reduce){#fsBadge,.logobox.mkring{animation:none}}
