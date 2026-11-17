@@ -44,8 +44,9 @@
     if (show() && !editing) {
       var a = get(), px = Math.abs(Y(50) - Y(50 + 1 / 60)); if (px > 0.8 && a.length) {
         ctx.font = '600 11px system-ui, sans-serif'; ctx.textBaseline = 'middle';
-        a.forEach(function (m) { var x = X(m.lon), y = Y(m.lat); ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fillStyle = m.type === 'danger' ? '#dc2626' : '#ffffff'; ctx.fill(); ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2; ctx.stroke();
-          if (px > 6) { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(m.name, x + 9, y); ctx.fillStyle = '#4c1d95'; ctx.fillText(m.name, x + 9, y); } });
+        a.forEach(function (m) { var x = X(m.lon), y = Y(m.lat); if (m.type === 'danger') { ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fillStyle = '#dc2626'; ctx.fill(); ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2; ctx.stroke(); }
+          else { ctx.strokeStyle = '#a855f7'; ctx.fillStyle = '#a855f7'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 9, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.6, 0, 2 * Math.PI); ctx.fill(); [[0, -13, 0, -9], [0, 9, 0, 13], [-13, 0, -9, 0], [9, 0, 13, 0]].forEach(function (q) { ctx.beginPath(); ctx.moveTo(x + q[0], y + q[1]); ctx.lineTo(x + q[2], y + q[3]); ctx.stroke(); }); }   /* M21 (Stuart 17 Nov 06:14): a waypoint is a target in a colour; a danger stays a red diamond */
+          if (px > 6) { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.strokeText(m.name, x + 15, y); ctx.fillStyle = '#4c1d95'; ctx.fillText(m.name, x + 15, y); } });
       }
     }
     if (M && M.b) {
