@@ -164,7 +164,7 @@
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
   fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); loadChartExtras(); xInit(); adjInit(); helpInit(); racesInit(); mobInit(); aisInit(); spdInit(); mfInit(); wizInit(); crewInit(); shareInit(); askInit(); bcInit();
+    meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); [loadChartExtras, xInit, adjInit, helpInit, racesInit, mobInit, aisInit, spdInit, mfInit, wizInit, crewInit, shareInit, askInit, bcInit].forEach(function (f) { try { f(); } catch (e) { if (window.console) console.error('Route: ' + (f.name || 'a part') + ' did not start: ' + e.message); } });   /* 17 Nov: a fault in one extra must never stop the forecasts loading */
     /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
     /* Shallow water shown: two buttons rather than a drop-down (Stuart 15 Nov 08:13: the drop-down would not open or select on the Android tablet) */
     (function () { var dv = $('depthView'), zm = $('zoomMax'), sg = $('depthViewSeg'); if (dv && sg) { var setV = function (v) { dv.value = v === 'squares' ? 'squares' : 'smooth'; [].forEach.call(sg.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === dv.value)); }); }; setV(store('fs-depthView')); [].forEach.call(sg.querySelectorAll('button'), function (b) { b.onclick = function () { setV(b.dataset.v); store('fs-depthView', dv.value); buildDepth(); draw(); }; }); }
@@ -921,7 +921,7 @@
     setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
   }
   /* replay speed: the button beside Play steps through the speeds in Settings, Display */
-  function spdLabel() { var v = +$('speed').value; $('spdBtn').innerHTML = '<span class="spl">speed</span>' + (v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'); $('spdBtn').title = 'Replay speed: ' + $('speed').options[$('speed').selectedIndex].textContent + '. Tap to change.'; }
+  function spdLabel() { if ($('speed').selectedIndex < 0) $('speed').value = '1'; var v = +$('speed').value; $('spdBtn').innerHTML = '<span class="spl">speed</span>' + (v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'); var sp = $('speed'); if (sp.selectedIndex < 0) sp.value = '1'; var so = sp.options[sp.selectedIndex]; $('spdBtn').title = 'Replay speed: ' + (so ? so.textContent : '1 hour a second') + '. Tap to change.'; }   /* 17 Nov: on Stuart's iPhone the list had nothing chosen and this stopped the forecasts loading */
   function spdInit() { var o = [].map.call($('speed').options, function (x) { return x.value; }); $('spdBtn').onclick = function (e) {
       e.stopPropagation(); var m = $('spdMenu');
       if (!m.hidden) { m.hidden = true; return; }
@@ -1421,7 +1421,7 @@
         '<div class="xrow"><button class="btn" id="wzRace">Change race</button><button class="btn" id="wzNew">New course</button></div></div>' +
         '<div class="wzboat"><span class="wzk">Boat</span>' +
         '<div class="row"><select id="wzMy" aria-label="Your boat">' + bl.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + wizEsc(x) + '</option>'; }).join('') + '<option value=""' + (known ? '' : ' selected') + '>' + (bl.length ? 'A new boat…' : 'Your boat') + '</option></select></div>' +
-        (known ? '<p class="note">IRC TCC ' + (+$('tcc').value).toFixed(3) + ', ' + wizEsc($('boatType').options[$('boatType').selectedIndex].text) + ', ' + (window.FSSails ? FSSails.summary().sails : 0) + ' sails</p>' : '') +
+        (known ? '<p class="note">IRC TCC ' + (+$('tcc').value).toFixed(3) + ', ' + wizEsc(($('boatType').options[$('boatType').selectedIndex] || { text: '' }).text) + ', ' + (window.FSSails ? FSSails.summary().sails : 0) + ' sails</p>' : '') +
         '<details id="wzMore"' + (known ? '' : ' open') + '><summary>' + (known ? 'Change the boat details' : 'Boat details') + '</summary>' +
         '<div class="row"><label for="wzName">Boat name</label><input type="text" id="wzName" value="' + wizEsc(known ? cur : '') + '" placeholder="For example Morning After" autocomplete="off"></div>' +
         '<div class="row"><label for="wzType">Boat type</label><select id="wzType">' + $('boatType').innerHTML + '</select></div>' +
