@@ -111,6 +111,7 @@ jobs:
           git add -A
           git commit -q -m "Forecasts $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
+      # F2 (17 Nov): every page's own race first, the extra races after, so the 75-minute limit never leaves Fastnet and Cervantes without pre-routes
       - name: Pre-route each race for the standard settings
         continue-on-error: true
         timeout-minutes: 75
@@ -118,7 +119,7 @@ jobs:
           npm i --no-save playwright@1.47.2
           npx playwright install chromium || true
           npx playwright install-deps chromium || echo 'system packages not refreshed; using what the runner has'
-          PRE_HOURS=6 PRE_HOURS_RACE=3 node scripts/preroute.js site channel-area channel-area:myth channel-area:deguingand channel-area:morgan channel-area:dinard channel-area:channel channel-area:cherbourg northsea-area northsea-area:northsea irishsea-area biscay-area celtic-area fastnet cervantes
+          PRE_HOURS=6 PRE_HOURS_RACE=3 node scripts/preroute.js site channel-area northsea-area irishsea-area biscay-area celtic-area fastnet cervantes channel-area:myth channel-area:deguingand channel-area:morgan channel-area:dinard channel-area:channel channel-area:cherbourg northsea-area:northsea
       - name: Use the newest app from main again before the second publish
         run: |
           git fetch -q origin main
