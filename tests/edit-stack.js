@@ -15,5 +15,9 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
     const lap = (a, b) => a && b && a[0] < b[2] - 2 && a[2] > b[0] + 2 && a[1] < b[3] - 2 && a[3] > b[1] + 2;
     ok(r.edit && !lap(r.edit, r.plot) && !lap(r.edit, r.live) && !lap(r.plot, r.live), name + ': Course changed box, plotter bar and GPS window do not overlap', JSON.stringify(r));
     await p.screenshot({ path: '/tmp/claude-0/ui/m2/edit-stack-' + name.split(' ')[0] + '.png' });
+    /* F7: an error box goes under the strips too */
+    await p.evaluate(() => { document.getElementById('editBar').hidden = true; document.getElementById('errMsg').textContent = 'Test error box'; document.getElementById('errBox').hidden = false; }); await p.waitForTimeout(1000);
+    const r2 = await p.evaluate(() => { const g = id => { const e = document.getElementById(id); if (!e || !e.getClientRects().length || e.hidden) return null; const q = e.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom].map(Math.round); }; return { err: g('errBox'), plot: g('fsPlot') }; });
+    ok(r2.err && !lap(r2.err, r2.plot), name + ': an error box sits under the plotter bar, not on it', JSON.stringify(r2));
     ok(!errs.length, name + ': no page errors', errs.join(' | ') || null); await c.close(); }
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
