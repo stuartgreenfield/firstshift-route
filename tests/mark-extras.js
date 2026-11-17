@@ -15,16 +15,16 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.click('#spTourNo'); await p.waitForFunction(() => window.FSMark && window.FSSolent && FSSolent.marks && FSSolent.marks() && window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(2500);
   /* logo and Route's buttons */
   const T = await p.evaluate(() => { const r = q => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(), st = getComputedStyle(e); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), vis: !!e.getClientRects().length && st.display !== 'none' }; };
-    return { logo: r('#mkTop .mklogo'), lay: r('#mkLayBtn'), set: r('#mkSetBtn'), layIb: document.getElementById('mkLayBtn').className, setSvg: document.getElementById('mkSetBtn').innerHTML === document.querySelector('#setBtn svg').outerHTML, ruler: r('#fsRulerBtn'), ori: r('#oriBtn'), ring: getComputedStyle(document.querySelector('.mklogo'), '::before').animationName }; });
+    return { logo: r('#mkTop .mklogo'), lay: r('#layersBtn'), set: r('#setBtn'), layIb: document.getElementById('layersBtn').className, setSvg: document.getElementById('mkSetBtn').innerHTML === document.querySelector('#setBtn svg').outerHTML, ruler: r('#fsRulerBtn'), ori: r('#oriBtn'), ring: getComputedStyle(document.querySelector('.mklogo'), '::before').animationName }; });
   ok(T.logo && T.logo.x <= 20 && T.ring === 'mkring', 'sails logo top left, with the colour line round it', JSON.stringify(T.logo));
   ok(T.layIb === 'ib' && T.setSvg, 'Layers and Settings are Route\'s own icon buttons');
   ok(T.ruler && T.ruler.vis && T.ori && T.ori.vis, 'Route\'s round buttons on the chart: ruler and north up', JSON.stringify([T.ruler, T.ori]));
   /* Layers: depth control and the lights layer, on by default */
-  await p.click('#mkLayBtn'); await p.waitForTimeout(900);
+  await p.click('#layersBtn'); await p.waitForTimeout(900);
   const L = await p.evaluate(() => { const l = document.getElementById('layers'); const cm = l.querySelector('input[data-l="cmarks"]'); return { open: !l.hidden, depth: !!l.querySelector('#lDepth'), lights: cm ? cm.checked : null, text: /Buoys, beacons and lights/.test(l.textContent) }; });
   ok(L.open && L.depth, 'Layers opens Route\'s box with the No-go depth control');
   ok(L.text && L.lights === true, 'with buoys, beacons and lights (OpenSeaMap), on by default on Mark', JSON.stringify(L));
-  await p.click('#mkLayBtn'); await p.waitForTimeout(400);
+  await p.click('#layersBtn'); await p.waitForTimeout(400);
   /* the Racing view before the gun: only once the wind is known (Stuart 05:28) */
   await p.evaluate(() => FSMark.set({ tab: 'course', wind: null, gun: Math.round(Date.now() / 1000 + 1200) })); await p.click('#mkTab-race'); await p.waitForTimeout(500);
   const r0 = await p.evaluate(() => FSMark.state().tab);
@@ -33,7 +33,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(r0 === 'course' && r1 === 'race', 'before the gun, Racing opens with a tap only once the wind is given', r0 + ' then ' + r1);
   await p.evaluate(() => FSMark.set({ tab: 'course', gun: null, wind: null }));
   /* Settings: Help, Share, Show me round, Test mode */
-  await p.click('#mkSetBtn'); await p.waitForTimeout(400); await p.click('#sheet .stabs .tab[data-s=mark]'); await p.waitForTimeout(300);
+  await p.click('#setBtn'); await p.waitForTimeout(400); await p.click('#sheet .stabs .tab[data-s=mark]'); await p.waitForTimeout(300);
   const RS = await p.evaluate(() => ({ open: !document.getElementById('sheet').hidden, tabs: [...document.querySelectorAll('#sheet .stabs .tab')].map(t => t.textContent.trim()), tcc: !!document.getElementById('tcc') }));
   ok(RS.open && RS.tabs[0] === 'Mark' && ['Boat', 'Forecasts', 'Course', 'Sails', 'Display', 'Charts', 'My set-up'].every(x => RS.tabs.includes(x)) && RS.tcc, 'Settings is Route\'s Settings (boat, IRC TCC, polars, forecasts, sails, charts, My set-up) with a Mark tab', RS.tabs.join(', '));
   const S = await p.evaluate(() => [...document.querySelectorAll('#s-mark .xrow .btn')].map(b => b.textContent));

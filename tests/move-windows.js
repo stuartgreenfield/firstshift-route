@@ -29,7 +29,7 @@ async function hold(p, x, y, ms) { await p.mouse.move(x, y); await p.mouse.down(
     ok(!m.on && /oriBtn/.test(saved) && m.tr, name + ': a long press locks it there and it is kept', m.tr + ' ' + saved.slice(0, 80));
     ok(tap1 === 'N UP' && (await p.evaluate(() => document.querySelector('#oriBtn .orl').textContent)) === 'N UP', name + ': moving it did not also press it');
     /* dropped on the top bar: slides to the nearest gap */
-    a = await box(p, '#oriBtn'); const tb = await p.evaluate(() => { const e = document.querySelector(window.FS_MARK ? '#mkSetBtn' : '#setBtn'); const r = e.getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, l: r.left, t: r.top, r: r.right, b: r.bottom }; });
+    a = await box(p, '#oriBtn'); const tb = await p.evaluate(() => { const e = document.querySelector(window.FS_MARK ? '#setBtn' : '#setBtn'); const r = e.getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, l: r.left, t: r.top, r: r.right, b: r.bottom }; });
     await hold(p, a.x, a.y); await p.mouse.move(tb.x, tb.y, { steps: 10 }); await p.mouse.up(); await p.waitForTimeout(200); a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.up(); await p.waitForTimeout(500);
     m = await box(p, '#oriBtn'); const over = m.l < tb.r && m.r > tb.l && m.t < tb.b && m.b > tb.t;
     ok(!over && m.t >= 0, name + ': dropped on the Settings button, it slides to the nearest gap', JSON.stringify({ btn: [m.l, m.t, m.r, m.b].map(Math.round), set: [tb.l, tb.t, tb.r, tb.b].map(Math.round) }));

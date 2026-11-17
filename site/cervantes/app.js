@@ -1797,6 +1797,7 @@
   window.__fsOnLand = function (la, lo) { try { return !!(P && P.depth) && !FSRouter.clearLine(P.depth, 0, la, lo, la, lo); } catch (e) { return false; } };   /* Mark (21:33): a tapped or pinged mark on land is refused */
   window.__fsCog = function () { var t = (LIVE.pbuf || []).filter(function (q) { return Date.now() - q[2] < 15000; }); if (!LIVE.on || t.length < 3) return null; var a = t[0], b = t[t.length - 1], r = rhumb({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] }); return r.nm > 0.008 ? r.brg : null; };   /* the course made good over the last 15 seconds, for setting the wind from each tack */
   window.__fsRedraw = function () { draw(); };
+  window.__fsOpenTab = function (t) { try { openTab(t); } catch (e) {} };   /* Mark: its tabs live in Route's panel (17 Nov 06:05) */
   window.__fsFit = function () { try { fit(); draw(); } catch (e) {} };
   window.__fsFitBox = function (s, n, w, e) { try { var pw = Math.max(e - w, 0.004), ph = Math.max(n - s, 0.003); view.s = Math.max(20, Math.min(W / (pw * 1.6 * K), (H - 120) / (ph * 1.6))); view.lo = (w + e) / 2; view.la = (s + n) / 2; draw(); } catch (x) {} };   /* Mark: zoom into the start line (Stuart 17 Nov 05:49) */   /* Mark: the chart fits the course */
   window.__navFollow = function (on) { if (on == null) return follow; followSet(!!on); };

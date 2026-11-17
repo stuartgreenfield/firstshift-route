@@ -100,7 +100,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(s.c && s.c.marks.length === 3 && /Windward/.test(s.c.marks[0].name) && /gate/i.test(s.c.marks[1].name), 'windward-leeward, 2 laps, gate: windward, gate, windward, finish at the gate', s.c && s.c.marks.map(m => m.name).join(' > ') + ' > ' + s.c.finish.name);
 
   /* 13. Settings */
-  await click('#mkSetBtn'); await click('#sheet .stabs .tab[data-s=mark]'); await click('#s-mark [data-k=big][data-v="1"]');
+  await click('#setBtn'); await click('#sheet .stabs .tab[data-s=mark]'); await click('#s-mark [data-k=big][data-v="1"]');
   ok(await p.evaluate(() => document.documentElement.classList.contains('mkbigui')), 'Settings: big buttons');
   await p.evaluate(() => FSMark.closeSettings()); await p.waitForTimeout(300);
   ok(!errs.length, 'no page errors', errs.join(' | ') || null);

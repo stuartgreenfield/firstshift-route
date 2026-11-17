@@ -35,33 +35,19 @@
   /* ---------- the screen ---------- */
   function css() {
     if ($('mkCss')) return; var s = document.createElement('style'); s.id = 'mkCss';
-    /* Mark uses Route's own look (Stuart 17 Nov 05:11: "Icons like settings and rulers etc need to be the same as the Route product
-       box and screen UI and styles need to be same as Route tools"): Route's logo box, race box, icon buttons (.ib), round buttons
-       on the chart (ruler, north up), tabs (.tabs .tab), panel body (.sbody), rows, buttons (.btn), notes and headings. This sheet only
-       places Mark's panel and adds what Route has no style for. */
+    /* Mark is Route's screen with Mark's tabs in Route's panel (Stuart 17 Nov 05:54 and 05:57). This sheet only adds what Route has no
+       style for: the colour line round the logo box, and the contents of Mark's tabs, in Route's colours and sizes. */
     s.textContent =
-      /* the parts of Route's offshore screen Mark does not use */
-      'html.mk .top,html.mk #panel,html.mk .bar,html.mk #helpBtn,html.mk #editFab,html.mk #navClearBtn,html.mk #fromHere,' + (plus ? '' : 'html.mk #navStrip,') + 'html.mk #fsPlot,html.mk #astroLine,html.mk #liveBox,' +
-      'html.mk #solCard,html.mk #solStep,html.mk #solLegs,html.mk #solAfter,html.mk #solChain,html.mk #solPick,html.mk #solSheet,html.mk .solpop,html.mk .solpick,html.mk .solchain,html.mk .solstep,html.mk #wiz,html.mk #spFilm{display:none!important}' +
-      'html.mktest .mkpick{top:calc(var(--mkTB,60px) + 64px)}.mktestbar{border-color:#F2B233}.mktestbar b{color:#F2B233}' +
-      'html.mk body{overflow:hidden}html.mk body::after{background:#ff8a1f}' +
-      /* the chart: the whole screen beside or above the panel; the top bar floats over it, as on Route */
-      'html.mk .app{position:fixed;left:0;right:var(--mkW,0px);top:0;bottom:var(--mkH,0px);height:auto;grid-template-rows:minmax(0,1fr);grid-template-columns:minmax(0,1fr)}' +
-      'html.mk .mobbtn.mobfab{bottom:var(--mkMob,12px)!important;left:max(12px,env(safe-area-inset-left,0px))!important;top:auto!important}' +
-      /* the top bar: Route's logo box (with the colour line round it, Stuart 05:07), Route's race box and Route's icon buttons */
-      '.mktop{position:fixed;left:0;right:var(--mkW,0px);top:0;z-index:20;display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 0 max(10px,env(safe-area-inset-left,0px));pointer-events:none;box-sizing:border-box}.mktop>*{pointer-events:auto}' +
-      '.mktop .mkbrand{min-width:0;flex:0 1 auto;height:44px;box-sizing:border-box}.mkbrand b{font:600 14px var(--f-head);color:var(--brandnavy,var(--ink));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}.mkbrand .chip{max-width:none}.mkbrand .mkarea{color:#ff8a1f;font-weight:700}' +
-      '.mktop .mksp{flex:1 1 0}.mktop .ib{flex:none}' +
-      '.mklogo{position:relative;flex:none;display:block;width:62px;height:48px;border-radius:12px;overflow:hidden;padding:2px;box-sizing:border-box;text-decoration:none;isolation:isolate;--mk-navy:#042D5E;--mk-blue:#3574BA;--mk-ink:#042D5E;--mk-dot:#ff8a1f}' +
-      '.mklogo::before{content:"";position:absolute;left:50%;top:50%;width:160%;height:220%;transform:translate(-50%,-50%) rotate(0deg);background:conic-gradient(#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f);animation:mkring 6s linear infinite;z-index:-1}' +
-      '@keyframes mkring{to{transform:translate(-50%,-50%) rotate(360deg)}}@media (prefers-reduced-motion:reduce){.mklogo::before{animation:none}}' +
-      '.mklg{display:grid;place-items:center;width:100%;height:100%;border-radius:10px;background:var(--panel);overflow:hidden}.mklg svg.mk-r{display:none}.mklg svg.mk-s{display:block;width:50px;height:auto}.mklg b{font:800 15px var(--f-head);color:var(--ink)}' +
-      ':root[data-theme="dark"] .mklogo{--mk-navy:#FFFFFF;--mk-blue:#6FA9E0;--mk-ink:#FFFFFF}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mklogo{--mk-navy:#FFFFFF;--mk-blue:#6FA9E0;--mk-ink:#FFFFFF}}' +
-      'html.mk #layers{left:76px!important;right:8px!important;width:auto!important;max-width:none!important}@media (min-width:600px){html.mk #layers{left:auto!important;width:360px!important}}' +   /* Route's Layers box keeps clear of man overboard */
-      /* the panel: Route's panel look, one at a time at the foot of a phone, beside the chart on a pad */
-      '.mkpanel{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--panel);color:var(--ink);border-top:1px solid var(--line);display:flex;flex-direction:column;max-height:min(46%,520px);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);box-sizing:border-box}' +
-      '.mkpanel .tab.mkwait{opacity:.55}.mkpanel .tabs{flex:none}.mkpanel .sbody{min-height:0;overscroll-behavior:contain;overflow-x:hidden}' +
-      '.mkbody .row>*{max-width:100%;box-sizing:border-box}.mkbody .row>label:first-child{min-width:84px}.mkbody .btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}.mkbody .btn.mkred{background:#dc2626;border-color:#dc2626;color:#fff}.mkbody .btn{white-space:normal;line-height:1.15}' +
+      /* the old Solent builder and the Route-only first-use wizard stay hidden; the course is edited in Mark's Course tab */
+      'html.mk #solCard,html.mk #solStep,html.mk #solLegs,html.mk #solAfter,html.mk #solChain,html.mk #solPick,html.mk #solSheet,html.mk .solpop,html.mk .solpick,html.mk .solchain,html.mk .solstep,html.mk #wiz,html.mk #spFilm,html.mk #editFab{display:none!important}' +
+      'html.mk body::after{background:#ff8a1f}' +
+      /* the logo box with a colour line running round it (Stuart 05:07, 05:09) */
+      '@property --mkA{syntax:"<angle>";inherits:false;initial-value:0deg}' +
+      '.logobox.mkring{border:2px solid transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,conic-gradient(from var(--mkA),#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f) border-box;animation:mkring 6s linear infinite}' +
+      '@keyframes mkring{to{--mkA:360deg}}@media (prefers-reduced-motion:reduce){.logobox.mkring{animation:none}}' +
+      /* Mark's tabs inside Route's panel */
+      '.mkbody{padding:12px 14px}.mkbody>*+*{margin-top:12px}.mkbody .row>*{max-width:100%;box-sizing:border-box}.mkbody .row>label:first-child{min-width:84px}.mkbody .btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}.mkbody .btn.mkred{background:#dc2626;border-color:#dc2626;color:#fff}.mkbody .btn{white-space:normal;line-height:1.15}' +
+      '#panel .tab.mkwait{opacity:.55}' +
       '.mkin{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:40px;color:var(--ink);font:14px var(--f-data);box-sizing:border-box;width:6.5em}.mkin.wide{flex:1 1 140px;min-width:0;width:auto}' +
       '.mkbig{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}' +
       '.mkbig>div{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:6px 10px;display:grid;align-content:start}.mkbig small{font:600 11px var(--f-head);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}' +
@@ -69,50 +55,46 @@
       '.mklegs{width:100%;border-collapse:collapse;font:13px var(--f-data)}.mklegs td{padding:6px 4px;border-top:1px solid var(--line);vertical-align:top}.mklegs small{color:var(--muted);font-family:var(--f-body)}' +
       '.mkmk{display:flex;flex-wrap:wrap;gap:6px}.mkmk .mkchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:0 2px 0 10px;min-height:40px;font:600 14px var(--f-data)}' +
       '.mkchip button{min-width:40px;min-height:40px;border:0;background:none;color:var(--ink);font:600 13px var(--f-head);cursor:pointer;border-radius:8px}' +
-      'html.mk .navtoast{pointer-events:none;bottom:calc(var(--mkH,0px) + 72px);left:calc((100% - var(--mkW,0px)) / 2);max-width:min(calc(100% - var(--mkW,0px) - 24px),460px)}' +   /* messages sit on the chart, above the panel, never over its buttons */
       '.mklist{display:grid;gap:4px}.mkli{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:4px 0;min-width:0}.mkli b{font:600 15px var(--f-data);min-width:3.2em}.mkli span{flex:1 1 auto;min-width:0;font-size:13px}.mkli i{color:var(--brand);font-style:normal}.mkli .mklia{flex:none;display:flex;gap:4px}' +
       '.mkbias{cursor:pointer;border-color:var(--brand)!important}.mkbias small{color:var(--brand)!important}' +
       '.mkwarn{border:2px solid #dc2626;border-radius:10px;padding:8px 10px;font:600 15px var(--f-head);color:#dc2626}' +
-      '.mkpick{position:fixed;left:calc((100% - var(--mkW,0px)) / 2);transform:translateX(-50%);top:calc(var(--mkTB,60px) + 8px);z-index:21;background:var(--panel);border:1px solid var(--brand);color:var(--ink);border-radius:12px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:600 13.5px var(--f-body);max-width:calc(100% - var(--mkW,0px) - 24px);box-sizing:border-box;box-shadow:0 4px 18px rgba(0,0,0,.35)}' +
-      /* a pad, or any wide screen, and a phone held sideways: the panel beside the chart, full height, as Route's results panel */
-      '@media (min-width:900px){.mkpanel{left:auto;top:0;width:400px;max-height:none;border-top:0;border-left:1px solid var(--line);padding-top:env(safe-area-inset-top,0px);padding-left:0}}' +
-      '@media (orientation:landscape) and (max-height:500px){.mkpanel{left:auto;top:0;width:min(46%,380px);max-height:none;border-top:0;border-left:1px solid var(--line);padding-left:0}}' +
+      /* the tap-on-the-chart prompt and the test mode bar, under Route's top bar */
+      '.mkpick{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--mkTB,60px) + 8px);z-index:21;background:var(--panel);border:1px solid var(--brand);color:var(--ink);border-radius:12px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:600 13.5px var(--f-body);max-width:calc(100% - 24px);box-sizing:border-box;box-shadow:0 4px 18px rgba(0,0,0,.35)}' +
+      'html.mktest .mkpick{top:calc(var(--mkTB,60px) + 64px)}.mktestbar{border-color:#F2B233}.mktestbar b{color:#F2B233}' +
+      '.mkset{display:grid;gap:8px}' +
       /* big buttons (Settings) and sunlight */
-      'html.mkbigui .mkbody .btn,html.mkbigui .mkpanel .tab{min-height:56px;font-size:16px}html.mkbigui .mkin{min-height:56px;font-size:18px}html.mkbigui .mkbig b{font-size:36px}' +
+      'html.mkbigui .mkbody .btn,html.mkbigui #panel .tab{min-height:56px;font-size:16px}html.mkbigui .mkin{min-height:56px;font-size:18px}html.mkbigui .mkbig b{font-size:36px}' +
       'html.mksun{--ink:#000;--muted:#222;--panel:#fff;--bg:#fff;--line:#000}html.mksun .mkbig b{font-weight:800}';
     document.head.appendChild(s);
   }
   var top, panel;
+  /* Mark on Route's whole screen (Stuart 17 Nov 05:54 and 05:57): Route's top bar, results panel, play bar, GPS window, plotter,
+     round buttons, Settings and Help stay exactly as Route has them; Mark's Course, Start, Race and After are the first four tabs of
+     Route's panel. Mark+ is the same on Route+. */
+  var MT = [['course', 'Course', '<path d="M5 20 12 4l7 16"/><path d="M8.5 12h7"/>'], ['start', 'Start', '<path d="M4 20V4"/><path d="M4 5h11l-2 4 2 4H4"/>'], ['race', 'Race', '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M10 2h4"/>'], ['after', 'After', '<path d="M5 12l4 4 10-10"/>']];
   function build() {
-    css(); if ($('mkTop')) return;
-    top = document.createElement('div'); top.id = 'mkTop'; top.className = 'mktop'; top.setAttribute('role', 'banner');
-    /* the FirstShift sails logo, top left, with a colour line running round it (Stuart 17 Nov 05:07) */
-    top.innerHTML = '<a class="mklogo" href="https://firstshiftsailing.com" target="_blank" rel="noopener" aria-label="FirstShift ' + (plus ? 'Mark+' : 'Mark') + '. Opens firstshiftsailing.com in a new window" title="FirstShift: Yacht Racing Intelligence"><span class="mklg" id="mkLogo"><b>' + (plus ? 'Mark+' : 'Mark') + '</b></span></a>' +
-      '<div class="brand mkbrand"><b id="mkRace">No course yet</b><span class="chip"><span class="mkarea">' + esc(window.FS_AREA || 'Solent') + '</span> <span id="mkGun"></span> <span id="mkData" title="Forecast data on this device"></span></span></div><span class="mksp"></span>' +
-      '<button class="ib" id="mkLayBtn" aria-expanded="false" title="What the chart shows" aria-label="What the chart shows: depth and layers"></button><button class="ib" id="mkNightBtn" aria-pressed="false" title="Night mode: red only" aria-label="Night mode: red only"></button><button class="ib" id="mkSetBtn" title="Settings" aria-label="Settings"></button>';
-    [['mkLayBtn', 'layersBtn'], ['mkNightBtn', 'nightBtn'], ['mkSetBtn', 'setBtn']].forEach(function (q) { var src = document.getElementById(q[1]), dst = top.querySelector('#' + q[0]); if (src && dst) dst.innerHTML = src.querySelector('svg') ? src.querySelector('svg').outerHTML : src.innerHTML; });   /* Route's own icons */
-    document.body.appendChild(top);
-    fetch('../brand/' + (plus ? 'markplus' : 'mark') + '-mark.inc.html').then(function (r) { return r.ok ? r.text() : ''; }).then(function (h) { if (h && /<svg/.test(h) && $('mkLogo')) $('mkLogo').innerHTML = h; }).catch(function () {});
-    panel = document.createElement('section'); panel.id = 'mkPanel'; panel.className = 'mkpanel'; panel.setAttribute('aria-label', 'Mark');
-    panel.innerHTML = '<div class="tabs mktabs" role="tablist">' + ['course', 'start', 'race', 'after'].map(function (t) { return '<button class="tab" role="tab" data-tab="' + t + '" id="mkTab-' + t + '">' + t[0].toUpperCase() + t.slice(1) + '</button>'; }).join('') + '</div><div class="sbody mkbody" id="mkBody" role="tabpanel"></div>';
-    document.body.appendChild(panel);
-    panel.querySelector('.mktabs').onclick = function (e) { var b = e.target.closest('[data-tab]'); if (!b) return;
-      /* the Racing view opens at the gun; before it, with a tap once the wind is known (Stuart 17 Nov 05:28) */
-      if (b.dataset.tab === 'race' && stage() !== 'race' && stage() !== 'after' && !windKnown()) { M.tab = 'course'; save(); render(); toast('Racing opens at the gun. Before it, give the wind direction and speed first' + (plus ? ', or connect the boat' : '') + '.'); setTimeout(function () { var w = $('mkTwd'); if (w) { w.scrollIntoView({ block: 'center' }); w.focus(); } }, 300); return; } M.tab = b.dataset.tab; M.auto = false; M.autoAt = Date.now(); save(); render(); };
-    /* Route's chart, the same in Mark (Stuart 17 Nov 05:08): its Layers box, with the No-go depth control that moves the depth contour */
-    $('mkLayBtn').onclick = function () { var lb = $('layersBtn'); if (lb) lb.click(); var p = $('layers'); $('mkLayBtn').setAttribute('aria-expanded', String(!!(p && !p.hidden))); };
-    $('mkSetBtn').onclick = function () { openSettings(); };
-    $('mkNightBtn').onclick = function () { var nb = $('nightBtn'); if (nb) nb.click(); setTimeout(function () { $('mkNightBtn').setAttribute('aria-pressed', nb ? nb.getAttribute('aria-pressed') : 'false'); }, 50); };   /* Route's night mode */   /* Route's Settings, with Mark's tab (Stuart 17 Nov 05:54) */
-    panel.addEventListener('click', act); panel.addEventListener('change', change); panel.addEventListener('input', function (e) { if (e.target.id === 'mkFind') { var fl = $('mkList'); if (fl) fl.innerHTML = listRows(e.target.value); } });
-    fitRO(); applyLook(); render(); setInterval(tick, 1000);
+    css(); if ($('mkBody')) return; var rp = $('panel'), tabs = rp && rp.querySelector('.tabs'); if (!tabs) return setTimeout(build, 200);
+    panel = rp;
+    var first = tabs.querySelector('.tab');
+    MT.forEach(function (t) { var b = document.createElement('button'); b.className = 'tab'; b.setAttribute('role', 'tab'); b.dataset.tab = 'mark'; b.dataset.mt = t[0]; b.id = 'mkTab-' + t[0]; b.setAttribute('aria-selected', 'false');
+      b.innerHTML = '<svg class="ti" viewBox="0 0 24 24" aria-hidden="true">' + t[2] + '</svg><span>' + t[1] + '</span>'; tabs.insertBefore(b, first);
+      b.addEventListener('click', function () { tabClick(t[0]); setTimeout(function () { tabMarks(); }, 0); }); });
+    var sec = document.createElement('div'); sec.className = 'pbody'; sec.id = 't-mark'; sec.hidden = true; sec.innerHTML = '<div class="mkbody" id="mkBody" role="tabpanel"></div>';
+    rp.insertBefore(sec, $('t-decision'));
+    sec.addEventListener('click', act); sec.addEventListener('change', change); sec.addEventListener('input', function (e) { if (e.target.id === 'mkFind') { var fl = $('mkList'); if (fl) fl.innerHTML = listRows(e.target.value); } });
+    /* Route's logo box, with the colour line running round it (Stuart 05:07) */
+    var lb = document.querySelector('.top .logobox'); if (lb) lb.classList.add('mkring');
+    applyLook(); showMark(M.tab); render(); setInterval(tick, 1000);
+    setInterval(function () { var t = document.querySelector('.top'); if (t) document.documentElement.style.setProperty('--mkTB', Math.round(t.getBoundingClientRect().bottom) + 'px'); }, 500);
   }
-  /* the chart fits exactly between the top bar and the panel, so nothing sits on top of it but the course, the boat and man overboard */
-  function fitRO() { var f = function () { if (!panel || !top) return; var side = innerWidth >= 900 || (innerWidth > innerHeight && innerHeight <= 500), pr = panel.getBoundingClientRect(), tr = top.getBoundingClientRect(), ds = document.documentElement.style;
-      ds.setProperty('--mkTB', Math.round(tr.bottom) + 'px');   /* the bottom of the floating top bar */
-      ds.setProperty('--mkH', side ? '0px' : Math.round(innerHeight - pr.top) + 'px'); var ib = window.__fsInsets ? window.__fsInsets().b : 0; ds.setProperty('--mkMob', Math.round((side ? ib : innerHeight - pr.top) + 12) + 'px');   /* man overboard clear of the panel and of the home bar */ ds.setProperty('--mkW', side ? Math.round(innerWidth - pr.left) + 'px' : '0px');
-      if (f.w !== innerWidth + 'x' + innerHeight + ':' + Math.round(pr.top) + ':' + Math.round(pr.left)) { f.w = innerWidth + 'x' + innerHeight + ':' + Math.round(pr.top) + ':' + Math.round(pr.left); try { window.dispatchEvent(new Event('resize')); } catch (e) {} } };
-    if (window.ResizeObserver) { new ResizeObserver(function () { setTimeout(f, 0); }).observe(panel); new ResizeObserver(function () { setTimeout(f, 0); }).observe(top); }
-    window.addEventListener('resize', function () { setTimeout(f, 50); }); f(); setTimeout(f, 300); }
+  function tabClick(t) {
+    /* the Racing view opens at the gun; before it, with a tap once the wind is known (Stuart 17 Nov 05:28) */
+    if (t === 'race' && stage() !== 'race' && stage() !== 'after' && !windKnown()) { M.tab = 'course'; save(); render(); toast('Racing opens at the gun. Before it, give the wind direction and speed first' + (plus ? ', or connect the boat' : '') + '.'); setTimeout(function () { var w = $('mkTwd'); if (w) { w.scrollIntoView({ block: 'center' }); w.focus(); } }, 300); return; }
+    M.tab = t; M.auto = false; M.autoAt = Date.now(); save(); render();
+  }
+  /* which of Mark's tabs is selected: Route's openTab selects every tab of the section */
+  function tabMarks() { var on = $('t-mark') && !$('t-mark').hidden; [].forEach.call(document.querySelectorAll('#panel .tab[data-mt]'), function (b) { b.setAttribute('aria-selected', String(on && b.dataset.mt === (['help', 'share', 'list'].indexOf(M.tab) >= 0 ? M.back : M.tab))); }); }
+  function showMark(t) { if (t) { M.tab = t; save(); } if (window.__fsOpenTab) window.__fsOpenTab('mark'); var p = $('panel'); if (p) p.classList.remove('collapsed'); render(); tabMarks(); }
   function applyLook() { var d = document.documentElement.classList; d.toggle('mkbigui', !!M.big); d.toggle('mksun', !!M.sun); }
 
   /* ---------- the race: course, gun and stage ---------- */
@@ -127,19 +109,17 @@
   var lastStage = null;
   function tick() {
     var st = stage(); if (st !== lastStage && st === 'race') { M.editing = false; save(); if (PICK && !/^line-/.test(PICK)) { PICK = null; pickBar(null); } }
-    if (st !== lastStage) { if (lastStage && (st === 'race' || st === 'after' || M.auto !== false || Date.now() - (M.autoAt || 0) > 120000) && ['settings', 'help', 'share'].indexOf(M.tab) < 0) { M.tab = st; save(); render(); }   /* the gun always opens Racing (Stuart 05:28); other changes wait two minutes after a tab chosen by hand */ lastStage = st; }   /* the panel follows the race; a tab chosen by hand holds for two minutes */
+    if (st !== lastStage) { if (lastStage && (st === 'race' || st === 'after' || M.auto !== false || Date.now() - (M.autoAt || 0) > 120000) && ['settings', 'help', 'share', 'list'].indexOf(M.tab) < 0) { if (st === 'race' || st === 'after') showMark(st); else { M.tab = st; save(); render(); } }   /* the gun always opens Racing (Stuart 05:28); other changes wait two minutes after a tab chosen by hand */ lastStage = st; }   /* the panel follows the race; a tab chosen by hand holds for two minutes */
     if (M.tab === 'start' || M.tab === 'race') live(); topBar(); sounds();
   }
-  function topBar() { var dc = $('dataChip'), dt = $('mkData'); if (dc && dt) { var tx = dc.textContent.replace(/^(Mark|Route\+?) v[\d.]+ · /, ''); if (dt.textContent !== tx) dt.textContent = tx; }   /* the forecast data age, as Route's data chip */
-    var c = course(), g = gunAt(); if ($('mkRace')) $('mkRace').textContent = c ? c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d:\d\d$/, '') : 'No course yet';
-    if ($('mkGun')) { var now = Date.now() / 1000; $('mkGun').textContent = g ? (now < g ? 'Gun ' + mmss(g - now) : 'Race ' + mmss(now - g)) : ''; } }
+  function topBar() {}   /* Route's top bar shows the race, the start time and the forecast data age */
 
   /* ---------- panels ---------- */
   function render() {
-    if (!panel) return; [].forEach.call(panel.querySelectorAll('[data-tab]'), function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === M.tab)); if (b.dataset.tab === 'race') { var wait = stage() !== 'race' && stage() !== 'after' && !windKnown(); b.classList.toggle('mkwait', wait); b.title = wait ? 'Opens at the gun, or now once the wind is given' : ''; } });
+    if (!panel || !$('mkBody')) return; tabMarks(); [].forEach.call(document.querySelectorAll('#panel .tab[data-mt]'), function (b) { if (b.dataset.mt === 'race') { var wait = stage() !== 'race' && stage() !== 'after' && !windKnown(); b.classList.toggle('mkwait', wait); b.title = wait ? 'Opens at the gun, or now once the wind is given' : ''; } });
     if (M.tab === 'settings') { M.tab = M.back && M.back !== 'settings' ? M.back : 'course'; save(); setTimeout(function () { openSettings('mark'); }, 0); }
-    var h = M.tab === 'start' ? startHtml() : M.tab === 'race' ? raceHtml() : M.tab === 'after' ? afterHtml() : M.tab === 'settings' ? setHtml() : M.tab === 'help' ? helpHtml() : M.tab === 'share' ? shareHtml() : M.tab === 'list' ? listHtml() : courseHtml();
-    var b = $('mkBody'), y = b.scrollTop; b.innerHTML = h; b.scrollTop = y; topBar(); if (M.tab === 'start' || M.tab === 'race') live();
+    var h = M.tab === 'start' ? startHtml() : M.tab === 'race' ? raceHtml() : M.tab === 'after' ? afterHtml() : M.tab === 'help' ? helpHtml() : M.tab === 'share' ? shareHtml() : M.tab === 'list' ? listHtml() : courseHtml();
+    var b = $('mkBody'), y = b.scrollTop; b.innerHTML = h; b.scrollTop = y; if (M.tab === 'start' || M.tab === 'race') live();
   }
   function seg(k, v, lab, on) { return '<button class="btn" data-k="' + k + '" data-v="' + v + '" aria-pressed="' + !!on + '">' + lab + '</button>'; }
   /* Course */
@@ -147,7 +127,7 @@
     var B = SOL() || { type: 'marks', marks: [], wl: {} }, w = B.wl || {}, h = '';
     if (locked()) return '<div class="mkwarn" style="font-size:14px">Racing: the course is locked so a tap on the chart cannot change it.</div><div class="xrow"><button class="btn primary" data-k="editcourse">Edit course</button></div>' + legsHtml();
     if (M.editing && stage() === 'race') h += '<div class="xrow"><span class="note" style="flex:1 1 100%">Editing the course while racing. Changes go to the crew.</span><button class="btn primary" data-k="editdone">Done editing</button></div>';
-    h += '<div class="row"><button class="btn primary" data-k="new">New course</button>' + seg('type', 'marks', 'Round the cans', B.type !== 'wl') + seg('type', 'wl', 'Windward-leeward', B.type === 'wl') + '</div>';
+    h += '<div class="row"><button class="btn" data-k="new">New course</button>' + seg('type', 'marks', 'Round the cans', B.type !== 'wl') + seg('type', 'wl', 'Windward-leeward', B.type === 'wl') + '</div>';
     h += '<h3>Start</h3><div class="row">' + seg('startk', 'line', 'The start line', !!(B.start && B.start.line)) + seg('startk', 'tap', 'Tap a buoy', !!(B.start && !B.start.line)) + '<button class="btn" data-k="list" data-v="start">List of buoys</button>' + '<span class="note">' + (B.start ? esc(B.start.name) : 'Not set') + '</span></div>';
     if (B.type !== 'wl') {
       h += '<h3>Marks</h3><div class="row"><input class="mkin wide" id="mkCodes" inputmode="text" autocapitalize="characters" placeholder="Codes or a pasted message: 3G P, 4F S" aria-label="Mark codes from the board or a pasted message"><button class="btn primary" data-k="codes">Add</button></div>';
@@ -465,7 +445,7 @@
   function useCourse(route) {
     var c = window.FSSolent && FSSolent.build ? FSSolent.build() : { err: 'The course is not ready.' }; if (c.err) { toast(c.err); return; }
     solSet({ plan: route ? 'route' : 'list', models: M.models.slice(), model: M.models[0] }); pushFix(); gunToEngine();
-    if (window.FSSolent.go) FSSolent.go(); PICK = null; pickBar(null); render(); setTimeout(function () { if (window.__fsFit) window.__fsFit(); }, 900);
+    if (window.FSSolent.go) FSSolent.go(); PICK = null; pickBar(null); render(); setTimeout(function () { if (window.__fsFit) window.__fsFit(); if (!route) showMark(); }, 900);   /* Route it shows Route's Routes tab with the results; Show the course stays on Mark's tab */
     if (!SY.applying) SY.shown = Date.now();   /* the crew's phones show it too */
   }
   function newCourse() {
@@ -528,7 +508,7 @@
   function tourSteps() {
     var tab = function (t) { return function () { FSMark.set({ tab: t }); }; };
     return [{ n: 1, name: 'Mark', note: 'Course, start, race and after', steps: [
-      { el: '.mkbrand', t: 'Your race', x: 'The race, the area and the gun countdown.' },
+      { el: '#raceBtn', t: 'Your race', x: 'The race name: tap it for Mark\'s Course tab. Beside it, the start time and the forecast data.' },
       { el: '#mkTab-course', before: tab('course'), t: 'Course', x: 'Type the codes from the board, paste the WhatsApp message, or tap the buoys on the chart. Windward-leeward courses too.' },
       { el: '#mkTwd', before: tab('course'), t: 'Wind and tide', x: 'Type the wind, or Head to wind; the tide model or the tide as you see it. They feed the routing, the line bias and the leg types.' },
       { el: '#mkBody [data-k=show]', before: tab('course'), t: 'Show it, or route it', x: 'Show the course on the chart, or route it on the forecasts and your race wind.' },
@@ -536,10 +516,10 @@
       { el: '#mkBody [data-k=ping]', before: tab('start'), t: 'The line', x: 'Ping each end as you pass it, or tap them on the chart. Distance to the line, time to burn and the bias.' },
       { el: '#mkTab-race', before: tab('race'), t: 'Race', x: 'The next mark, header or lift, and the tide here. Rounded, Back a mark and Finished.' },
       { el: '#mkTab-after', before: tab('after'), t: 'After', x: 'Elapsed and IRC corrected time, then Next course.' },
-      { el: '#mkLayBtn', t: 'The chart', x: 'What the chart shows, with the No-go depth control.' },
+      { el: '#layersBtn', t: 'The chart', x: 'What the chart shows, with the No-go depth control.' },
       { el: '#fsRulerBtn', t: 'Ruler', x: 'Measure a bearing and distance on the chart.' },
       { el: '#mkTestBtn', before: function () { openSettings('mark'); }, test: true, t: 'Try it safely first', x: 'Test mode: a practice boat sails your course on the chart. Nothing goes to the crew and nothing can go wrong.' },
-      { el: '#mkSetBtn', before: function () { closeSettings(); }, t: 'Settings', x: 'Route\'s Settings: your boat, IRC and polars' + (plus ? ' and the polar updates from the boat' : '') + ', forecasts, sails, charts and My set-up, with a Mark tab: help, share, this tour, test mode, the boat code for the crew, big buttons, sunlight and sounds.' }
+      { el: '#setBtn', before: function () { closeSettings(); }, t: 'Settings', x: 'Route\'s Settings: your boat, IRC and polars' + (plus ? ' and the polar updates from the boat' : '') + ', forecasts, sails, charts and My set-up, with a Mark tab: help, share, this tour, test mode, the boat code for the crew, big buttons, sunlight and sounds.' }
     ] }];
   }
   function tourSetup() { window.FSTourLevels = tourSteps(); window.FSTourPrepare = function () { var ly = $('layers'); if (ly && !ly.hidden && $('mkLayBtn')) $('mkLayBtn').click(); PICK = null; pickBar(null); };
@@ -647,9 +627,9 @@
   window.__mkSync = SY;
   /* the old Solent course builder (solent.js step box and course card) stays switched off under Mark's own screen: it was still
      taking taps on the chart and adding buoys while racing (Stuart's photo, 17 Nov 05:39) */
-  function oldOff() { try { if (!window.FSSolent) return; if (!FSSolent.__mk) { FSSolent.__mk = 1; FSSolent.start = function () {}; FSSolent.chain = function () {}; FSSolent.step = (function (f) { return function (n) { if (!n) f(0); }; })(FSSolent.step); FSSolent.open = function () {}; }
+  function oldOff() { try { if (!window.FSSolent) return; if (!FSSolent.__mk) { FSSolent.__mk = 1; FSSolent.start = function () { showMark('course'); }; FSSolent.chain = function () {}; FSSolent.step = (function (f) { return function (n) { if (!n) f(0); }; })(FSSolent.step); FSSolent.open = function () {}; }
       if (FSSolent.stepState && FSSolent.stepState().on) FSSolent.step(0); } catch (e) {} }
   function boot() { if (!document.body) return setTimeout(boot, 50); oldOff(); setInterval(oldOff, 1000); splash(); build(); hook(); syncInit(); setTimeout(tourSetup, 1500); try { if (window.FSSolent && FSSolent.load) FSSolent.load(); if (window.FSSolent && FSSolent.on) FSSolent.on(true); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.FSMark = { state: function () { return M; }, render: render, stage: stage, set: function (o) { Object.assign(M, o); save(); applyLook(); render(); renderSet(); }, settings: function (t) { openSettings(t || 'mark'); }, closeSettings: closeSettings };
+  window.FSMark = { state: function () { return M; }, render: render, stage: stage, set: function (o) { Object.assign(M, o); save(); applyLook(); if (o.tab && ['course', 'start', 'race', 'after', 'help', 'share', 'list'].indexOf(o.tab) >= 0) showMark(); else render(); renderSet(); }, show: showMark, settings: function (t) { openSettings(t || 'mark'); }, closeSettings: closeSettings };
 })();
