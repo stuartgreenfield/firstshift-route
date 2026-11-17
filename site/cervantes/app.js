@@ -638,9 +638,9 @@
       if (m.gate && m.gate.a && m.gate.b) { legs.push({ name: m.name, gate: { a: m.gate.a, b: m.gate.b }, dt: 180, at: [m.lat, m.lon] }); return; }   /* a leeward gate of two buoys (J3): cross the line between them */
       var near = FSRouter.dist(c.start.lat, c.start.lon, m.lat, m.lon) < 25, legNm = FSRouter.dist(pts[i].lat, pts[i].lon, m.lat, m.lon);
       /* an offshore rounding mark gets a long gate ray, so the router has to sail round it rather than past it */
-      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', inshore ? 0.15 : near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1)), inshore ? 0.03 : 0), dt: near ? 180 : undefined, at: [m.lat, m.lon] });
+      legs.push({ name: m.name, gate: FSRouter.markGate(m, pts[i], pts[i + 2], m.side || 'port', inshore ? 0.15 : near ? 1.2 : Math.min(30, Math.max(3, legNm * 0.1)), inshore ? 0.03 : 0), dt: near || inshore ? 180 : undefined, at: [m.lat, m.lon] });
     });
-    legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: inshore ? 0.05 : c.finish.radius_nm || 0.4, at: [c.finish.lat, c.finish.lon] });
+    legs.push({ name: c.finish.name, point: [c.finish.lat, c.finish.lon], r: inshore ? 0.05 : c.finish.radius_nm || 0.4, dt: inshore ? 180 : undefined, at: [c.finish.lat, c.finish.lon] });   /* inshore, the leg home in short steps too (Stuart 17 Nov 14:47: 20-minute steps could not leave Colten) */
     if (fromPt) {   // from a point on the water: drop the marks already rounded, judged by distance along the course
       var along = function (la, lo) { var best = 1e9, acc = 0, at = 0; for (var k = 0; k < pts.length - 1; k++) { var a = pts[k], b = pts[k + 1], L = FSRouter.dist(a.lat, a.lon, b.lat, b.lon), d1 = FSRouter.dist(a.lat, a.lon, la, lo), d2 = FSRouter.dist(la, lo, b.lat, b.lon), off = d1 + d2 - L; if (off < best) { best = off; at = acc + Math.min(L, d1); } acc += L; } return at; };
       var me = along(fromPt.lat, fromPt.lon), cum = 0;
@@ -2028,6 +2028,13 @@
       $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
     if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
     else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    /* Stuart 17 Nov 14:53, Mark+: "gps lozenge does not appear unless you turn GPS off and on". Turned back on as the app opens, the first
+       request can go in before the phone has granted location, and then no fix ever comes. With no fix 8 s on, ask again, as turning the GPS
+       off and on did, up to six times. */
+    clearTimeout(LIVE.kick); var tries = 0, t0k = Date.now(), kick = function () { if (!LIVE.on || LIVE.sim) return; var f = LIVE.fix; if (f && !f.dr && f.at > t0k) return; if (++tries > 6) return;
+      try { if (LIVE.watch != null) { navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }); } else navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); } catch (e) {}
+      LIVE.kick = setTimeout(kick, 8000); };
+    LIVE.kick = setTimeout(kick, 8000);
     clearInterval(LIVE.drTimer); LIVE.drTimer = setInterval(drTick, 1000);
     /* reopened at sea (Stuart 15 Nov, I): the last good fix was kept on the phone, so if the GPS does not answer the reckoning carries
        on from it, counting from when it was taken. Only within DR_KEEP of that fix, so a phone opened ashore next day starts clean. */
@@ -2036,7 +2043,7 @@
   var DR_KEEP = 30 * 60000;
   function realKeep() { var f = LIVE.real; if (LIVE.on && f && !f.kept) store('fs-livereal', JSON.stringify({ la: f.la, lo: f.lo, at: f.at, acc: f.acc, sog: f.sog, cog: f.cog })); }
   document.addEventListener('visibilitychange', function () { if (document.hidden) realKeep(); }); window.addEventListener('pagehide', realKeep);   /* closing keeps the very last fix */
-  function liveStop(keep) {
+  function liveStop(keep) { clearTimeout(LIVE.kick);
     if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; clearInterval(LIVE.drTimer); LIVE.drTimer = null; LIVE.real = null; LIVE.drTrack = [];
     if (LIVE.wake) { try { LIVE.wake.release(); } catch (e) {} LIVE.wake = null; }
     if (keep) return; store('fs-livereal', ''); LIVE.on = false; LIVE.fix = null;   /* GPS stopped on purpose: no reckoning from that fix later */ LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; draw();

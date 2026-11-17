@@ -19,6 +19,10 @@
   var C = ld(KEY, { on: false }), MK = null, BY = {}, SRC = null, NOTE = null, last = null, pick = null;
   var B = ld(BKEY, null) || { type: 'marks', name: 'Solent race', start: null, marks: [], fin: 'start', finish: null, wl: { wkind: 'brg', wcode: '', brg: null, dist: 1.5, laps: 2, lkind: 'start', lcode: '', side: 'port' } };
   var QUIET = false, PT = null;
+  /* test mode left running when the app closed (Stuart 17 Nov 14:56): put the race back as it was before test mode, so the practice race is not
+     kept as your own and the first card opens as usual */
+  (function () { var ts = ld('fs-solent-testsave', null); if (!ts) return; try { localStorage.removeItem('fs-solent-testsave'); } catch (e) {} if (ts.B) { B = ts.B; sv(BKEY, B); }
+    var put = function (n) { if (!window.__fsSetLine) { if (n < 40) setTimeout(function () { put(n + 1); }, 250); return; } ['boat', 'pin'].forEach(function (e) { var a = ts.line && ts.line[e]; window.__fsSetLine(e, a ? a[0] : null, a ? a[1] : null); }); }; put(0); })();
   function saveB() { if (!QUIET) B.at = Date.now(); sv(BKEY, B); if (!QUIET && window.__fsBcPush) { clearTimeout(PT); PT = setTimeout(function () { try { window.__fsBcPush(); } catch (e) {} }, 1500); } }   /* M3: every change goes to the crew on the boat code */
   function share() { var l = window.__fsLine ? window.__fsLine() : {}; return { at: B.at || 0, b: B, line: { boat: l.boat || null, pin: l.pin || null, transit: !!l.transit } }; }
   function applyRemote(o) { if (!o || !o.b || !(o.at > (B.at || 0))) return false; var prevShown = B.shown; QUIET = true; try { B = o.b; B.at = o.at; sv(BKEY, B);
@@ -160,7 +164,7 @@
     st.textContent += 'body.mkfold #time,body.mkfold #tzRow,body.mkfold #clock,body.mkfold #now{display:none!important}.mktime[hidden]{display:none}' +
       '.sollegs>*{flex-shrink:0}' +
       '.solce{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start}.solcer td{padding-top:0!important;border-top:0!important}.solce .btn.sm{min-height:32px;min-width:32px;padding:0 9px;font-size:13px}.solceadd{margin-top:4px}' +
-      '.solcc{position:fixed;left:8px;z-index:12;background:#dc2626;color:#fff;border:2px solid #fecaca;border-radius:20px;font:800 13px system-ui,sans-serif;letter-spacing:.05em;padding:9px 14px;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer}.solcc[hidden]{display:none}' +
+      '.solcc{background:#dc2626;color:#fff;border:2px solid #fecaca;border-radius:12px;font:800 13px system-ui,sans-serif;letter-spacing:.05em;padding:0 12px;min-height:44px;align-self:stretch;white-space:nowrap;cursor:pointer}.solcc.solccfx{position:fixed;left:8px;bottom:80px;z-index:12;padding:9px 14px;min-height:0;box-shadow:0 4px 14px rgba(0,0,0,.4)}.solcc[hidden]{display:none}' +
       '.solce-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);z-index:13;width:min(calc(100vw - 20px),440px);box-sizing:border-box;background:var(--panel,#0B1B30);color:var(--ink,#fff);border:2px solid #dc2626;border-radius:14px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;box-shadow:0 6px 18px rgba(0,0,0,.4)}.solce-bar[hidden]{display:none}.solce-bar span{font-size:13px;opacity:.85}' +
       '.sszoom{position:relative;align-self:flex-end;margin-top:-50px;margin-right:8px;display:flex;gap:6px;z-index:1}.sszoom .btn{min-width:40px;min-height:40px;font-size:20px;font-weight:700;padding:0}' +
       '.sqser{margin:0;font-size:12px;opacity:.85}.ssov.ssinfo{background:rgba(59,130,246,.18)!important;color:inherit!important;border-color:#3b82f6!important}' +
@@ -305,9 +309,8 @@
   function ceDone(msg) { B.edited = Date.now(); saveB(); go(true); redraw(); showList(); toast('Course changed. ' + msg + ' The crew have it by the boat code.'); }
   function raceOn() { var now = Date.now() / 1000; return !!(window.FS_MARK && B.shown && B.startAt && now >= B.startAt && now < B.startAt + 10 * 3600 && !(B.ended > B.startAt * 1000)); }
   function ccBtn() { var b = $('solCC'); if (!raceOn()) { if (b) b.hidden = true; return; } css();
-    if (!b) { b = document.createElement('button'); b.id = 'solCC'; b.className = 'solcc'; b.type = 'button'; b.textContent = 'COURSE CHANGE'; b.title = 'The committee changed the course: open the course, leg by leg, to change it'; document.body.appendChild(b); b.onclick = function () { showList(); }; }
-    var y = 0; ['.top', '#mkTop', '#navStrip', '#fsPlot', '#solSeq', '#astroLine', '#errBox'].forEach(function (q) { var e = document.querySelector(q); if (e && e.getClientRects().length && !e.hidden) y = Math.max(y, e.getBoundingClientRect().bottom); });
-    var t = Math.round(y + 8) + 'px'; if (b.style.top !== t) b.style.top = t; b.hidden = !!($('solLegs') && !$('solLegs').hidden) || !!($('solCE') && !$('solCE').hidden); }
+    if (!b) { b = document.createElement('button'); b.id = 'solCC'; b.className = 'solcc'; b.type = 'button'; b.textContent = 'COURSE CHANGE'; b.title = 'The committee changed the course: open the course, leg by leg, to change it'; var g = $('bar') && $('bar').querySelector('.pgrp'); if (g) g.appendChild(b); else { b.classList.add('solccfx'); document.body.appendChild(b); } b.onclick = function () { showList(); }; }   /* Stuart 17 Nov 14:54: it floated over the nav window; now it sits in the bottom bar after TIME, where nothing floats */
+    b.hidden = !!($('solLegs') && !$('solLegs').hidden) || !!($('solCE') && !$('solCE').hidden); }
   if (window.FS_MARK) setInterval(ccBtn, 1000);
   /* Stuart 17 Nov 14:19: "mark first action screen after landing page should open with the start new race box in view". Once the landing
      page has gone, the Start new race card shows, unless a race is under way, a course is being set or test mode is on */
@@ -717,7 +720,7 @@
       '<button data-em="spd">x' + EM.x + '</button><button data-em="sh-">Wind −10°</button><button data-em="sh+">Wind +10°</button><button data-em="cc">Course change</button><button data-em="ocs"' + (EM.early ? ' aria-pressed="true"' : '') + '>Early start</button><button data-em="x">Stop</button>'; }
   function testStart() {
     if (SIM.on || !window.__fsSim) return; css(); var lq = window.__fsLine ? window.__fsLine() : {};
-    SIM.saved = { B: JSON.parse(JSON.stringify(B)), line: JSON.parse(JSON.stringify(lq)) }; SIM.push = window.__fsBcPush; window.__fsBcPush = function () {};
+    SIM.saved = { B: JSON.parse(JSON.stringify(B)), line: JSON.parse(JSON.stringify(lq)) }; sv('fs-solent-testsave', SIM.saved); SIM.push = window.__fsBcPush; window.__fsBcPush = function () {};
     QUIET = true; try {
       var c = build(); if (!c || c.err) { B.type = 'marks'; B.marks = parseBoard('3F P, 2C S').marks; B.fin = 'start'; B.finish = null; }
       if (!windRef()) B.wind = { twd: 230, src: 'typed', at: Date.now() };
@@ -776,7 +779,7 @@
     var cand = MK.filter(function (m) { return m.id !== m0.code && rh(m0, m).nm < 2 && rh(m0, m).nm > 0.3; }).sort(function (a, b) { return rh(m0, a).nm - rh(m0, b).nm; })[0]; if (!cand) return;
     B.marks[i] = { code: cand.id, name: cand.id + ' ' + cand.name, lat: cand.lat, lon: cand.lon, side: m0.side }; saveB(); go(true); redraw(); toast('Test mode: the committee has changed the course. Mark ' + (i + 1) + ' is now ' + cand.id + ' instead of ' + (m0.code || m0.name) + '. Tap COURSE CHANGE to see it, or to put it back.'); }
   function testStop() {
-    if (!SIM.on) return; clearInterval(SIM.t); SIM.on = false; window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
+    if (!SIM.on) return; clearInterval(SIM.t); SIM.on = false; try { localStorage.removeItem('fs-solent-testsave'); } catch (e) {} window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
     QUIET = true; try { if (sv0.B) { B = sv0.B; sv(BKEY, B); } ['boat', 'pin'].forEach(function (e) { var a = sv0.line && sv0.line[e]; window.__fsSetLine(e, a ? a[0] : null, a ? a[1] : null); }); if (window.__fsClearCourse) window.__fsClearCourse(); var c0 = build(); if (B.shown && c0 && !c0.err) go(true); } catch (e) {} finally { QUIET = false; }
     if (SIM.push) window.__fsBcPush = SIM.push; try { var PL3 = window.__fsPlot || window.__navPlot; if (PL3 && PL3.C.on) PL3.toggle(false); } catch (e) {} redraw(); toast('Test mode stopped: your own race is back.'); }
   /* ---- The start sequence (Stuart 16 Nov 12:46 "the usual start sequence with count down"; 17 Nov 05:04 sounds and vibration on).

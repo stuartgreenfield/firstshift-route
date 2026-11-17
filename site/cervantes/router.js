@@ -416,6 +416,9 @@
           }
           var e0 = new Error('The forecasts end ' + Math.round(t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
         }
+        /* no step fits (Stuart 17 Nov 14:47, testrace1: rounding 2C Colten, the leg home ran in 20-minute steps of about 2.7 nm, and every
+           one from the narrows by Colten crossed water shallower than the safety depth): halve the step and try again before giving up */
+        if (!ncand && !(calm === pts.length && pts.length) && dt > 75) { t -= dt / 3600; dt = Math.max(60, dt / 2); step--; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); continue; }
         if (!ncand) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
         var keep = best.filter(Boolean);
         hist.push({ pts: keep, t: t, leg: li });
