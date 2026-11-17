@@ -1,0 +1,14 @@
+/* Stuart 17 Nov 14:23: after the gun the sequence box shows only GUN + time and General recall (no Start screen, Sync, minutes, AP). Was: tide by hand ("crucial"), the course card's Next panel (start time, start line, tide, sequence 10-5-0 / 5-4-1-0 /
+   3-2-1-0, start screen 10 / 5 / Off / now), the line by committee boat, direction and length. Run: node tests/mark-tide.js http://localhost:8779 */
+const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
+let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['iPad Mini'], serviceWorkers: 'block' });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/mark/');
+  await p.waitForFunction(() => window.FSSolent && FSSolent.marks && FSSolent.marks() && window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(1000);
+  await p.evaluate(() => { const x = document.getElementById('solCardX'); if (x && x.offsetParent) x.click(); FSSolent.set({ type: 'marks', start: { code: null, name: 'Start line', lat: 50.770, lon: -1.2925, line: true }, marks: FSSolent.board('3F P, 2C S').marks, plan: 'list' }); window.__fsSetLine('boat', 50.7700, -1.2950); window.__fsSetLine('pin', 50.7690, -1.2900); FSSolent.set({ startAt: Math.round(Date.now() / 1000 + 4) }); FSSolent.go(); }); await p.waitForTimeout(1200);
+  await p.evaluate(() => { const q = document.querySelector('#solStartScr [data-q=small]'); if (q && !document.getElementById('solStartScr').hidden) q.click(); }); await p.waitForTimeout(6000);
+  const t = await p.evaluate(() => { const e = document.getElementById('solSeq'); return e && !e.hidden ? e.innerText.replace(/\s+/g, ' ') : null; });
+  ok(t && /GUN/.test(t) && /General recall/.test(t) && !/Start screen|Sync|AP|min/.test(t.replace(/GUN.*?\d:\d\d/, '')), 'after the gun: GUN + time and General recall only', t);
+  ok(!errs.length, 'no page errors', errs.join(' | ') || null);
+  console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
