@@ -54,7 +54,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   let big = await p.evaluate(() => document.getElementById('mkStartBig').innerText.replace(/\s+/g, ' '));
   ok(/GUN 3:5\d|GUN 4:00/.test(big), 'the countdown to the gun', big.slice(0, 60));
   ok(/TO THE LINE \d+ m/.test(big), 'distance to the line', big);
-  ok(/BIAS (Pin|Boat) \d+ m/.test(big), 'the line bias on the race wind', big);
+  ok(/BIAS[^0-9]*(Pin|Boat) \d+ m/.test(big), 'the line bias on the race wind', big);
   await p.evaluate(() => { const g = FSMark.state().gun; FSMark.set({ gun: g + 3 }); }); await click('#mkBody [data-k=sync]');
   ok(await p.evaluate(() => FSMark.state().gun % 60 === Math.round(Date.now() / 1000 + 240) % 60 || true), 'Sync rounds the gun to the whole minute');
 
@@ -70,8 +70,19 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(/NEXT MARK 3F/.test(rb), 'Race shows the next mark', rb.slice(0, 80));
   ok(/HEADER OR LIFT/.test(rb) && /TIDE HERE/.test(rb), 'header or lift, and the tide here', rb);
 
+  /* 9b. racing: the course is locked; taps on the chart never add buoys (Stuart's photo, 17 Nov 05:39 and 05:41) */
+  const nb = await p.evaluate(() => FSSolent.state().marks.length);
+  const tapAt = await p.evaluate(() => { const m = FSSolent.marks().find(q => q.id === '2B') || FSSolent.marks()[5]; const q = window.__fsXY(m.lat, m.lon); return { x: q[0], y: q[1], old: FSSolent.stepState().on }; });
+  for (let i = 0; i < 3; i++) { await p.mouse.click(tapAt.x, tapAt.y); await p.waitForTimeout(300); }
+  ok(!tapAt.old && await p.evaluate(() => FSSolent.state().marks.length) === nb, 'while racing, taps on the chart never add buoys (the old builder is off)', nb + ' marks');
+  await p.evaluate(() => FSMark.set({ tab: 'course' })); await p.waitForTimeout(300);
+  const lk = await p.evaluate(() => ({ warn: /course is locked/.test(document.getElementById('mkBody').innerText), codes: !!document.getElementById('mkCodes'), edit: !!document.querySelector('#mkBody [data-k=editcourse]') }));
+  ok(lk.warn && !lk.codes && lk.edit, 'after the gun the Course panel is locked, with Edit course', JSON.stringify(lk));
+  await click('#mkBody [data-k=editcourse]');
+  ok(await p.evaluate(() => !!document.getElementById('mkCodes') && !!document.querySelector('#mkBody [data-k=editdone]')), 'Edit course opens the editor while racing, with Done editing');
+  await click('#mkBody [data-k=editdone]');
   /* 10. Finished: elapsed and IRC corrected */
-  await p.evaluate(() => FSMark.set({ gun: Math.round(Date.now() / 1000 - 3600) })); await click('#mkBody [data-k=finish]');
+  await p.evaluate(() => FSMark.set({ gun: Math.round(Date.now() / 1000 - 3600), tab: 'race' })); await click('#mkBody [data-k=finish]');
   const af = await p.evaluate(() => document.getElementById('mkBody').innerText.replace(/\s+/g, ' '));
   ok(/ELAPSED 1:00:0\d/.test(af) && /CORRECTED \(IRC\) \d:\d\d:\d\d/.test(af), 'After: elapsed and corrected time (IRC)', af.slice(0, 120));
 
@@ -89,8 +100,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(s.c && s.c.marks.length === 3 && /Windward/.test(s.c.marks[0].name) && /gate/i.test(s.c.marks[1].name), 'windward-leeward, 2 laps, gate: windward, gate, windward, finish at the gate', s.c && s.c.marks.map(m => m.name).join(' > ') + ' > ' + s.c.finish.name);
 
   /* 13. Settings */
-  await click('#mkSetBtn'); await click('#mkBody [data-k=big][data-v="1"]');
+  await click('#mkSetBtn'); await click('#sheet .stabs .tab[data-s=mark]'); await click('#s-mark [data-k=big][data-v="1"]');
   ok(await p.evaluate(() => document.documentElement.classList.contains('mkbigui')), 'Settings: big buttons');
-  await click('#mkBody [data-k=done]');
+  await p.evaluate(() => FSMark.closeSettings()); await p.waitForTimeout(300);
   ok(!errs.length, 'no page errors', errs.join(' | ') || null);
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

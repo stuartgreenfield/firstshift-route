@@ -67,25 +67,34 @@
 
   /* ---- long touch to start, drag, long press to lock ---- */
   function hold(target, elOf, id) {
-    var t = null, sx = 0, sy = 0, fired = false;
+    var t = null, sx = 0, sy = 0;
     target.addEventListener('pointerdown', function (e) {
-      if (e.button > 0) return; var el = elOf(); if (!el) return; sx = e.clientX; sy = e.clientY; fired = false; clearTimeout(t);
-      if (M.el === el) { e.preventDefault(); e.stopPropagation(); try { target.setPointerCapture(e.pointerId); } catch (x) {} var c = cur(el); M.drag = { x: e.clientX, y: e.clientY, dx: c[0], dy: c[1], moved: false }; t = setTimeout(function () { if (M.drag && !M.drag.moved) { fired = true; lock(); } }, LONG); return; }
-      t = setTimeout(function () { fired = true; begin(el, id); try { target.setPointerCapture(e.pointerId); } catch (x) {} var c = cur(el); M.drag = { x: sx, y: sy, dx: c[0], dy: c[1], moved: false }; if (navigator.vibrate) try { navigator.vibrate(30); } catch (x) {} }, LONG);
+      if (e.button > 0 || M.el) return; var el = elOf(); if (!el) return; sx = e.clientX; sy = e.clientY; clearTimeout(t);
+      t = setTimeout(function () { t = null; swallow = Date.now(); begin(el, id); var c = cur(el); M.drag = { x: sx, y: sy, dx: c[0], dy: c[1], moved: false }; if (navigator.vibrate) try { navigator.vibrate(30); } catch (x) {} }, LONG);
     }, true);
-    target.addEventListener('pointermove', function (e) {
-      if (!M.drag || M.el !== elOf()) { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) { clearTimeout(t); t = null; } return; }
-      var dx = e.clientX - M.drag.x, dy = e.clientY - M.drag.y; if (Math.hypot(dx, dy) > 6) { M.drag.moved = true; clearTimeout(t); }
-      e.preventDefault(); e.stopPropagation(); set(M.el, M.drag.dx + dx, M.drag.dy + dy); place();
-    }, true);
-    var up = function (e) { clearTimeout(t); t = null; if (M.drag && M.el === elOf()) { M.drag = null; e.stopPropagation(); } if (fired) swallow = Date.now(); };
+    target.addEventListener('pointermove', function (e) { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) { clearTimeout(t); t = null; } }, true);
+    var up = function () { if (t) { clearTimeout(t); t = null; } };
     target.addEventListener('pointerup', up, true); target.addEventListener('pointercancel', up, true);
-    target.addEventListener('click', function (e) { if (Date.now() - swallow < 700 || M.el === elOf()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);   /* a long press never also presses the button */
+    target.addEventListener('click', function (e) { if (Date.now() - swallow < 900 || M.el === elOf()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);   /* a long press never also presses the button */
     target.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   }
+  /* while moving: drag it from anywhere on it (or its grip); let go and it slides clear at once; a long press anywhere on it locks it */
+  var lt = null;
+  function onIt(e) { if (!M.el) return false; var g = grips[M.id], tg = e.target; return M.el.contains(tg) || (g && g.contains(tg)) || (function () { var r = M.el.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; })(); }
+  window.addEventListener('pointerdown', function (e) {
+    if (!M.el || M.drag) return; if (!onIt(e)) return; e.preventDefault(); e.stopPropagation(); swallow = Date.now();
+    var c = cur(M.el); M.drag = { x: e.clientX, y: e.clientY, dx: c[0], dy: c[1], moved: false }; clearTimeout(lt); lt = setTimeout(function () { if (M.drag && !M.drag.moved) { M.drag = null; lock(); } }, LONG);
+  }, true);
+  window.addEventListener('pointermove', function (e) {
+    if (!M.el || !M.drag) return; var dx = e.clientX - M.drag.x, dy = e.clientY - M.drag.y; if (Math.hypot(dx, dy) > 6) { M.drag.moved = true; clearTimeout(lt); }
+    e.preventDefault(); e.stopPropagation(); set(M.el, M.drag.dx + dx, M.drag.dy + dy); place();
+  }, true);
+  var drop = function (e) { clearTimeout(lt); if (!M.el || !M.drag) return; M.drag = null; e.stopPropagation(); swallow = Date.now(); var s2 = settle(M.el); if (s2) set(M.el, s2[0], s2[1]); place(); };
+  window.addEventListener('pointerup', drop, true); window.addEventListener('pointercancel', drop, true);
+  window.addEventListener('click', function (e) { if (M.el && onIt(e)) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   function begin(el, id) { if (M.el && M.el !== el) lock(); M.el = el; M.id = id; M.from = cur(el); el.classList.add('navmove-on'); undoBar(true); }
   function lock() {
-    var el = M.el; if (!el) return; var s = settle(el);
+    var el = M.el; if (!el) return; swallow = Date.now() + 1500; var s = settle(el);   /* the locking press never also presses the button */
     if (!s) set(el, M.from[0], M.from[1]); else set(el, s[0], s[1]);
     var c = cur(el); save(M.id, c[0], c[1]); el.classList.remove('navmove-on'); var last = { id: M.id, el: el, from: M.from };
     M.el = null; M.id = null; M.drag = null; place(); try { window.dispatchEvent(new Event('resize')); } catch (x) {}

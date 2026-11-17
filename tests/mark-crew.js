@@ -17,7 +17,7 @@ const waitFor = (p, fn, arg, ms) => p.waitForFunction(fn, arg, { timeout: ms || 
   ok(lg && lg.anim === 'mkring' && lg.grad, 'with the colour line running round it');
   await A.screenshot({ path: '/tmp/claude-0/ui/mark-logo.png', clip: { x: 0, y: 0, width: 390, height: 110 } });
   /* A makes a boat code */
-  await A.evaluate(() => FSMark.set({ tab: 'settings' })); await A.click('#mkBody [data-k=bcmake]'); await A.waitForTimeout(1500);
+  await A.evaluate(() => FSMark.set({ tab: 'settings' })); await A.click('#s-mark [data-k=bcmake]'); await A.waitForTimeout(1500);
   const code = await A.evaluate(() => window.__mkSync.code()); ok(/^[A-HJ-NP-Z2-9]{6}$/.test(code), 'Make a boat code', code);
   /* A sets the course and shows it */
   await A.evaluate(() => { FSSolent.set({ type: 'marks', start: { code: null, name: 'Start point', lat: 50.772, lon: -1.300 }, marks: FSSolent.board('3F P, 2C S, 3E').marks }); FSMark.set({ tab: 'course' }); });
@@ -43,7 +43,7 @@ const waitFor = (p, fn, arg, ms) => p.waitForFunction(fn, arg, { timeout: ms || 
   const rec = await A.evaluate(async c => (await fetch('/api/boat/' + c, { cache: 'no-store' })).status, code);
   ok(rec === 404, "Route's boat settings and races record is not touched by Mark", 'status ' + rec);
   /* Stop sharing on B: A's next change does not reach it */
-  await B.evaluate(() => FSMark.set({ tab: 'settings' })); await B.click('#mkBody [data-k=bcleave]'); await B.waitForTimeout(500);
+  await B.evaluate(() => FSMark.set({ tab: 'settings' })); await B.click('#s-mark [data-k=bcleave]'); await B.waitForTimeout(500);
   await A.evaluate(() => FSMark.set({ flag: 'Z' })); await B.waitForTimeout(9000);
   ok(await B.evaluate(() => FSMark.state().flag) === 'I', 'after Stop sharing, the crew\'s changes no longer arrive');
   ok(!A.errs.length && !B.errs.length, 'no page errors', A.errs.concat(B.errs).join(' | ') || null);

@@ -33,22 +33,24 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(r0 === 'course' && r1 === 'race', 'before the gun, Racing opens with a tap only once the wind is given', r0 + ' then ' + r1);
   await p.evaluate(() => FSMark.set({ tab: 'course', gun: null, wind: null }));
   /* Settings: Help, Share, Show me round, Test mode */
-  await p.click('#mkSetBtn'); await p.waitForTimeout(400);
-  const S = await p.evaluate(() => [...document.querySelectorAll('#mkBody .xrow .btn')].map(b => b.textContent));
+  await p.click('#mkSetBtn'); await p.waitForTimeout(400); await p.click('#sheet .stabs .tab[data-s=mark]'); await p.waitForTimeout(300);
+  const RS = await p.evaluate(() => ({ open: !document.getElementById('sheet').hidden, tabs: [...document.querySelectorAll('#sheet .stabs .tab')].map(t => t.textContent.trim()), tcc: !!document.getElementById('tcc') }));
+  ok(RS.open && RS.tabs[0] === 'Mark' && ['Boat', 'Forecasts', 'Course', 'Sails', 'Display', 'Charts', 'My set-up'].every(x => RS.tabs.includes(x)) && RS.tcc, 'Settings is Route\'s Settings (boat, IRC TCC, polars, forecasts, sails, charts, My set-up) with a Mark tab', RS.tabs.join(', '));
+  const S = await p.evaluate(() => [...document.querySelectorAll('#s-mark .xrow .btn')].map(b => b.textContent));
   ok(['Help', 'Share', 'Show me round', 'Test mode'].every(x => S.includes(x)), 'Settings has Help, Share, Show me round and Test mode', S.join(', '));
-  await p.click('#mkBody [data-k=help]'); await p.waitForTimeout(400);
+  await p.click('#s-mark [data-k=help]'); await p.waitForTimeout(400);
   const H = await p.evaluate(() => ({ n: document.querySelectorAll('#mkBody .htopic').length, listen: document.querySelectorAll('#mkBody [data-k=listen]').length, top: document.querySelector('#mkBody .xrow .btn').textContent }));
   ok(H.n >= 12 && H.listen === H.n && /test mode/i.test(H.top), 'Help: Mark\'s topics with Listen, test mode at the top', JSON.stringify(H));
   await p.evaluate(() => { FSSolent.set({ type: 'marks', start: { code: null, name: 'Start point', lat: 50.772, lon: -1.300 }, marks: FSSolent.board('3F P, 2C S').marks }); FSMark.set({ tab: 'share', gun: Math.round(Date.now() / 1000 + 600), wind: { twd: 230, tws: 12 } }); }); await p.waitForTimeout(400);
   const sh = await p.evaluate(() => document.getElementById('mkShareTxt').value);
   ok(/Course: 3F P, 2C S/.test(sh) && /Gun \d\d:\d\d/.test(sh) && /Legs: 1 \d{3}°T/.test(sh), 'Share: the course, the gun and the legs, ready to send', sh.replace(/\n/g, ' / ').slice(0, 160));
   /* the tour walks Mark's screen */
-  await p.evaluate(() => FSMark.set({ tab: 'settings' })); await p.click('#mkBody [data-k=tour]'); await p.waitForTimeout(1200);
+  await p.evaluate(() => FSMark.set({ tab: 'settings' })); await p.click('#s-mark [data-k=tour]'); await p.waitForTimeout(1200);
   const tour = await p.evaluate(() => { const c = document.querySelector('.fst-card, .fst h4'); return c ? c.textContent.slice(0, 80) : null; });
   ok(tour && /Your race/.test(tour), 'Show me round starts the tour on Mark\'s own screen', tour);
   await p.evaluate(() => { try { FSTour.end(); } catch (e) {} }); await p.waitForTimeout(500);
   /* test mode: the practice boat sails the course */
-  await p.evaluate(() => FSMark.set({ tab: 'settings' })); await p.click('#mkBody [data-k=test]'); await p.waitForTimeout(4000);
+  await p.evaluate(() => FSMark.set({ tab: 'settings' })); await p.click('#s-mark [data-k=test]'); await p.waitForTimeout(4000);
   const t1 = await p.evaluate(() => ({ bar: !!document.getElementById('mkTestBar'), fix: window.__fsLiveFix && window.__fsLiveFix(), tab: FSMark.state().tab, big: (document.getElementById('mkStartBig') || {}).innerText }));
   ok(t1.bar && t1.fix && t1.tab === 'start', 'Test mode: a practice boat on the GPS, the Start panel open', JSON.stringify({ bar: t1.bar, tab: t1.tab, fix: t1.fix && [t1.fix.la.toFixed(4), t1.fix.lo.toFixed(4)] }));
   ok(/TO THE LINE \d+ m/.test((t1.big || '').replace(/\s+/g, ' ')), 'the line figures from the practice boat', (t1.big || '').replace(/\s+/g, ' ').slice(0, 90));

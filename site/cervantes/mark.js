@@ -41,7 +41,7 @@
        places Mark's panel and adds what Route has no style for. */
     s.textContent =
       /* the parts of Route's offshore screen Mark does not use */
-      'html.mk .top,html.mk #panel,html.mk .bar,html.mk #helpBtn,html.mk #editFab,html.mk #navClearBtn,html.mk #fromHere,html.mk #navStrip,html.mk #fsPlot,html.mk #astroLine,html.mk #updBar,html.mk .cbanner,html.mk .adjpill,html.mk .newdata,html.mk #boatWarn,html.mk .prog,html.mk #liveBox,' +
+      'html.mk .top,html.mk #panel,html.mk .bar,html.mk #helpBtn,html.mk #editFab,html.mk #navClearBtn,html.mk #fromHere,' + (plus ? '' : 'html.mk #navStrip,') + 'html.mk #fsPlot,html.mk #astroLine,html.mk #liveBox,' +
       'html.mk #solCard,html.mk #solStep,html.mk #solLegs,html.mk #solAfter,html.mk #solChain,html.mk #solPick,html.mk #solSheet,html.mk .solpop,html.mk .solpick,html.mk .solchain,html.mk .solstep,html.mk #wiz,html.mk #spFilm{display:none!important}' +
       'html.mktest .mkpick{top:calc(var(--mkTB,60px) + 64px)}.mktestbar{border-color:#F2B233}.mktestbar b{color:#F2B233}' +
       'html.mk body{overflow:hidden}html.mk body::after{background:#ff8a1f}' +
@@ -69,6 +69,9 @@
       '.mklegs{width:100%;border-collapse:collapse;font:13px var(--f-data)}.mklegs td{padding:6px 4px;border-top:1px solid var(--line);vertical-align:top}.mklegs small{color:var(--muted);font-family:var(--f-body)}' +
       '.mkmk{display:flex;flex-wrap:wrap;gap:6px}.mkmk .mkchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:0 2px 0 10px;min-height:40px;font:600 14px var(--f-data)}' +
       '.mkchip button{min-width:40px;min-height:40px;border:0;background:none;color:var(--ink);font:600 13px var(--f-head);cursor:pointer;border-radius:8px}' +
+      'html.mk .navtoast{pointer-events:none;bottom:calc(var(--mkH,0px) + 72px);left:calc((100% - var(--mkW,0px)) / 2);max-width:min(calc(100% - var(--mkW,0px) - 24px),460px)}' +   /* messages sit on the chart, above the panel, never over its buttons */
+      '.mklist{display:grid;gap:4px}.mkli{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:4px 0;min-width:0}.mkli b{font:600 15px var(--f-data);min-width:3.2em}.mkli span{flex:1 1 auto;min-width:0;font-size:13px}.mkli i{color:var(--brand);font-style:normal}.mkli .mklia{flex:none;display:flex;gap:4px}' +
+      '.mkbias{cursor:pointer;border-color:var(--brand)!important}.mkbias small{color:var(--brand)!important}' +
       '.mkwarn{border:2px solid #dc2626;border-radius:10px;padding:8px 10px;font:600 15px var(--f-head);color:#dc2626}' +
       '.mkpick{position:fixed;left:calc((100% - var(--mkW,0px)) / 2);transform:translateX(-50%);top:calc(var(--mkTB,60px) + 8px);z-index:21;background:var(--panel);border:1px solid var(--brand);color:var(--ink);border-radius:12px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:600 13.5px var(--f-body);max-width:calc(100% - var(--mkW,0px) - 24px);box-sizing:border-box;box-shadow:0 4px 18px rgba(0,0,0,.35)}' +
       /* a pad, or any wide screen, and a phone held sideways: the panel beside the chart, full height, as Route's results panel */
@@ -85,9 +88,9 @@
     top = document.createElement('div'); top.id = 'mkTop'; top.className = 'mktop'; top.setAttribute('role', 'banner');
     /* the FirstShift sails logo, top left, with a colour line running round it (Stuart 17 Nov 05:07) */
     top.innerHTML = '<a class="mklogo" href="https://firstshiftsailing.com" target="_blank" rel="noopener" aria-label="FirstShift ' + (plus ? 'Mark+' : 'Mark') + '. Opens firstshiftsailing.com in a new window" title="FirstShift: Yacht Racing Intelligence"><span class="mklg" id="mkLogo"><b>' + (plus ? 'Mark+' : 'Mark') + '</b></span></a>' +
-      '<div class="brand mkbrand"><b id="mkRace">No course yet</b><span class="chip"><span class="mkarea">' + esc(window.FS_AREA || 'Solent') + '</span> <span id="mkGun"></span></span></div><span class="mksp"></span>' +
-      '<button class="ib" id="mkLayBtn" aria-expanded="false" title="What the chart shows" aria-label="What the chart shows: depth and layers"></button><button class="ib" id="mkSetBtn" title="Settings" aria-label="Settings"></button>';
-    [['mkLayBtn', 'layersBtn'], ['mkSetBtn', 'setBtn']].forEach(function (q) { var src = document.getElementById(q[1]), dst = top.querySelector('#' + q[0]); if (src && dst) dst.innerHTML = src.querySelector('svg') ? src.querySelector('svg').outerHTML : src.innerHTML; });   /* Route's own icons */
+      '<div class="brand mkbrand"><b id="mkRace">No course yet</b><span class="chip"><span class="mkarea">' + esc(window.FS_AREA || 'Solent') + '</span> <span id="mkGun"></span> <span id="mkData" title="Forecast data on this device"></span></span></div><span class="mksp"></span>' +
+      '<button class="ib" id="mkLayBtn" aria-expanded="false" title="What the chart shows" aria-label="What the chart shows: depth and layers"></button><button class="ib" id="mkNightBtn" aria-pressed="false" title="Night mode: red only" aria-label="Night mode: red only"></button><button class="ib" id="mkSetBtn" title="Settings" aria-label="Settings"></button>';
+    [['mkLayBtn', 'layersBtn'], ['mkNightBtn', 'nightBtn'], ['mkSetBtn', 'setBtn']].forEach(function (q) { var src = document.getElementById(q[1]), dst = top.querySelector('#' + q[0]); if (src && dst) dst.innerHTML = src.querySelector('svg') ? src.querySelector('svg').outerHTML : src.innerHTML; });   /* Route's own icons */
     document.body.appendChild(top);
     fetch('../brand/' + (plus ? 'markplus' : 'mark') + '-mark.inc.html').then(function (r) { return r.ok ? r.text() : ''; }).then(function (h) { if (h && /<svg/.test(h) && $('mkLogo')) $('mkLogo').innerHTML = h; }).catch(function () {});
     panel = document.createElement('section'); panel.id = 'mkPanel'; panel.className = 'mkpanel'; panel.setAttribute('aria-label', 'Mark');
@@ -98,8 +101,9 @@
       if (b.dataset.tab === 'race' && stage() !== 'race' && stage() !== 'after' && !windKnown()) { M.tab = 'course'; save(); render(); toast('Racing opens at the gun. Before it, give the wind direction and speed first' + (plus ? ', or connect the boat' : '') + '.'); setTimeout(function () { var w = $('mkTwd'); if (w) { w.scrollIntoView({ block: 'center' }); w.focus(); } }, 300); return; } M.tab = b.dataset.tab; M.auto = false; M.autoAt = Date.now(); save(); render(); };
     /* Route's chart, the same in Mark (Stuart 17 Nov 05:08): its Layers box, with the No-go depth control that moves the depth contour */
     $('mkLayBtn').onclick = function () { var lb = $('layersBtn'); if (lb) lb.click(); var p = $('layers'); $('mkLayBtn').setAttribute('aria-expanded', String(!!(p && !p.hidden))); };
-    $('mkSetBtn').onclick = function () { M.tab = M.tab === 'settings' ? (M.back || 'course') : (M.back = M.tab, 'settings'); save(); render(); };
-    panel.addEventListener('click', act); panel.addEventListener('change', change);
+    $('mkSetBtn').onclick = function () { openSettings(); };
+    $('mkNightBtn').onclick = function () { var nb = $('nightBtn'); if (nb) nb.click(); setTimeout(function () { $('mkNightBtn').setAttribute('aria-pressed', nb ? nb.getAttribute('aria-pressed') : 'false'); }, 50); };   /* Route's night mode */   /* Route's Settings, with Mark's tab (Stuart 17 Nov 05:54) */
+    panel.addEventListener('click', act); panel.addEventListener('change', change); panel.addEventListener('input', function (e) { if (e.target.id === 'mkFind') { var fl = $('mkList'); if (fl) fl.innerHTML = listRows(e.target.value); } });
     fitRO(); applyLook(); render(); setInterval(tick, 1000);
   }
   /* the chart fits exactly between the top bar and the panel, so nothing sits on top of it but the course, the boat and man overboard */
@@ -114,41 +118,50 @@
   /* ---------- the race: course, gun and stage ---------- */
   function course() { try { return window.__navCourse && window.__navCourse(); } catch (e) { return null; } }
   function gunAt() { return M.gun || null; }
+  /* after the gun the course is locked: Edit course first (Stuart 17 Nov 05:41: "if you are running a race after the start you must
+     have to push a change or edit button before being able to add more marks or buoys") */
+  function locked() { return stage() === 'race' && !M.editing; }
+  function twdNow() { if (M.wind && M.wind.twd != null) return +M.wind.twd; try { var nw = plus && window.__navWind ? window.__navWind() : null; return nw && nw[1] != null ? +nw[1] : null; } catch (e) { return null; } }
   function windKnown() { if (M.wind && M.wind.twd != null && M.wind.tws > 0) return true; try { var nw = plus && window.__navWind ? window.__navWind() : null; return !!(nw && nw[1] != null && nw[0] > 0); } catch (e) { return false; } }
   function stage() { var g = gunAt(), now = Date.now() / 1000; if (M.finAt) return 'after'; if (g && now >= g) return 'race'; if (g && g - now <= 600) return 'start'; return 'course'; }
   var lastStage = null;
   function tick() {
-    var st = stage(); if (st !== lastStage) { if (lastStage && (st === 'race' || st === 'after' || M.auto !== false || Date.now() - (M.autoAt || 0) > 120000) && ['settings', 'help', 'share'].indexOf(M.tab) < 0) { M.tab = st; save(); render(); }   /* the gun always opens Racing (Stuart 05:28); other changes wait two minutes after a tab chosen by hand */ lastStage = st; }   /* the panel follows the race; a tab chosen by hand holds for two minutes */
+    var st = stage(); if (st !== lastStage && st === 'race') { M.editing = false; save(); if (PICK && !/^line-/.test(PICK)) { PICK = null; pickBar(null); } }
+    if (st !== lastStage) { if (lastStage && (st === 'race' || st === 'after' || M.auto !== false || Date.now() - (M.autoAt || 0) > 120000) && ['settings', 'help', 'share'].indexOf(M.tab) < 0) { M.tab = st; save(); render(); }   /* the gun always opens Racing (Stuart 05:28); other changes wait two minutes after a tab chosen by hand */ lastStage = st; }   /* the panel follows the race; a tab chosen by hand holds for two minutes */
     if (M.tab === 'start' || M.tab === 'race') live(); topBar(); sounds();
   }
-  function topBar() { var c = course(), g = gunAt(); if ($('mkRace')) $('mkRace').textContent = c ? c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d:\d\d$/, '') : 'No course yet';
+  function topBar() { var dc = $('dataChip'), dt = $('mkData'); if (dc && dt) { var tx = dc.textContent.replace(/^(Mark|Route\+?) v[\d.]+ · /, ''); if (dt.textContent !== tx) dt.textContent = tx; }   /* the forecast data age, as Route's data chip */
+    var c = course(), g = gunAt(); if ($('mkRace')) $('mkRace').textContent = c ? c.name.replace(/ \d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d\d:\d\d$/, '') : 'No course yet';
     if ($('mkGun')) { var now = Date.now() / 1000; $('mkGun').textContent = g ? (now < g ? 'Gun ' + mmss(g - now) : 'Race ' + mmss(now - g)) : ''; } }
 
   /* ---------- panels ---------- */
   function render() {
     if (!panel) return; [].forEach.call(panel.querySelectorAll('[data-tab]'), function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === M.tab)); if (b.dataset.tab === 'race') { var wait = stage() !== 'race' && stage() !== 'after' && !windKnown(); b.classList.toggle('mkwait', wait); b.title = wait ? 'Opens at the gun, or now once the wind is given' : ''; } });
-    var h = M.tab === 'start' ? startHtml() : M.tab === 'race' ? raceHtml() : M.tab === 'after' ? afterHtml() : M.tab === 'settings' ? setHtml() : M.tab === 'help' ? helpHtml() : M.tab === 'share' ? shareHtml() : courseHtml();
+    if (M.tab === 'settings') { M.tab = M.back && M.back !== 'settings' ? M.back : 'course'; save(); setTimeout(function () { openSettings('mark'); }, 0); }
+    var h = M.tab === 'start' ? startHtml() : M.tab === 'race' ? raceHtml() : M.tab === 'after' ? afterHtml() : M.tab === 'settings' ? setHtml() : M.tab === 'help' ? helpHtml() : M.tab === 'share' ? shareHtml() : M.tab === 'list' ? listHtml() : courseHtml();
     var b = $('mkBody'), y = b.scrollTop; b.innerHTML = h; b.scrollTop = y; topBar(); if (M.tab === 'start' || M.tab === 'race') live();
   }
   function seg(k, v, lab, on) { return '<button class="btn" data-k="' + k + '" data-v="' + v + '" aria-pressed="' + !!on + '">' + lab + '</button>'; }
   /* Course */
   function courseHtml() {
     var B = SOL() || { type: 'marks', marks: [], wl: {} }, w = B.wl || {}, h = '';
+    if (locked()) return '<div class="mkwarn" style="font-size:14px">Racing: the course is locked so a tap on the chart cannot change it.</div><div class="xrow"><button class="btn primary" data-k="editcourse">Edit course</button></div>' + legsHtml();
+    if (M.editing && stage() === 'race') h += '<div class="xrow"><span class="note" style="flex:1 1 100%">Editing the course while racing. Changes go to the crew.</span><button class="btn primary" data-k="editdone">Done editing</button></div>';
     h += '<div class="row"><button class="btn primary" data-k="new">New course</button>' + seg('type', 'marks', 'Round the cans', B.type !== 'wl') + seg('type', 'wl', 'Windward-leeward', B.type === 'wl') + '</div>';
-    h += '<h3>Start</h3><div class="row">' + seg('startk', 'line', 'The start line', !!(B.start && B.start.line)) + seg('startk', 'tap', 'Tap a mark', !!(B.start && !B.start.line)) + '<span class="note">' + (B.start ? esc(B.start.name) : 'Not set') + '</span></div>';
+    h += '<h3>Start</h3><div class="row">' + seg('startk', 'line', 'The start line', !!(B.start && B.start.line)) + seg('startk', 'tap', 'Tap a buoy', !!(B.start && !B.start.line)) + '<button class="btn" data-k="list" data-v="start">List of buoys</button>' + '<span class="note">' + (B.start ? esc(B.start.name) : 'Not set') + '</span></div>';
     if (B.type !== 'wl') {
       h += '<h3>Marks</h3><div class="row"><input class="mkin wide" id="mkCodes" inputmode="text" autocapitalize="characters" placeholder="Codes or a pasted message: 3G P, 4F S" aria-label="Mark codes from the board or a pasted message"><button class="btn primary" data-k="codes">Add</button></div>';
-      h += '<div class="row"><button class="btn" data-k="pick" data-v="port" aria-pressed="' + (PICK === 'mark-port') + '">Tap buoys: Port</button><button class="btn" data-k="pick" data-v="starboard" aria-pressed="' + (PICK === 'mark-starboard') + '">Tap buoys: Starboard</button></div>';
+      h += '<div class="row"><button class="btn" data-k="pick" data-v="port" aria-pressed="' + (PICK === 'mark-port') + '">Tap buoys: Port</button><button class="btn" data-k="pick" data-v="starboard" aria-pressed="' + (PICK === 'mark-starboard') + '">Tap buoys: Starboard</button><button class="btn" data-k="list" data-v="marks">List of buoys</button></div>';
       h += '<div class="mkmk">' + ((B.marks || []).map(function (m, i) { return '<span class="mkchip">' + esc(m.code || m.name) + '<button data-k="side" data-v="' + i + '" aria-label="Rounding side">' + (m.side === 'starboard' ? 'S' : 'P') + '</button><button data-k="del" data-v="' + i + '" aria-label="Remove ' + esc(m.code || m.name) + '">×</button></span>'; }).join('') || '<span class="note">No marks yet.</span>') + '</div>';
       h += '<div class="row"><label>Finish</label>' + seg('fin', 'start', 'Start line', B.fin !== 'mark') + seg('fin', 'mark', 'Last mark', B.fin === 'mark') + '</div>';
     } else {
       h += '<h3>Windward mark</h3><div class="row">' + seg('wk', 'brg', 'Bearing and distance', w.wkind !== 'buoy' && w.wkind !== 'pt') + seg('wk', 'buoy', 'A buoy', w.wkind === 'buoy') + seg('wk', 'pt', 'Tap a point', w.wkind === 'pt') + '</div>';
-      if (w.wkind === 'buoy') h += '<div class="row"><input class="mkin" id="mkWcode" value="' + esc(w.wcode || '') + '" placeholder="3G" aria-label="Windward buoy code" autocapitalize="characters"></div>';
+      if (w.wkind === 'buoy') h += '<div class="row"><input class="mkin" id="mkWcode" value="' + esc(w.wcode || '') + '" placeholder="3G" aria-label="Windward buoy code" autocapitalize="characters"><button class="btn" data-k="list" data-v="wcode">List of buoys</button></div>';
       else if (w.wkind === 'pt') h += '<div class="row"><button class="btn" data-k="pickpt" data-v="wpt">Tap the windward mark</button><span class="note">' + (w.wpt ? 'Set' : 'Not set') + '</span></div>';
       else h += '<div class="row"><input class="mkin" id="mkWbrg" type="number" inputmode="numeric" min="0" max="360" value="' + (w.brg == null ? '' : w.brg) + '" placeholder="°T" aria-label="Windward mark bearing, degrees true"><input class="mkin" id="mkWdist" type="number" inputmode="decimal" step="0.1" min="0.1" value="' + (w.dist || '') + '" placeholder="nm" aria-label="Windward mark distance, nm"><button class="btn" data-k="wbrgwind">Into the wind</button></div>';
       h += '<h3>Leeward</h3><div class="row">' + seg('lk', 'start', 'Start line', !w.lkind || w.lkind === 'start') + seg('lk', 'buoy', 'A buoy', w.lkind === 'buoy') + seg('lk', 'gate', 'A gate', w.lkind === 'gate') + '</div>';
-      if (w.lkind === 'buoy') h += '<div class="row"><input class="mkin" id="mkLcode" value="' + esc(w.lcode || '') + '" placeholder="2C" aria-label="Leeward buoy code" autocapitalize="characters"></div>';
-      if (w.lkind === 'gate') h += '<div class="row"><input class="mkin" id="mkG1" value="' + esc(w.lcode || '') + '" placeholder="Code A" aria-label="Gate buoy A code" autocapitalize="characters"><input class="mkin" id="mkG2" value="' + esc(w.lcode2 || '') + '" placeholder="Code B" aria-label="Gate buoy B code" autocapitalize="characters"><button class="btn" data-k="pickpt" data-v="g1">Tap A</button><button class="btn" data-k="pickpt" data-v="g2">Tap B</button></div>';
+      if (w.lkind === 'buoy') h += '<div class="row"><input class="mkin" id="mkLcode" value="' + esc(w.lcode || '') + '" placeholder="2C" aria-label="Leeward buoy code" autocapitalize="characters"><button class="btn" data-k="list" data-v="lcode">List of buoys</button></div>';
+      if (w.lkind === 'gate') h += '<div class="row"><input class="mkin" id="mkG1" value="' + esc(w.lcode || '') + '" placeholder="Code A" aria-label="Gate buoy A code" autocapitalize="characters"><input class="mkin" id="mkG2" value="' + esc(w.lcode2 || '') + '" placeholder="Code B" aria-label="Gate buoy B code" autocapitalize="characters"><button class="btn" data-k="pickpt" data-v="g1">Tap A</button><button class="btn" data-k="pickpt" data-v="g2">Tap B</button><button class="btn" data-k="list" data-v="g1">List: A</button><button class="btn" data-k="list" data-v="g2">List: B</button></div>';
       h += '<div class="row"><label>Laps</label>' + [1, 2, 3, 4].map(function (n) { return seg('laps', n, String(n), (w.laps || 2) === n); }).join('') + '</div>';
       h += '<div class="row"><label>Finish</label>' + seg('wfin', 'lee', 'Leeward', !w.fin || w.fin === 'lee') + seg('wfin', 'start', 'Start line', w.fin === 'start') + seg('wfin', 'wind', 'Windward', w.fin === 'wind') + '</div>';
       h += '<div class="row"><label>Rounding</label>' + seg('wside', 'port', 'Port', w.side !== 'starboard') + seg('wside', 'starboard', 'Starboard', w.side === 'starboard') + '</div>';
@@ -184,7 +197,12 @@
     h += '<div class="row"><label>Sequence</label>' + seg('seq', 5, '5-4-1-0', M.seq !== 3) + seg('seq', 3, '3-2-1-0', M.seq === 3) + '<button class="btn" data-k="ap">Postpone (AP)</button><button class="btn" data-k="recall">General recall</button></div>';
     h += '<div class="row"><label>Flag</label>' + [['P', 'P'], ['I', 'I'], ['Z', 'Z'], ['U', 'U'], ['B', 'Black']].map(function (f) { return seg('flag', f[0], f[1], M.flag === f[0]); }).join('') + '</div><p class="note">' + flagText(M.flag) + '</p>';
     h += '<h3>Line</h3><div class="row">' + seg('lkind', 'cb', 'Committee boat and pin', !tr) + seg('lkind', 'tr', 'Shore transit', tr) + '</div>';
-    h += '<div class="row"><button class="btn primary" data-k="ping" data-v="boat">' + (tr ? 'Ping inshore' : 'Ping boat') + (l.boat ? ' ✓' : '') + '</button><button class="btn primary" data-k="ping" data-v="pin">' + (tr ? 'Ping outer mark' : 'Ping pin') + (l.pin ? ' ✓' : '') + '</button><button class="btn" data-k="tapline">Tap the ends</button>' + (l.boat || l.pin ? '<button class="btn" data-k="clrline">Clear line</button>' : '') + '</div><p class="note">' + (tr ? 'Ping on the transit close inshore, then at the outer distance mark. Re-ping if the committee moves the line.' : 'Ping each end as you pass it. Re-ping if the committee moves the line.') + '</p>';
+    var lm = M.lmode || 'ping';
+    h += '<div class="row">' + seg('lmode', 'ping', 'Ping', lm === 'ping') + seg('lmode', 'tap', 'Tap the ends', lm === 'tap') + (tr ? '' : seg('lmode', 'square', 'Square to the wind', lm === 'square')) + seg('lmode', 'latlon', 'Lat and long', lm === 'latlon') + '</div>';
+    if (lm === 'tap') h += '<div class="row"><button class="btn primary" data-k="tapline">Tap the ends on the chart</button>' + (l.boat || l.pin ? '<button class="btn" data-k="clrline">Clear line</button>' : '') + '</div>';
+    else if (lm === 'square' && !tr) h += '<div class="row"><label for="mkLen">Length</label><input class="mkin" id="mkLen" type="number" inputmode="numeric" min="20" max="3000" step="10" value="' + (M.llen || 300) + '" aria-label="Line length, metres"><span class="note">m</span><button class="btn primary" data-k="squarepick">Tap the committee boat</button></div><p class="note">The pin is laid to port of the committee boat, square to the wind' + (twdNow() != null ? ' (' + p3(twdNow()) + ')' : ': give the wind direction first') + '.</p>';
+    else if (lm === 'latlon') h += '<div class="row"><label for="mkLLb">' + (tr ? 'Inshore' : 'Committee boat') + '</label><input class="mkin wide" id="mkLLb" placeholder="50 46.20N 1 17.70W" value="' + (l.boat ? llTxt(l.boat) : '') + '"></div><div class="row"><label for="mkLLp">' + (tr ? 'Outer mark' : 'Pin') + '</label><input class="mkin wide" id="mkLLp" placeholder="50 46.20N 1 17.40W" value="' + (l.pin ? llTxt(l.pin) : '') + '"></div><div class="row"><button class="btn primary" data-k="llset">Set the line</button></div><p class="note">Degrees and minutes (50 46.20N 1 17.70W) or decimal degrees (50.7700, -1.2950).</p>';
+    if (lm === 'ping') h += '<div class="row"><button class="btn primary" data-k="ping" data-v="boat">' + (tr ? 'Ping inshore' : 'Ping boat') + (l.boat ? ' ✓' : '') + '</button><button class="btn primary" data-k="ping" data-v="pin">' + (tr ? 'Ping outer mark' : 'Ping pin') + (l.pin ? ' ✓' : '') + '</button>' + (l.boat || l.pin ? '<button class="btn" data-k="clrline">Clear line</button>' : '') + '</div><p class="note">' + (tr ? 'Ping on the transit close inshore, then at the outer distance mark. Re-ping if the committee moves the line.' : 'Ping each end as you pass it. Re-ping if the committee moves the line.') + '</p>';
     return h;
   }
   function flagText(f) { return { P: 'P: the ordinary start.', I: 'I: in the last minute, a boat on the course side must sail round an end to start.', Z: 'Z: in the last minute, a boat in the triangle (the line ends and the first mark) takes a 20% scoring penalty.', U: 'U: in the last minute, a boat in the triangle is disqualified without a hearing, unless the race is restarted.', B: 'Black flag: in the last minute, a boat in the triangle is disqualified without a hearing, even if the race is restarted.' }[f] || ''; }
@@ -198,20 +216,57 @@
     h += '<div class="row"><button class="btn primary" data-k="next">Next course</button></div><p class="note">Next course keeps the start line, the wind and the start sequence, and clears the marks and the gun time.</p>';
     return h;
   }
+  function llTxt(a) { var f = function (v, p, n) { var A = Math.abs(v), d = Math.floor(A), m = (A - d) * 60; return d + ' ' + m.toFixed(2) + (v >= 0 ? p : n); }; return f(a[0], 'N', 'S') + ' ' + f(a[1], 'E', 'W'); }
+  /* "50 46.20N 1 17.70W", "50°46.20'N 001°17.70'W" or "50.7700, -1.2950" */
+  function llParse(t) { t = String(t || '').trim().toUpperCase(); var m = t.match(/^(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)$/); if (m) { var la = +m[1], lo = +m[2]; return Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? [la, lo] : null; }
+    var q = t.replace(/[°'′″]/g, ' ').match(/^(\d+)\s+(\d+(?:\.\d+)?)\s*([NS])[\s,]+(\d+)\s+(\d+(?:\.\d+)?)\s*([EW])$/); if (!q) return null; var la2 = (+q[1] + q[2] / 60) * (q[3] === 'S' ? -1 : 1), lo2 = (+q[4] + q[5] / 60) * (q[6] === 'W' ? -1 : 1); return Math.abs(la2) <= 90 && Math.abs(lo2) <= 180 && +q[2] < 60 && +q[5] < 60 ? [la2, lo2] : null; }
+  /* the list of buoys, with a search by number and name (Stuart 17 Nov 05:36) */
+  var LISTFOR = { marks: 'Add to the course', start: 'Choose the start buoy', wcode: 'Choose the windward buoy', lcode: 'Choose the leeward buoy', g1: 'Choose gate buoy A', g2: 'Choose gate buoy B' };
+  function listHtml() { return '<h3>Solent buoys: ' + (LISTFOR[M.listFor] || '') + '</h3><div class="row"><input class="mkin wide" id="mkFind" type="search" autocapitalize="characters" placeholder="Search by number or name" aria-label="Search the buoys by number or name"></div><div id="mkList" class="mklist">' + listRows('') + '</div><div class="xrow"><button class="btn" data-k="listback">Back</button></div>'; }
+  function listRows(q) {
+    var mk = (window.FSSolent && FSSolent.marks && FSSolent.marks()) || [], Q = String(q || '').trim().toUpperCase(), B = SOL() || {}, inC = {}; (B.marks || []).forEach(function (m) { inC[m.code] = (inC[m.code] || 0) + 1; });
+    var rows = mk.filter(function (m) { return !Q || String(m.id).toUpperCase().indexOf(Q) === 0 || String(m.name || '').toUpperCase().indexOf(Q) >= 0; }).sort(function (a, b) { return String(a.id).localeCompare(String(b.id), 'en', { numeric: true }); }).slice(0, 250);
+    if (!rows.length) return '<p class="note">No buoy with that number or name.</p>';
+    return rows.map(function (m) { var act = M.listFor === 'marks' ? '<button class="btn" data-k="listpick" data-v="' + esc(m.id) + '" data-s="port">Port</button><button class="btn" data-k="listpick" data-v="' + esc(m.id) + '" data-s="starboard">Starboard</button>' : '<button class="btn primary" data-k="listpick" data-v="' + esc(m.id) + '">Choose</button>';
+      return '<div class="mkli"><b>' + esc(m.id) + '</b><span>' + esc(m.name || '') + (inC[m.id] ? ' <i>· in the course</i>' : '') + '</span><span class="mklia">' + act + '</span></div>'; }).join('') + (rows.length === 250 ? '<p class="note">First 250 shown: search to narrow.</p>' : '');
+  }
+  function listPick(id, side) {
+    var mk = (FSSolent.marks() || []).find(function (q) { return String(q.id) === String(id); }); if (!mk) return; var B = SOL() || {}, w = Object.assign({}, B.wl), pt = { code: mk.id, name: mk.id + ' ' + mk.name, lat: mk.lat, lon: mk.lon };
+    if (M.listFor === 'marks') { var a = (B.marks || []).slice(); a.push({ code: mk.id, name: mk.id + ' ' + mk.name, lat: mk.lat, lon: mk.lon, side: side === 'starboard' ? 'starboard' : 'port' }); solSet({ marks: a }); toast('Added ' + mk.id + ' ' + (side === 'starboard' ? 'S' : 'P') + ': ' + a.length + ' marks.'); var fl = $('mkList'); if (fl) fl.innerHTML = listRows(($('mkFind') || {}).value); return; }
+    if (M.listFor === 'start') solSet({ start: pt });
+    else if (M.listFor === 'wcode') { w.wkind = 'buoy'; w.wcode = mk.id; solSet({ wl: w }); }
+    else if (M.listFor === 'lcode') { w.lkind = 'buoy'; w.lcode = mk.id; solSet({ wl: w }); }
+    else if (M.listFor === 'g1') { w.lkind = 'gate'; w.lcode = mk.id; w.g1 = null; solSet({ wl: w }); }
+    else if (M.listFor === 'g2') { w.lkind = 'gate'; w.lcode2 = mk.id; w.g2 = null; solSet({ wl: w }); }
+    M.tab = M.listBack || 'course'; save(); render(); toast(mk.id + ' ' + mk.name + ' chosen.');
+  }
   function hms(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 3600) + ':' + ('0' + Math.floor(s % 3600 / 60)).slice(-2) + ':' + ('0' + s % 60).slice(-2); }
   /* Settings */
+  /* Settings is Route's Settings (Route+'s on Mark+: the boat, IRC, polars and the polar updates, forecasts, sails, display, charts,
+     My set-up), with a Mark tab for the inshore settings (Stuart 17 Nov 05:54: "same boat set up menu as in navigate for IRC and the
+     polar update system ... ALL THE FUNCTIONALITY BUILT INTO NAVIGATE AND ROUTE NEEDS TO BE IN MARK AND MARK+") */
+  function markTab() {
+    var tabs = document.querySelector('#sheet .stabs'); if (!tabs) return null; var t = document.querySelector('#sheet .stabs .tab[data-s="mark"]');
+    if (!t) { t = document.createElement('button'); t.className = 'tab'; t.dataset.s = 'mark'; t.setAttribute('aria-selected', 'false'); t.textContent = plus ? 'Mark+' : 'Mark'; tabs.insertBefore(t, tabs.firstChild);
+      var body = document.createElement('div'); body.className = 'sbody'; body.id = 's-mark'; body.hidden = true; var first = document.querySelector('#sheet .sbody'); first.parentNode.insertBefore(body, first);
+      body.addEventListener('click', function (e) { act(e); renderSet(); }); body.addEventListener('change', function (e) { change(e); renderSet(); });
+      t.onclick = function () { [].forEach.call(document.querySelectorAll('#sheet .stabs .tab'), function (x) { x.setAttribute('aria-selected', String(x === t)); var sb = $('s-' + x.dataset.s); if (sb) sb.hidden = x !== t; }); renderSet(); }; }
+    return t;
+  }
+  function renderSet() { var b = $('s-mark'); if (b && !b.hidden) b.innerHTML = setHtml(); }
+  function openSettings(tab) { var sb = $('setBtn'); if (sb) sb.click(); var t = markTab(); var q = tab ? document.querySelector('#sheet .stabs .tab[data-s="' + tab + '"]') : null; if (q) q.click(); else if (t && tab !== 'boat') t.click(); }
+  function closeSettings() { var x = $('sheetX'); if (x && $('sheet') && !$('sheet').hidden) x.click(); }
   function setHtml() {
     var h = '<h3>Settings</h3><div class="xrow"><button class="btn" data-k="help">Help</button><button class="btn" data-k="share">Share</button><button class="btn" data-k="tour">Show me round</button><button class="btn primary" data-k="test" id="mkTestBtn">' + (SIM.on ? 'Stop test mode' : 'Test mode') + '</button></div><div class="mkset">';
     h += '<div class="row"><label>Buttons</label>' + seg('big', 0, 'Standard', !M.big) + seg('big', 1, 'Big', !!M.big) + '</div>';
     h += '<div class="row"><label>Screen</label>' + seg('sun', 0, 'Normal', !M.sun) + seg('sun', 1, 'Sunlight', !!M.sun) + '</div>';
     h += '<div class="row"><label>Sounds</label>' + seg('snd', 1, 'On', !!M.snd) + seg('snd', 0, 'Off', !M.snd) + '</div>';
     h += '<div class="row"><label>Vibration</label>' + seg('vib', 1, 'On', !!M.vib) + seg('vib', 0, 'Off', !M.vib) + '</div>';
-    h += '<div class="row"><label>IRC TCC</label><input class="mkin" id="mkTcc" type="number" inputmode="decimal" step="0.001" min="0.5" max="2" value="' + (window.__fsTcc ? window.__fsTcc().toFixed(3) : '') + '" aria-label="IRC time correction coefficient"></div>';
     h += '<h3>Window positions</h3><p class="note">Hold the small grip on a window, or hold a round button, to move it; drag it, then hold again to lock it there. It never covers another button: it slides to the nearest gap.</p><div class="xrow"><button class="btn" data-k="layoutreset">Reset to FirstShift layout</button></div>';
     var bc = SY.code();
     h += '<h3>Crew</h3>' + (bc ? '<p class="note">This device shares the course, the line, the gun, the flag and the wind with the crew under boat code <b>' + bc + '</b>. ' + esc(SY.msg || '') + '</p><div class="row"><button class="btn" data-k="bcsend">Send the code to crew</button><button class="btn" data-k="bcleave">Stop sharing</button></div>'
       : '<p class="note">One boat code keeps every crew phone and pad on the same course, line, gun and flag. No logins. The same code as Route and Route+.</p><div class="row"><button class="btn primary" data-k="bcmake">Make a boat code</button></div><div class="row"><input class="mkin" id="mkBcIn" maxlength="6" autocapitalize="characters" placeholder="ABC234" aria-label="Boat code to join"><button class="btn" data-k="bcjoin">Join</button></div>');
-    h += '<div class="row"><button class="btn" data-k="done">Done</button></div></div>';
+    h += '</div>';
     return h;
   }
 
@@ -224,10 +279,12 @@
       if (lc && lc.d != null) {
         h += '<div><small>To the line</small><b class="' + (lc.over ? 'bad' : '') + '">' + (lc.over ? 'OVER ' : '') + dist(lc.d) + '</b><span>line ' + Math.round(lc.len * 1852) + ' m</span></div>';
         h += '<div><small>Time to burn</small><b class="' + (lc.burn != null && lc.burn < 0 ? 'bad' : 'ok') + '">' + (lc.burn != null ? mmss(lc.burn) : '--') + '</b><span>' + (lc.ttl != null ? mmss(lc.ttl) + ' to the line at this speed' : 'not closing the line') + '</span></div>';
-        var bw = M.wind && M.wind.twd != null ? M.wind.twd : lc.wind ? lc.wind[1] : null;
-        if (bw != null) { var b = bias(lc, bw); h += '<div><small>Bias</small><b>' + b.end + ' ' + b.m + ' m</b><span>' + b.deg + '° for wind ' + p3(bw) + '</span></div>'; }
         var warn = earlyWarn(lc, g, now); if (warn) h = '<div class="mkwarn" style="grid-column:1/-1">' + warn + '</div>' + h;
-      } else h += '<div><small>Line</small><b>--</b><span>' + (f ? 'ping both ends' : 'waiting for the GPS') + '</span></div>';
+      } else h += '<div><small>To the line</small><b>--</b><span>' + (f ? 'needs both ends of the line' : 'waiting for the GPS') + '</span></div>';
+      /* the bias at once, from the line and the wind (typed, or the boat's on Mark+), with or without GPS; tap it: zoom to the line and the picture (Stuart 05:49) */
+      var L0 = (window.__fsLine && window.__fsLine()) || {}, bw = twdNow();
+      if (L0.boat && L0.pin && bw != null) { var b = bias(L0, bw); h += '<div class="mkbias" data-k="biasview" role="button" tabindex="0" title="Zoom into the line and show the bias"><small>Bias · tap to see it</small><b>' + b.end + ' ' + b.m + ' m</b><span>' + b.deg + '° for wind ' + p3(bw) + '</span></div>'; }
+      else h += '<div><small>Bias</small><b>--</b><span>' + (!(L0.boat && L0.pin) ? 'set the line' : 'give the wind direction') + '</span></div>';
       $('mkStartBig').innerHTML = h;
     }
     if (M.tab === 'race' && $('mkRaceBig')) {
@@ -271,6 +328,30 @@
     return h;
   }
   function trend() { if (TWD.length < 4 || TWD[TWD.length - 1][0] - TWD[0][0] < 180000) return null; var a = TWD.slice(0, Math.ceil(TWD.length / 3)), b = TWD.slice(-Math.ceil(TWD.length / 3)), m = function (arr) { var x = 0, y = 0; arr.forEach(function (q) { x += Math.sin(q[1] * R); y += Math.cos(q[1] * R); }); return Math.atan2(x, y) / R; }; return ((m(b) - m(a) + 540) % 360) - 180; }   /* mean direction, last third against first third */
+  /* tap the bias: zoom into the line and draw the bias (Stuart 05:49) */
+  var BV = { on: false };
+  function biasView() { var l = (window.__fsLine && window.__fsLine()) || {}; if (!(l.boat && l.pin)) return; BV.on = true; var s0 = Math.min(l.boat[0], l.pin[0]), n0 = Math.max(l.boat[0], l.pin[0]), w0 = Math.min(l.boat[1], l.pin[1]), e0 = Math.max(l.boat[1], l.pin[1]); if (window.__fsFitBox) window.__fsFitBox(s0, n0, w0, e0); else if (window.__fsRedraw) window.__fsRedraw(); toast('The line and its bias. Pinch out or tap the chart to carry on.'); }
+  function biasDraw(ctx, X, Y) {
+    if (!BV.on || M.tab !== 'start') { BV.on = M.tab === 'start' && BV.on; return; }
+    var l = (window.__fsLine && window.__fsLine()) || {}, tw = twdNow(); if (!(l.boat && l.pin) || tw == null) return;
+    var A = [X(l.boat[1]), Y(l.boat[0])], P = [X(l.pin[1]), Y(l.pin[0])], mla = (l.boat[0] + l.pin[0]) / 2, mlo = (l.boat[1] + l.pin[1]) / 2, ula = mla + 0.2 / 60 * Math.cos(tw * R), ulo = mlo + 0.2 / 60 * Math.sin(tw * R) / Math.cos(mla * R);
+    var ux = X(ulo) - X(mlo), uy = Y(ula) - Y(mla), un = Math.hypot(ux, uy) || 1, wx = ux / un, wy = uy / un;   /* up the wind on the screen, whichever way the chart is turned */
+    var up = function (q) { return q[0] * wx + q[1] * wy; }, fav = up(P) > up(A) ? 'pin' : 'boat', F = fav === 'pin' ? P : A, U = fav === 'pin' ? A : P;
+    var px = -wy, py = wx, d = up(F) - up(U), Lpx = Math.hypot(P[0] - A[0], P[1] - A[1]) || 1;
+    /* the square line through the end that is further down the wind, and the gap to the favoured end */
+    var t = (F[0] - U[0]) * px + (F[1] - U[1]) * py, S = [U[0] + t * px, U[1] + t * py];
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.fillStyle = 'rgba(34,197,94,.22)'; ctx.beginPath(); ctx.moveTo(U[0], U[1]); ctx.lineTo(F[0], F[1]); ctx.lineTo(S[0], S[1]); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(P[0], P[1]); ctx.stroke();
+    ctx.setLineDash([8, 6]); ctx.strokeStyle = '#F2B233'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(U[0] - px * 20, U[1] - py * 20); ctx.lineTo(S[0] + (S[0] - U[0]) / (Math.hypot(S[0] - U[0], S[1] - U[1]) || 1) * 20, S[1] + (S[1] - U[1]) / (Math.hypot(S[0] - U[0], S[1] - U[1]) || 1) * 20); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(S[0], S[1]); ctx.lineTo(F[0], F[1]); ctx.stroke();
+    var M0 = [(A[0] + P[0]) / 2, (A[1] + P[1]) / 2], aw = Math.max(40, Lpx * 0.35); ctx.strokeStyle = '#6FA9E0'; ctx.fillStyle = '#6FA9E0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(M0[0] + wx * aw * 1.6, M0[1] + wy * aw * 1.6); ctx.lineTo(M0[0] + wx * aw * 0.5, M0[1] + wy * aw * 0.5); ctx.stroke();
+    ctx.beginPath(); var tip = [M0[0] + wx * aw * 0.5, M0[1] + wy * aw * 0.5]; ctx.moveTo(tip[0], tip[1]); ctx.lineTo(tip[0] + wx * 12 + px * 7, tip[1] + wy * 12 + py * 7); ctx.lineTo(tip[0] + wx * 12 - px * 7, tip[1] + wy * 12 - py * 7); ctx.closePath(); ctx.fill();
+    var b = bias(l, tw); ctx.font = '700 14px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.fillStyle = '#fff';
+    var lab = b.end + ' favoured · ' + b.m + ' m · ' + b.deg + '°'; ctx.strokeText(lab, F[0], F[1] - 12); ctx.fillText(lab, F[0], F[1] - 12);
+    var wl = 'Wind ' + p3(tw); ctx.strokeText(wl, M0[0] + wx * aw * 1.7, M0[1] + wy * aw * 1.7); ctx.fillText(wl, M0[0] + wx * aw * 1.7, M0[1] + wy * aw * 1.7); ctx.restore();
+  }
+  (window.__fsOverlays = window.__fsOverlays || []).push(biasDraw);
   function bias(lc, twd) { var bx = lc.pin, bo = lc.boat, k = Math.cos(bo[0] * R) * 60, P = [(bx[1] - bo[1]) * k, (bx[0] - bo[0]) * 60], wx = Math.sin(twd * R), wy = Math.cos(twd * R), up = P[0] * wx + P[1] * wy, ang = Math.atan2(P[0], P[1]) / R, d = Math.abs(90 - Math.abs(((ang - twd + 540) % 360) - 180));
     return { end: up > 0 ? (lc.boat && window.__fsLine && window.__fsLine().transit ? 'Outer' : 'Pin') : (window.__fsLine && window.__fsLine().transit ? 'Inshore' : 'Boat'), m: Math.round(Math.abs(up) * 1852), deg: Math.round(d) }; }
   /* the last minute: the flag in force decides what being on the course side means (World Sailing RRS 29, 30) */
@@ -292,10 +373,13 @@
   function hook() {
     if (orig !== null || !window.__fsTapHook) { if (!window.__fsTapHook) setTimeout(hook, 300); return; } orig = window.__fsTapHook;
     window.__fsTapHook = function (la, lo, x, y, editing) {
-      if (!PICK) return orig(la, lo, x, y, editing); var B = SOL(); if (!B) return true; var m = nearestMark(la, lo, x, y);
-      if (/^mark-/.test(PICK)) { if (!m) { toast('Tap one of the Solent marks.'); return true; } var a = (B.marks || []).slice(); a.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: PICK === 'mark-starboard' ? 'starboard' : 'port' }); solSet({ marks: a }); render(); return true; }
+      if (!PICK) { oldOff(); return orig(la, lo, x, y, editing); } var B = SOL(); if (!B) return true; var m = nearestMark(la, lo, x, y);
+      if (locked() && !/^line-/.test(PICK)) { PICK = null; pickBar(null); toast('Racing: tap Edit course first to change the course.'); return true; }
+      if (/^mark-/.test(PICK)) { if (!m) { toast('Tap one of the Solent buoys, or use List of buoys.'); return true; } var a = (B.marks || []).slice(); a.push({ code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon, side: PICK === 'mark-starboard' ? 'starboard' : 'port' }); solSet({ marks: a }); render(); return true; }
       if (PICK === 'start') { if (m) solSet({ start: { code: m.id, name: m.id + ' ' + m.name, lat: m.lat, lon: m.lon } }); else if (onLand(la, lo)) { toast('That point is on land.'); return true; } else solSet({ start: { code: null, name: 'Start point', lat: la, lon: lo } }); PICK = null; pickBar(null); render(); return true; }
       if (PICK === 'wpt' || PICK === 'g1' || PICK === 'g2') { if (!m && onLand(la, lo)) { toast('That point is on land.'); return true; } var w = Object.assign({}, B.wl), p = m ? { lat: m.lat, lon: m.lon, code: m.id, name: m.id + ' ' + m.name } : { lat: la, lon: lo }; w[PICK] = p; if (PICK === 'wpt') w.wkind = 'pt'; solSet({ wl: w }); PICK = null; pickBar(null); render(); return true; }
+      if (PICK === 'line-square') { if (onLand(la, lo)) { toast('That point is on land.'); return true; } var tw = twdNow(), Lm = (M.llen || 300) / 1852, pb = (tw - 90 + 360) % 360, k0 = Math.cos(la * R); var pla = la + Lm * Math.cos(pb * R) / 60, plo = lo + Lm * Math.sin(pb * R) / (60 * k0);
+        window.__fsSetLine('boat', la, lo); window.__fsSetLine('pin', pla, plo); PICK = null; pickBar(null); lineToStart(); render(); toast('Line laid square to the wind, ' + Math.round(M.llen || 300) + ' m.'); return true; }
       if (PICK === 'line-boat' || PICK === 'line-pin') { if (onLand(la, lo) && !(window.__fsLine && window.__fsLine().transit)) { toast('That point is on land.'); return true; } var end = PICK === 'line-boat' ? 'boat' : 'pin', o = window.__fsLine ? window.__fsLine() : {}, other = o[end === 'boat' ? 'pin' : 'boat']; if (other && rh({ lat: other[0], lon: other[1] }, { lat: la, lon: lo }).nm * 1852 < 20) { toast('Both ends in the same place: tap the other end.'); return true; } window.__fsSetLine(end, la, lo); if (end === 'boat') { PICK = 'line-pin'; pickBar('Tap the ' + ((window.__fsLine().transit) ? 'outer distance mark' : 'pin end')); } else { PICK = null; pickBar(null); lineToStart(); } render(); return true; }
       return orig(la, lo, x, y, editing);
     };
@@ -307,7 +391,7 @@
     var b = e.target.closest('[data-k]'); if (!b || b.tagName === 'INPUT') return; var k = b.dataset.k, v = b.dataset.v, B = SOL() || {};
     if (k === 'new') return newCourse();
     if (k === 'type') solSet({ type: v });
-    else if (k === 'startk') { if (v === 'line') { lineToStart(); if (!(window.__fsLine && window.__fsLine().boat && window.__fsLine().pin)) { M.tab = 'start'; save(); toast('Ping or tap both ends of the line first.'); } } else { PICK = 'start'; pickBar('Tap the start mark or point'); } }
+    else if (k === 'startk') { if (v === 'line') { lineToStart(); if (!(window.__fsLine && window.__fsLine().boat && window.__fsLine().pin)) { M.tab = 'start'; save(); toast('Ping or tap both ends of the line first.'); } } else { PICK = 'start'; pickBar('Tap the start buoy or point'); } }
     else if (k === 'codes') { var t = ($('mkCodes') || {}).value || '', r = FSSolent.board ? FSSolent.board(t) : { marks: [], bad: [] }; if (!r.marks.length) toast(r.bad.length ? 'Not Solent marks: ' + r.bad.join(', ') : 'No mark codes found.'); else { solSet({ marks: (B.marks || []).concat(r.marks) }); if (r.bad.length) toast('Left out (not Solent marks): ' + r.bad.join(', ')); } }
     else if (k === 'pick') { PICK = PICK === 'mark-' + v ? null : 'mark-' + v; pickBar(PICK ? 'Tap each buoy in order, rounding to ' + v : null); }
     else if (k === 'side') { var a = (B.marks || []).slice(), i = +v; a[i] = Object.assign({}, a[i], { side: a[i].side === 'starboard' ? 'port' : 'starboard' }); solSet({ marks: a }); }
@@ -315,7 +399,7 @@
     else if (k === 'fin') solSet({ fin: v });
     else if (k === 'wk' || k === 'lk' || k === 'laps' || k === 'wfin' || k === 'wside') { var w = Object.assign({}, B.wl); if (k === 'wk') w.wkind = v; if (k === 'lk') w.lkind = v; if (k === 'laps') w.laps = +v; if (k === 'wfin') w.fin = v; if (k === 'wside') w.side = v; solSet({ wl: w }); }
     else if (k === 'wbrgwind') { if (!M.wind || M.wind.twd == null) { toast('Give the wind first, under Wind and tide.'); return; } var w2 = Object.assign({}, B.wl, { brg: Math.round(M.wind.twd), wkind: 'brg' }); if (!(w2.dist > 0)) w2.dist = 1; solSet({ wl: w2 }); }
-    else if (k === 'pickpt') { PICK = v; pickBar(v === 'wpt' ? 'Tap the windward mark' : 'Tap gate buoy ' + (v === 'g1' ? 'A' : 'B')); }
+    else if (k === 'pickpt') { PICK = v; pickBar(v === 'wpt' ? 'Tap the windward mark: a buoy or any point on the chart' : 'Tap gate buoy ' + (v === 'g1' ? 'A' : 'B')); }
     else if (k === 'tmode') { M.tide = Object.assign({}, M.tide, { mode: v }); save(); pushFix(); }
     else if (k === 'hdw') return headToWind();
     else if (k === 'show') return useCourse(false);
@@ -334,13 +418,22 @@
     else if (k === 'finish') { M.finAt = Math.round(Date.now() / 1000); M.tab = 'after'; save(); try { if (window.__fsEndRace) window.__fsEndRace(); } catch (x) {} }
     else if (k === 'next') return newCourse();
     else if (k === 'big' || k === 'sun' || k === 'snd' || k === 'vib') { M[k] = v === '1'; save(); applyLook(); }
-    else if (k === 'done') { M.tab = M.back || 'course'; save(); }
+    else if (k === 'done') { M.tab = M.back && ['help', 'share', 'settings', 'list'].indexOf(M.back) < 0 ? M.back : 'course'; save(); }
+    else if (k === 'lmode') { M.lmode = v; save(); }
+    else if (k === 'squarepick') { if (twdNow() == null) { toast('Give the wind direction first (Course, Wind and tide)' + (plus ? ', or connect the boat' : '') + '.'); return; } var ln = +(($('mkLen') || {}).value || 0); if (!(ln >= 20)) { toast('Give the line length in metres.'); return; } M.llen = ln; save(); PICK = 'line-square'; pickBar('Tap the committee boat: the pin goes ' + ln + ' m to port, square to the wind'); return; }
+    else if (k === 'llset') { var pb = llParse(($('mkLLb') || {}).value), pp = llParse(($('mkLLp') || {}).value); if (!pb || !pp) { toast('Not a position Mark can read: try 50 46.20N 1 17.70W.'); return; } if (rh({ lat: pb[0], lon: pb[1] }, { lat: pp[0], lon: pp[1] }).nm * 1852 < 20) { toast('Both ends in the same place.'); return; } if (rh({ lat: pb[0], lon: pb[1] }, { lat: pp[0], lon: pp[1] }).nm > 2) { toast('The ends are more than 2 nm apart: check the positions.'); return; } window.__fsSetLine('boat', pb[0], pb[1]); window.__fsSetLine('pin', pp[0], pp[1]); lineToStart(); toast('Line set.'); }
+    else if (k === 'biasview') { biasView(); return; }
+    else if (k === 'list') { M.listFor = v; M.listBack = M.tab; M.tab = 'list'; save(); render(); setTimeout(function () { var fi = $('mkFind'); if (fi) fi.focus(); }, 50); return; }
+    else if (k === 'listback') { M.tab = M.listBack || 'course'; save(); }
+    else if (k === 'listpick') { listPick(v, b.dataset.s); return; }
+    else if (k === 'editcourse') { M.editing = true; save(); }
+    else if (k === 'editdone') { M.editing = false; save(); PICK = null; pickBar(null); useCourse(false); return; }
     else if (k === 'layoutreset') { if (window.NavDrag) NavDrag.resetAll(); toast('Windows back where FirstShift puts them.'); return; }
     else if (k === 'follow') { M.follow = v; save(); }
-    else if (k === 'help') { M.tab = 'help'; save(); }
-    else if (k === 'share') { M.tab = 'share'; save(); }
-    else if (k === 'tour') { startTour(); return; }
-    else if (k === 'test') { if (SIM.on) stopTest(); else startTest(); return; }
+    else if (k === 'help') { closeSettings(); M.back = M.tab === 'help' || M.tab === 'share' ? M.back : M.tab; M.tab = 'help'; save(); }
+    else if (k === 'share') { closeSettings(); M.back = M.tab === 'help' || M.tab === 'share' ? M.back : M.tab; M.tab = 'share'; save(); }
+    else if (k === 'tour') { closeSettings(); startTour(); return; }
+    else if (k === 'test') { closeSettings(); if (SIM.on) stopTest(); else startTest(); return; }
     else if (k === 'listen') { listen(+v); return; }
     else if (k === 'sharego') { var tx = shareText(); if (navigator.share) navigator.share({ title: 'FirstShift Mark', text: tx }).catch(function () {}); else window.open('https://wa.me/?text=' + encodeURIComponent(tx), '_blank', 'noopener'); return; }
     else if (k === 'sharewa') { window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); return; }
@@ -379,7 +472,7 @@
     var B = SOL() || {}; try { if (window.__fsClearCourse) window.__fsClearCourse(); } catch (e) {}
     var w = Object.assign({}, B.wl, { wcode: '', wpt: null, lcode: '', lcode2: '', lpt: null, g1: null, g2: null }), l = window.__fsLine ? window.__fsLine() : {};
     solSet({ marks: [], finish: null, fin: 'start', legTide: [], startAt: null, wl: w, start: l.boat && l.pin ? { code: null, name: 'Start line', lat: (l.boat[0] + l.pin[0]) / 2, lon: (l.boat[1] + l.pin[1]) / 2, line: true } : null });
-    M.finAt = null; M.gun = null; M.tab = 'course'; M.routeIt = false; save(); lastStage = 'course';   /* the next race has its own gun */ PICK = null; pickBar(null); render();
+    M.finAt = null; M.gun = null; M.editing = false; M.tab = 'course'; M.routeIt = false; save(); lastStage = 'course';   /* the next race has its own gun */ PICK = null; pickBar(null); render();
   }
 
   /* Laylines to the next mark when it is upwind, at the tacking angle: Mark+ on the boat's live wind; Mark on the typed race wind
@@ -445,8 +538,8 @@
       { el: '#mkTab-after', before: tab('after'), t: 'After', x: 'Elapsed and IRC corrected time, then Next course.' },
       { el: '#mkLayBtn', t: 'The chart', x: 'What the chart shows, with the No-go depth control.' },
       { el: '#fsRulerBtn', t: 'Ruler', x: 'Measure a bearing and distance on the chart.' },
-      { el: '#mkTestBtn', before: tab('settings'), test: true, t: 'Try it safely first', x: 'Test mode: a practice boat sails your course on the chart. Nothing goes to the crew and nothing can go wrong.' },
-      { el: '#mkSetBtn', before: tab('settings'), t: 'Settings', x: 'Help, Share, this tour, test mode, the boat code for the crew, big buttons, sunlight, sounds and your IRC TCC.' }
+      { el: '#mkTestBtn', before: function () { openSettings('mark'); }, test: true, t: 'Try it safely first', x: 'Test mode: a practice boat sails your course on the chart. Nothing goes to the crew and nothing can go wrong.' },
+      { el: '#mkSetBtn', before: function () { closeSettings(); }, t: 'Settings', x: 'Route\'s Settings: your boat, IRC and polars' + (plus ? ' and the polar updates from the boat' : '') + ', forecasts, sails, charts and My set-up, with a Mark tab: help, share, this tour, test mode, the boat code for the crew, big buttons, sunlight and sounds.' }
     ] }];
   }
   function tourSetup() { window.FSTourLevels = tourSteps(); window.FSTourPrepare = function () { var ly = $('layers'); if (ly && !ly.hidden && $('mkLayBtn')) $('mkLayBtn').click(); PICK = null; pickBar(null); };
@@ -552,7 +645,11 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) SY.pull(false); }); window.addEventListener('online', function () { SY.pull(false); });
   }
   window.__mkSync = SY;
-  function boot() { if (!document.body) return setTimeout(boot, 50); splash(); build(); hook(); syncInit(); setTimeout(tourSetup, 1500); try { if (window.FSSolent && FSSolent.load) FSSolent.load(); if (window.FSSolent && FSSolent.on) FSSolent.on(true); } catch (e) {} }
+  /* the old Solent course builder (solent.js step box and course card) stays switched off under Mark's own screen: it was still
+     taking taps on the chart and adding buoys while racing (Stuart's photo, 17 Nov 05:39) */
+  function oldOff() { try { if (!window.FSSolent) return; if (!FSSolent.__mk) { FSSolent.__mk = 1; FSSolent.start = function () {}; FSSolent.chain = function () {}; FSSolent.step = (function (f) { return function (n) { if (!n) f(0); }; })(FSSolent.step); FSSolent.open = function () {}; }
+      if (FSSolent.stepState && FSSolent.stepState().on) FSSolent.step(0); } catch (e) {} }
+  function boot() { if (!document.body) return setTimeout(boot, 50); oldOff(); setInterval(oldOff, 1000); splash(); build(); hook(); syncInit(); setTimeout(tourSetup, 1500); try { if (window.FSSolent && FSSolent.load) FSSolent.load(); if (window.FSSolent && FSSolent.on) FSSolent.on(true); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.FSMark = { state: function () { return M; }, render: render, stage: stage, set: function (o) { Object.assign(M, o); save(); applyLook(); render(); } };
+  window.FSMark = { state: function () { return M; }, render: render, stage: stage, set: function (o) { Object.assign(M, o); save(); applyLook(); render(); renderSet(); }, settings: function (t) { openSettings(t || 'mark'); }, closeSettings: closeSettings };
 })();

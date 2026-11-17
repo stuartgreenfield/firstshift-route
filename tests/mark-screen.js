@@ -37,7 +37,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
     const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/mark/');
     await p.waitForFunction(() => window.FSMark && window.FSSolent && FSSolent.marks && FSSolent.marks() && window.__navFc && window.__navFc().P, null, { timeout: 600000 }).catch(() => {});
     await p.waitForTimeout(2500);
-    const st = (o, fn) => async () => { await p.evaluate(([o, fn]) => { const ly = document.getElementById('layers'); if (ly && !ly.hidden) document.getElementById('mkLayBtn').click(); if (fn) (new Function(fn))(); FSMark.set(o); }, [o, fn || '']); await p.waitForTimeout(900); };
+    const st = (o, fn) => async () => { await p.evaluate(([o, fn]) => { const ly = document.getElementById('layers'); if (ly && !ly.hidden) document.getElementById('mkLayBtn').click(); if (window.FSMark && FSMark.closeSettings) FSMark.closeSettings(); if (fn) (new Function(fn))(); FSMark.set(o); }, [o, fn || '']); await p.waitForTimeout(900); };
     const now = 'Date.now() / 1000';
     const states = [['Course, empty', st({ tab: 'course' })],
       ['Course, round the cans', st({ tab: 'course' }, "FSSolent.set({ type: 'marks', start: { code: null, name: 'Start point', lat: 50.772, lon: -1.300 }, marks: FSSolent.board('3F P 2C S 3E P').marks })")],
