@@ -392,7 +392,7 @@
     $('sheetX').onclick = function () { $('sheet').hidden = true; if (setSnap && routeSnap() !== setSnap && !S.running) { busy('Settings changed: routing again…'); S.from = null; run(); } setSnap = ''; };
     $('sheet').onclick = function (e) { if (e.target === $('sheet')) $('sheetX').onclick(); };
     [].forEach.call(document.querySelectorAll('.stabs .tab'), function (b) { b.onclick = function () { [].forEach.call(document.querySelectorAll('.stabs .tab'), function (x) { x.setAttribute('aria-selected', x === b); $('s-' + x.dataset.s).hidden = x !== b; }); }; });
-    [].forEach.call(document.querySelectorAll('.tabs .tab'), function (b) { b.onclick = function () { openTab(b.dataset.tab, true); }; });
+    [].forEach.call($('panel').querySelectorAll('.tabs .tab[data-tab]'), function (b) { b.onclick = function () { openTab(b.dataset.tab, true); }; });
     $('panelBtn').onclick = function () { var p = $('panel'); if (wide()) { p.hidden = !p.hidden; store('fs-panel', p.hidden ? 'closed' : 'open'); } else { p.hidden = false; p.classList.toggle('collapsed'); } $('panelBtn').setAttribute('aria-expanded', !p.hidden && !p.classList.contains('collapsed')); setTimeout(resizeDraw, 0); };
     $('panelX').onclick = function () { if (wide()) store('fs-panel', 'closed'); closePanel(); };
     // Esc closes whatever is on top: settings, then layers, then the info card, then results
@@ -440,10 +440,10 @@
   function wide() { return matchMedia('(min-width:900px), (orientation:landscape) and (max-height:500px)').matches; }   /* a phone on its side gets the computer layout: a short screen needs the chart beside the results */
   function openTab(t, fromTab) {
     var p = $('panel'); p.hidden = false;
-    var cur = document.querySelector('.tabs .tab[aria-selected="true"]');
+    var cur = p.querySelector('.tabs .tab[aria-selected="true"]');   /* Route's own panel only: Mark's panel has tabs of its own */
     if (!wide() && fromTab && cur && cur.dataset.tab === t && !p.classList.contains('collapsed')) { p.classList.add('collapsed'); setTimeout(resizeDraw, 0); return; }
     p.classList.remove('collapsed');
-    [].forEach.call(document.querySelectorAll('.tabs .tab'), function (x) { x.setAttribute('aria-selected', x.dataset.tab === t); $('t-' + x.dataset.tab).hidden = x.dataset.tab !== t; });
+    [].forEach.call(p.querySelectorAll('.tabs .tab[data-tab]'), function (x) { x.setAttribute('aria-selected', x.dataset.tab === t); var sec = $('t-' + x.dataset.tab); if (sec) sec.hidden = x.dataset.tab !== t; });
     setTimeout(resizeDraw, 0);
   }
   /* newest run or an older one kept because the newest was not ready (Stuart 12 Nov): the navigator decides */
@@ -470,7 +470,7 @@
     if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
   }
   /* Screen rules (UI review step 1, 16 Nov): a window opens below the top bar, never over its second row of buttons (tablet sideways, PC) */
-  function popBelowTop(p) { try { var t = document.querySelector('.top'), par = p.offsetParent || document.body; if (!t) return; var tb = t.getBoundingClientRect().bottom; ['navStrip', 'fsPlot', 'astroLine'].forEach(function (id) { var ns = document.getElementById(id); if (ns && !ns.hidden && ns.getClientRects().length) tb = Math.max(tb, ns.getBoundingClientRect().bottom); }); tb = tb - par.getBoundingClientRect().top + 6; p.style.top = Math.max(60, Math.round(tb)) + 'px'; p.style.maxHeight = 'calc(100% - ' + (Math.max(60, Math.round(tb)) + 20) + 'px)'; } catch (e) {} }
+  function popBelowTop(p) { try { var t = document.querySelector('.top'), par = p.offsetParent || document.body; if (!t) return; var mt = document.getElementById('mkTop'), tb = t.getClientRects().length ? t.getBoundingClientRect().bottom : mt ? mt.getBoundingClientRect().bottom : par.getBoundingClientRect().top - 54;   /* Mark: under Mark's floating top bar */ ['navStrip', 'fsPlot', 'astroLine'].forEach(function (id) { var ns = document.getElementById(id); if (ns && !ns.hidden && ns.getClientRects().length) tb = Math.max(tb, ns.getBoundingClientRect().bottom); }); tb = tb - par.getBoundingClientRect().top + 6; p.style.top = Math.max(window.FS_MARK ? 8 : 60, Math.round(tb)) + 'px'; p.style.maxHeight = 'calc(100% - ' + (Math.max(window.FS_MARK ? 8 : 60, Math.round(tb)) + 20) + 'px)'; } catch (e) {} }
   function layersPop() {
     var h = '<div class="pophead"><span>Chart layers</span><button class="close" id="layersX" aria-label="Close layers">\u00d7</button></div><div class="lquick"><button class="btn" id="lAll">Show all</button><button class="btn" id="lCourse">Just the course</button><button class="btn" id="lRoute">Just the route</button></div>' +
       '<div class="ldepth"><label for="lDepth">No-go depth</label><input type="range" id="lDepth" min="0" max="20" step="0.5" value="' + (+$('depth').value) + '" aria-label="No-go depth (the safety depth)"><b id="lDepthV" style="font-family:var(--f-data)">' + (+$('depth').value).toFixed(1) + ' m</b></div>' + '<div class="lgrp">Chart (free, not for navigation)</div>' + Object.keys(CHARTS).map(function (k) { return '<label><input type="checkbox" data-l="' + k + '"' + (S.show[k] ? ' checked' : '') + '><span class="sw" style="border-color:var(--ink)"></span>' + CHARTS[k].name + '</label>'; }).join('') + '<div class="lgrp">Weather and race</div><label><input type="checkbox" data-l="wind"' + (S.show.wind ? ' checked' : '') + '><span class="sw" style="border-color:var(--wind)"></span>Wind</label><select id="lWind" aria-label="Wind symbol" style="margin-left:29px">' + $('windSym').innerHTML + '</select>' +
@@ -492,7 +492,7 @@
     $('lAll').onclick = function () { LK.forEach(function (k) { S.show[k] = true; }); S.routes.forEach(function (r) { r.hidden = false; }); layersPop(); draw(); };
     $('lCourse').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.show.legs = true; S.show.tss = true;   /* just the course: rhumb lines with course and distance on each leg, and the TSS, which always stay (Stuart 12 Nov) */ S.routes.forEach(function (r) { r.hidden = true; }); layersPop(); draw(); };
     $('lRoute').onclick = function () { LK.forEach(function (k) { S.show[k] = false; }); S.show.legs = true;   /* just the route still shows course and distance on each leg (Stuart 12 Nov) */ S.routes.forEach(function (r) { r.hidden = r !== S.sel; }); layersPop(); draw(); };
-    [].forEach.call($('layers').querySelectorAll('input'), function (c) { c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (CHARTS[c.dataset.l]) { chartSave(); chartCredit(); } if (c.dataset.l === 'iso' && c.checked) isoFetch(); if (c.dataset.l === 'tracks') { try { localStorage.setItem('fs-tracksshow', c.checked ? '1' : '0'); } catch (e) {} } } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
+    [].forEach.call($('layers').querySelectorAll('input'), function (c) { if (c.type === 'range') return;   /* the No-go depth slider has its own handler (17 Nov: its change event threw here) */ c.onchange = function () { if (c.dataset.big) { toggleBig(); animate(); return; } if (c.dataset.l) { S.show[c.dataset.l] = c.checked; if (CHARTS[c.dataset.l]) { chartSave(); chartCredit(); } if (c.dataset.l === 'iso' && c.checked) isoFetch(); if (c.dataset.l === 'tracks') { try { localStorage.setItem('fs-tracksshow', c.checked ? '1' : '0'); } catch (e) {} } } else S.routes[+c.dataset.r].hidden = !c.checked; draw(); animate(); }; });
     syncSym();
     $('layersX').onclick = closeLayers;
     $('lDepth').oninput = function () { depthSet($('lDepth').value); };
@@ -1791,6 +1791,9 @@
   window.__navCourse = function () { var c = meta && meta.course; if (S.cleared || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
   window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };
+  /* Mark's test mode (Stuart 17 Nov 05:13): a practice boat feeds the GPS instead of the phone's own; nothing is sent anywhere */
+  window.__fsSim = function (on) { if (on) { if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; LIVE.on = true; LIVE.sim = true; LIVE.fix = null; } else if (LIVE.sim) { LIVE.sim = false; liveStop(); } };
+  window.__fsSimFix = function (la, lo, kn, cog) { if (!LIVE.sim) return; liveFix({ coords: { latitude: la, longitude: lo, accuracy: 4, speed: kn / 1.94384, heading: cog } }); };
   window.__fsOnLand = function (la, lo) { try { return !!(P && P.depth) && !FSRouter.clearLine(P.depth, 0, la, lo, la, lo); } catch (e) { return false; } };   /* Mark (21:33): a tapped or pinged mark on land is refused */
   window.__fsCog = function () { var t = (LIVE.pbuf || []).filter(function (q) { return Date.now() - q[2] < 15000; }); if (!LIVE.on || t.length < 3) return null; var a = t[0], b = t[t.length - 1], r = rhumb({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] }); return r.nm > 0.008 ? r.brg : null; };   /* the course made good over the last 15 seconds, for setting the wind from each tack */
   window.__fsRedraw = function () { draw(); };
@@ -2002,10 +2005,11 @@
   function liveWake() { try { if (LIVE.on && $('gpsMode').value === 'screen' && navigator.wakeLock && !LIVE.wake) navigator.wakeLock.request('screen').then(function (w) { LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () {}); } catch (e) {} }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) liveWake(); });
   function liveStart() {
+    if (LIVE.sim) return;   /* Mark's test mode: the practice boat is the GPS */
     if (!navigator.geolocation) { busy('This device has no GPS that Route can use.'); setTimeout(function () { busy(''); }, 3000); return; }
     LIVE.on = true; $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBox').hidden = false; $('liveBox').innerHTML = '<div class="lvl">Finding the boat by GPS…</div>'; liveWake();
     try { if (!LIVE.ac && (window.AudioContext || window.webkitAudioContext)) LIVE.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}   /* made on the tap, so the alert can sound later */
-    var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; var msg = e && e.code === 1 ? 'Location is not allowed for Route. Allow it for this site in the browser or phone settings, then tap GPS again.' : LIVE.fix ? 'GPS fix lost. Trying again.' : (/Mobi|Android|iPhone|iPad/.test(navigator.userAgent) ? 'No GPS fix yet. Offshore the first fix can take a minute or two. Trying again.' : 'This computer cannot find its position. A computer without GPS works out where it is from nearby Wi-Fi, which is not there at sea. Use Live GPS on a phone or tablet with GPS.');
+    var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; if (!(e && e.code === 1) && LIVE.fix && !LIVE.fix.dr && Date.now() - LIVE.fix.at < 30000) return;   /* Stuart 17 Nov 05:20, the green GPS pill flashing: a passing GPS error between good fixes no longer replaces the figures; lost only after 30 s without a fix */ var msg = e && e.code === 1 ? 'Location is not allowed for Route. Allow it for this site in the browser or phone settings, then tap GPS again.' : LIVE.fix ? 'GPS fix lost. Trying again.' : (/Mobi|Android|iPhone|iPad/.test(navigator.userAgent) ? 'No GPS fix yet. Offshore the first fix can take a minute or two. Trying again.' : 'This computer cannot find its position. A computer without GPS works out where it is from nearby Wi-Fi, which is not there at sea. Use Live GPS on a phone or tablet with GPS.');
       $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
     if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
     else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
@@ -2859,7 +2863,7 @@
     cmarks: { name: 'Buoys, beacons and lights (OpenSeaMap)', url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', zmin: 9, zmax: 18, alpha: 1, credit: 'Seamarks © OpenSeaMap' }
   };
   var TILES = {}, tileN = 0, tileRaf = 0, chartLog = { asked: 0, loaded: 0, failed: 0 };
-  (function () { try { var c = JSON.parse(localStorage.getItem('fs-charts') || '{}'); S.show.cmarks = !!c.cmarks; } catch (e) {} })();
+  (function () { try { var c = JSON.parse(localStorage.getItem('fs-charts') || '{}'); S.show.cmarks = 'cmarks' in c ? !!c.cmarks : !!window.FS_MARK; } catch (e) {} })();   /* Mark (Stuart 17 Nov 05:15): buoys, beacons and lights on unless turned off */
   function chartSave() { try { localStorage.setItem('fs-charts', JSON.stringify({ cmarks: !!S.show.cmarks })); } catch (e) {} }
   function tileZoom(c) { var z = Math.round(Math.log(360 * K * view.s * Math.min(dpr || 1, 2) / 256) / Math.LN2); return Math.max(c.zmin, Math.min(c.zmax, z)); }
   function tLon(x, z) { return x / Math.pow(2, z) * 360 - 180; }
@@ -3498,10 +3502,11 @@
     ROWM = !!(short.matches || low); if (!short.matches && !low) { fabs.forEach(function (f) { if (f.dataset.fr === '1') { f.style.removeProperty('bottom'); f.style.removeProperty('right'); delete f.dataset.fr; } }); return; }
     if (!host) return; var W = host.clientWidth, n = 0;
     var perRow = Math.max(1, Math.floor((W - 60 - 12) / 52));   /* clear of man overboard on the left */
-    var bar = document.getElementById('bar'), base = document.body.classList.contains('navclear') && bar && bar.getClientRects().length ? Math.round(bar.getBoundingClientRect().height) : 0;   /* Clear screen: the play bar floats at the foot, so the row sits above it */
+    var bar = document.getElementById('bar'), base = document.body.classList.contains('navclear') && bar && bar.getClientRects().length ? Math.round(bar.getBoundingClientRect().height) : 0;
+    if (!base && host) { var hb = innerHeight - host.getBoundingClientRect().bottom; base = Math.max(0, Math.round(insets().b - hb)); }   /* a chart that runs to the foot of the screen (Mark held sideways): keep clear of the home bar */   /* Clear screen: the play bar floats at the foot, so the row sits above it */
     fabs.forEach(function (f) { if (getComputedStyle(f).display === 'none') return; var row = Math.floor(n / perRow), col = n % perRow; n++;
       f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); }); }
-  function underTop() { var y = insets().t; ['.top', '#navStrip', '#fsPlot', '#astroLine'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
+  function underTop() { var y = insets().t; ['.top', '#mkTop', '#navStrip', '#fsPlot', '#astroLine'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
   function liveFit() { var lb = document.getElementById('liveBox'), big = !!(lb && vis(lb) && !lb.classList.contains('mini') && short.matches); if (document.body.classList.contains('gpsbigshort') !== big) document.body.classList.toggle('gpsbigshort', big); if (!lb || !vis(lb)) return; var ut = underTop(), par = lb.offsetParent; if (!par) return; var pr = par.getBoundingClientRect();
     if (lb.style.translate) return; if (lb.classList.contains('mini')) { if (short.matches || ROWM) { lb.style.top = Math.round(ut - pr.top + 6) + 'px'; lb.style.bottom = 'auto'; } else if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; } lb.style.maxHeight = ''; return; }
     if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; }

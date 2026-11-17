@@ -13,7 +13,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
   const nm = e => e.id || (typeof e.className === 'string' && e.className.split(' ')[0]) || e.tagName;
   for (const e of document.querySelectorAll('body *')) { const cs = getComputedStyle(e); if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
     if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || e.closest('[hidden]')) continue;
-    if (e.id === 'map' || e.tagName === 'CANVAS' || e.id === 'navToast') continue;   /* a passing message is not a window */
+    if (e.id === 'map' || e.tagName === 'CANVAS' || e.id === 'navToast') continue; if (/^grip-|^navUndo$/.test(e.id)) continue;   /* a window's own grip, and the Undo bar */   /* a passing message is not a window */
     let a = e.parentElement, inner = false; while (a && a !== document.body) { const s = getComputedStyle(a); if (s.position === 'fixed' || s.position === 'absolute') { inner = true; break; } a = a.parentElement; } if (inner) continue;
     const r = e.getBoundingClientRect(); if (r.width < 20 || r.height < 20) continue;
     out.push({ n: nm(e), r: [r.left, r.top, r.right, r.bottom].map(Math.round) }); }

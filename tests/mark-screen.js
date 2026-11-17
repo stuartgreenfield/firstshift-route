@@ -16,7 +16,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
   const nm = e => e.id || (typeof e.className === 'string' && e.className.split(' ')[0]) || e.tagName;
   for (const e of document.querySelectorAll('body *')) { const cs = getComputedStyle(e); if (cs.position !== 'fixed' && cs.position !== 'absolute') continue;
     if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || e.closest('[hidden]')) continue;
-    if (e.id === 'map' || e.id === 'app' || e.tagName === 'CANVAS' || e.id === 'navToast') continue;   /* the chart itself is not a window */   /* a passing message is not a window */
+    if (e.id === 'map' || e.id === 'app' || e.tagName === 'CANVAS' || e.id === 'navToast') continue; if (/^grip-|^navUndo$/.test(e.id)) continue;   /* a window's own grip, and the Undo bar */   /* the chart itself is not a window */   /* a passing message is not a window */
     let a = e.parentElement, inner = false; while (a && a !== document.body) { const s = getComputedStyle(a); if (s.position === 'fixed' || s.position === 'absolute') { inner = true; break; } a = a.parentElement; } if (inner) continue;
     const r = e.getBoundingClientRect(); if (r.width < 20 || r.height < 20) continue;
     out.push({ n: nm(e), r: [r.left, r.top, r.right, r.bottom].map(Math.round) }); }
@@ -37,7 +37,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
     const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/mark/');
     await p.waitForFunction(() => window.FSMark && window.FSSolent && FSSolent.marks && FSSolent.marks() && window.__navFc && window.__navFc().P, null, { timeout: 600000 }).catch(() => {});
     await p.waitForTimeout(2500);
-    const st = (o, fn) => async () => { await p.evaluate(([o, fn]) => { if (fn) (new Function(fn))(); FSMark.set(o); }, [o, fn || '']); await p.waitForTimeout(900); };
+    const st = (o, fn) => async () => { await p.evaluate(([o, fn]) => { const ly = document.getElementById('layers'); if (ly && !ly.hidden) document.getElementById('mkLayBtn').click(); if (fn) (new Function(fn))(); FSMark.set(o); }, [o, fn || '']); await p.waitForTimeout(900); };
     const now = 'Date.now() / 1000';
     const states = [['Course, empty', st({ tab: 'course' })],
       ['Course, round the cans', st({ tab: 'course' }, "FSSolent.set({ type: 'marks', start: { code: null, name: 'Start point', lat: 50.772, lon: -1.300 }, marks: FSSolent.board('3F P 2C S 3E P').marks })")],
@@ -45,6 +45,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, out = [];
       ['Course, tapping buoys', async () => { await p.evaluate(() => { const b = document.querySelector('#mkBody [data-k=pick][data-v=port]'); if (b) b.click(); }); await p.waitForTimeout(600); }],
       ['Course, windward-leeward and wind', st({ tab: 'course', wind: { twd: 230, tws: 12 } }, "const pk = document.getElementById('mkPickX'); if (pk) pk.click(); FSSolent.set({ type: 'wl', wl: Object.assign({}, FSSolent.state().wl, { wkind: 'brg', brg: 230, dist: 1, lkind: 'gate', lcode: '2C', lcode2: '3E', laps: 2 }) })")],
       ['Course, route it', async () => { await p.evaluate(() => { FSMark.set({ routeIt: true, tab: 'course' }); }); await p.waitForTimeout(800); }],
+      ['Chart layers open (depth control)', async () => { await p.evaluate(() => document.getElementById('mkLayBtn').click()); await p.waitForTimeout(900); }],
       ['Start, 4 minutes to go', st({ tab: 'start', gun: Math.round(Date.now() / 1000 + 240) })],
       ['Start, tapping the line', async () => { await p.evaluate(() => { const b = document.querySelector('#mkBody [data-k=tapline]'); if (b) b.click(); }); await p.waitForTimeout(600); }],
       ['Race', st({ tab: 'race' }, "const pk = document.getElementById('mkPickX'); if (pk) pk.click();")],

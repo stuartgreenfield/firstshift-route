@@ -1,0 +1,11 @@
+const { chromium, devices } = require('playwright');
+(async () => { const b = await chromium.launch(); const dev = process.argv[3] || 'iPhone 13'; const c = await b.newContext({ ...devices[dev], serviceWorkers: 'block', geolocation: { latitude: 50.70, longitude: -1.20, accuracy: 5 }, permissions: ['geolocation'] });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
+  const p = await c.newPage(); await p.goto(process.argv[2] + '/channel-area/');
+  await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running; }, null, { timeout: 600000 }).catch(() => {}); await p.waitForTimeout(1500);
+  await p.click('#liveBtn').catch(() => {}); await p.waitForTimeout(3000); await p.click('#lvMin').catch(() => {}); await p.waitForTimeout(1000);
+  await p.evaluate(() => { window.__log = []; const lb = document.getElementById('liveBox'); const rec = () => { const r = lb.getBoundingClientRect(), st = getComputedStyle(lb); window.__log.push([Math.round(performance.now()), lb.hidden ? 'H' : '', st.display, Math.round(r.left), Math.round(r.top), Math.round(r.width), lb.className, lb.style.cssText.replace(/ /g,''), lb.innerText.replace(/\s+/g,'_').slice(0,80)].join(' ')); }; new MutationObserver(rec).observe(lb, { attributes: true, childList: true, subtree: true }); setInterval(rec, 100); });
+  for (let i = 0; i < 6; i++) { await c.setGeolocation({ latitude: 50.70 + i * 0.0003, longitude: -1.20, accuracy: 5 }); await p.waitForTimeout(1000); }
+  const L = await p.evaluate(() => window.__log); const uniq = []; L.forEach(x => { const k = x.split(' ').slice(1).join(' '); if (!uniq.length || uniq[uniq.length - 1][1] !== k) uniq.push([x.split(' ')[0], k]); });
+  console.log(uniq.length + ' distinct states'); uniq.slice(0, 40).forEach(u => console.log(u.join('  ')));
+  await b.close(); })();
