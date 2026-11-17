@@ -180,7 +180,8 @@
   window.FSMarkCoach = COACH.map(function (st) { return { k: st.k, t: st.t, words: st.x }; });
   function tourLevels() { if (window.__mkTour) return; var base = window.FSTourLevels; window.__mkTour = 1;
     window.FSTourLevels = [{ n: 1, name: 'Race the cans', note: 'Course, line, start and the race', steps: MARK1 }, { n: 2, name: 'Practice race with Emma', note: 'Emma talks you through a practice race', steps: COACH }].concat(PLUS && base && base.length > 1 ? base.slice(1).map(function (L, i) { return Object.assign({}, L, { n: i + 3 }); }) : []); }
-  setTimeout(tourLevels, PLUS ? 2500 : 0);
+  /* 17 Nov 20:30 (Stuart's photo: Mark+ showed Route+'s levels): set the levels as soon as every script has run (Route+'s navtour.js sets its own after this file), not 2.5 s later, so a quick Yes to Show me round still gets Mark's levels */
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tourLevels); else setTimeout(tourLevels, 0);
   var n = 0, t = setInterval(function () { if (build() || ++n > 60) clearInterval(t); }, 500);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) build(); }, true);
 })();
