@@ -164,7 +164,8 @@
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
   fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
-    meta = m; T0 = m.t0; if (S.splashDone) S.splashDone(); setup(); loadRaces(); [loadChartExtras, xInit, adjInit, helpInit, racesInit, mobInit, aisInit, spdInit, mfInit, wizInit, crewInit, shareInit, askInit, bcInit].forEach(function (f) { try { f(); } catch (e) { if (window.console) console.error('Route: ' + (f.name || 'a part') + ' did not start: ' + e.message); } });   /* 17 Nov: a fault in one extra must never stop the forecasts loading */
+    meta = m; T0 = m.t0; if (window.FS_MARK) meta.fleet = [];   /* Mark: no RORC or JOG entry lists (Stuart 17 Nov 06:38: offshore fleet out) */
+    if (S.splashDone) S.splashDone(); setup(); loadRaces(); [loadChartExtras, xInit, adjInit, helpInit, racesInit, mobInit, aisInit, spdInit, mfInit, wizInit, crewInit, shareInit, askInit, bcInit].forEach(function (f) { try { f(); } catch (e) { if (window.console) console.error('Route: ' + (f.name || 'a part') + ' did not start: ' + e.message); } });   /* 17 Nov: a fault in one extra must never stop the forecasts loading */
     /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
     /* Shallow water shown: two buttons rather than a drop-down (Stuart 15 Nov 08:13: the drop-down would not open or select on the Android tablet) */
     (function () { var dv = $('depthView'), zm = $('zoomMax'), sg = $('depthViewSeg'); if (dv && sg) { var setV = function (v) { dv.value = v === 'squares' ? 'squares' : 'smooth'; [].forEach.call(sg.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === dv.value)); }); }; setV(store('fs-depthView')); [].forEach.call(sg.querySelectorAll('button'), function (b) { b.onclick = function () { setV(b.dataset.v); store('fs-depthView', dv.value); buildDepth(); draw(); }; }); }
@@ -192,7 +193,7 @@
       if (!nextMeta || S.running) return;
       var m = nextMeta, cur = meta.course; nextMeta = null;
       $('newData').hidden = true; busy('Downloading the new forecast…');
-      meta = m; T0 = m.t0; meta.course0 = m.course; S.loaded = {}; S.gotAt = {}; S.ov = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = [];
+      meta = m; T0 = m.t0; if (window.FS_MARK) meta.fleet = []; meta.course0 = m.course; S.loaded = {}; S.gotAt = {}; S.ov = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = [];
       /* keep the course on screen, whatever it is: a RORC race, its marks as set, or your own course (found 13 Nov: an own course
          jumped back to the area's default race whenever a new forecast came in). Only the forecast window comes from the new pack. */
       if (cur) meta.course = Object.assign({}, cur, { band: m.course && m.course.band || cur.band, window: m.course && m.course.window || cur.window });
@@ -2449,7 +2450,7 @@
   /* ---------- server pre-routes: the forecast job routes each race for the standard settings, so most users see routes at once ---------- */
   function loadPre() {
     S.pre = null;
-    return fetch('pre/routes.json?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.built === (meta.built || meta.t0)) S.pre = j; }).catch(function () {});
+    if (window.FS_MARK) return Promise.resolve();   /* Mark: no offshore pre-made routes */ return fetch('pre/routes.json?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.built === (meta.built || meta.t0)) S.pre = j; }).catch(function () {});
   }
   function startPt() { return S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 }; }
   function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return (m.side || '') + m.lat.toFixed(3) + m.lon.toFixed(3); }), meta.course.finish.lat.toFixed(3) + meta.course.finish.lon.toFixed(3), base.tackS, base.gybeS, base.safety, base.margin, base.sea.up, base.sea.reach, base.sea.surf, base.adj].concat(base.tideWind === false ? ['ground wind'] : [], base.polZ !== 10 ? ['z' + base.polZ + (base.stab ? 's' : '')] : [])); }

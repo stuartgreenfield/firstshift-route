@@ -489,6 +489,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 #help.sheet{z-index:11}   /* Help opened from Settings, Races or set-up sits on top of them (Stuart 12 Nov) */
 .mkarea{align-self:center;font:600 15px var(--f-head,Inter,sans-serif);color:var(--muted);white-space:nowrap;margin:0 2px 0 -2px}.mkarea::before{content:'· ';color:var(--brand)}@media (max-width:600px){.mkarea{display:none}}
 html:not(.fssolent) #rmSolent,html:not(.fssolent) .solsettings{display:none!important}
+html.fsmark .offsh{display:none!important}   /* Mark: RORC and JOG races, offshore parts switched off (Stuart 17 Nov 06:38) */
 /* The phone's own bars (Stuart 16 Nov 22:29): the page body already keeps clear of a notch at the side, so windows and buttons
 inside the app do not add it a second time (it squeezed the top bar on a phone held sideways); the results tabs shrink to fit */
 :root{--gut:10px;--gutR:10px}
@@ -597,7 +598,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <p class="note aisnet" id="aisNet"><b>AIS needs a data connection.</b> Route's AIS comes from the internet, so it shows targets only while this phone or tablet is online: through the boat's Wi-Fi when that has internet (Starlink, a 4G or 5G router or satellite), or through the mobile network. With no connection, no AIS targets show.</p>
       <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><p class="aiswarn" id="aisWarn" hidden><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
       <p class="note">Every boat you are racing, sailing your chosen route at its own TCC from its own start: who should be near you at the slider time if they went the same way. Ranked on corrected time.</p>
-      <p class="note warnt" id="fleetEmpty" hidden>No entry list for this race yet. Add the boats you are racing below, or tap Race boat on an AIS target.</p>
+      <p class="note warnt" id="fleetEmpty" hidden><span class="offsh">No entry list for this race yet. </span>Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>
       <h4 class="xh">Boats you are racing</h4>
       <div id="mfList"></div>
@@ -692,7 +693,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div id="fixSet" class="fixbox"></div>
       <h3>Boat speed from</h3>
       <div class="seg" id="srcSeg" role="group" aria-label="Boat speed from"><button data-src="type" aria-pressed="true">Boat type</button><button data-src="tcc" aria-pressed="false">TCC only</button><button data-src="polar" aria-pressed="false">Own polar</button></div>
-      <div class="row"><label for="tcc">IRC TCC</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"><select id="boatPick" aria-label="Fill TCC from a race entry"><option value="">or fill from an entry…</option></select></div>
+      <div class="row"><label for="tcc">IRC TCC</label><input type="number" id="tcc" step="0.001" min="0.8" max="1.8" value="1.031"><select id="boatPick" class="offsh" aria-label="Fill TCC from a race entry"><option value="">or fill from an entry…</option></select></div>
       <div id="srcType">
         <div class="row"><label for="boatType">Boat type</label><select id="boatType"></select></div>
         <p class="note" id="typeEg"></p>
@@ -774,8 +775,8 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="row"><label class="chk"><input type="checkbox" id="shareTrack"> Let family and friends follow the boat</label></div>
       <p class="note" id="shareNote">Needs a boat code (tap the race name, Boat code). While Route is open it sends the boat's GPS position every five minutes and the chosen route to FirstShift's server; anyone with the code can watch on the follow page. Nothing is sent when this is off.</p>
       <div class="xrow"><button class="btn" id="shareLink">Send the follow link</button></div>
-      <h3>Race</h3>
-      <div class="row"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
+      <h3 class="offsh">Race</h3>
+      <div class="row offsh"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
       <p class="warnbox" id="courseWarn" hidden></p>
       <h3>Keep-out areas</h3>
       <label class="row" style="gap:8px"><input type="checkbox" id="tssNogo" checked> Keep out of traffic separation lanes and zones</label>
