@@ -69,6 +69,13 @@
     var g = document.createElement('button'); g.type = 'button'; g.className = 'navgrip2'; g.id = 'grip-' + p[0]; g.hidden = true; g.title = 'Hold to move the ' + p[1].toLowerCase(); g.setAttribute('aria-label', 'Hold to move the ' + p[1].toLowerCase());
     g.innerHTML = '<svg viewBox="0 0 20 8" width="20" height="8" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="2" r="1.3"/><circle cx="10" cy="2" r="1.3"/><circle cx="17" cy="2" r="1.3"/><circle cx="3" cy="6" r="1.3"/><circle cx="10" cy="6" r="1.3"/><circle cx="17" cy="6" r="1.3"/></g></svg>';
     document.body.appendChild(g); grips[p[0]] = g; hold(g, function () { return $(p[0]); }, p[0]);
+    /* 17 Nov 21:19 (Stuart, iPhone 14 Plus: "I could see the dots but ... it didn't work"): as in the trial, drag the dots and the
+       window comes with you at once; let go and it stays there (or goes to a tab off the side). The long press still works. */
+    var gd = null;
+    g.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });   /* no iPhone magnifier or menu on the dots */
+    g.addEventListener('pointerdown', function (e) { if (e.button > 0 || M.el || locked()) return; gd = { x: e.clientX, y: e.clientY }; try { g.setPointerCapture(e.pointerId); } catch (x) {} });
+    g.addEventListener('pointermove', function (e) { if (!gd || M.drag) return; if (Math.hypot(e.clientX - gd.x, e.clientY - gd.y) < 6) return; var el = $(p[0]); if (!el) return; begin(el, p[0]); var c = cur(el); M.drag = { x: gd.x, y: gd.y, dx: c[0], dy: c[1], moved: true, direct: true }; gd = null; swallow = Date.now(); });
+    var gu = function () { gd = null; }; g.addEventListener('pointerup', gu); g.addEventListener('pointercancel', gu);
   }
   /* F15: the tab of a window slid off an edge; it shows only when the window would otherwise be on the screen */
   var tabs = {};
@@ -121,7 +128,7 @@
     var nt = performance.now(), dtm = Math.max(1, nt - (M.drag.pt || nt - 16)); M.drag.vx = 0.6 * (M.drag.vx || 0) + 0.4 * (e.clientX - (M.drag.px == null ? e.clientX : M.drag.px)) / dtm; M.drag.px = e.clientX; M.drag.pt = nt;
     e.preventDefault(); e.stopPropagation(); set(M.el, M.drag.dx + dx, M.drag.dy + dy); place();
   }, true);
-  var drop = function (e) { clearTimeout(lt); if (!M.el || !M.drag) return; var dg = M.drag; M.drag = null; e.stopPropagation(); swallow = Date.now(); if (slideOff(dg)) return; var s2 = settle(M.el); if (s2) set(M.el, s2[0], s2[1]); place(); };
+  var drop = function (e) { clearTimeout(lt); if (!M.el || !M.drag) return; var dg = M.drag; M.drag = null; e.stopPropagation(); swallow = Date.now(); if (slideOff(dg)) return; if (dg.direct) { lock(); return; } var s2 = settle(M.el); if (s2) set(M.el, s2[0], s2[1]); place(); };
   window.addEventListener('pointerup', drop, true); window.addEventListener('pointercancel', drop, true);
   window.addEventListener('click', function (e) { if (M.el && onIt(e)) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   /* F15: most of the way off the left or right edge, or a quick flick towards one: it slides away to a tab */
@@ -175,7 +182,7 @@
   var bt = setInterval(function () {
     var body = document.querySelector('#navPrefs .npbody'); if (!body || $('navMoveAll')) { if ($('navMoveAll')) clearInterval(bt); return; }
     var h = document.createElement('div');
-    h.innerHTML = '<h4>Window positions</h4><p class="note">Hold the small grip on a window, or hold a round button, to move it; drag it, then hold again to lock it. It never covers another button: it slides to the nearest gap. While moving, drag a window most of the way off the left or right edge, or flick it towards one, to put it away; tap its tab on the edge to bring it back. Kept for each screen size and orientation, and saved with My set-up.</p>' +
+    h.innerHTML = '<h4>Window positions</h4><p class="note">Drag the small dots on a window to move it; let go and it stays there. Hold a round button to move it, drag it, then hold again to lock it. It never covers another button: it slides to the nearest gap. While moving, drag a window most of the way off the left or right edge, or flick it towards one, to put it away; tap its tab on the edge to bring it back. Kept for each screen size and orientation, and saved with My set-up.</p>' +
       '<label class="np-row"><input type="checkbox" id="fsWinLock"> Lock layout: nothing moves</label><label class="np-row">Grip on each window <select id="fsWinHand"><option value="c">In the middle</option><option value="l">On the left (left hand)</option><option value="r">On the right (right hand)</option></select></label>' +
       '<div class="xrow"><button class="btn" id="navMoveAll" type="button">Reset to FirstShift layout</button></div>';
     var note = body.querySelector('.npask'); body.insertBefore(h, note || null);

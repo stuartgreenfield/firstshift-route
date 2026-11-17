@@ -19,6 +19,15 @@ const { chromium, devices } = require('playwright'); const BASE = process.argv[2
   await drag(160, true); r = await box(); const tab2 = await p.evaluate(() => { const t = document.querySelector('.fswtab:not([hidden])'); return t ? t.className : null; });
   ok('flick right: put away to the right', r && !r.vis && tab2 && / r/.test(tab2), tab2);
   await p.click('.fswtab:not([hidden])'); await p.waitForTimeout(800);
+  /* drag the dots directly (no long press), as on the iPhone */
+  r = await box(); const gp = await p.evaluate(() => { const g = document.getElementById('grip-fsPlot'); if (!g || g.hidden) return null; const q = g.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; });
+  ok('dots showing', !!gp, JSON.stringify(gp) + ' bar ' + JSON.stringify(r) + ' ' + JSON.stringify(await p.evaluate(() => { const t = document.getElementById('solTestBar'); return t && t.getBoundingClientRect(); })));
+  if (gp) { await p.mouse.move(gp[0], gp[1]); await p.mouse.down(); await p.mouse.move(gp[0], gp[1] + 450, { steps: 15 }); await p.waitForTimeout(150); await p.mouse.up(); await p.waitForTimeout(800);
+    const r2 = await box(); ok('drag the dots: the window moves and stays', r2.vis && Math.abs(r2.t - r.t) > 100 && await p.evaluate(() => !NavDrag.on()), Math.round(r.t) + ' to ' + Math.round(r2.t));
+    const g2 = await p.evaluate(() => { const g = document.getElementById('grip-fsPlot'); const q = g.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; });
+    await p.mouse.move(g2[0], g2[1]); await p.mouse.down(); await p.mouse.move(g2[0] - 320, g2[1], { steps: 15 }); await p.waitForTimeout(150); await p.mouse.up(); await p.waitForTimeout(800);
+    ok('drag the dots off the left: put away', !(await box()).vis);
+    await p.click('.fswtab:not([hidden])'); await p.waitForTimeout(800); }
   await p.evaluate(() => localStorage.setItem('fs-win-lock', '1')); const before = await box();
   await p.mouse.move(before.l + 20, before.t + 10); await p.mouse.down(); await p.waitForTimeout(800); await p.mouse.move(before.l - 100, before.t + 10, { steps: 10 }); await p.mouse.up(); await p.waitForTimeout(500);
   ok('lock layout: a long press does not start a move', await p.evaluate(() => !NavDrag.on()) && (await box()).vis);
