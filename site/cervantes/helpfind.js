@@ -9,7 +9,7 @@
   function $(id) { return document.getElementById(id); }
   var MEDIA = window.FS_HELPMEDIA || '../helpmedia/';
   /* the main sections, by topic title; a title not listed goes by its words, else to "More" */
-  var SECTIONS = [
+  var SECTIONS = window.FS_HELP_SECTIONS || [
     { id: 'start', name: 'Getting started', blurb: 'What it does, your boat, a first race', titles: ['What Route does', 'Try it safely first', 'Setting up a race', 'Your boat', 'Your sails and reefs', 'My set-up', 'Find a setting', 'Plan', 'Play the race'], re: /try it|getting|setting up|first|my set-up|find a setting/i },
     { id: 'boat', name: 'The boat and instruments', blurb: 'Connecting, the strip, data and alarms', titles: ['Connect to the boat', 'The instrument strip', 'Settings: Instruments', 'Data sources and GPS', 'Alarms', 'Depth smoothing', 'Wind check and wind by hand', 'Internet and Starlink'], re: /instrument|gateway|nmea|data source|alarm|connect/i },
     { id: 'race', name: 'Racing', blurb: 'Live GPS, rerouting, the plotter, MOB', titles: ['Live GPS while racing', 'Routing while racing', 'Route from where you are', 'Route from any point', 'Route to any point', 'Basic plotter', 'The plotter', 'Steer to stay on the route', 'Helm view', 'The boat is here', 'Follow the boat', 'Fleet', 'AIS', 'Man overboard', 'Send to the crew', 'Family and friends', 'Tide gate', 'Tactician', 'Solent races on the chart', 'Start line and bow offset'], re: /racing|live gps|plotter|mob|overboard|fleet|follow|helm|crew/i },
@@ -19,7 +19,7 @@
     { id: 'more', name: 'More', blurb: 'Everything else', titles: [], re: /$^/ }
   ];
   /* help logic trees (first-time guide, Stuart 14 Nov): "What do you want to do?", each a path of topics in order */
-  var PATHS = [
+  var PATHS = window.FS_HELP_PATHS || [
     { id: 'p1', name: 'Plan a race', steps: ['What Route does', 'Try it safely first', 'Setting up a race', 'Your boat', 'Your sails and reefs', 'New forecasts', 'Routes', 'Play the race', 'Plan', 'Send to the crew'] },
     { id: 'p2', name: 'Race with this phone', steps: ['Live GPS while racing', 'Basic plotter', 'Routing while racing', 'Route from where you are', 'Clear screen', 'Man overboard'] },
     { id: 'p3', name: 'Connect to the boat', steps: ['Connect to the boat', 'Data sources and GPS', 'The instrument strip', 'Settings: Instruments', 'Helm view', 'The plotter', 'Alarms'] },

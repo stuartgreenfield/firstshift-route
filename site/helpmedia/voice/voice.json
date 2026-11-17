@@ -179,15 +179,215 @@
   "t": "Fleet",
   "sec": 10.3
  },
+ "my-tracks-2f7747ba": {
+  "f": "my-tracks-2f7747ba.mp3",
+  "t": "My tracks",
+  "sec": 36.8
+ },
+ "tide-gate-5cca65c": {
+  "f": "tide-gate-5cca65c.mp3",
+  "t": "Tide gate",
+  "sec": 37.4
+ },
+ "solent-races-on-the-chart-8ca1d189": {
+  "f": "solent-races-on-the-chart-8ca1d189.mp3",
+  "t": "Solent races on the chart",
+  "sec": 35.8
+ },
+ "tide-by-hand-a4060a72": {
+  "f": "tide-by-hand-a4060a72.mp3",
+  "t": "Tide by hand",
+  "sec": 25.4
+ },
+ "start-line-and-bow-offset-a164395f": {
+  "f": "start-line-and-bow-offset-a164395f.mp3",
+  "t": "Start line and bow offset",
+  "sec": 24.1
+ },
+ "astro-69eef602": {
+  "f": "astro-69eef602.mp3",
+  "t": "Astro",
+  "sec": 28.9
+ },
+ "what-mark-does-99f03b1f": {
+  "f": "what-mark-does-99f03b1f.mp3",
+  "t": "What Mark does",
+  "sec": 30.9
+ },
+ "mark-and-mark-ac927996": {
+  "f": "mark-and-mark-ac927996.mp3",
+  "t": "Mark and Mark+",
+  "sec": 25.1
+ },
+ "your-first-race-275e4aa4": {
+  "f": "your-first-race-275e4aa4.mp3",
+  "t": "Your first race",
+  "sec": 21.8
+ },
+ "test-mode-a0a980e3": {
+  "f": "test-mode-a0a980e3.mp3",
+  "t": "Test mode",
+  "sec": 33.0
+ },
+ "the-practice-race-with-emma-2c43e0fd": {
+  "f": "the-practice-race-with-emma-2c43e0fd.mp3",
+  "t": "The practice race with Emma",
+  "sec": 18.8
+ },
+ "stored-races-1f6aa946": {
+  "f": "stored-races-1f6aa946.mp3",
+  "t": "Stored races",
+  "sec": 14.9
+ },
+ "the-crew-in-step-f93742a3": {
+  "f": "the-crew-in-step-f93742a3.mp3",
+  "t": "The crew in step",
+  "sec": 14.3
+ },
+ "start-new-race-58959298": {
+  "f": "start-new-race-58959298.mp3",
+  "t": "Start new race",
+  "sec": 21.5
+ },
+ "route-this-race-or-not-36bfabf": {
+  "f": "route-this-race-or-not-36bfabf.mp3",
+  "t": "Route this race, or not?",
+  "sec": 19.6
+ },
+ "round-the-cans-b1f29ed4": {
+  "f": "round-the-cans-b1f29ed4.mp3",
+  "t": "Round the cans",
+  "sec": 25.5
+ },
+ "windward-leeward-af6811c1": {
+  "f": "windward-leeward-af6811c1.mp3",
+  "t": "Windward-leeward",
+  "sec": 21.9
+ },
+ "the-wind-e2dfecb2": {
+  "f": "the-wind-e2dfecb2.mp3",
+  "t": "The wind",
+  "sec": 28.2
+ },
+ "the-tide-67c45411": {
+  "f": "the-tide-67c45411.mp3",
+  "t": "The tide",
+  "sec": 18.9
+ },
+ "check-the-course-abcc4fc5": {
+  "f": "check-the-course-abcc4fc5.mp3",
+  "t": "Check the course",
+  "sec": 13.2
+ },
+ "the-course-card-20a678ea": {
+  "f": "the-course-card-20a678ea.mp3",
+  "t": "The course card",
+  "sec": 17.3
+ },
+ "set-the-start-line-9a0edd35": {
+  "f": "set-the-start-line-9a0edd35.mp3",
+  "t": "Set the start line",
+  "sec": 22.0
+ },
+ "ping-the-ends-b2b817c3": {
+  "f": "ping-the-ends-b2b817c3.mp3",
+  "t": "Ping the ends",
+  "sec": 17.2
+ },
+ "line-bias-and-the-favoured-end-41be5c7b": {
+  "f": "line-bias-and-the-favoured-end-41be5c7b.mp3",
+  "t": "Line bias and the favoured end",
+  "sec": 17.7
+ },
+ "the-ladder-rung-22f29fae": {
+  "f": "the-ladder-rung-22f29fae.mp3",
+  "t": "The ladder rung",
+  "sec": 15.5
+ },
+ "line-check-5297d9da": {
+  "f": "line-check-5297d9da.mp3",
+  "t": "Line check",
+  "sec": 18.9
+ },
+ "the-start-sequence-6313a1ea": {
+  "f": "the-start-sequence-6313a1ea.mp3",
+  "t": "The start sequence",
+  "sec": 25.6
+ },
+ "sync-and-the-minute-buttons-f8e021c3": {
+  "f": "sync-and-the-minute-buttons-f8e021c3.mp3",
+  "t": "Sync and the minute buttons",
+  "sec": 17.8
+ },
+ "a-series-of-starts-b8ae50b0": {
+  "f": "a-series-of-starts-b8ae50b0.mp3",
+  "t": "A series of starts",
+  "sec": 15.2
+ },
+ "the-start-screen-d345cfe": {
+  "f": "the-start-screen-d345cfe.mp3",
+  "t": "The start screen",
+  "sec": 25.7
+ },
+ "time-to-line-and-time-to-burn-1434b423": {
+  "f": "time-to-line-and-time-to-burn-1434b423.mp3",
+  "t": "Time to line and time to burn",
+  "sec": 32.3
+ },
+ "getting-up-to-speed-813626d1": {
+  "f": "getting-up-to-speed-813626d1.mp3",
+  "t": "Getting up to speed",
+  "sec": 21.6
+ },
+ "course-side-bdf4474c": {
+  "f": "course-side-bdf4474c.mp3",
+  "t": "Course side",
+  "sec": 9.2
+ },
+ "general-recall-dc0961fa": {
+  "f": "general-recall-dc0961fa.mp3",
+  "t": "General recall",
+  "sec": 15.4
+ },
+ "the-next-mark-bc4a1bf8": {
+  "f": "the-next-mark-bc4a1bf8.mp3",
+  "t": "The next mark",
+  "sec": 15.7
+ },
+ "laylines-and-the-tide-174ba91d": {
+  "f": "laylines-and-the-tide-174ba91d.mp3",
+  "t": "Laylines and the tide",
+  "sec": 11.1
+ },
+ "header-or-lift-b03834cf": {
+  "f": "header-or-lift-b03834cf.mp3",
+  "t": "Header or lift",
+  "sec": 10.1
+ },
+ "the-time-slider-folds-away-30823281": {
+  "f": "the-time-slider-folds-away-30823281.mp3",
+  "t": "The time slider folds away",
+  "sec": 13.4
+ },
+ "course-change-70e7681d": {
+  "f": "course-change-70e7681d.mp3",
+  "t": "Course change",
+  "sec": 27.0
+ },
+ "the-finish-41e0c2e6": {
+  "f": "the-finish-41e0c2e6.mp3",
+  "t": "The finish",
+  "sec": 9.9
+ },
+ "stop-race-and-start-new-race-bcb25969": {
+  "f": "stop-race-and-start-new-race-bcb25969.mp3",
+  "t": "Stop race and start new race",
+  "sec": 14.8
+ },
  "try-it-safely-first-841daf38": {
   "f": "try-it-safely-first-841daf38.mp3",
   "t": "Try it safely first",
   "sec": 27.1
- },
- "connect-to-the-boat-48353468": {
-  "f": "connect-to-the-boat-48353468.mp3",
-  "t": "Connect to the boat",
-  "sec": 35.7
  },
  "the-instrument-strip-b685adc6": {
   "f": "the-instrument-strip-b685adc6.mp3",
@@ -229,11 +429,6 @@
   "t": "Data sources and GPS",
   "sec": 24.3
  },
- "wind-check-and-wind-by-hand-af85edbc": {
-  "f": "wind-check-and-wind-by-hand-af85edbc.mp3",
-  "t": "Wind check and wind by hand",
-  "sec": 29.9
- },
  "alarms-61be2052": {
   "f": "alarms-61be2052.mp3",
   "t": "Alarms",
@@ -243,11 +438,6 @@
   "f": "depth-smoothing-c9100b16.mp3",
   "t": "Depth smoothing",
   "sec": 31.9
- },
- "my-set-up-8a5b726d": {
-  "f": "my-set-up-8a5b726d.mp3",
-  "t": "My set-up",
-  "sec": 25.9
  },
  "move-the-panels-7199bd7d": {
   "f": "move-the-panels-7199bd7d.mp3",
@@ -264,54 +454,54 @@
   "t": "Log and debrief",
   "sec": 31.8
  },
- "polars-b4bdafb1": {
-  "f": "polars-b4bdafb1.mp3",
-  "t": "Polars",
-  "sec": 29.4
- },
  "follow-the-boat-5e9feb0": {
   "f": "follow-the-boat-5e9feb0.mp3",
   "t": "Follow the boat",
   "sec": 35.4
  },
- "my-tracks-2f7747ba": {
-  "f": "my-tracks-2f7747ba.mp3",
-  "t": "My tracks",
-  "sec": 36.8
- },
- "tide-gate-5cca65c": {
-  "f": "tide-gate-5cca65c.mp3",
-  "t": "Tide gate",
-  "sec": 37.4
- },
- "solent-races-on-the-chart-8ca1d189": {
-  "f": "solent-races-on-the-chart-8ca1d189.mp3",
-  "t": "Solent races on the chart",
+ "connect-to-the-boat-26b6f52b": {
+  "f": "connect-to-the-boat-26b6f52b.mp3",
+  "t": "Connect to the boat",
   "sec": 35.8
  },
- "tide-by-hand-a4060a72": {
-  "f": "tide-by-hand-a4060a72.mp3",
-  "t": "Tide by hand",
-  "sec": 25.4
+ "wind-check-and-wind-by-hand-f2bcf7ec": {
+  "f": "wind-check-and-wind-by-hand-f2bcf7ec.mp3",
+  "t": "Wind check and wind by hand",
+  "sec": 29.9
  },
- "start-line-and-bow-offset-a164395f": {
-  "f": "start-line-and-bow-offset-a164395f.mp3",
-  "t": "Start line and bow offset",
-  "sec": 24.1
+ "my-set-up-c2a1a2ca": {
+  "f": "my-set-up-c2a1a2ca.mp3",
+  "t": "My set-up",
+  "sec": 25.8
  },
- "tactician-ca57370b": {
-  "f": "tactician-ca57370b.mp3",
+ "polars-e8911030": {
+  "f": "polars-e8911030.mp3",
+  "t": "Polars",
+  "sec": 29.5
+ },
+ "tactician-84ede3b2": {
+  "f": "tactician-84ede3b2.mp3",
   "t": "Tactician",
   "sec": 32.3
  },
- "astro-69eef602": {
-  "f": "astro-69eef602.mp3",
-  "t": "Astro",
-  "sec": 28.9
- },
- "internet-and-starlink-19d02d15": {
-  "f": "internet-and-starlink-19d02d15.mp3",
+ "internet-and-starlink-203ddc54": {
+  "f": "internet-and-starlink-203ddc54.mp3",
   "t": "Internet and Starlink",
   "sec": 35.4
+ },
+ "instruments-on-the-start-screen-2ef747ee": {
+  "f": "instruments-on-the-start-screen-2ef747ee.mp3",
+  "t": "Instruments on the start screen",
+  "sec": 12.3
+ },
+ "wind-and-tide-from-the-boat-a6b79db2": {
+  "f": "wind-and-tide-from-the-boat-a6b79db2.mp3",
+  "t": "Wind and tide from the boat",
+  "sec": 16.4
+ },
+ "learning-your-boat-9ddb8d8e": {
+  "f": "learning-your-boat-9ddb8d8e.mp3",
+  "t": "Learning your boat",
+  "sec": 15.0
  }
 }
