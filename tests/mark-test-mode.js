@@ -10,10 +10,10 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(await p.evaluate(() => FSSolent.testing() && !!document.getElementById('solTestBar')), 'Test mode starts with its bar showing');
   ok(await p.evaluate(() => window.__navCourse() && window.__navCourse().marks.length >= 2), 'a sample course is on the chart', await p.evaluate(() => window.__navCourse().marks.map(m => m.name.split(' ')[0]).join(',')));
   await p.evaluate(() => { const s = FSSolent.state(); s.startAt = Math.round(Date.now() / 1000 + 4); window.__fsGun(s.startAt); }); await p.waitForTimeout(9000);
-  ok(await p.evaluate(() => !!(window.__fsPlot && window.__fsPlot.C.on)), 'at the gun the racing window opens by itself');
+  ok(await p.evaluate(() => { const PL = window.__fsPlot || window.__navPlot; return !!(PL && PL.C.on); }), 'at the gun the racing window opens by itself');
   const f1 = await p.evaluate(() => { const f = window.__fsLiveFix && window.__fsLiveFix(); return f && [f.la, f.lo]; }); await p.waitForTimeout(4000); const f2 = await p.evaluate(() => { const f = window.__fsLiveFix && window.__fsLiveFix(); return f && [f.la, f.lo]; });
   ok(f1 && f2 && (f1[0] !== f2[0] || f1[1] !== f2[1]), 'the practice boat sails', JSON.stringify([f1, f2]));
-  const pt = await p.evaluate(() => document.getElementById('fsPlot') && document.getElementById('fsPlot').innerText.replace(/\s+/g, ' ')); ok(/BTW|°T/.test(pt || ''), 'the racing window steers to the next mark', (pt || '').slice(0, 100));
+  const pt = await p.evaluate(() => { const e = document.getElementById('fsPlot') || document.getElementById('navPlot'); return e && e.innerText.replace(/\s+/g, ' '); }); ok(/BTW|°T/.test(pt || ''), 'the racing window steers to the next mark', (pt || '').slice(0, 100));
   await p.screenshot({ path: '/tmp/claude-0/ui/m2/test-mode.png' });
   /* the course is locked after the gun */
   await p.evaluate(() => FSSolent.start()); await p.waitForTimeout(500);

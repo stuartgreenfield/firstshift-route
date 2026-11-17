@@ -594,14 +594,14 @@
     var k = Math.cos(mid.lat * R), up = rh(mid, first).brg, at = function (p, b, m) { return { lat: p.lat + m / 1852 * Math.cos(b * R) / 60, lon: p.lon + m / 1852 * Math.sin(b * R) / (60 * k) }; }, kn = 6, cog, p;
     if (now < g) { p = at(mid, (up + 180) % 360, Math.max(0, (g - now) * 2.2 - 15)); cog = up; kn = 4.3; }   /* closing the line at about 4 knots, crossing just after the gun */
     else { if (!SIM.pos) SIM.pos = at(mid, up, 10); var tgt = pts[SIM.i]; if (!tgt) return; var r = rh(SIM.pos, tgt), step = 6 * 0.514 * 8; cog = (r.brg + Math.sin(now / 25) * 7 + 360) % 360;
-      if (r.nm * 1852 <= step) { SIM.pos = { lat: tgt.lat, lon: tgt.lon }; SIM.i++; try { if (window.__fsPlot && window.__fsPlot.setMark) window.__fsPlot.setMark(Math.min(SIM.i, pts.length - 1)); } catch (e) {} if (SIM.i >= pts.length) { clearInterval(SIM.t); toast('Test mode: finished. Stop test mode puts your own race back.'); } }
+      if (r.nm * 1852 <= step) { SIM.pos = { lat: tgt.lat, lon: tgt.lon }; SIM.i++; try { var PL2 = window.__fsPlot || window.__navPlot; if (PL2 && PL2.setMark) PL2.setMark(Math.min(SIM.i, pts.length - 1)); } catch (e) {} if (SIM.i >= pts.length) { clearInterval(SIM.t); toast('Test mode: finished. Stop test mode puts your own race back.'); } }
       else SIM.pos = at(SIM.pos, cog, step); p = SIM.pos; }
     window.__fsSimFix(p.lat, p.lon, kn, cog);
   }
   function testStop() {
     if (!SIM.on) return; clearInterval(SIM.t); SIM.on = false; window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
     QUIET = true; try { if (sv0.B) { B = sv0.B; sv(BKEY, B); } ['boat', 'pin'].forEach(function (e) { var a = sv0.line && sv0.line[e]; window.__fsSetLine(e, a ? a[0] : null, a ? a[1] : null); }); if (window.__fsClearCourse) window.__fsClearCourse(); var c0 = build(); if (B.shown && c0 && !c0.err) go(true); } catch (e) {} finally { QUIET = false; }
-    if (SIM.push) window.__fsBcPush = SIM.push; try { if (window.__fsPlot && window.__fsPlot.C.on) window.__fsPlot.toggle(false); } catch (e) {} redraw(); toast('Test mode stopped: your own race is back.'); }
+    if (SIM.push) window.__fsBcPush = SIM.push; try { var PL3 = window.__fsPlot || window.__navPlot; if (PL3 && PL3.C.on) PL3.toggle(false); } catch (e) {} redraw(); toast('Test mode stopped: your own race is back.'); }
   /* M2 (Stuart 17 Nov 05:04): laylines to the next mark when it is upwind, from the typed wind (Mark) or the boat's wind (Mark+) */
   function laylines(ctx, X, Y) {
     var w = windRef(), nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} var twd = nw && nw[1] != null ? nw[1] : w && w.twd != null ? w.twd : null; if (twd == null) return;
@@ -622,7 +622,7 @@
     if (window.FS_MARK && BV.on) biasDraw(ctx, X, Y);
     if (window.FS_MARK && l.boat && l.pin) { ctx.save(); ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(l.boat[1]), Y(l.boat[0])); ctx.lineTo(X(l.pin[1]), Y(l.pin[0])); ctx.stroke(); var bi = biasNow(); if (bi && !BV.on && bi.m >= 2) { var fe = /Pin|Outer/.test(bi.end) ? l.pin : l.boat; ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ctx.fillText('FAVOURED ' + bi.m + ' m', X(fe[1]) + 12, Y(fe[0]) + 12); } ctx.restore(); }
     if (window.FS_MARK) { if (l.boat) boatSym(ctx, X(l.boat[1]), Y(l.boat[0])); if (l.pin) pinSym(ctx, X(l.pin[1]), Y(l.pin[0])); }
-    if (window.FS_MARK) laylines(ctx, X, Y);
+    if (window.FS_MARK && !window.__navPlot) laylines(ctx, X, Y);   /* Mark+ draws its own laylines, with the tide, in Route+'s plotter */
     if (!window.FS_MARK) return; var w = B.wl, pts = [];
     if (B.type === 'wl') { if (w.wkind === 'pt' && w.wpt && !w.wpt.code) pts.push([w.wpt, '#d946ef']); if (w.lkind === 'pt' && w.lpt && !w.lpt.code) pts.push([w.lpt, '#f97316']); if (w.lkind === 'gate') [w.g1, w.g2].forEach(function (g) { if (g && !g.code) pts.push([g, '#f97316']); }); if (w.wkind === 'brg') { var W0 = windward(); if (W0) pts.push([W0, '#d946ef']); } }
     if (B.start && !B.start.code && !B.start.line) pts.push([B.start, '#22c55e']); if (B.fin === 'mark' && B.finish && !B.finish.code) pts.push([B.finish, '#ef4444']);
@@ -637,7 +637,7 @@
     var bt = $('solentBuild'); if (bt) bt.onclick = function () { if (!C.on) setOn(true); openBuilder(); };
   }
   /* M12 (Stuart 17 Nov 05:30): at the gun the racing window opens by itself: the plotter, steering to the next mark (rhumb line) or along the route */
-  if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { if (window.__fsPlot && !window.__fsPlot.C.on) window.__fsPlot.toggle(true); toast('The gun: the racing window is open. Tap MARK or ROUTE in it to steer to the next mark or along the route.'); } catch (e) {} }, 1000);
+  if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); toast('The gun: the racing window is open. Tap MARK or ROUTE in it to steer to the next mark or along the route.'); } catch (e) {} }, 1000);
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   window.__fsTapHook = tapHook;
   window.FSSolent = { test: function (on) { if (on === false) testStop(); else testStart(); }, testing: function () { return SIM.on; }, share: share, applyRemote: applyRemote, showList: showList, newCourse: newCourse, windRef: windRef, legType: legType, start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
