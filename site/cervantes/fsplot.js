@@ -94,7 +94,7 @@
       return;
     }
     bar.classList.remove('mini');
-    var h = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show one line">' + name + '</button>' + nav('next', '›', 'Next mark') + modeBtn() + '<button class="rpnav rpmin" data-k="mini" aria-label="Minimise to one line">MIN</button></div>';
+    var h = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show one line">' + name + '</button>' + nav('next', '›', 'Next mark') + modeBtn() + '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button></div>';
     if (o.ok) {
       h += '<div class="rpgrid">' +
         cell('BTW', brg(o.btw), 'true bearing') +
