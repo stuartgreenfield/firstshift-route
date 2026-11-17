@@ -73,7 +73,7 @@
     if (i < 0) { i = 0; dir = 1; }
     if (i >= S.length) { finish(); return; }
     var s = S[i]; try { if (s.before) s.before(); } catch (e) {}
-    setTimeout(function () { if (target(s)) { T.i = i; place(); } else go(i + dir, dir); }, s.before ? 350 : 30);
+    setTimeout(function () { if (target(s)) { T.i = i; place(); } else go(i + dir, dir); }, s.wait || (s.before ? 350 : 30));   /* wait: a step whose button takes longer to appear (Mark's practice race) */
   }
   function place() {
     var s = steps()[T.i]; if (!s) return; var el = target(s), r = T.root, hole = r.querySelector('.fst-hole'), card = r.querySelector('.fst-card');

@@ -1,0 +1,10 @@
+const { chromium, devices } = require('playwright');
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['Galaxy Tab S4'], serviceWorkers: 'block' });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto('http://localhost:8779/mark/');
+  await p.waitForFunction(() => window.FSSolent && window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(3500);
+  const st = () => p.evaluate(() => { const b = document.querySelector('#solCard .mkfirst'); return b ? b.querySelector('span').textContent + ' ' + [...b.querySelectorAll('li.done')].length : 'none'; });
+  console.log('fresh', await st()); await p.screenshot({ path: '/tmp/claude-0/ui/first.png' });
+  await p.click('#solCardT'); await p.waitForTimeout(3000); await p.evaluate(() => FSSolent.start()); await p.waitForTimeout(1500);
+  console.log('after test mode', await st(), await p.evaluate(() => localStorage.getItem('fs-mark-first')));
+  console.log(errs); await b.close(); })();

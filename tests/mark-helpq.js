@@ -1,0 +1,17 @@
+const { chromium, devices } = require('playwright');
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['Galaxy Tab S4'], serviceWorkers: 'block' });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto('http://localhost:8779/mark/');
+  await p.waitForFunction(() => window.FSSolent && window.FSHelpFind && window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(3000);
+  const view = () => p.evaluate(() => { const v = FSHelpFind.view(); const h = document.querySelector('#hfView h2'); return (h && h.textContent) + ' | help open ' + !document.getElementById('help').hidden; });
+  const r = {};
+  r.cardQ = await p.evaluate(() => { const q = document.querySelector('#solCard .mkq'); return q && q.dataset.mkq; });
+  await p.click('#solCard .mkq'); await p.waitForTimeout(1200); r.afterCard = await view();
+  await p.evaluate(() => { document.getElementById('help').hidden = true; FSSolent.start(); }); await p.waitForTimeout(600);
+  await p.click('#solCardM'); await p.waitForTimeout(1500); r.stepQ = await p.evaluate(() => { const q = document.querySelector('#solStep .mkq'); return q && q.dataset.mkq; });
+  await p.evaluate(() => { document.querySelector('#solStep .close') && document.querySelector('#solStep .close').click(); FSSolent.set({ wind: { twd: 230, tws: 12, src: 'typed', at: Date.now() } }); FSSolent.test(true); }); await p.waitForTimeout(2000);
+  await p.evaluate(() => { FSSolent.set({ startAt: Math.round(Date.now() / 1000 + 100) }); window.__fsGun(FSSolent.state().startAt); FSSolent.showList(); }); await p.waitForTimeout(800); await p.click('[data-k="nxnow"]'); await p.waitForTimeout(2500);
+  r.ssQ = await p.evaluate(() => { const q = document.querySelector('#solStartScr .mkq'); return q && q.dataset.mkq; }); r.seqQ = await p.evaluate(() => { const q = document.querySelector('#solSeq .mkq'); return q && q.dataset.mkq; });
+  await p.screenshot({ path: '/tmp/claude-0/ui/q-ss.png' });
+  await p.click('#solStartScr .mkq'); await p.waitForTimeout(1500); r.afterSS = await view();
+  console.log(JSON.stringify(r, null, 1), errs); await b.close(); })();

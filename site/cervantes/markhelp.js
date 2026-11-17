@@ -11,9 +11,9 @@
     /* Getting started */
     ['What Mark does', ['Mark is FirstShift’s inshore racing tool for the Solent: round the cans and windward-leeward.', 'Set the course from the Solent racing marks, set the start line, run the start sequence, and Mark shows the favoured end, time to the line and time to burn, then the bearing and distance to every mark.', 'Route it on the forecast when you want to. Everything Route does is here too. A planning aid, not for navigation.']],
     ['Mark and Mark+', ['Mark runs in the phone’s browser and uses the phone’s own GPS.', 'Mark+ is the Android app. It does everything Mark does and connects to the boat’s instruments, so the start screen also shows boat speed, true and apparent wind angle and heel, the tide can come from the boat, and Mark+ learns how quickly your boat gets up to speed.']],
-    ['Your first race', ['The Start new race card keeps a short list of the steps of a first race and ticks each one as you do it: a practice race, a course, a start line, a start sequence, the start screen, a course change and the finish.', 'Do them in any order. The list goes once every step is ticked.']],
+    ['Your first race', ['The Start new race card keeps a short list of the steps of a first race and ticks each one as you do it: a practice race, a course, a start line, a start sequence, the start screen, a course change and the finish.', 'Do them in any order; the question mark beside each opens its Help. The list goes once every step is ticked, or tap Hide this list.']],
     ['Test mode', ['Test mode sails a practice boat round a Solent course so you can watch the start, the line, the racing window and the finish ashore. Nothing goes to the crew.', 'Open it from Test mode on the Start new race card. The gun is two and a half minutes away.', 'The orange bar changes the speed (times 1, 5, 20 or 60), shifts the wind 10 degrees either way, gives a course change or an early start. Stop ends it and puts your own race back.']],
-    ['The practice race with Emma', ['A coached race in test mode: Emma talks you through each step as you do it, from choosing the course to crossing the finish.', 'Each step lights up the button to press and waits for you. More opens the Help topic for that step.']],
+    ['The practice race with Emma', ['Practice race with Emma, on the Start new race card, starts test mode and Emma talks you through the race: the course card, the countdown, the start screen, time to burn, the favoured end, the gun, a course change and the finish.', 'Each step lights up the real button and waits for you: Next moves on, More opens the Help topic for that step.']],
     ['Stored races', ['Every race you set is kept with its date and time. Stored races on the Start new race card opens the list; tap one to open it again, with its course, line and settings.']],
     ['The crew in step', ['Share, at the top of Settings, gives the boat code. Everyone on the boat who opens it with the code sees the same course, line and gun, in Mark or Mark+, Route or Route+.']],
     /* Set the course */
@@ -85,6 +85,102 @@
     { id: 'mp2', name: 'Get the start right', steps: ['Ping the ends', 'Line bias and the favoured end', 'The ladder rung', 'Line check', 'Time to line and time to burn', 'Getting up to speed', 'Course side'] },
     { id: 'mp3', name: 'The committee changed it', steps: ['Course change', 'The next mark', 'General recall', 'Sync and the minute buttons'] }
   ].concat(PLUS ? [{ id: 'mp4', name: 'Mark+ on the boat', steps: ['Mark and Mark+', 'Instruments on the start screen', 'Wind and tide from the boat', 'Learning your boat'] }] : []);
+
+  /* "?" on every Mark panel (Stuart 17 Nov 17:20, "Yes"): opens that part's Help topic */
+  var STEPQ = { plan: 'route-this-race-or-not', start: 'set-the-start-line', marks: 'round-the-cans', fin: 'the-finish', wind: 'windward-leeward', lee: 'windward-leeward', laps: 'windward-leeward', wt: 'the-tide', check: 'check-the-course' };
+  var PANELS = [
+    { id: 'solStartScr', hd: '.sshd', t: function () { return 'the-start-screen'; } },
+    { id: 'solSeq', hd: '.sqhd', t: function () { return 'the-start-sequence'; } },
+    { id: 'solStep', hd: '.solhd', t: function () { var k = null; try { k = window.FSSolent.stepState().key; } catch (e) {} return STEPQ[k] || 'start-new-race'; } },
+    { id: 'solLegs', abs: true, t: function () { return document.getElementById('solCC') ? 'course-change' : 'the-course-card'; } },
+    { id: 'solCE', abs: true, t: function () { return 'course-change'; } },
+    { id: 'solCard', hd: '.shead', t: function () { return 'start-new-race'; } }
+  ];
+  function shownEl(e) { return e && !e.hidden && e.getClientRects().length; }
+  function qCss() { if (document.getElementById('mkqCss')) return; var st = document.createElement('style'); st.id = 'mkqCss';
+    st.textContent = '.mkq{flex:none;width:32px;height:32px;min-height:0;padding:0;border-radius:50%;border:1px solid var(--line,#456);background:var(--panel,#13283c);color:var(--ink,#e6edf2);font:700 15px system-ui,sans-serif;cursor:pointer;margin-left:auto}.mkq.abs{position:absolute;top:6px;right:46px;z-index:2}.shead .mkq{margin-right:6px}';
+    document.head.appendChild(st); }
+  function coachBtn() { var card = document.getElementById('solCard'), m = card && !card.hidden && card.querySelector('.solmenu'); if (!m || document.getElementById('mkCoachBtn')) return; var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn'; bt.id = 'mkCoachBtn'; bt.textContent = 'Practice race with Emma'; bt.onclick = function () { try { tourLevels(); window.FSTour.level(2); } catch (e) {} }; m.appendChild(bt); }
+  function qTick() { qCss(); coachBtn(); PANELS.forEach(function (P) { var e = document.getElementById(P.id); if (!shownEl(e)) return; var b = e.querySelector('.mkq');
+    if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'mkq' + (P.abs ? ' abs' : ''); b.textContent = '?'; b.setAttribute('aria-label', 'Help for this'); b.title = 'Help for this';
+      var hd = P.hd ? e.querySelector(P.hd) : null;
+      if (P.abs || !hd) e.appendChild(b); else { var cl = hd.querySelector('.close'); if (cl) hd.insertBefore(b, cl); else hd.appendChild(b); } }
+    b.dataset.mkq = P.t(); }); }
+  function openTopic(slug) {
+    try { var ss = document.getElementById('solStartScr'); if (shownEl(ss)) { var ch = [].slice.call(ss.querySelectorAll('button')).filter(function (x) { return x.textContent.trim() === 'Chart'; })[0]; if (ch) ch.click(); } } catch (e) {}
+    var hb = document.getElementById('helpBtn'); if (hb) hb.click();
+    setTimeout(function () { try { build(); window.FSHelpFind && window.FSHelpFind.open(slug); } catch (e) {} }, 350);
+  }
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('.mkq'); if (!b) return; e.preventDefault(); e.stopPropagation(); openTopic(b.dataset.mkq); }, true);
+  setInterval(qTick, 800);
+  window.FSMarkHelpOpen = openTopic;
+
+  /* "Your first race" checklist on the Start new race card (Stuart 17 Nov 17:20, "Yes"): ticks as each step is done; goes once all are done */
+  var FKEY = 'fs-mark-first', FIRST = [
+    ['practice', 'A practice race in test mode', 'test-mode'], ['course', 'Set a course', 'start-new-race'], ['line', 'Set a start line', 'set-the-start-line'],
+    ['seq', 'Run a start sequence', 'the-start-sequence'], ['ss', 'Use the start screen', 'the-start-screen'], ['cc', 'Change the course', 'course-change'], ['fin', 'Finish a race', 'the-finish']];
+  function fGet() { try { return JSON.parse(localStorage.getItem(FKEY) || '{}') || {}; } catch (e) { return {}; } }
+  function fSet(o) { try { localStorage.setItem(FKEY, JSON.stringify(o)); } catch (e) {} }
+  function fTick() { var F = fGet(), was = JSON.stringify(F), S = window.FSSolent, B = null; try { B = S.state(); } catch (e) {}
+    var tm = false; try { tm = !!S.testing(); if (tm) F.practice = 1; } catch (e) {}
+    if (B && !tm) { if (B.shown && ((B.marks && B.marks.length) || B.type === 'wl')) F.course = 1; if (B.startAt) F.seq = 1; if (B.edited) F.cc = 1; if (B.ended && B.startAt && B.ended > B.startAt * 1000) F.fin = 1; }
+    if (!tm) { try { var l = window.__fsLine && window.__fsLine(); if (l && l.boat && l.pin) F.line = 1; } catch (e) {} if (shownEl(document.getElementById('solStartScr'))) F.ss = 1; }
+    if (JSON.stringify(F) !== was) fSet(F);
+    var card = document.getElementById('solCard'), body = card && !card.hidden && card.querySelector('.sbody'), box = body && body.querySelector('.mkfirst'), n = FIRST.filter(function (x) { return F[x[0]]; }).length;
+    if (!body || F.hide || n === FIRST.length) { if (box) box.remove(); return; }
+    var html = '<b>Your first race</b> <span>' + n + ' of ' + FIRST.length + '</span><ul>' + FIRST.map(function (x) { return '<li class="' + (F[x[0]] ? 'done' : '') + '"><span>' + (F[x[0]] ? '✓' : '') + '</span>' + esc(x[1]) + ' <button type="button" class="mkq mkqs" data-mkq="' + x[2] + '" aria-label="Help: ' + esc(x[1]) + '">?</button></li>'; }).join('') + '</ul><button type="button" class="linkbtn" data-mkfx="1">Hide this list</button>';
+    if (!box) { box = document.createElement('div'); box.className = 'mkfirst'; body.appendChild(box); }
+    if (box.dataset.h !== html) { box.innerHTML = html; box.dataset.h = html; } }
+  function fCss() { if (document.getElementById('mkfCss')) return; var st = document.createElement('style'); st.id = 'mkfCss';
+    st.textContent = '.mkfirst{margin-top:12px;padding:10px 12px;border:1px solid var(--line,#456);border-radius:12px}.mkfirst>b{font-size:15px}.mkfirst>span{color:var(--muted,#9ab);font-size:13px;margin-left:6px}.mkfirst ul{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:4px}.mkfirst li{display:flex;align-items:center;gap:8px;font-size:14px}.mkfirst li>span{width:22px;height:22px;border-radius:50%;border:1px solid var(--line,#456);display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#22c55e;flex:none}.mkfirst li.done{color:var(--muted,#9ab)}.mkfirst li.done>span{border-color:#22c55e}.mkqs{width:26px;height:26px;font-size:13px;margin-left:auto}';
+    document.head.appendChild(st); }
+  document.addEventListener('click', function (e) { var x = e.target.closest && e.target.closest('[data-mkfx]'); if (!x) return; var F = fGet(); F.hide = 1; fSet(F); fTick(); }, true);
+  setInterval(function () { try { fCss(); fTick(); } catch (e) {} }, 1000);
+
+  /* The button tour for Mark (Stuart 17 Nov 17:20: "Both solutions would be best so guided button tour and Emma tutorial"): Route's tour,
+     with Mark's buttons. Mark has Level 1; Mark+ adds Route+'s Connect to the boat and Polars levels after it. */
+  function card() { try { var c = document.getElementById('solCard'); if (!c || c.hidden) window.FSSolent.start(); } catch (e) {} }
+  var MARK1 = [
+    { el: '#solCardM', before: card, t: 'Round the cans', x: 'Tap the buoys on the chart in order and choose Port or Starboard for each. The step box takes you through it.', help: 'Round the cans' },
+    { el: '#solCardW', before: card, t: 'Windward-leeward', x: 'A windward mark, a leeward mark or gate, the laps and the finish.', help: 'Windward-leeward' },
+    { el: '#solCardT', before: card, test: true, t: 'Try it safely first', x: 'Test mode sails a practice boat round a Solent course: watch the start screen, the gun and the race ashore. Nothing goes to the crew.', help: 'Test mode' },
+    { el: '.mkfirst', before: card, alt: '#solCardStored', t: 'Your first race', x: 'Seven steps that tick as you do them. The question mark beside each opens its Help.', help: 'Your first race' },
+    { el: '#solCardStored', before: card, t: 'Stored races', x: 'Every race you set, kept with its date and time, to open again.', help: 'Stored races' },
+    { el: '#setBtn', t: 'Settings', x: 'Your boat, the safety depth, your units, and Share for the boat code that keeps the crew in step.', help: 'The crew in step' },
+    { el: '#liveBtn', t: 'GPS', x: 'Turns on the phone’s GPS: ping the line ends, then the bearing and distance to every mark.', help: 'Ping the ends' },
+    { el: '#layersBtn', t: 'Layers', x: 'What the chart shows: wind, tide, depth and the racing marks.', help: 'Charts' },
+    { el: '#solCard .mkq', before: card, t: 'Help on every panel', x: 'Every panel has a question mark that opens its own Help page: the inshore race guide, in the order of a race day, with a picture and Emma reading each topic. Help is also at the top of Settings.' }
+  ];
+  window.FSTourTry = '<p><b>Test mode</b>, on the Start new race card, sails a practice boat round a Solent course so you can watch the start screen, the gun and the race. Nothing goes to the crew. Stop puts your own race back.</p>';
+
+  /* The practice race with Emma (Stuart 17 Nov 17:20, "Emma tutorial"): test mode sails the practice boat while Emma talks through each
+     step, lighting up the real button; Next moves on when you are ready. Her recordings are in helpmedia/coach/ (coach.json). */
+  var MEDIA = window.FS_HELPMEDIA || '../helpmedia/', CA = null, CMAN = null;
+  function coachSay(k) { try { if (CA) { CA.pause(); CA = null; } var go = function () { var f = CMAN && CMAN[k]; if (!f) return; CA = new Audio(MEDIA + 'coach/' + f); CA.play().catch(function () {}); };
+    if (CMAN) go(); else fetch(MEDIA + 'coach/coach.json').then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) { CMAN = j || {}; go(); }, function () {}); } catch (e) {} }
+  function coachStop() { try { if (CA) CA.pause(); } catch (e) {} CA = null; }
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-fst="end"]')) coachStop(); }, true);
+  function testOn() { try { var S = window.FSSolent; if (!S.testing()) { var c = document.getElementById('solCard'); if (c) c.hidden = true; S.test(true); } } catch (e) {} }
+  function tagCell(label, key) { var ss = document.getElementById('solStartScr'); if (!ss) return; [].forEach.call(ss.querySelectorAll('.ssc'), function (c) { var sp = c.querySelector('span'); if (sp && sp.textContent.trim().toUpperCase() === label) c.setAttribute('data-coach', key); }); }
+  function ssOpen() { try { var ss = document.getElementById('solStartScr'); if (shownEl(ss)) return; window.FSSolent.showList(); setTimeout(function () { var b = document.querySelector('[data-k="nxnow"]'); if (b) b.click(); var l = document.getElementById('solLegs'); if (l) l.hidden = true; }, 250); } catch (e) {} }
+  function ssClose() { var ss = document.getElementById('solStartScr'); if (!shownEl(ss)) return; var ch = [].slice.call(ss.querySelectorAll('button')).filter(function (x) { return x.textContent.trim() === 'Chart'; })[0]; if (ch) ch.click(); }
+  var COACH = [
+    { k: 'c1', el: '#solTestBar', before: function () { testOn(); }, t: 'A practice race', x: 'This is a practice race in test mode. A practice boat is sailing a Solent course, and the gun is about two and a half minutes away. Nothing goes to the crew. Tap Next when you are ready.', help: 'Test mode' },
+    { k: 'c2', el: '#solLegs', before: function () { testOn(); try { window.FSSolent.showList(); } catch (e) {} }, t: 'The course card', x: 'This is the course card: the race leg by leg, and below it the start: the start time, the line, the tide, the sequence and when the start screen opens.', help: 'The course card' },
+    { k: 'c3', el: '#solSeq', alt: '#solTestBar', before: function () { var l = document.getElementById('solLegs'); if (l) l.hidden = true; ssClose(); }, t: 'The countdown', x: 'The countdown box counts down to the gun, with a sound at every signal. When the committee boat makes a signal, tap Sync to put the count on the whole minute.', help: 'The start sequence' },
+    { k: 'c4', wait: 1000, el: '#solStartScr .sscv', before: ssOpen, t: 'The start screen', x: 'This is the start screen: the line, the favoured end, the laylines and the line to the first mark. Zoom with plus and minus, or pinch.', help: 'The start screen' },
+    { k: 'c5', wait: 1300, el: '#solStartScr .ssnum > .ssc:nth-child(3)', before: function () { ssOpen(); tagCell('TIME TO BURN', 'burn'); setTimeout(function () { tagCell('TIME TO BURN', 'burn'); }, 300); }, t: 'Time to burn', x: 'Time to burn is the time you have spare. Green, you are on time. Amber, you are early: burn some time. Red, you are late: go.', help: 'Time to line and time to burn' },
+    { k: 'c6', wait: 1300, el: '#solStartScr .ssnum > .ssc:nth-child(4)', before: function () { ssOpen(); tagCell('BIAS', 'bias'); setTimeout(function () { tagCell('BIAS', 'bias'); }, 300); }, t: 'The favoured end', x: 'Bias shows which end of the line is favoured, and by how many metres. Start at that end if you can.', help: 'Line bias and the favoured end' },
+    { k: 'c7', el: '[data-em="spd"]', before: function () { ssOpen(); }, t: 'Speed it up', x: 'To reach the gun sooner, tap the speed button on the orange bar: times 5, 20 or 60. Watch the boat run to the line and the countdown reach the gun.', help: 'Test mode' },
+    { k: 'c8', wait: 1600, el: '#solCC', before: function () { try { var S = window.FSSolent, B = S.state(); if (!(B.startAt && B.startAt < Date.now() / 1000)) { S.set({ startAt: Math.round(Date.now() / 1000 - 2) }); if (window.__fsGun) window.__fsGun(S.state().startAt); } } catch (e) {} ssClose(); }, t: 'After the gun', x: 'The gun has gone. On the chart a blue dotted line runs from the boat to the next mark, with its bearing and distance. If the committee changes the course, tap Course change.', help: 'The next mark' },
+    { k: 'c9', el: '[data-em="cc"]', before: function () { ssClose(); }, t: 'Practise a course change', x: 'Course change on the orange bar gives you a course change to practise with: change a mark, then Done, and the next mark follows the new course.', help: 'Course change' },
+    { k: 'c10', el: '[data-em="x"]', t: 'Finish', x: 'That is the race. Stop ends the practice and puts your own race back. Every step has its own page in Help, and the question mark on each panel opens it.', help: 'Your first race' }
+  ];
+  COACH.forEach(function (st) { var b0 = st.before; st.before = function () { if (b0) b0(); coachSay(st.k); }; });
+  window.FSMarkCoach = COACH.map(function (st) { return { k: st.k, t: st.t, words: st.x }; });
+  function tourLevels() { if (window.__mkTour) return; var base = window.FSTourLevels; window.__mkTour = 1;
+    window.FSTourLevels = [{ n: 1, name: 'Race the cans', note: 'Course, line, start and the race', steps: MARK1 }, { n: 2, name: 'Practice race with Emma', note: 'Emma talks you through a practice race', steps: COACH }].concat(PLUS && base && base.length > 1 ? base.slice(1).map(function (L, i) { return Object.assign({}, L, { n: i + 3 }); }) : []); }
+  setTimeout(tourLevels, PLUS ? 2500 : 0);
   var n = 0, t = setInterval(function () { if (build() || ++n > 60) clearInterval(t); }, 500);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) build(); }, true);
 })();
