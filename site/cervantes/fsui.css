@@ -128,3 +128,10 @@ body.navclear #fsBadge{display:flex}
 @keyframes mkspin{to{transform:translate(-50%,-50%) rotate(360deg)}}
 @keyframes fsring{to{--fsA:360deg}}
 @media (prefers-reduced-motion:reduce){#fsBadge,.logobox.mkring>.mkdisc::before{animation:none}}
+/* 17 Nov 22:55: the clear-screen badge turns on the graphics side too */
+#fsBadge{isolation:isolate;background:transparent!important;animation:none!important}
+#fsBadge>.mkdisc{position:absolute;inset:-3px;border-radius:12px;overflow:hidden;z-index:-1;pointer-events:none}
+#fsBadge>.mkdisc::before{content:'';position:absolute;left:50%;top:50%;width:250%;aspect-ratio:1;background:conic-gradient(#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f);transform:translate(-50%,-50%);animation:mkspin 4s linear infinite;will-change:transform}
+#fsBadge>.mkdisc::after{content:'';position:absolute;inset:3px;border-radius:9px;background:var(--panel,#0B1B30)}
+#fsBadge.off>.mkdisc::before{animation:none;background:#64748b}
+@media (prefers-reduced-motion:reduce){#fsBadge>.mkdisc::before{animation:none}}
