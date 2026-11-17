@@ -127,8 +127,10 @@
   window.__fsOverlay = function (ctx, X, Y) {
     if (!C.on) return; var o = last; if (!o || !o.ok) return;
     var f = o.f, F = fxy(f), m = { la: o.m.lat, lo: o.m.lon }, bx = X(f.lo), by = Y(f.la), px = Math.abs(X(f.lo + 1 / 60 / Math.cos(f.la * R)) - bx), blue = night() ? '#7A1A14' : '#8FC2F5', green = night() ? '#8A1E18' : '#4CC38A';
-    ctx.lineCap = 'round'; ctx.strokeStyle = blue; ctx.fillStyle = blue; ctx.lineWidth = 1.6; ctx.setLineDash([2, 5]);
-    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(X(m.lo), Y(m.la)); ctx.stroke(); ctx.setLineDash([]);
+    /* F24 (Stuart 17 Nov 13:40): a solid blue rhumb line from the boat to the next mark, its bearing and distance on it */
+    ctx.lineCap = 'round'; ctx.strokeStyle = blue; ctx.fillStyle = blue; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(X(m.lo), Y(m.la)); ctx.stroke();
+    (function () { var k = Math.cos(f.la * R), dx = (m.lo - f.lo) * k * 60, dy = (m.la - f.la) * 60, d = Math.hypot(dx, dy), b = (Math.atan2(dx, dy) / R + 360) % 360, lx = (bx + X(m.lo)) / 2, ly = (by + Y(m.la)) / 2; if (Math.hypot(X(m.lo) - bx, Y(m.la) - by) > 70) label(ctx, lx, ly, ('00' + Math.round(b)).slice(-3) + '°T · ' + (d < 0.1 ? Math.round(d * 1852) + ' m' : d.toFixed(d < 10 ? 2 : 1) + ' nm'), blue); })();
     var mx = X(m.lo), my = Y(m.la); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(mx, my, 12, 0, 7); ctx.stroke();
     var rr = C.radius * px; if (rr > 14) { ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.arc(mx, my, rr, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
     label(ctx, mx + 8, my + 4, 'NEXT ' + (o.m.name || ''), blue);
