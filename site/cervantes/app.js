@@ -1107,7 +1107,7 @@
   /* ---------- boat code: one code keeps boat settings and My races the same on every crew device (/api/boat/<code>) ---------- */
   var BC = { code: store('fs-boatcode') || '', at: +(store('fs-boatcode-at') || 0), msg: '' };
   function bcNew() { var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', c = ''; var r = new Uint32Array(6); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(r) : r.forEach(function (x, i) { r[i] = Math.random() * 1e9; }); for (var i = 0; i < 6; i++) c += A[r[i] % A.length]; return c; }
-  function bcData() { var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var st = snapSettings(); st.__src = src && src.src; var d = { myraces: myRaces(), settings: st }; if (BC.moment) d.moment = BC.moment; return d; }
+  function bcData() { var src = (document.querySelector('#srcSeg [aria-pressed="true"]') || {}).dataset; var st = snapSettings(); st.__src = src && src.src; var d = { myraces: myRaces(), settings: st }; if (BC.moment) d.moment = BC.moment; try { if (window.FS_SOLENT && window.FSSolent && FSSolent.share) { var sh = FSSolent.share(); if (sh && (!BC.inshore || sh.at >= BC.inshore.at)) BC.inshore = sh; } } catch (e) {} if (BC.inshore) d.inshore = BC.inshore; return d; }   /* the inshore race (course, line, gun, wind) rides on the same boat code, and Route keeps it untouched for Mark (Stuart 17 Nov 06:55: crew across all four products by boat code) */
   function bcPush() {
     if (!BC.code || !navigator.onLine) return Promise.resolve();
     return fetch('/api/boat/' + BC.code, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: bcData() }) }).then(function (r) { return r.json(); }).then(function (j) {
@@ -1119,6 +1119,7 @@
     return fetch('/api/boat/' + BC.code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       if (j.error) { BC.msg = j.error; return false; }
       if (j.data && j.data.moment && (!BC.moment || j.data.moment.at > BC.moment.at)) BC.moment = j.data.moment;   /* keep the latest crew moment, so this device's next share does not drop it */
+      if (j.data && j.data.inshore && (!BC.inshore || j.data.inshore.at > BC.inshore.at)) { BC.inshore = j.data.inshore; try { if (window.FS_SOLENT && window.FSSolent && FSSolent.applyRemote) FSSolent.applyRemote(j.data.inshore); } catch (e) {} }
       if (!force && j.at <= BC.at) { BC.msg = 'Up to date'; return false; }
       var mine = myRaces(), byId = {}; mine.concat(j.data.myraces || []).forEach(function (r) { if (!byId[r.id] || byId[r.id].savedAt < r.savedAt) byId[r.id] = r; });
       setMyRaces(Object.keys(byId).map(function (k) { return byId[k]; }).sort(function (a, b) { return b.savedAt - a.savedAt; }));
@@ -1145,7 +1146,8 @@
     var push = function () { if (BC.code) setTimeout(bcPush, 300); };
     var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
     var bs = $('boatSave'); if (bs) bs.addEventListener('click', push);
-    BC.push = push;
+    BC.push = push; window.__fsBcPush = function () { if (BC.code) bcPush(); }; window.__fsBcPull = function () { return bcPull(false); }; window.__fsBcCode = function () { return BC.code || ''; };
+    if (window.FS_SOLENT) setInterval(function () { if (BC.code && !document.hidden) bcPull(false); }, 10000);   /* Mark: the crew's course and line arrive within seconds */
     /* crew moments: the navigator sends a snapshot to every device on the boat code; the others see it within two minutes */
     var dev = store('fs-dev'); if (!dev) { dev = bcNew() + bcNew(); store('fs-dev', dev); } BC.dev = dev;
     var seen = +(store('fs-moment-seen') || 0);
@@ -3512,7 +3514,7 @@
     if (!base && host) { var hb = innerHeight - host.getBoundingClientRect().bottom; base = Math.max(0, Math.round(insets().b - hb)); }   /* a chart that runs to the foot of the screen (Mark held sideways): keep clear of the home bar */   /* Clear screen: the play bar floats at the foot, so the row sits above it */
     fabs.forEach(function (f) { if (getComputedStyle(f).display === 'none') return; var row = Math.floor(n / perRow), col = n % perRow; n++;
       f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); }); }
-  function underTop() { var y = insets().t; ['.top', '#mkTop', '#navStrip', '#fsPlot', '#astroLine'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
+  function underTop() { var y = insets().t; ['.top', '#mkTop', '#fsBadge', '#navStrip', '#fsPlot', '#astroLine'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
   function liveFit() { var lb = document.getElementById('liveBox'), big = !!(lb && vis(lb) && !lb.classList.contains('mini') && short.matches); if (document.body.classList.contains('gpsbigshort') !== big) document.body.classList.toggle('gpsbigshort', big); if (!lb || !vis(lb)) return; var ut = underTop(), par = lb.offsetParent; if (!par) return; var pr = par.getBoundingClientRect();
     if (lb.style.translate) return; if (lb.classList.contains('mini')) { if (short.matches || ROWM) { lb.style.top = Math.round(ut - pr.top + 6) + 'px'; lb.style.bottom = 'auto'; } else if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; } lb.style.maxHeight = ''; return; }
     if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; }
@@ -3522,8 +3524,8 @@
      has dragged keeps its place. */
   var insP = null; function insets() { if (!insP) { insP = document.createElement('div'); insP.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)'; document.body.appendChild(insP); } var c = getComputedStyle(insP); return { t: parseFloat(c.paddingTop) || 0, r: parseFloat(c.paddingRight) || 0, b: parseFloat(c.paddingBottom) || 0, l: parseFloat(c.paddingLeft) || 0 }; }   /* the phone's own bars (notch, home bar), Stuart 22:29 */
   window.__fsInsets = insets;
-  function topStack() { var tb = document.querySelector('.top'), y = insets().t; if (tb && vis(tb)) y = Math.max(y, tb.getBoundingClientRect().bottom);
-    ['#navStrip', '#fsPlot', '#astroLine', '#updBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || !vis(e) || e.style.translate) return; var par = e.offsetParent; if (!par) return; var pt = par.getBoundingClientRect().top, want = Math.round(Math.max(y + 6, 8) - pt); if (Math.abs(e.offsetTop - want) > 1) e.style.top = want + 'px'; y = e.getBoundingClientRect().bottom; }); }
+  function topStack() { var tb = document.querySelector('.top'), y = insets().t; if (tb && vis(tb)) y = Math.max(y, tb.getBoundingClientRect().bottom); var bdg = document.getElementById('fsBadge'); if (bdg && vis(bdg)) y = Math.max(y, bdg.getBoundingClientRect().bottom);   /* clear screen: under the logo (M20) */
+    ['#navStrip', '#fsPlot', '#astroLine', '#updBar', '#solTestBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || !vis(e) || e.style.translate) return; var par = e.offsetParent; if (!par) return; var pt = par.getBoundingClientRect().top, want = Math.round(Math.max(y + 6, 8) - pt); if (Math.abs(e.offsetTop - want) > 1) e.style.top = want + 'px'; y = e.getBoundingClientRect().bottom; }); }
   function tick() { try { fabRow(); liveFit(); topStack(); } catch (e) {} var sb = document.getElementById('solStep'), on = (phone.matches && open()) || !!(sb && !sb.hidden);   /* the Solent step box on any screen */ if (document.body && document.body.classList.contains('fabsoff') !== on) document.body.classList.toggle('fabsoff', on); try { covers(); } catch (e) {} }
   function css() { if (document.getElementById('fabsOffCss')) return; var s = document.createElement('style'); s.id = 'fabsOffCss'; s.textContent = 'body.fabsoff .fabhelp,.fabhelp.fabcov{display:none!important}body.gpsbigshort #navStrip{display:none!important}';   /* a phone held sideways has no room for the instrument strip and the GPS window together; the GPS window shows SOG and COG */ document.head.appendChild(s); }
   function start() { css(); tick(); setInterval(tick, 300); }

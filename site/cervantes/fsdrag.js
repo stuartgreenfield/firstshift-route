@@ -62,7 +62,11 @@
   }
   function place() {
     PANELS.forEach(function (p) { if (p[2] !== 'win') return; var el = $(p[0]); if (!grips[p[0]] && el) mkGrip(p); var g = grips[p[0]]; if (!g) return;
-      var v = shown(el); g.hidden = !v; if (!v) return; var r = el.getBoundingClientRect(); g.style.left = Math.round(r.right - 34) + 'px'; g.style.top = Math.round(r.top + 2) + 'px'; });
+      var v = shown(el); g.hidden = !v; if (!v) return; var r = el.getBoundingClientRect(), cx = (r.left + r.right) / 2;
+      /* the grip goes where it covers no button (17 Nov screen check: on the window's corner it sat on OPEN and on MARK) */
+      var cands = [[cx - 16, r.top - 19], [cx - 16, r.bottom + 1], [r.left - 33, r.top + 2], [r.right + 1, r.top + 2], [r.right - 34, r.top + 2]], btns = [].filter.call(document.querySelectorAll('button,select,a[href],[role=button],input'), function (b) { return b !== g && !g.contains(b) && !b.classList.contains('navgrip2') && b.getClientRects().length && !b.closest('[hidden]'); }).map(function (b) { return b.getBoundingClientRect(); });
+      var pick = cands.filter(function (c) { if (c[0] < 2 || c[1] < 2 || c[0] + 32 > innerWidth - 2 || c[1] + 18 > innerHeight - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + 32 > b.left && c[1] < b.bottom && c[1] + 18 > b.top; }); })[0] || cands[cands.length - 1];
+      g.style.left = Math.round(pick[0]) + 'px'; g.style.top = Math.round(pick[1]) + 'px'; });
   }
 
   /* ---- long touch to start, drag, long press to lock ---- */
