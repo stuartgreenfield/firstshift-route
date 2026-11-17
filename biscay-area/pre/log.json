@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-17T14:43:04.914Z",
+ "log": [
+  {
+   "race": "biscay-area",
+   "h": 0,
+   "s": 16,
+   "note": "Routed in 11.1 s. First answer in 2.9 s. Leaving the start the route crosses water about 0.0 m deep on the chart, less t"
+  },
+  {
+   "race": "biscay-area",
+   "h": 1,
+   "s": 29,
+   "note": "Routed in 11.3 s. First answer in 1.8 s. Leaving the start the route crosses water about 0.0 m deep on the chart, less t"
+  },
+  {
+   "race": "biscay-area",
+   "h": 2,
+   "s": 43,
+   "note": "Routed in 11.4 s. First answer in 2.0 s. Leaving the start the route crosses water about 0.0 m deep on the chart, less t"
+  },
+  {
+   "race": "biscay-area",
+   "h": 3,
+   "s": 57,
+   "note": "Routed in 11.9 s. First answer in 1.8 s. Leaving the start the route crosses water about 0.0 m deep on the chart, less t"
+  },
+  {
+   "race": "biscay-area",
+   "h": 4,
+   "s": 70,
+   "note": "Routed in 11.4 s. First answer in 1.8 s. Leaving the start the route crosses water about 0.0 m deep on the chart, less t"
+  },
+  {
+   "race": "biscay-area",
+   "h": 5,
+   "s": 84,
+   "note": "Routed in 11.7 s. First answer in 1.8 s. Leaving the start the route crosses water about 0.0 m deep on the chart, less t"
+  }
+ ]
+}
