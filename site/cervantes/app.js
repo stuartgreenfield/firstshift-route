@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.35';
+  var VERSION = 'FirstShift Route v0.12.36';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -302,7 +302,7 @@
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.35 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.36 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -979,7 +979,7 @@
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.35) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.36) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -2703,7 +2703,24 @@
       speechSynthesis.speak(u);
     });
   }
+  /* Ask Claude (Stuart 17 Nov 07:33): "a Claude link on the help on all products that allow a user to ask questions about the tools which will
+     produce very focused results due to an in built prompt". The link opens Claude (claude.ai/new?q=, the documented prefill) with a prompt
+     that names the product, its version, what it does, where the user is in it and how to answer; the user adds the question and sends it. */
+  function askClaudeUrl() {
+    var plus = !!window.NAV_VERSION, P = window.FS_MARK ? (plus ? 'Mark+' : 'Mark') : (plus ? 'Route+' : 'Route'), ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || VERSION) || [])[1] || '';
+    var what = { 'Route': 'Route is a free web app for offshore race routing: several forecast models, tidal streams, depth, boat speed from a boat type or IRC TCC, routes to compare, a plan and crew brief, live GPS with a start-line tool and a basic plotter.',
+      'Route+': 'Route+ is the Android app version of Route that also connects to the boat\'s instruments, learns and improves the boat\'s polars, and adds deck and helm views, a logbook, laylines with the tide and offline forecasts.',
+      'Mark': 'Mark is FirstShift\'s inshore racing tool for the Solent, built on Route: round the cans and windward-leeward courses from the JOG / SCRA Solent mark list, start line tools (tap the ends, square to the wind, lat and long, ping) with the line bias, a start sequence timer, a racing window, laylines from the typed wind, crew sync by boat code and quick routing.',
+      'Mark+': 'Mark+ is the Android app version of Mark that also connects to the boat\'s instruments for the live wind, depth and boat speed, and improves the boat\'s polars as Route+ does.' }[P];
+    var tab = (document.querySelector('#panel .tabs .tab[aria-selected="true"]') || {}).textContent || '', race = ($('raceTitle') || {}).textContent || '', here = [];
+    if (race) here.push('race: ' + race.trim().slice(0, 60)); if (tab) here.push('panel open: ' + tab.trim()); if (typeof LIVE !== 'undefined' && LIVE.on) here.push('Live GPS on'); if (document.body.classList.contains('navclear')) here.push('clear screen');
+    var q = 'I am using FirstShift ' + P + (ver ? ' v' + ver : '') + ', a sailing tool from FirstShift: Yacht Racing Intelligence (firstshiftsailing.com). ' + what + ' Help pages: ' + location.origin + '/help/.' + (here.length ? ' Where I am in it now: ' + here.join('; ') + '.' : '') +
+      ' Please answer my question about using ' + P + ': be brief and practical, name the exact buttons and menus as they appear in ' + P + ', give the steps in order, use British English, and say plainly if you are not sure rather than guessing. ' + P + ' is a planning aid, not for navigation.\n\nMy question: ';
+    return { url: 'https://claude.ai/new?q=' + encodeURIComponent(q), name: P };
+  }
+  window.__fsAskClaude = askClaudeUrl;
   function helpInit() {
+    (function () { var hb = document.querySelector('#help .sbody'); if (!hb || $('askClaude')) return; var d = document.createElement('div'); d.className = 'askcl'; d.innerHTML = '<a class="btn" id="askClaude" target="_blank" rel="noopener" href="https://claude.ai/new">Ask Claude about this tool</a><p class="note">Opens Claude in a new window with a ready-made start: which tool, its version and where you are in it. Add your question and send. Needs a signal and a Claude account.</p>'; hb.insertBefore(d, hb.firstChild); var a = $('askClaude'), set = function () { var o = askClaudeUrl(); a.href = o.url; a.textContent = 'Ask Claude about ' + o.name; }; set(); a.addEventListener('pointerdown', set); a.addEventListener('focus', set); a.addEventListener('click', function (e) { set(); if (window.NativeLink && window.NativeLink.open) { e.preventDefault(); try { window.NativeLink.open(a.href); } catch (x) { location.href = a.href; } } }); })();   /* F11 / M23 */
     var PIC = { 'What Route does': 'overview', 'Routes': 'decision', 'Play the race': 'bar', 'Plan': 'plan', 'Setting up a race': 'setup', 'Your sails and reefs': 'sails', 'Your boat': 'boat', 'Routing while racing': 'course', 'Fleet': 'fleet' };
     $('helpList').innerHTML = HELP.map(function (h, i) { return '<div class="htopic"><h3>' + h[0] + '<button class="btn say" data-say="' + i + '">Listen</button></h3><p>' + h[1] + '</p>' + (PIC[h[0]] ? '<img class="hpic" loading="lazy" alt="Screen picture: ' + h[0] + '" src="../help/' + PIC[h[0]] + '.webp">' : '') + '</div>'; }).join('');
     [].forEach.call(document.querySelectorAll('[data-say]'), function (b) { b.onclick = function () { say([+b.dataset.say]); }; });
