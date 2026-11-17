@@ -148,7 +148,7 @@
     if (!edge) return false;
     var el = M.el, id = M.id, from = M.from; setStash(id, [edge, Math.round(r.top)]); set(el, from[0], from[1]); save(id, from[0], from[1]); el.classList.remove('navmove-on'); el.classList.add('fsstashed');
     M.el = null; M.id = null; M.drag = null; place(); try { window.dispatchEvent(new Event('resize')); } catch (x) {}
-    var b = $('navUndo'); if (b) { clearTimeout(M.ut); b.hidden = false; b.innerHTML = '<span>' + p[1] + ' put away. Tap its tab on the edge to bring it back.</span><button class="btn" type="button" id="navUndoB">Undo</button>'; $('navUndoB').onclick = function () { setStash(id, null); el.classList.remove('fsstashed'); b.hidden = true; apply(); }; M.ut = setTimeout(function () { b.hidden = true; }, 10000); }
+    var b = $('navUndo'); if (b) { clearTimeout(M.ut); b.hidden = false; b.innerHTML = '<span>' + p[1] + ' put away. Tap its tab on the edge to bring it back.</span><button class="btn" type="button" id="navUndoB">Undo</button>'; var sa = Date.now(); $('navUndoB').onclick = function () { if (Date.now() - sa < 700) return; setStash(id, null); el.classList.remove('fsstashed'); b.hidden = true; apply(); }; M.ut = setTimeout(function () { b.hidden = true; }, 10000); }
     return true;
   }
   function begin(el, id) { if (M.el && M.el !== el) lock(); M.el = el; M.id = id; M.from = cur(el); el.classList.add('navmove-on'); undoBar(true); }
@@ -165,7 +165,8 @@
     clearTimeout(M.ut); b.hidden = false;
     if (moving) { b.innerHTML = '<span>Moving: drag it, then hold to lock it there.</span><button class="btn" type="button" id="navUndoB">Undo</button>'; $('navUndoB').onclick = function () { var el = M.el; if (!el) return; set(el, M.from[0], M.from[1]); el.classList.remove('navmove-on'); M.el = null; M.drag = null; b.hidden = true; place(); }; return; }
     b.innerHTML = '<span>Moved.</span><button class="btn" type="button" id="navUndoB">Undo</button>';
-    $('navUndoB').onclick = function () { set(last.el, last.from[0], last.from[1]); save(last.id, last.from[0], last.from[1]); b.hidden = true; place(); try { window.dispatchEvent(new Event('resize')); } catch (x) {} };
+    var shownAt = Date.now();   /* 23:35: the finger lifting off a moved window must not land on Undo as it appears */
+    $('navUndoB').onclick = function () { if (Date.now() - shownAt < 700) return; set(last.el, last.from[0], last.from[1]); save(last.id, last.from[0], last.from[1]); b.hidden = true; place(); try { window.dispatchEvent(new Event('resize')); } catch (x) {} };
     M.ut = setTimeout(function () { b.hidden = true; }, 10000);
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && M.el) { var b = $('navUndoB'); if (b) b.click(); } });
