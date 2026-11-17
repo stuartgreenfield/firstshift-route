@@ -9,6 +9,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.waitForFunction(() => window.FSSolent && FSSolent.marks && FSSolent.marks() && window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(1000);
   await p.evaluate(() => { const x = document.getElementById('solCardX'); if (x) x.click(); FSSolent.set({ type: 'marks', start: { code: null, name: 'Start line', lat: 50.770, lon: -1.2925, line: true }, marks: FSSolent.board('3F P, 2C S').marks, plan: 'list' }); window.__fsSetLine('boat', 50.7700, -1.2950); window.__fsSetLine('pin', 50.7700, -1.2895); FSSolent.go(); const s = FSSolent.state(); s.startAt = Math.round(Date.now() / 1000 + 287); FSSolent.set({ startAt: s.startAt }); });
   await p.waitForTimeout(1500);
+  /* since M28 the start screen opens inside 10 minutes: Chart takes it to the small box these checks use */
+  await p.evaluate(() => { const q = document.querySelector('#solStartScr [data-q=small]'); if (q && !document.getElementById('solStartScr').hidden) q.click(); }); await p.waitForTimeout(400);
   const box = () => p.evaluate(() => { const e = document.getElementById('solSeq'); return e && !e.hidden ? e.innerText.replace(/\s+/g, ' ') : null; });
   let t = await box(); ok(t && /4:4\d/.test(t) && /Sync/.test(t), 'the start sequence shows with the countdown', t && t.slice(0, 80));
   await p.click('#solSeq [data-q=sync]'); await p.waitForTimeout(400);
