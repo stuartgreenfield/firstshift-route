@@ -2926,6 +2926,7 @@
     var y0 = my(b.n), y1 = my(b.s);
     if ((x1 - x0 + 1) * (y1 - y0 + 1) > 120) return;   /* too far out for this layer: nothing sensible to show */
     ctx.save(); ctx.globalAlpha = c.alpha; ctx.imageSmoothingEnabled = true;
+    if (id === 'cmarks') try { ctx.filter = 'drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 2px rgba(255,255,255,.6))'; } catch (e) {}   /* Stuart 17 Nov 13:39: OpenSeaMap's black buoy names could not be read on the dark chart: a white halo round them */
     for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
       var lw = tLon(x, z), le = tLon(x + 1, z), ln = tLat(y, z), ls = tLat(y + 1, z), px = X(lw), py = Y(ln), pw = X(le) - px, ph = Y(ls) - py;
       var t = tileGet(id, c, z, ((x % n) + n) % n, y);

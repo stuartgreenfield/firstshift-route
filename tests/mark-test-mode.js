@@ -21,7 +21,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => document.getElementById('solCardX').click());
   const before = await p.evaluate(() => FSSolent.state().marks.length); const m = await p.evaluate(() => { const q = FSSolent.marks().find(x => x.id === '2B'); return window.__fsXY(q.lat, q.lon); }); await p.mouse.click(m[0], m[1]); await p.waitForTimeout(500);
   ok(await p.evaluate(() => FSSolent.state().marks.length) === before, 'a tap on a buoy during the race does not change the course');
-  await p.click('#solTestX'); await p.waitForTimeout(1500);
+  await p.click('#solTestBar [data-em=x]'); await p.waitForTimeout(1500);
   ok(await p.evaluate(() => !FSSolent.testing() && !document.getElementById('solTestBar')), 'Stop test mode ends it');
   ok(!errs.length, 'no page errors', errs.join(' | ') || null);
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
