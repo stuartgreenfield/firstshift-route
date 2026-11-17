@@ -13,8 +13,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--sea);color:var(-
 #hint{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:50;color:var(--muted);font-size:13px;background:rgba(5,17,28,.8);padding:8px 10px;border-radius:8px}
 .win{position:fixed;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.45);min-width:150px;transition:transform .25s ease,opacity .25s}
 .win.drag{transition:none;box-shadow:0 12px 32px rgba(0,0,0,.6);outline:2px solid var(--acc)}
-.grip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);color:var(--muted);font:700 12px system-ui;letter-spacing:.06em;cursor:grab;touch-action:none}
-.grip i{font-style:normal;font-size:16px;letter-spacing:2px}
+.grip{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);color:var(--muted);font:700 12px system-ui;letter-spacing:.06em;cursor:grab;touch-action:none}
+.grip i{font-style:normal;font-size:16px;letter-spacing:2px;grid-column:2}
 .body{padding:8px 12px 10px}
 .big{font:700 28px ui-monospace,Menlo,monospace}
 .row{display:flex;gap:14px}.row div{min-width:64px}
@@ -32,6 +32,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--sea);color:var(-
 <button class="opt" data-k="snap" aria-pressed="true">Snap to edges</button>
 <button class="opt" data-k="axis" aria-pressed="false">One direction at a time</button>
 <button class="opt" data-k="stash" aria-pressed="true">Slide off to stash</button>
+<button class="opt" data-k="flick" aria-pressed="true">Flick to stash</button>
 <button class="opt" data-k="lock" aria-pressed="false">Lock layout</button>
 <button class="opt" id="reset">Reset</button></div>
 
@@ -45,10 +46,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--sea);color:var(-
 <div class="win" id="course" style="left:16px;top:330px;max-width:260px"><div class="grip"><span>COURSE</span><i>⋮⋮</i></div><div class="body">
 <div>1 · 3F Markby <span style="color:#f87171">Port</span></div><div>2 · 2C Colten <span style="color:var(--green)">Stbd</span></div><div>3 · Finish</div></div></div>
 
-<div id="hint">Drag a window by its top strip. Drag it most of the way off any edge and let go: it slides away and leaves a tab; tap the tab to bring it back. Try the switches at the top.</div>
+<div id="hint">Drag a window by its top strip. Drag it most of the way off any edge, or flick it quickly towards an edge, and it slides away leaving a tab; tap the tab to bring it back. The grip dots are in the middle so either hand works. Try the switches at the top.</div>
 <script>
 (function () {
-  var O = { snap: true, axis: false, stash: true, lock: false }, KEY = 'fs-wintrial';
+  var O = { snap: true, axis: false, stash: true, flick: true, lock: false }, KEY = 'fs-wintrial';
   function key() { return KEY + (innerWidth > innerHeight ? '-land' : '-port'); }
   function load() { try { return JSON.parse(localStorage.getItem(key()) || '{}'); } catch (e) { return {}; } }
   function save(s) { try { localStorage.setItem(key(), JSON.stringify(s)); } catch (e) {} }
@@ -67,16 +68,17 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--sea);color:var(-
     document.body.appendChild(t); }
   wins.forEach(function (w) { var s = S[w.id]; if (s && s.x != null) place(w, clamp(s.x, 8, innerWidth - 160), clamp(s.y, TOP(), innerHeight - 60)); if (s && s.stash) { w.hidden = true; tab(w); }
     var g = w.querySelector('.grip'), d = null;
-    g.addEventListener('pointerdown', function (e) { if (O.lock) return; var r = w.getBoundingClientRect(); d = { x0: e.clientX, y0: e.clientY, l: r.left, t: r.top, ax: null }; w.classList.add('drag'); g.setPointerCapture(e.pointerId); });
-    g.addEventListener('pointermove', function (e) { if (!d) return; var dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+    g.addEventListener('pointerdown', function (e) { if (O.lock) return; var r = w.getBoundingClientRect(); d = { x0: e.clientX, y0: e.clientY, l: r.left, t: r.top, ax: null, vx: 0, vy: 0, px: e.clientX, py: e.clientY, pt: performance.now() }; w.classList.add('drag'); g.setPointerCapture(e.pointerId); });
+    g.addEventListener('pointermove', function (e) { if (!d) return; var nt = performance.now(), dtm = Math.max(1, nt - d.pt); d.vx = 0.6 * d.vx + 0.4 * (e.clientX - d.px) / dtm; d.vy = 0.6 * d.vy + 0.4 * (e.clientY - d.py) / dtm; d.px = e.clientX; d.py = e.clientY; d.pt = nt; var dx = e.clientX - d.x0, dy = e.clientY - d.y0;
       if (O.axis) { if (!d.ax && Math.hypot(dx, dy) > 10) d.ax = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; if (d.ax === 'x') dy = 0; else if (d.ax === 'y') dx = 0; else { dx = 0; dy = 0; } }
       var x = d.l + dx, y = d.t + dy, W = innerWidth, H = innerHeight, ww = w.offsetWidth, hh = w.offsetHeight;
       if (!O.stash) { x = clamp(x, 0, W - ww); y = clamp(y, TOP(), H - hh); }
       if (O.snap) { if (Math.abs(x - 8) < 18) x = 8; if (Math.abs(x + ww - (W - 8)) < 18) x = W - 8 - ww; if (Math.abs(y - TOP()) < 18) y = TOP(); if (Math.abs(y + hh - (H - 8)) < 18) y = H - 8 - hh; }
       place(w, x, y); guides(x, y, ww, hh); });
-    var up = function () { if (!d) return; d = null; w.classList.remove('drag'); [].slice.call(document.querySelectorAll('.guide')).forEach(function (g) { g.remove(); }); var r = w.getBoundingClientRect(), W = innerWidth, H = innerHeight;
+    var up = function () { if (!d) return; var fv = d; d = null; w.classList.remove('drag'); [].slice.call(document.querySelectorAll('.guide')).forEach(function (g) { g.remove(); }); var r = w.getBoundingClientRect(), W = innerWidth, H = innerHeight;
       var off = { l: -r.left / r.width, r: (r.right - W) / r.width, t: (TOP() - r.top) / r.height, b: (r.bottom - H) / r.height }, edge = null, m = 0.45;
       Object.keys(off).forEach(function (k) { if (off[k] > m) { m = off[k]; edge = k; } });
+      if (O.stash && O.flick && !edge && performance.now() - fv.pt < 120) { var sp = Math.hypot(fv.vx, fv.vy); if (sp > 0.9) edge = Math.abs(fv.vx) > Math.abs(fv.vy) ? (fv.vx > 0 ? 'r' : 'l') : (fv.vy > 0 ? 'b' : 't'); }
       if (O.stash && edge) { stash(w, edge); return; }
       var x = clamp(r.left, 8, W - r.width - 8), y = clamp(r.top, TOP(), H - r.height - 8); place(w, x, y); S[w.id] = { x: x, y: y }; save(S); };
     g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up); });
