@@ -31,11 +31,11 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   t = await step(); ok(/Leeward: Leeward mark/.test(t), 'a tap on the chart sets the leeward point', t.slice(0, 120));
   await p.click('#solStep [data-k=next]'); await p.waitForTimeout(300);
   /* start line: square to the wind */
-  t = await step(); ok(/Square to the wind/.test(t) && /Lat and long/.test(t) && /Ping/.test(t) && /Tap the ends/.test(t), 'Step 4: the start line, with Tap the ends, Square to the wind, Lat and long, Ping', t.slice(0, 160));
+  t = await step(); ok(/Boat, direction, length/.test(t) && /Lat and long/.test(t) && /Ping/.test(t) && /Tap the ends/.test(t), 'Step 4: the start line, with Tap the ends, Boat, direction, length, Lat and long, Ping', t.slice(0, 160));
   await p.click('#solStep [data-k=lm][data-v=square]'); await p.waitForTimeout(300); await p.fill('#solLen', '400'); await p.dispatchEvent('#solLen', 'change'); await p.waitForTimeout(300);
   xy = await p.evaluate(() => window.__fsXY(50.7605, -1.2925)); await p.mouse.click(xy[0], xy[1]); await p.waitForTimeout(500);
   const L2 = await p.evaluate(() => { const R = Math.PI / 180, l = window.__fsLine(), k = Math.cos(l.boat[0] * R), dx = (l.pin[1] - l.boat[1]) * k * 60, dy = (l.pin[0] - l.boat[0]) * 60; return { m: Math.round(Math.hypot(dx, dy) * 1852), brg: Math.round((Math.atan2(dx, dy) / R + 360) % 360) }; });
-  ok(Math.abs(L2.m - 400) <= 3 && Math.abs(L2.brg - 140) <= 1, 'Square to the wind: the pin 400 m to port, at 140° from wind 230°', JSON.stringify(L2));
+  ok(Math.abs(L2.m - 400) <= 3 && Math.abs(L2.brg - 140) <= 1, 'Boat, direction, length: the pin 400 m to port, at 140° from wind 230°', JSON.stringify(L2));
   t = await step(); ok(/Bias · tap to see it/i.test(t) && /(favoured by \d+ m|no bias)/.test(t), 'The bias shows at once, with no GPS', t.slice(t.indexOf('Bias'), t.indexOf('Bias') + 90));
   await p.screenshot({ path: '/tmp/claude-0/ui/m2/wl-line.png' });
   const v0 = await p.evaluate(() => window.__fsView().s); await p.click('#solStep [data-k=bias]'); await p.waitForTimeout(900); const v1 = await p.evaluate(() => window.__fsView().s);

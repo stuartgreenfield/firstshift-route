@@ -601,7 +601,11 @@
   /* legs from the course: a gate at each mark on its rounding side, then the finish. Fine time steps near the start. */
   var ADJ = [['adjWdir', 'wdir', '°', 1], ['adjWspd', 'wspd', '%', 1], ['adjWtime', 'wtime', ' h', 1], ['adjTspd', 'tspd', '%', 1], ['adjTtime', 'ttime', ' min', 60], ['adjTdir', 'tdir', '°', 1]];
   function adjBox() { var v = ($('adjBox') || {}).value; if (!v || $('adjWhere').value !== 'box') return null; var q = v.split(',').map(Number); return q.length === 4 && q.every(function (x) { return x === x; }) ? { s: q[0], n: q[1], w: q[2], e: q[3] } : null; }
-  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } if (a) { var un = +(store('nav-adj-until') || 0); if (un) a.until = un; } var lg = legTide(); if (lg) { a = a || {}; a.legs = lg; } return a; }
+  /* tide by hand (Stuart 17 Nov 09:35: "SETTING BY HAND THE TIDE WHICH IS CRUCIAL"): a steady tide, rate and the direction it runs to,
+     for every route while it is on; set from Mark's tide step (by hand, or from the boat on Mark+) */
+  var TH = (function () { try { return JSON.parse(store('fs-tidehand') || 'null') || {}; } catch (e) { return {}; } })();
+  window.__fsTideHand = function (o) { if (o === undefined) return Object.assign({}, TH); var was = JSON.stringify(TH); TH = o || {}; store('fs-tidehand', JSON.stringify(TH)); if (was !== JSON.stringify(TH)) { adjPill(); clearTimeout(window.__fsThT); window.__fsThT = setTimeout(function () { if (S.routes && S.routes.length && !S.running && !(window.FSSolent && FSSolent.stepState && FSSolent.stepState().on)) { S.key = null; S.preBad = true; run(); } }, 700); } };
+  function adjVals() { var a = null; ADJ.forEach(function (x) { var el = $(x[0]), v = el ? +el.value / x[3] : 0; if (v) { a = a || {}; a[x[1]] = v; } }); if (a && $('adjWhere').value === 'box') { a.box = adjBox(); if (!a.box) a = null; } if (a) { var un = +(store('nav-adj-until') || 0); if (un) a.until = un; } var lg = legTide(); if (lg) { a = a || {}; a.legs = lg; } if (TH.on && TH.spd >= 0 && TH.dir != null) { a = a || {}; a.fixT = { spd: +TH.spd, dir: +TH.dir }; } return a; }
   /* a Solent race's tide by hand for each leg (Stuart 15 Nov 11:30): a box round each leg, padded 0.15 nm */
   function legTide() { var c = meta && meta.course, L = c && c.legTide; if (!L || !L.some(function (q) { return q && (q.p || q.d); })) return null; var pp = [c.start].concat(c.marks || []).concat([c.finish]), out = []; for (var i = 1; i < pp.length; i++) { var q = L[i - 1]; if (!q || !(q.p || q.d) || !pp[i - 1] || !pp[i]) continue; var a0 = pp[i - 1], b0 = pp[i], pd = 0.15 / 60, pl = pd / Math.cos(a0.lat * Math.PI / 180); out.push({ box: { s: Math.min(a0.lat, b0.lat) - pd, n: Math.max(a0.lat, b0.lat) + pd, w: Math.min(a0.lon, b0.lon) - pl, e: Math.max(a0.lon, b0.lon) + pl }, tspd: q.p || 0, tdir: q.d || 0 }); } return out.length ? out : null; }
   function adjInit() {
@@ -619,6 +623,7 @@
     var a = adjVals(), t = [];
     if (a) ADJ.forEach(function (x) { var v = +$(x[0]).value; if (v) t.push(({ wdir: 'wind ', wspd: 'wind ', wtime: 'wind ', tspd: 'tide ', ttime: 'tide ', tdir: 'tide ' })[x[1]] + $(x[0] + 'V').textContent); });
     if (a && a.legs) t.push('tide on ' + a.legs.length + ' leg' + (a.legs.length === 1 ? '' : 's'));
+    if (a && a.fixT) t.push('tide by hand ' + a.fixT.spd + ' kn to ' + ('00' + a.fixT.dir).slice(-3) + '°T');
     $('adjPill').hidden = !a; $('adjPillTxt').textContent = 'Forecast changed' + (a && a.box ? ' in your area' : '') + ': ' + t.join(', ');
   }
   function HMAX() { var w = (meta.course0 || meta.course).window; return w ? w[1] : 48; }
@@ -1220,6 +1225,9 @@
     if (courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
     S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); if (window.__fsPendingStart) { var pse = window.__fsPendingStart; window.__fsPendingStart = null; try { setStart(pse); startChosen(true); } catch (e) {} }   /* F17: the start time chosen in the Solent step box, so Route this race routes at once */ $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
+  /* Mark's first card lists the latest stored races (Stuart 17 Nov 09:42: "This first pull down window could also show list of previously saved races") */
+  window.__fsSavedList = function (n) { try { return myRaces().map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || '' }; }).concat(oldRoutes().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary || '' }; })).sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, n || 4); } catch (e) { return []; } };
+  window.__fsOpenSaved = function (kind, id) { if (kind === 'old') openOld(id); else { archiveRoutes(); openMy(id); } };
   window.__fsStoredRaces = function () { racesSheet('saved'); $('races').hidden = false; };   /* Mark (Stuart 17 Nov 09:18): Stored races from the race button */
   function racesSheet(mode) {
     var c = meta.course, mine = myRaces(), h = '';
