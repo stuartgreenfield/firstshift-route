@@ -219,20 +219,10 @@
   "t": "Mark and Mark+",
   "sec": 25.1
  },
- "your-first-race-275e4aa4": {
-  "f": "your-first-race-275e4aa4.mp3",
-  "t": "Your first race",
-  "sec": 21.8
- },
  "test-mode-a0a980e3": {
   "f": "test-mode-a0a980e3.mp3",
   "t": "Test mode",
   "sec": 33.0
- },
- "the-practice-race-with-emma-2c43e0fd": {
-  "f": "the-practice-race-with-emma-2c43e0fd.mp3",
-  "t": "The practice race with Emma",
-  "sec": 18.8
  },
  "stored-races-1f6aa946": {
   "f": "stored-races-1f6aa946.mp3",
@@ -503,5 +493,20 @@
   "f": "learning-your-boat-9ddb8d8e.mp3",
   "t": "Learning your boat",
   "sec": 15.0
+ },
+ "try-it-safely-first-9bf89a": {
+  "f": "try-it-safely-first-9bf89a.mp3",
+  "t": "Try it safely first",
+  "sec": 16.5
+ },
+ "your-first-race-6dd46b4e": {
+  "f": "your-first-race-6dd46b4e.mp3",
+  "t": "Your first race",
+  "sec": 26.8
+ },
+ "the-practice-race-with-emma-83ce7003": {
+  "f": "the-practice-race-with-emma-83ce7003.mp3",
+  "t": "The practice race with Emma",
+  "sec": 25.1
  }
 }
