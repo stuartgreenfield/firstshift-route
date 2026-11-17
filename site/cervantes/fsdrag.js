@@ -21,7 +21,7 @@
 (function () {
   'use strict';
   var KEY = 'nav-pos', LONG = 500;
-  var PANELS = [['liveBox', 'GPS window', 'win', 'GPS'], ['fsPlot', 'Plotter bar', 'win', 'PLOT'], ['layers', 'Layers box', 'win', 'LAYERS'], ['navStrip', 'Instrument strip', 'win', 'BOAT'],
+  var PANELS = [['liveBox', 'GPS window', 'win', 'GPS'], ['fsPlot', 'Plotter bar', 'win', 'PLOT'], ['navPlot', 'Plotter bar', 'win', 'PLOT'], ['layers', 'Layers box', 'win', 'LAYERS'], ['navStrip', 'Instrument strip', 'win', 'BOAT'],
     ['fsRulerBtn', 'Ruler button'], ['helpBtn', 'Help button'], ['oriBtn', 'North up button'], ['editFab', 'Edit course button'], ['fromHere', 'From here button'], ['navClearBtn', 'Clear screen button'], ['navMenuBtn', 'MENU button'], ['navCentreBtn', 'Centre on the boat button']];   /* man overboard stays where it is */
   function $(id) { return document.getElementById(id); }
   function ld() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
@@ -33,7 +33,7 @@
   function ins() { try { return window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; } catch (e) { return { t: 0, r: 0, b: 0, l: 0 }; } }
 
   /* ---- what a moved window may not cover ---- */
-  var OBST = '#solTestBar,#solSeq,.fswtab,.top .ib,.top .logobox,.top .brand,#mkTop .ib,#mkTop .mklogo,#mkTop .mkbrand,.bar,#panel,#mkPanel,.mobbtn,.fabhelp,.livebox,#fsPlot,#layers,#navStrip,#astroLine,#mkPick,#mkTestBar,.navundo';
+  var OBST = '#solTestBar,#solSeq,.fswtab,.top .ib,.top .logobox,.top .brand,#mkTop .ib,#mkTop .mklogo,#mkTop .mkbrand,.bar,#panel,#mkPanel,.mobbtn,.fabhelp,.livebox,#fsPlot,#navPlot,#layers,#navStrip,#astroLine,#mkPick,#mkTestBar,.navundo';
   function obstacles(me) {
     var out = []; [].forEach.call(document.querySelectorAll(OBST), function (e) { if (e === me || me.contains(e) || e.contains(me) || !shown(e)) return; var r = e.getBoundingClientRect(); out.push({ l: r.left, t: r.top, r: r.right, b: r.bottom }); }); return out; }
   function hits(a, list) { for (var i = 0; i < list.length; i++) { var b = list[i]; if (a.l < b.r - 1 && a.r > b.l + 1 && a.t < b.b - 1 && a.b > b.t + 1) return true; } return false; }
