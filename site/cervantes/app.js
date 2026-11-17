@@ -2422,7 +2422,7 @@
   window.__fsCalc = function () { return LIVE.on ? LIVE.calc : null; };
   window.__fsLineCalc = function (gun) { var f = LIVE.fix; return f ? lineCalc(f, gun || (+$('startSel').value || Date.now() / 1000 + 600)) : lineGet(); };
   window.__fsGun = function (ep) { if (!(ep > 0)) return; try { setStart(ep, true); startChosen(true); } catch (e) {} };
-  window.__fsFix = function (o) { if (o) { Object.assign(FIX, o); store('fs-fix', JSON.stringify(FIX)); } return Object.assign({}, FIX); };
+  (function () { var o = window.__fsFix, f = function (x) { if (x) { Object.assign(FIX, x); store('fs-fix', JSON.stringify(FIX)); } return Object.assign({}, FIX); }; if (o) Object.keys(o).forEach(function (k) { f[k] = o[k]; }); window.__fsFix = f; })();   /* callable, and keeps html, bind, set and state for the Solent step box (17 Nov: the second definition had dropped them) */
   window.__fsRouteNow = function () { if (S.running) return false; S.key = null; S.cleared = false; run(); return true; };
   window.__fsTcc = function () { var v = +($('tcc') || {}).value; return v > 0 ? v : 1; };
   window.__fsAstroCtx = function () { var st = meta && meta.course && meta.course.start, f = LIVE.on && LIVE.fix; return { at: (typeof T0 === 'number' ? (T0 + S.t * 3600) * 1000 : Date.now()), lat: f ? f.la : st ? st.lat : null, lon: f ? f.lo : st ? st.lon : null, where: f ? 'the boat' : st ? 'the start' : '' }; };   /* Astro (Stuart 15 Nov 11:45) */   /* N: tracks.js reads the trail to file it */
