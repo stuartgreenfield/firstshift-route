@@ -893,7 +893,7 @@
   function tideTxt(z) { if (!z || z.need) return z && z.mode === 'hand' ? 'by hand: give the rate and direction' : z && z.mode === 'boat' ? 'from the boat: no set and drift yet' : 'forecast: none at the line yet'; return z.spd.toFixed(1) + ' kn to ' + ('00' + Math.round(z.dir)).slice(-3) + '°T (' + z.src + ')'; }
   function pushTide() { try { var t = B.tide || {}, z = tideRef(); if (window.__fsTideHand) window.__fsTideHand(t.mode === 'hand' || t.mode === 'boat' ? (z && !z.need ? { on: true, spd: +z.spd.toFixed(2), dir: Math.round(z.dir), src: z.src } : { on: false }) : { on: false }); } catch (e) {} }
   function ssDraw(cv, lc, rem) {
-    var dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return; if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    var dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return; if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#0b2a45'; ctx.fillRect(0, 0, W, H);
     var l = lineNow(); if (!l) { ctx.fillStyle = '#cbd5e1'; ctx.font = '600 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Set the start line to see it here', W / 2, H / 2); return; }
     var w = windRef(), nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} var twd = nw && nw[1] != null ? nw[1] : w && w.twd != null ? w.twd : null;
