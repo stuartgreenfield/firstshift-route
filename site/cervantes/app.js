@@ -2175,7 +2175,7 @@
   function lineCalc(f, gun) {
     var l = lineGet(); if (!l.boat || !l.pin) return { boat: l.boat, pin: l.pin };
     var la0 = (l.boat[0] + l.pin[0]) / 2, kx = Math.cos(la0 * R) * 60, xy = function (la, lo) { return [(lo - l.boat[1]) * kx, (la - l.boat[0]) * 60]; };
-    var P = xy(l.pin[0], l.pin[1]), F = xy(f.la, f.lo), L = Math.hypot(P[0], P[1]) || 1e-9, ux = P[0] / L, uy = P[1] / L;
+    var bq = bowPos(f), P = xy(l.pin[0], l.pin[1]), F = xy(bq[0], bq[1]), L = Math.hypot(P[0], P[1]) || 1e-9, ux = P[0] / L, uy = P[1] / L;
     var cr = (ux * F[1] - uy * F[0]), along = ux * F[0] + uy * F[1], fwd = null;   /* cr: signed distance from the line (left of boat-to-pin positive) */
     var c = meta.course, nx = realMarks(c)[0] || c.finish; if (nx) { var N = xy(nx.lat, nx.lon); fwd = (ux * N[1] - uy * N[0]) >= 0 ? 1 : -1; }   /* the course side: where the first mark is */
     var over = fwd != null && cr * fwd > 0, d = along < 0 && !l.transit ? Math.hypot(F[0], F[1]) : along > L ? Math.hypot(F[0] - P[0], F[1] - P[1]) : Math.abs(cr);
