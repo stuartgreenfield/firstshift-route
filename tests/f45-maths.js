@@ -19,6 +19,10 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   for (let i = 0; i < 10; i++) { la -= 6 / 3600 / 60; await put(6, 180); await p.waitForTimeout(1000); }
   const w = await p.evaluate(() => { const st = window.FSSolent.state(); return { twd: (window.__fsWindAt(50.772, -1.30) || {}).twd }; });
   const sm0 = await p.evaluate(() => window.FSSolent.startNow());
+  /* Stuart 16:55: with nothing typed or learnt, a tack costs one boat length, a gybe a quarter */
+  await p.evaluate(() => window.__fsLoa(10)); await put(6, 180); await p.waitForTimeout(3500);
+  const tl = await p.evaluate(() => { const s = document.getElementById('solStartScr'); return s ? s.textContent.replace(/\s+/g, ' ') : ''; });
+  ok(/\+3\.\d s to (tack|gybe) \(one boat length\)|\+0\.8 s to gybe \(a quarter of a boat length\)/.test(tl), '10 m boat at 6 kn, nothing typed: a tack costs one length (3.2 s) or a gybe a quarter (0.8 s)', tl.slice(0, 300));
   await p.evaluate(() => { window.__fsLineSet(); const e = document.getElementById('kitTk'); e.value = '12'; e.dispatchEvent(new Event('change')); const g = document.getElementById('kitGy'); g.value = '9'; g.dispatchEvent(new Event('change')); document.getElementById('klX').click(); });
   await put(6, 180); await p.waitForTimeout(1500);
   const txt = await p.evaluate(() => { const s = document.getElementById('solStartScr'); return s ? s.textContent.replace(/\s+/g, ' ') : ''; });
