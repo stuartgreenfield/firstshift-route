@@ -135,3 +135,5 @@ body.navclear #fsBadge{display:flex}
 #fsBadge>.mkdisc::after{content:'';position:absolute;inset:3px;border-radius:9px;background:var(--panel,#0B1B30)}
 #fsBadge.off>.mkdisc::before{animation:none;background:#64748b}
 @media (prefers-reduced-motion:reduce){#fsBadge>.mkdisc::before{animation:none}}
+.logobox.mkring{isolation:isolate}.logobox.mkring:not(.rx)>.mkdisc::before{animation:none;background:#64748b}   /* F49: still and grey with no GPS arriving */
+#fsBadge.off>.mkdisc::before{animation:none;background:#64748b}
