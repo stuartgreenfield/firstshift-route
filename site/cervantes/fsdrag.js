@@ -90,6 +90,7 @@
     var list = obstacles(t), x0 = st[0] === 'r' ? innerWidth - s.r - 26 : s.l, y0 = Math.max(s.t + 8, Math.min(innerHeight - s.b - 80, st[1])), y = y0;
     for (var k = 0; k < 120; k++) { var cand = y0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8; if (cand < s.t + 8 || cand > innerHeight - s.b - 80) continue; if (!hits({ l: x0, t: cand, r: x0 + 26, b: cand + 72 }, list)) { y = cand; break; } }
     t.style.top = Math.round(y) + 'px';
+    if (covered(x0 + 13, y + 36, null, t)) t.hidden = true;   /* 18 Nov: no tab on top of another menu */
   }
   /* 17 Nov 22:55 (Stuart: Mark+ slow on the tablet): the buttons on the screen are read once per check, not once per window,
      and a window that has not moved keeps its grip without a new search (checked again every 5 s) */
@@ -97,17 +98,28 @@
   function btnsAll() { if (!BC) BC = [].filter.call(document.querySelectorAll('button,select,a[href],[role=button],input'), function (b) { return !b.classList.contains('navgrip2') && b.getClientRects().length && !b.closest('[hidden]'); }).map(function (b) { return b.getBoundingClientRect(); }); return BC; }
   /* 17 Nov 23:24 (Stuart's photo: dots on top of the Big numbers): no dots or tabs while a full-screen view is up */
   function fullView() { return ['liveBig', 'navHelm', 'solStartScr'].some(function (id) { var e = $(id); return e && !e.hidden && e.getClientRects().length; }); }
+  /* is (x, y) under some other floating menu or window? (the top thing there is inside a fixed element that is not this window) */
+  function covered(x, y, self, g) {
+    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return false;
+    var l = document.elementsFromPoint(x, y);
+    for (var i = 0; i < l.length; i++) { var e = l[i]; if (e === g || (g && g.contains(e)) || e.classList.contains('navgrip2') || e.classList.contains('fswtab')) continue;
+      if (self && self.contains(e)) return false; if (e.id === 'map' || e === document.body || e === document.documentElement) return false;
+      for (var f = e; f && f !== document.body; f = f.parentElement) { if (f === self) return false; if (getComputedStyle(f).position === 'fixed') return true; }
+      return false; }
+    return false;
+  }
   function place() {
     BC = null; var now = Date.now();
     if (fullView() && !M.el) { Object.keys(grips).forEach(function (k) { grips[k].hidden = true; grips[k].__key = null; }); Object.keys(tabs).forEach(function (k) { tabs[k].hidden = true; }); return; }
     PANELS.forEach(function (p) { if (p[2] === 'win') tabFor(p); });
     PANELS.forEach(function (p) { if (p[2] !== 'win') return; var el = $(p[0]); if (!grips[p[0]] && el) mkGrip(p); var g = grips[p[0]]; if (!g) return;
       var v = shown(el); g.hidden = !v; if (!v) return; var r = el.getBoundingClientRect(), cx = (r.left + r.right) / 2;
+      if (!M.el && covered(cx, r.top + 6, el, g)) { g.hidden = true; g.__key = null; return; }   /* 18 Nov 05:39 (Stuart: the dots came to the front over other menus): no dots on a window another menu covers */
       var key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height) + ',' + innerWidth + ',' + innerHeight; if (g.__key === key && now - g.__at < 5000 && !M.el) return; g.__key = key; g.__at = now;
       /* the grip goes where it covers no button (17 Nov screen check: on the window's corner it sat on OPEN and on MARK) */
       var hand = opt('hand', 'c'), first = hand === 'l' ? [r.left + 2, r.top - 19] : hand === 'r' ? [r.right - 34, r.top - 19] : [cx - 16, r.top - 19];
       var cands = [first, [cx - 16, r.top - 19], [cx - 16, r.bottom + 1], [r.left - 33, r.top + 2], [r.right + 1, r.top + 2], [cx - 16, r.bottom - 9], [r.left + 2, r.bottom - 20], [r.right - 34, r.bottom - 20], [cx - 16, r.top - 9]]; for (var sx = r.left + 2; sx <= r.right - 34; sx += 16) { cands.push([sx, r.bottom - 20]); cands.push([sx, r.top + 2]); } var btns = btnsAll();
-      var pick = cands.filter(function (c) { if (c[0] < 2 || c[1] < 2 || c[0] + 32 > innerWidth - 2 || c[1] + 18 > innerHeight - 2) return false; var ins0 = window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; if (c[0] < ins0.l + 2 || c[1] < ins0.t + 2 || c[0] + 32 > innerWidth - ins0.r - 2 || c[1] + 18 > innerHeight - ins0.b - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + 32 > b.left && c[1] < b.bottom && c[1] + 18 > b.top; }); })[0];
+      var pick = cands.filter(function (c) { if (c[0] < 2 || c[1] < 2 || c[0] + 32 > innerWidth - 2 || c[1] + 18 > innerHeight - 2) return false; var ins0 = window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; if (c[0] < ins0.l + 2 || c[1] < ins0.t + 2 || c[0] + 32 > innerWidth - ins0.r - 2 || c[1] + 18 > innerHeight - ins0.b - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + 32 > b.left && c[1] < b.bottom && c[1] + 18 > b.top; }) && (M.el || !covered(c[0] + 16, c[1] + 9, el, g)); })[0];
       if (!pick) { g.hidden = true; return; }   /* nowhere free of a button: no grip rather than one on top of a button */
       g.style.left = Math.round(pick[0]) + 'px'; g.style.top = Math.round(pick[1]) + 'px'; });
   }

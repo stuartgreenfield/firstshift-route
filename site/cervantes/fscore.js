@@ -96,9 +96,16 @@
     /* long press on the chart: clear, or bring the menus back */
     var cv = document.getElementById('map'), lp = null;
     if (cv) {
-      cv.addEventListener('pointerdown', function (e) { if (lp) clearTimeout(lp.t); var x = e.clientX, y = e.clientY; lp = { x: x, y: y, fired: false, t: setTimeout(function () { lp.fired = true; if (document.body.classList.contains('navclear')) clearPeek(); else clearSet(true); try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} }, 700) }; });
-      cv.addEventListener('pointermove', function (e) { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) clearTimeout(lp.t); });
-      ['pointerup', 'pointercancel'].forEach(function (k) { cv.addEventListener(k, function (e) { if (!lp) return; clearTimeout(lp.t); if (lp.fired && k === 'pointerup') { e.stopImmediatePropagation(); } }, true); });
+      /* 18 Nov 05:39 (Stuart: "the menus continue to disappear even the drop down saying leave them on is on"): a finger resting on
+         the chart for a moment before a pan cleared the screen. Now the long press counts only when the finger lifts without having
+         moved, with no second finger, and with "Off: leave them up" chosen it never clears the screen (the CLEAR button still does) */
+      var fingers = 0;
+      cv.addEventListener('pointerdown', function (e) { fingers++; if (lp && fingers > 1) { lp.no = true; return; } lp = { x: e.clientX, y: e.clientY, at: Date.now(), id: e.pointerId, fired: false, no: false }; });
+      cv.addEventListener('pointermove', function (e) { if (lp && e.pointerId === lp.id && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) lp.no = true; });
+      ['pointerup', 'pointercancel'].forEach(function (k) { cv.addEventListener(k, function (e) { fingers = Math.max(0, fingers - 1); if (!lp || e.pointerId !== lp.id) return; var held = Date.now() - lp.at;
+        if (k === 'pointerup' && !lp.no && held >= 700 && held < 4000) { var cl = document.body.classList.contains('navclear');
+          if (cl || C.hide !== 0) { lp.fired = true; if (cl) clearPeek(); else clearSet(true); try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} e.stopImmediatePropagation(); } }
+        if (!lp.fired) lp = null; }, true); });
       cv.addEventListener('click', function (e) { if (lp && lp.fired) { e.stopImmediatePropagation(); e.preventDefault(); lp = null; } }, true);
       cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     }
