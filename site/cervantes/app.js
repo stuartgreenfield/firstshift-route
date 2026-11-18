@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.55';
+  var VERSION = 'FirstShift Route v0.12.56';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -314,7 +314,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.55 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.56 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -399,7 +399,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     /* Settings: route again by itself on closing, if anything that affects the routes changed */
     var setSnap = '';
     function settingsSnap() { return [].map.call(document.querySelectorAll('#sheet input, #sheet select, #sheet textarea'), function (el) { return el.id + '=' + (el.type === 'checkbox' ? el.checked : el.value); }).join('|') + '|' + JSON.stringify(meta && meta.course ? [meta.course.name, meta.course.marks, meta.course.start, meta.course.finish] : ''); }
-    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom|shareTrack|leeway|depthView|zoomMax|depth2|bowOff)=/;
+    var DISPLAY_ONLY = /^(windDim|tideDim|windSym|tideSym|windShow|speed|ovChk|autoFrom|shareTrack|leeway|depthView|zoomMax|depth2|bowOff|boatLoa|pingFrom)=/;
+    /* F55 (Stuart 18 Nov 15:49): boat length and where the ping is called from fill in the phone-to-ping-point distance */
+    (function () { var L = $('boatLoa'), F = $('pingFrom'), O = $('bowOff'); if (!L || !F || !O) return;
+      var fill = function () { var loa = +L.value; O.value = F.value === 'bow' ? (loa > 0 ? loa : O.value) : 0; };
+      L.addEventListener('change', fill); F.addEventListener('change', fill);
+      window.__fsLoa = function (v) { if (v == null) return +L.value > 0 ? +L.value : null; L.value = v; fill(); try { L.dispatchEvent(new Event('change')); } catch (e) {} }; })();
+
     function routeSnap() { return settingsSnap().split('|').filter(function (x) { return !DISPLAY_ONLY.test(x); }).join('|'); }
     $('setBtn').onclick = function () { setSnap = routeSnap(); $('sheet').hidden = false; plotPolar(); };
     $('sheetX').onclick = function () { $('sheet').hidden = true; if (setSnap && routeSnap() !== setSnap && !S.running) { busy('Settings changed: routing again…'); S.from = null; run(); } setSnap = ''; };
@@ -1003,7 +1009,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.55) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.56) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -2196,7 +2202,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsLineKind = function (transit) { var l = lineGet(); if (transit) l.transit = true; else delete l.transit; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); draw(); };   /* Stuart 21:50: a shore transit line (ping on the transit close inshore, then at the outer distance mark), as the Startline tool */
   /* J3 (Stuart 15 Nov): the ping is where the bow is: the GPS position moved forward by the bow offset along the heading (the boat's
      compass in Route+, else the course over the ground when moving) */
-  function bowPos(f) { var d = +(($('bowOff') || {}).value || 0); if (!(d > 0)) return [f.la, f.lo, null]; var h = null; try { if (window.__navHdg) h = window.__navHdg(); } catch (e) {} if (h == null && f.sog > 0.5 && f.cog != null) h = f.cog; if (h == null) return [f.la, f.lo, 'no heading: GPS position used']; var n = d / 1852; return [f.la + n * Math.cos(h * R) / 60, f.lo + n * Math.sin(h * R) / (60 * Math.cos(f.la * R)), null]; }
+  function bowPos(f) { var d = +(($('bowOff') || {}).value || 0); if (!d) return [f.la, f.lo, null];   /* F55: minus moves the ping aft */ var h = null; try { if (window.__navHdg) h = window.__navHdg(); } catch (e) {} if (h == null && f.sog > 0.5 && f.cog != null) h = f.cog; if (h == null) return [f.la, f.lo, 'no heading: GPS position used']; var n = d / 1852; return [f.la + n * Math.cos(h * R) / 60, f.lo + n * Math.sin(h * R) / (60 * Math.cos(f.la * R)), null]; }
   /* F44 cures (Stuart 18 Nov, iPhone): a ping with no GPS fix used to do nothing at all, and two ends in one place were accepted */
   function linePing(end) { var f = LIVE.fix, nm = end === 'pin' ? 'pin' : 'boat';
     if (!f || f.dr || Date.now() - (f.at || 0) > 15000) { busy('No GPS fix: the ' + nm + ' end was not saved. Wait for the GPS, then ping again.'); return; }
@@ -2467,6 +2473,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsCalc = function () { return LIVE.on ? LIVE.calc : null; };
   window.__fsLineCalc = function (gun) { var f = LIVE.fix; return f ? lineCalc(f, gun || (+$('startSel').value || Date.now() / 1000 + 600)) : lineGet(); };
   window.__fsGunAt = function () { var v = +(($('startSel') || {}).value || 0); return v > 0 && S.startChosen ? v : null; };   /* F44: the class gun for the start kit, only once the crew has chosen their class start (the default start is a planning guess) */
+  window.__fsSpeed = function () { try { return speedFn(opts(S.sel ? S.sel.models : cardModels())); } catch (e) { return null; } };   /* F45: the boat's polar, for pointing at slow speed on the start screen */
   window.__fsGun = function (ep) { if (!(ep > 0)) return; try { setStart(ep, true); startChosen(true); } catch (e) {} };
   (function () { var o = window.__fsFix, f = function (x) { if (x) { Object.assign(FIX, x); store('fs-fix', JSON.stringify(FIX)); } return Object.assign({}, FIX); }; if (o) Object.keys(o).forEach(function (k) { f[k] = o[k]; }); window.__fsFix = f; })();   /* callable, and keeps html, bind, set and state for the Solent step box (17 Nov: the second definition had dropped them) */
   window.__fsRouteNow = function () { if (S.running) return false; S.key = null; S.cleared = false; run(); return true; };
