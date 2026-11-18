@@ -38,6 +38,8 @@ jobs:
       - name: Boat simulator scenarios (GPS follow, GPS lost, MOB, start, mark rounding)
         if: always()
         run: |
+          # the simulator gives the phone's GPS speed and heading through Chrome's override, which the browser of Playwright 1.47 lacks
+          npm i --no-save playwright@1.63.0 && (npx playwright install --with-deps chromium || npx playwright install chromium)
           node tests/sim-route.js https://firstshift-route.pages.dev | tee sim-out.txt
           { echo '## Boat simulator scenarios'; echo '```'; cat sim-out.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           grep -q ' 0 failed' sim-out.txt
