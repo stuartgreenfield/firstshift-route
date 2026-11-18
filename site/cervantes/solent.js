@@ -1055,6 +1055,7 @@
   function rbState() {
     if (!KIT || !B.shown || !B.startAt || B.ended > B.startAt * 1000) return '';
     var now = Date.now() / 1000; if (now > B.startAt + 10 * 3600) return '';
+    if (ROUTE && now > B.startAt + 300) return '';   /* Stuart 18 Nov 17:55: offshore, the start buttons go 5 minutes after the gun (Mark keeps STOP RACE for the inshore race) */
     if (['solCard', 'sheet', 'liveBig', 'navHelm', 'solStartScr', 'help', 'fsTour', 'races'].some(function (id) { var e = $(id); return e && !e.hidden && e.getClientRects().length; })) return '';
     if (document.body.classList.contains('navclear')) return '';
     return now < B.startAt - 60 || B.pp ? 'pre' : now < B.startAt ? 'last' : 'run';
