@@ -1006,6 +1006,44 @@
   if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); toast('The gun: the racing window is open. Tap MARK or ROUTE in it to steer to the next mark or along the route.'); } catch (e) {} }, 1000);
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   window.__fsTapHook = tapHook;
+  /* M70 (Stuart 18 Nov 05:58: "a button on mark and mark+ easy to see that says stop race and a button that says show start sequence
+     screen ... work out a logic tree to be sure exactly where they should go"). Logic tree (docs/MARK-RACE-BUTTONS.md):
+       no race set, or the race stopped .......................... neither button
+       gun set, more than a minute to go, or postponed ........... START SEQUENCE (unless the start screen is already up) and STOP RACE
+       start screen up ........................................... neither (it has its own controls; its × or Small gives them back)
+       race under way (after the gun, up to 10 hours) ............ STOP RACE only
+       a menu, Settings, Big numbers or HELM in front, or Clear screen  neither, so they never sit on top of another screen
+     They sit together in the middle of the bottom edge of the chart, above the race panel or the menu bar, where the eye is. STOP RACE asks for a second tap within 4 seconds, so a knock never ends a race. */
+  var RB = { el: null, arm: 0, key: '' };
+  function rbState() {
+    if (!window.FS_MARK || !B.shown || !B.startAt || B.ended > B.startAt * 1000) return '';
+    var now = Date.now() / 1000; if (now > B.startAt + 10 * 3600) return '';
+    if (['solCard', 'sheet', 'liveBig', 'navHelm', 'solStartScr', 'help', 'fsTour', 'races'].some(function (id) { var e = $(id); return e && !e.hidden && e.getClientRects().length; })) return '';
+    if (document.body.classList.contains('navclear')) return '';
+    return now < B.startAt - 60 || B.pp ? 'pre' : now < B.startAt ? 'last' : 'run';
+  }
+  function rbRender() {
+    var st = rbState(), armed = RB.arm && Date.now() - RB.arm < 4000; if (!armed) RB.arm = 0;
+    var key = st + (armed ? 'a' : '');
+    if (!RB.el) { if (!st) return; css(); var e = document.createElement('div'); e.id = 'solRaceBtns'; e.className = 'solrb'; e.setAttribute('role', 'group'); e.setAttribute('aria-label', 'Race controls'); document.body.appendChild(e); RB.el = e;
+      e.addEventListener('click', function (ev) { var t = ev.target.closest('[data-rb]'); if (!t) return; ev.stopPropagation();
+        if (t.dataset.rb === 'seq') { var c = $('solCard'); if (c) c.hidden = true; SQ.hide = 0; SQ.small = 0; SQ.force = B.startAt; sqRender(); rbRender(); return; }
+        if (t.dataset.rb === 'stop') { if (!(RB.arm && Date.now() - RB.arm < 4000)) { RB.arm = Date.now(); rbRender(); setTimeout(rbRender, 4100); return; } RB.arm = 0; stopRace(); rbRender(); } }); }
+    if (key !== RB.key) { RB.key = key;
+      RB.el.innerHTML = (st === 'pre' || st === 'last' ? '<button class="btn solrbseq" type="button" data-rb="seq">START SEQUENCE</button>' : '') +
+        (st ? '<button class="btn solrbstop' + (armed ? ' armed' : '') + '" type="button" data-rb="stop">' + (armed ? 'TAP AGAIN TO STOP' : 'STOP RACE') + '</button>' : ''); }
+    RB.el.hidden = !st; if (!st) return;
+    var bar = document.querySelector('.bar'), br = bar && bar.getClientRects().length ? bar.getBoundingClientRect() : null, h = RB.el.offsetHeight || 40, top;
+    var ins = { t: 0, b: 0 }; try { ins = (window.__fsInsets && window.__fsInsets()) || ins; } catch (e) {}
+    var chv = document.querySelector('.chart'), cr = chv && chv.getClientRects().length ? chv.getBoundingClientRect() : null;
+    if (cr && cr.bottom - cr.top > 200) top = Math.min(cr.bottom, br && br.top > innerHeight / 2 ? br.top : innerHeight) - h - 14;   /* the bottom edge of the chart, in the middle: above the race panel or the menu bar, wherever the chart ends (18 Nov 06:15) */
+    else if (br && br.top > innerHeight / 2) top = br.top - h - 10;   /* the bar along the bottom: just above it */
+    else { top = Math.max(br ? br.bottom + 8 : 8, (ins.t || 0) + 8); var sq = $('solSeq'); if (sq && !sq.hidden && sq.getClientRects().length) top = Math.max(top, sq.getBoundingClientRect().bottom + 8); }   /* the bar along the top: below it, and below the small start box */
+    top = Math.max(8, Math.min(innerHeight - (ins.b || 0) - h - 8, top));
+    RB.el.style.top = Math.round(top) + 'px';
+  }
+  setInterval(rbRender, 1000);
+  (function () { var st = document.createElement('style'); st.textContent = '.solrb{position:fixed;z-index:56;left:50%;translate:-50% 0;display:flex;gap:8px;pointer-events:none}.solrb .btn{pointer-events:auto;font:800 13px/1 var(--f-body,system-ui);letter-spacing:.06em;padding:11px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}.solrb .solrbseq{background:#6FA9E0;color:#042D5E;border:1px solid #042D5E}.solrb .solrbstop{background:#C8372D;color:#fff;border:1px solid #7a1c16}.solrb .solrbstop.armed{background:#fff;color:#C8372D;border:2px solid #C8372D}'; document.head.appendChild(st); })();
   window.FSSolent = { ss: function () { return SS; }, em: function () { return EM; }, tideReset: function () { B.tide = { mode: 'model' }; saveB(); try { wzRender(); } catch (e) {} var lg = $('solLegs'); if (lg && !lg.hidden) showList(); }, test: function (on) { if (on === false) testStop(); else testStart(); }, testing: function () { return SIM.on; }, share: share, applyRemote: applyRemote, showList: showList, newCourse: newCourse, windRef: windRef, legType: legType, start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, startNow: function () { if (!B.startAt || B.pp) return null; var rem = B.startAt - Date.now() / 1000, lc = null, f = null, sm = null; try { lc = window.__fsLineCalc ? window.__fsLineCalc(B.startAt) : null; } catch (e) {} try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} try { sm = startMaths(lc, f, rem); } catch (e) {} return { rem: rem, burn: sm && sm.burn != null ? sm.burn : lc && lc.burn != null ? lc.burn : null, d: lc && lc.d != null ? lc.d * 1852 : null, over: !!(lc && lc.over), sog: f && f.sog != null ? f.sog : null }; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
   if (C.on) load();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookSettings); else hookSettings();
