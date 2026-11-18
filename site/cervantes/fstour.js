@@ -68,7 +68,12 @@
     return r;
   }
   function steps() { return T.lv ? T.lv.steps : []; }
-  function target(s) { var el = typeof s.el === 'function' ? s.el() : q(s.el); if (shown(el)) return el; var a = s.alt && q(s.alt); return shown(a) ? a : null; }
+  /* on top: the button is the thing a finger would touch at its middle, not something lying over it (Stuart's iPhone 18 Nov 21:02: the tour
+     pointed at Settings while the race menu covered it) */
+  function onTop(el) { if (!shown(el)) return false; var r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2; if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) return true;
+    var rt = T.root, was = rt && rt.style.display; if (rt) rt.style.display = 'none'; var h = document.elementFromPoint(x, y); if (rt) rt.style.display = was || '';
+    return !h || h === el || el.contains(h) || h.contains(el); }
+  function target(s) { var el = typeof s.el === 'function' ? s.el() : q(s.el); if (onTop(el)) return el; var a = s.alt && q(s.alt); return onTop(a) ? a : null; }
   function go(i, dir) {   /* a step that opens a panel first gets a moment for it to appear; one that still cannot be seen is skipped */
     var S = steps(); dir = dir || (i >= T.i ? 1 : -1);
     if (i < 0) { i = 0; dir = 1; }

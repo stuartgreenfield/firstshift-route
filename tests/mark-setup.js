@@ -17,8 +17,9 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   const B = () => p.evaluate(() => window.FSSolent.state());
   // fresh start: clear anything left
   await p.evaluate(() => { window.__fsSetLine('boat'); window.__fsSetLine('pin'); window.FSSolent.set({ su: {}, marks: [], fin: 'start', finish: null, startAt: null, type: 'marks' }); window.FSSolent.start(); }); await p.waitForTimeout(800);
-  await shot('card'); await click('#solCardM');
-  ok(await p.evaluate(() => { const s = document.getElementById('msu'); return !!(s && !s.hidden); }), 'Round the cans opens the set-up list');
+  await shot('open');
+  ok(await p.evaluate(() => { const s = document.getElementById('msu'); return !!(s && !s.hidden); }), 'The race button opens the set-up list (one way in)');
+  ok(await p.evaluate(() => { const c = document.getElementById('solCard'); return !c || c.hidden; }), 'No old Start new race card');
   ok((await st()).open === 'line', 'The start line row opens first');
   ok(await p.evaluate(() => !document.getElementById('solStep') || document.getElementById('solStep').hidden), 'The old step box is not shown');
   const span = await p.evaluate(() => { const a = window.__fsXY(50.76, -1.33), c = window.__fsXY(50.79, -1.27); return [Math.round(c[0] - a[0]), Math.round(a[1] - c[1])]; });
@@ -28,6 +29,12 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   const MK = await p.evaluate(() => window.FSSolent.marks().map(m => ({ id: m.id, lat: m.lat, lon: m.lon })));
   const m = id => MK.find(q => q.id === id);
   const cb = [50.785, -1.305], pin = [50.785, -1.297];
+  // the back of the boat: every button at least 56 px (1 cm is 64 px here), the PING buttons about 2 cm
+  const sizes = await p.evaluate(() => { const bs = [...document.querySelectorAll('#msu button')].filter(b => b.getClientRects().length); return { min: Math.min(...bs.map(b => b.getBoundingClientRect().height)), big: [...document.querySelectorAll('#msu .msu-big')].map(b => Math.round(b.getBoundingClientRect().height)) }; });
+  ok(sizes.min >= 56, 'Every set-up button at least 56 px high', Math.round(sizes.min)); ok(sizes.big.length === 2 && sizes.big.every(h => h >= 100), 'PING COMMITTEE BOAT and PING PIN are big (about 2 cm)', sizes.big);
+  await tapLL(50.785, -1.305); ok(!(await p.evaluate(() => window.__fsLine())).boat, 'A stray tap on the chart does not move the line');
+  await click('#msu [data-a="more"][data-v="line"]');
+  await p.evaluate(() => window.__fsFitBox(50.781, 50.789, -1.310, -1.292, { t: 60, b: 844 * 0.42 })); await p.waitForTimeout(300);   // the crew pans to the line
   await tapLL(cb[0], cb[1]); let L = await p.evaluate(() => window.__fsLine());
   ok(!!L.boat && !L.pin, 'A tap sets the committee boat end', L.boat);
   ok((await st()).end === 'pin', 'Then it asks for the pin end');
@@ -40,7 +47,9 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   // as the crew would: zoom the chart to show the buoys of the course (two fingers), then tap each; where two buoys sit close, pick from the chooser
   await p.evaluate(([a, c, d]) => { const la = [a.lat, c.lat, d.lat], lo = [a.lon, c.lon, d.lon]; window.__fsFitBox(Math.min(...la) - 0.004, Math.max(...la) + 0.004, Math.min(...lo) - 0.006, Math.max(...lo) + 0.006, { t: 60, b: 844 * 0.54 }); }, [m('4M'), m('4V'), m('40')]); await p.waitForTimeout(400);
   let chooser = 0;
-  for (const id of ['4M', '4V', '40']) { const q = m(id); if (!q) { ok(false, 'buoy ' + id + ' known'); continue; } await tapLL(q.lat, q.lon); const pk = p.locator('#msu [data-a="pick"][data-v="' + id + '"]'); if (await pk.count()) { chooser++; await pk.click(); await p.waitForTimeout(300); } }
+  // the picker: Nearest and areas as big buttons; the course is still built by chart taps here (Stuart: tap a buoy, the blue line follows)
+  ok(await p.evaluate(() => document.querySelectorAll('#msu .msu-grid button').length >= 6), 'The buoy picker shows buoys as big buttons');
+  for (const id of ['4M', '4V', '40']) { const q = m(id); if (!q) { ok(false, 'buoy ' + id + ' known'); continue; } await tapLL(q.lat, q.lon); const pk = p.locator('#msu .msu-seg [data-a="pick"][data-v="' + id + '"]'); if (await pk.count()) { chooser++; await pk.click(); await p.waitForTimeout(300); } }
   console.log('chooser used', chooser, 'times');
   let bb = await B(); ok(JSON.stringify(bb.marks.map(x => x.code)) === '["4M","4V","40"]', 'Tapping 4M, 4V, 40 builds the course in order', bb.marks.map(x => x.code));
   ok(await p.evaluate(() => document.querySelectorAll('#msu .msu-list li').length) === 3, 'The list shows three buoys');
@@ -50,12 +59,12 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   ok(blue >= 3, 'The blue line joins 4V to 40 on the chart', blue);
   await click('#msu [data-a="ps"][data-v="1"]'); bb = await B(); ok(bb.marks[1].side === 'starboard', 'P changes 4V to Starboard');
   await click('#msu [data-a="undo"]'); bb = await B(); ok(bb.marks.length === 2, 'Undo last removes 40');
-  await click('#msu [data-a="cm"][data-v="codes"]'); await p.fill('#msuBoard', '40 P, 4Q S'); await click('#msu [data-a="board"][data-v="add"]'); bb = await B();
+  await click('#msu [data-a="more"][data-v="course"]'); await p.fill('#msuBoard', '40 P, 4Q S'); await click('#msu [data-a="board"][data-v="add"]'); bb = await B();
   ok(JSON.stringify(bb.marks.map(x => x.code + x.side[0])) === '["4Mp","4Vs","40p","4Qs"]', 'Typed codes add to the course', bb.marks.map(x => x.code + x.side[0]));
   await click('#msu [data-a="done"]'); s = await st(); ok(s.done.find(x => x[0] === 'course')[1] && s.open === 'finish', 'Done ticks the course and opens the finish');
   await click('#msu [data-a="done"]'); s = await st(); ok(s.open === 'wind', 'Finish at the start line, ticked; wind next');
   await p.fill('#msuTwd', '230'); await p.fill('#msuTws', '12'); await click('#msu [data-a="wind"]'); bb = await B(); ok(bb.wind && bb.wind.twd === 230, 'Wind typed');
-  await click('#msu [data-a="tm"][data-v="hand"]'); await p.fill('#msuTdS', '1.2'); await p.fill('#msuTdD', '248'); await click('#msu [data-a="tide"]'); bb = await B();
+  await click('#msu [data-a="more"][data-v="wind"]'); await click('#msu [data-a="tm"][data-v="hand"]'); await p.fill('#msuTdS', '1.2'); await p.fill('#msuTdD', '248'); await click('#msu [data-a="tide"]'); bb = await B();
   ok(bb.tide && bb.tide.mode === 'hand' && bb.tide.spd === 1.2 && bb.tide.dir === 248, 'Tide by hand: 1.2 kn to 248°T', bb.tide);
   ok(await p.evaluate(() => { const t = window.__fsTideHand && window.__fsTideHand(); return !!(t && t.on && Math.abs(t.spd - 1.2) < 0.01); }), 'The tide by hand reaches Route');
   await click('#msu [data-a="plan"][data-v="route"]'); bb = await B(); ok(bb.plan === 'route', 'Route it chosen');
@@ -63,7 +72,8 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   await click('#msu [data-a="plan"][data-v="list"]'); bb = await B(); ok(bb.plan === 'list', 'No routing chosen again');
   await click('#msu [data-a="done"]'); s = await st(); ok(s.open === 'gun', 'Gun next');
   const gt = await p.evaluate(() => { const d = new Date(Date.now() + 20 * 60000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); });
-  await p.fill('#msuGun', gt); await click('#msu [data-a="gun"]'); await click('#msu [data-a="seq"][data-v="5"]'); await click('#msu [data-a="done"]'); s = await st();
+  await click('#msu [data-a="gunin"][data-v="10"]'); const g1 = (await B()).startAt; await click('#msu [data-a="gunadd"][data-v="1"]'); const g2 = (await B()).startAt;
+  ok(g1 > Date.now() / 1000 + 540 && g2 - g1 === 60, 'Gun in 10 min, then +1 min', [Math.round(g1 - Date.now() / 1000), g2 - g1]); await click('#msu [data-a="seq"][data-v="5"]'); await click('#msu [data-a="done"]'); s = await st();
   ok(s.done.every(x => x[1]), 'All five rows ticked', s.done); await shot('all-done');
   ok(await p.evaluate(() => !!document.querySelector('#msu [data-a="race"]')), 'Show the race appears');
   await click('#msu [data-a="race"]'); await p.waitForTimeout(1500);
@@ -77,14 +87,36 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   ok(L.boat && Math.abs(L.boat[0] - 50.766733) < 1e-5 && L.pin, 'RYS line preset sets both ends', L);
   await click('#msu [data-a="lclear"]'); await click('#msu [data-a="lm"][data-v="ll"]'); await p.fill('#msuLat', '50 46.004 N'); await p.fill('#msuLon', '001 18.055 W'); await click('#msu [data-a="ll"]');
   L = await p.evaluate(() => window.__fsLine()); ok(L.boat && Math.abs(L.boat[0] - (50 + 46.004 / 60)) < 1e-5 && Math.abs(L.boat[1] + (1 + 18.055 / 60)) < 1e-5, 'Typed lat and long set the committee boat end', L.boat);
-  await click('#msu [data-a="lm"][data-v="buoy"]'); await p.fill('#msuCode', '4M'); await click('#msu [data-a="lcode"]'); L = await p.evaluate(() => window.__fsLine());
+  await click('#msu [data-a="lm"][data-v="buoy"]'); await click('#msu [data-a="end"][data-v="pin"]'); await click('#msu [data-a="area"][data-v="4"]'); await click('#msu [data-a="pick"][data-v="4M"]'); L = await p.evaluate(() => window.__fsLine());
   ok(L.pin && Math.abs(L.pin[0] - m('4M').lat) < 1e-6, 'A buoy code sets the pin end', L.pin);
   await click('#msu [data-a="done"]'); await click('#msu [data-a="type"][data-v="wl"]');
-  await p.fill('#msuCode', '4V'); await click('#msu [data-a="wcode"]'); await click('#msu [data-a="lstart"]'); bb = await B();
+  await click('#msu [data-a="area"][data-v="4"]'); await click('#msu [data-a="pick"][data-v="4V"]'); await click('#msu [data-a="lstart"]'); bb = await B();
   ok(bb.type === 'wl' && bb.wl.wkind === 'buoy' && bb.wl.wcode === '4V' && bb.wl.lkind === 'start', 'Windward-leeward: windward 4V by code, leeward the start line', bb.wl);
   await click('#msu [data-a="done"]'); s = await st(); ok(s.done.find(x => x[0] === 'course')[1], 'Windward-leeward course ticked');
   await shot('wl');
+  // bearing and length from the committee boat, square to the wind (wind 230: line 140°T)
+  await click('#msu .msu-row:nth-child(1) .msu-rh'); await click('#msu [data-a="lclear"]'); await click('#msu [data-a="lm"][data-v="brg"]'); await p.fill('#msuLLBrg, #msuLBrg', ''); await p.fill('#msuLLen', '400'); await click('#msu [data-a="brgset"]');
+  await tapLL(50.780, -1.300); L = await p.evaluate(() => window.__fsLine());
+  const lb = await p.evaluate(([a, b]) => { const k = Math.cos((a[0] + b[0]) / 2 * Math.PI / 180); const dy = (b[0] - a[0]) * 60 * 1852, dx = (b[1] - a[1]) * 60 * 1852 * k; return [Math.round(Math.hypot(dx, dy)), Math.round((Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360)]; }, [L.boat, L.pin]);
+  ok(L.boat && L.pin && Math.abs(lb[0] - 400) <= 2 && Math.abs(lb[1] - 140) <= 1, 'Bearing and length: pin laid 400 m on 140°T, square to a 230° wind', lb);
+  await click('#msu [data-a="kind"][data-v="tr"]'); ok(await p.evaluate(() => !!window.__fsLine().transit), 'Shore transit chosen');
+  ok(await p.evaluate(() => /Inshore end/.test(document.querySelector('#msu .msu-ends').textContent)), 'The ends are named Inshore end and Outer mark');
+  await click('#msu [data-a="kind"][data-v="cb"]');
+  // a race under way: the list says so, locks the course, and offers Edit, Start new race, Stop race
+  await p.evaluate(() => { const S = window.FSSolent; S.set({ shown: Date.now(), startAt: Math.round(Date.now() / 1000) - 120, ended: null }); window.FSMarkSetup.close(); S.start(); }); await p.waitForTimeout(600);
+  ok(await p.evaluate(() => /Race under way/.test(document.querySelector('#msu .msu-hd h2').textContent) && !!document.querySelector('#msu [data-a="newrace"]') && !!document.querySelector('#msu [data-a="stop"]') && !!document.querySelector('#msu [data-a="edit"]')), 'During a race: Race under way, with Edit course, Start new race, Stop race');
+  await shot('under-way');
+  const mk0 = (await B()).marks.length; const q4 = m('4M'); await tapLL(q4.lat, q4.lon); ok((await B()).marks.length === mk0, 'During a race a chart tap does not change the course');
+  await click('#msu [data-a="newrace"]'); s = await st(); bb = await B(); L = await p.evaluate(() => window.__fsLine());
+  ok(!bb.startAt && (bb.marks || []).length === 0 && L.boat && L.pin && /set-up/i.test(await p.evaluate(() => document.querySelector('#msu .msu-hd h2').textContent)), 'Start new race files it, keeps the line, clears the course and gun', { startAt: bb.startAt, marks: (bb.marks || []).length });
   await click('#msu [data-a="close"]'); ok(await p.evaluate(() => !window.FSMarkSetup.on() && !document.body.classList.contains('msu-on')), 'Close puts the set-up away');
+  // the tour, Level 1: every step points at something a finger could touch
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  await p.evaluate(() => window.FSTour.level(1)); await p.waitForTimeout(1500);
+  const seen = []; for (let i = 0; i < 12; i++) { const r = await p.evaluate(() => { const h = document.querySelector('.fst-hole'), c = document.querySelector('.fst-card'); if (!c || document.getElementById('fsTour').hidden) return null; const b = h.getBoundingClientRect(); const x = b.left + b.width / 2, y = b.top + b.height / 2; const rt = document.getElementById('fsTour'); rt.style.display = 'none'; const el = document.elementFromPoint(x, y); rt.style.display = ''; return { t: (c.querySelector('h4') || {}).textContent, w: Math.round(b.width), under: el ? (el.id || el.className || el.tagName).toString().slice(0, 40) : 'none', next: !!c.querySelector('[data-fst="next"]') }; }); if (!r) break; seen.push(r); if (!r.next) break; await shot('tour-' + i); await p.click('.fst-card [data-fst="next"]'); await p.waitForTimeout(1200); }
+  console.log('tour steps:', JSON.stringify(seen.map(x => x.t + ' @ ' + x.under)));
+  ok(seen.length >= 7 && seen.filter(x => !/^That/.test(x.t)).every(x => x.w > 0 && x.under !== 'none' && !/solCard/.test(x.under)), 'Tour Level 1: every step lights something on top (no covered buttons)', seen.length);
+  await p.evaluate(() => window.FSTour.end());
   const lat = await p.evaluate(() => window.__tap.lat); const sorted = lat.slice().sort((a, b) => a - b);
   console.log('tap to screen change (ms, processor 4x slower):', JSON.stringify(lat), 'median', sorted[Math.floor(sorted.length / 2)], 'worst', sorted[sorted.length - 1]);
   ok(errs.length === 0, 'No script errors', errs.slice(0, 3));
