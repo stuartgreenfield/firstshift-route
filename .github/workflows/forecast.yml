@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        area: [cervantes, fastnet, channel-area, northsea-area, irishsea-area, biscay-area, celtic-area]
+        area: [cervantes, fastnet, channel-area, northsea-area, irishsea-area, biscay-area, celtic-area, solent-area]   # solent-area: Mark's own small pack (Stuart 18 Nov 19:30)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

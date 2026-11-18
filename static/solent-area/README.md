@@ -1,0 +1,3 @@
+Mark's own forecast area (Stuart 18 Nov 2026 19:30): "Solent essentials so a radius of 15 miles around the centre of the Isle of Wight (shoe) a little. Map in help should cover Poole harbour nab tower and old harry rocks".
+Box 50.45 to 50.88 N, 2.05 to 0.90 W, 72 hours. Made with scripts/make_static.py from a region entry (not kept in courses/rorc.json, so Route does not list it as an area):
+{"id":"solent-area","name":"Solent and approaches (Mark)","region":{"s":50.45,"n":50.88,"w":-2.05,"e":-0.90},"hours":72,"start":{"name":"Start, RYS line, Cowes","lat":50.7769,"lon":-1.3051},"marks":[{"name":"Needles Fairway","lat":50.63733,"lon":-1.64967,"side":"port"}],"finish":{"name":"Finish, Cowes","lat":50.7769,"lon":-1.3051,"radius_nm":0.4}}
