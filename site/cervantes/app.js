@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.61';
+  var VERSION = 'FirstShift Route v0.12.62';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -180,7 +180,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
   /* Mark's Solent pack (18 Nov 19:30); until the forecast job has built it, or if it ever fails, Mark uses the whole Channel as before */
-  fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { if (!r.ok && window.FS_MARK && /solent-area/.test(window.FS_PACK)) { window.FS_PACK = '../channel-area/pack/'; return fetch(window.FS_PACK + 'pack.json', { cache: 'no-store' }); } return r; }).then(function (r) { return r.json(); }).then(function (m) {
+  fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.text().then(function (t) { var j = null; try { j = r.ok ? JSON.parse(t) : null; } catch (e) { j = null; } if (j) return j; if (window.FS_MARK && /solent-area/.test(window.FS_PACK)) { window.FS_PACK = '../channel-area/pack/'; return fetch(window.FS_PACK + 'pack.json', { cache: 'no-store' }).then(function (r2) { return r2.json(); }); } return JSON.parse(t); }); }).then(function (m) {   /* Stuart's iPhone 18 Nov 21:01: the site answers a missing Solent pack with a web page, not a 404, so the test is whether it reads as a pack */
     meta = m; T0 = m.t0; if (window.FS_MARK) meta.fleet = [];   /* Mark: no RORC or JOG entry lists (Stuart 17 Nov 06:38: offshore fleet out) */
     if (S.splashDone) S.splashDone(); setup(); loadRaces(); [loadChartExtras, xInit, adjInit, helpInit, racesInit, mobInit, aisInit, spdInit, mfInit, wizInit, crewInit, shareInit, askInit, bcInit].forEach(function (f) { try { f(); } catch (e) { if (window.console) console.error('Route: ' + (f.name || 'a part') + ' did not start: ' + e.message); } });   /* 17 Nov: a fault in one extra must never stop the forecasts loading */
     /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
@@ -319,7 +319,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.61 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.62 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
