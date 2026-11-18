@@ -1006,7 +1006,7 @@
   if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); toast('The gun: the racing window is open. Tap MARK or ROUTE in it to steer to the next mark or along the route.'); } catch (e) {} }, 1000);
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   window.__fsTapHook = tapHook;
-  /* M70 (Stuart 18 Nov 05:58: "a button on mark and mark+ easy to see that says stop race and a button that says show start sequence
+  /* M71 (Stuart 18 Nov 05:58: "a button on mark and mark+ easy to see that says stop race and a button that says show start sequence
      screen ... work out a logic tree to be sure exactly where they should go"). Logic tree (docs/MARK-RACE-BUTTONS.md):
        no race set, or the race stopped .......................... neither button
        gun set, more than a minute to go, or postponed ........... START SEQUENCE (unless the start screen is already up) and STOP RACE

@@ -1,4 +1,4 @@
-/* M70 (Stuart 18 Nov 05:58): STOP RACE and START SEQUENCE buttons in Mark and Mark+, by the logic tree in docs/MARK-RACE-BUTTONS.md */
+/* M71 (Stuart 18 Nov 05:58): STOP RACE and START SEQUENCE buttons in Mark and Mark+, by the logic tree in docs/MARK-RACE-BUTTONS.md */
 const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
 (async () => { const b = await chromium.launch(); let pass = 0, fail = 0; const ok = (c, m, x) => { console.log((c ? 'PASS ' : 'FAIL ') + m + (x !== undefined ? ' | ' + JSON.stringify(x) : '')); c ? pass++ : fail++; };
   for (const base of [BASE, 'http://localhost:8778']) {
