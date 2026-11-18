@@ -36,7 +36,7 @@
   window.FSTourRoute = ROUTE;
   function tryText() { return window.FSTourTry || '<p><b>Press Play</b> under the chart and watch the boat sail the route, with the wind, the tide and the figures at every moment. Nothing is sent anywhere and nothing can go wrong. Drag the slider to any moment of the race.</p>'; }
 
-  var css = '.fst{position:fixed;inset:0;z-index:300;pointer-events:auto}.fst[hidden]{display:none}' +
+  var css = '.fst{position:fixed;inset:0;z-index:300;pointer-events:none}.fst[hidden]{display:none}.fst-card{pointer-events:auto}.fst-blk{position:fixed;pointer-events:auto;background:transparent}' +
     '.fst-hole{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(2,12,24,.62);outline:3px solid #6FA9E0;outline-offset:2px;transition:all .25s ease;pointer-events:none}' +
     '.fst-hole.test{outline-color:#F2B233;box-shadow:0 0 0 9999px rgba(2,12,24,.62),0 0 0 8px rgba(242,178,51,.35)}' +
     '.fst-card{position:fixed;width:min(340px,calc(100vw - 24px));background:var(--panel,#fff);color:var(--ink,#13202A);border-radius:14px;padding:14px 16px 12px;box-shadow:0 10px 32px rgba(0,0,0,.35);font:400 15px/1.45 var(--f-body,system-ui,sans-serif)}' +
@@ -57,11 +57,11 @@
   function build() {
     if (T.root) return T.root;
     var r = document.createElement('div'); r.className = 'fst'; r.id = 'fsTour'; r.hidden = true; r.setAttribute('role', 'dialog'); r.setAttribute('aria-label', 'Tour');
-    r.innerHTML = '<div class="fst-hole"></div><div class="fst-card" role="document"></div>';
+    r.innerHTML = '<div class="fst-blk"></div><div class="fst-blk"></div><div class="fst-blk"></div><div class="fst-blk"></div><div class="fst-hole"></div><div class="fst-card" role="document"></div>';
     document.body.appendChild(r); T.root = r;
     r.addEventListener('click', function (e) {
       var b = e.target.closest('[data-fst]'); if (!b) return; var a = b.dataset.fst;
-      if (a === 'next') go(T.i + 1, 1); else if (a === 'back') go(T.i - 1, -1); else if (a === 'end') end(); else if (a === 'more') more(); else if (a.indexOf('lv') === 0) startLevel(+a.slice(2));
+      if (a === 'next') go(T.i + 1, 1); else if (a === 'back') go(T.i - 1, -1); else if (a === 'end') end(); else if (a === 'more') more(); else if (a === 'snd' && window.FSTourSound) { var on = FSTourSound.toggle(); b.textContent = on ? 'Voice off' : 'Voice on'; b.setAttribute('aria-pressed', on ? 'true' : 'false'); } else if (a.indexOf('lv') === 0) startLevel(+a.slice(2));
     });
     addEventListener('resize', function () { if (T.on && !T.paused) place(); });
     document.addEventListener('keydown', function (e) { if (!T.on || T.paused) return; if (e.key === 'Escape') end(); else if (e.key === 'ArrowRight') go(T.i + 1, 1); else if (e.key === 'ArrowLeft') go(T.i - 1, -1); });
@@ -76,21 +76,35 @@
     var s = S[i]; try { if (s.before) s.before(); } catch (e) {}
     setTimeout(function () { if (target(s)) { T.i = i; place(); } else go(i + dir, dir); }, s.wait || (s.before ? 350 : 30));   /* wait: a step whose button takes longer to appear (Mark's practice race) */
   }
+  /* Stuart's iPhone 18 Nov 19:51 ("very difficult to control and the windows jump everywhere"): the highlighted button can now be
+     tapped (the dim area round it still blocks), and the highlight and the card follow the button if it moves, instead of
+     pointing at where it used to be */
+  function blocks(l, t, w, h) { var B = T.root.querySelectorAll('.fst-blk'), W = innerWidth, H = innerHeight, r = l + w, b = t + h;
+    var set = function (e, x, y, ww, hh) { e.style.left = x + 'px'; e.style.top = y + 'px'; e.style.width = Math.max(0, ww) + 'px'; e.style.height = Math.max(0, hh) + 'px'; };
+    set(B[0], 0, 0, W, t); set(B[1], 0, b, W, H - b); set(B[2], 0, t, l, h); set(B[3], r, t, W - r, h); }
+  function holeAt(b) { var pad = 6, hole = T.root.querySelector('.fst-hole'), l = b.left - pad, t = b.top - pad, w = b.width + pad * 2, h = b.height + pad * 2;
+    hole.style.left = l + 'px'; hole.style.top = t + 'px'; hole.style.width = w + 'px'; hole.style.height = h + 'px'; blocks(l, t, w, h); T.at = [b.left, b.top, b.width, b.height]; }
+  function safeTop() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('padding-top')) || 0; }
+  function cardAt(b) { var card = T.root.querySelector('.fst-card'), cw = card.offsetWidth, ch = card.offsetHeight, gap = 14, x, y;
+    if (innerWidth < 600) { var top0 = 12 + safeTop(), low = innerHeight - ch - 12, below = innerHeight - b.bottom, above = b.top;   /* the side with room, so the card never covers what it points at */
+      y = below >= ch + 24 ? low : above >= ch + 24 + safeTop() ? top0 : (below > above ? low : top0); x = (innerWidth - cw) / 2; }
+    else { x = Math.min(Math.max(12, b.left + b.width / 2 - cw / 2), innerWidth - cw - 12);
+      if (b.bottom + gap + ch < innerHeight - 8) y = b.bottom + gap; else if (b.top - gap - ch > 8) y = b.top - gap - ch; else { y = Math.max(8, Math.min(innerHeight - ch - 8, b.top)); x = b.right + gap + cw < innerWidth ? b.right + gap : Math.max(12, b.left - gap - cw); } }
+    card.style.left = x + 'px'; card.style.top = y + 'px'; }
+  function centre() { var card = T.root.querySelector('.fst-card'); blocks(innerWidth / 2, innerHeight / 2, 0, 0); T.at = null; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; }
+  setInterval(function () { if (!T.on || T.paused || !T.at || !T.lv) return; var s = steps()[T.i]; if (!s) return; var el = target(s); if (!el) return; var b = el.getBoundingClientRect();
+    if (Math.abs(b.left - T.at[0]) + Math.abs(b.top - T.at[1]) + Math.abs(b.width - T.at[2]) + Math.abs(b.height - T.at[3]) > 4) { holeAt(b); cardAt(b); } }, 400);
   function place() {
     var s = steps()[T.i]; if (!s) return; var el = target(s), r = T.root, hole = r.querySelector('.fst-hole'), card = r.querySelector('.fst-card');
     if (!el) { go(T.i + 1, 1); return; }
     try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
-    var b = el.getBoundingClientRect(), pad = 6;
-    hole.style.left = (b.left - pad) + 'px'; hole.style.top = (b.top - pad) + 'px'; hole.style.width = (b.width + pad * 2) + 'px'; hole.style.height = (b.height + pad * 2) + 'px';
+    var b = el.getBoundingClientRect(); holeAt(b);
     hole.classList.toggle('test', !!s.test); card.classList.toggle('test', !!s.test);
     T.shown = (T.shown || 0) + 1;
     var n = steps().length, last = T.i === n - 1;
     card.innerHTML = '<div class="fst-n">' + (T.lv.name ? 'Level ' + T.lv.n + ': ' + T.lv.name + ' · ' : '') + (T.i + 1) + ' of ' + n + '</div><h4>' + s.t + (s.test ? '<span class="fst-tag">Test mode</span>' : '') + '</h4><p>' + s.x + '</p>' +
-      '<div class="fst-b">' + (T.i ? '<button class="btn" data-fst="back">Back</button>' : '') + (s.help ? '<button class="btn" data-fst="more">More</button>' : '') + '<button class="btn primary" data-fst="next">' + (last ? 'Finish' : 'Next') + '</button><button class="fst-end" data-fst="end">End tour</button></div>';
-    var cw = card.offsetWidth, ch = card.offsetHeight, gap = 14, x = Math.min(Math.max(12, b.left + b.width / 2 - cw / 2), innerWidth - cw - 12), y;
-    if (innerWidth < 600) { y = b.top > innerHeight / 2 ? 12 + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('padding-top')) || 0) : innerHeight - ch - 12; x = (innerWidth - cw) / 2; }
-    else if (b.bottom + gap + ch < innerHeight - 8) y = b.bottom + gap; else if (b.top - gap - ch > 8) y = b.top - gap - ch; else { y = Math.max(8, Math.min(innerHeight - ch - 8, b.top)); x = b.right + gap + cw < innerWidth ? b.right + gap : Math.max(12, b.left - gap - cw); }
-    card.style.left = x + 'px'; card.style.top = y + 'px';
+      '<div class="fst-b">' + (T.i ? '<button class="btn" data-fst="back">Back</button>' : '') + (s.help ? '<button class="btn" data-fst="more">More</button>' : '') + (T.lv.voice && window.FSTourSound ? '<button class="btn" data-fst="snd" aria-pressed="' + (FSTourSound.on() ? 'true' : 'false') + '">' + (FSTourSound.on() ? 'Voice off' : 'Voice on') + '</button>' : '') + '<button class="btn primary" data-fst="next">' + (last ? 'Finish' : 'Next') + '</button><button class="fst-end" data-fst="end">End tour</button></div>';
+    cardAt(b);
     var nb = card.querySelector('[data-fst="next"]'); if (nb) try { nb.focus({ preventScroll: true }); } catch (e) {}
   }
   function chooser() {
@@ -99,7 +113,7 @@
     var hole = T.root.querySelector('.fst-hole'), card = T.root.querySelector('.fst-card');
     hole.style.width = hole.style.height = '0px'; hole.style.left = innerWidth / 2 + 'px'; hole.style.top = innerHeight / 2 + 'px'; hole.classList.remove('test'); card.classList.remove('test');
     card.innerHTML = '<h4>Show me round</h4><p>Choose where to start. Each level takes a couple of minutes.</p><div class="fst-lv">' + L.map(function (l) { return '<button data-fst="lv' + l.n + '"><b>Level ' + l.n + ': ' + l.name + '</b><span>' + (l.note || '') + '</span></button>'; }).join('') + '</div><div class="fst-b"><button class="fst-end" data-fst="end">Not now</button></div>';
-    card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
+    centre();
   }
   function startLevel(n) { T.lv = levels().filter(function (l) { return l.n === n; })[0] || levels()[0]; T.i = 0; T.on = true; T.paused = false; T.shown = 0; T.retried = false; T.waits = 0; build().hidden = false; prep();   /* Route+: leave Clear screen first, or every button is hidden (Stuart 14 Nov 18:11) */ try { if (T.lv.before) T.lv.before(); } catch (e) {} T.i = -1; go(0, 1); }
   function end() { T.on = false; T.paused = false; if (T.root) T.root.hidden = true; try { if (T.lv && T.lv.after) T.lv.after(); } catch (e) {} }
@@ -109,11 +123,11 @@
     hole.style.width = hole.style.height = '0px'; hole.classList.remove('test'); card.classList.remove('test');
     /* F7 (Stuart 15 Nov: "Nothing to point at" on first opening Route): on a first opening the routes are still being worked out and the
        buttons are not all there yet. Wait for the first routes (up to a minute), saying so, then try three times before giving up. */
-    if (!T.shown && window.__fsPlan && !window.__fsPlan() && (T.waits || 0) < 40) { T.waits = (T.waits || 0) + 1; card.innerHTML = '<h4>Getting ready</h4><p>Route is working out the first routes. The tour starts as soon as they are on the chart.</p>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; setTimeout(function () { if (T.on) { T.i = -1; go(0, 1); } }, 1500); return; }
+    if (!T.shown && window.__fsPlan && !window.__fsPlan() && (T.waits || 0) < 40) { T.waits = (T.waits || 0) + 1; card.innerHTML = '<h4>Getting ready</h4><p>Route is working out the first routes. The tour starts as soon as they are on the chart.</p>'; centre(); setTimeout(function () { if (T.on) { T.i = -1; go(0, 1); } }, 1500); return; }
     if (!T.shown && (T.retried || 0) < 3) { T.retried = (T.retried || 0) + 1; prep(); setTimeout(function () { T.i = -1; go(0, 1); }, 700 + 800 * T.retried); return; }   /* a slow phone may still be setting up its screen: bring the menus back and try once more */
-    if (!T.shown) { card.innerHTML = '<h4>Nothing to point at</h4><p>The buttons this part of the tour shows are hidden on this screen just now. Close any open panels, or tap MENU to bring the menus back, then try again.</p><div class="fst-b"><button class="btn primary" data-fst="lv' + T.lv.n + '">Try again</button><button class="btn" data-fst="end">Done</button></div>'; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; return; }
+    if (!T.shown) { card.innerHTML = '<h4>Nothing to point at</h4><p>The buttons this part of the tour shows are hidden on this screen just now. Close any open panels, or tap MENU to bring the menus back, then try again.</p><div class="fst-b"><button class="btn primary" data-fst="lv' + T.lv.n + '">Try again</button><button class="btn" data-fst="end">Done</button></div>'; centre(); return; }
     card.innerHTML = '<h4>That’s the tour</h4><p>' + (nx ? 'Level ' + nx.n + ', ' + nx.name.toLowerCase() + ', is next when you are ready.' : 'Try it safely first: everything is in Help, and you can take the tour again from the top of Help.') + '</p><div class="fst-b">' + (nx ? '<button class="btn primary" data-fst="lv' + nx.n + '">Level ' + nx.n + '</button>' : '') + '<button class="btn' + (nx ? '' : ' primary') + '" data-fst="end">Done</button></div>';
-    card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px';
+    centre();
   }
   /* More: Help opens at the matching topic; closing Help brings the tour back at the same step */
   function helpTopic(key) {
@@ -124,6 +138,7 @@
   function more() {
     var s = steps()[T.i]; if (!s || !s.help) return;
     T.paused = true; T.root.hidden = true;
+    try { if (window.FSTourSound && T.lv.voice) FSTourSound.stop(); } catch (e) {}
     if (s.more) { try { s.more(); } catch (e) {} }
     else { var hb = $('helpBtn'); if (hb) hb.click(); setTimeout(function () { var d = helpTopic(s.help); if (d) { d.scrollIntoView({ block: 'start' }); d.classList.remove('fst-flash'); void d.offsetWidth; d.classList.add('fst-flash'); } }, 250); }
     var w = setInterval(function () { var open = s.moreOpen ? s.moreOpen() : $('help') && !$('help').hidden; if (!open) { clearInterval(w); if (T.on && T.paused) { T.paused = false; T.root.hidden = false; place(); } } }, 400);

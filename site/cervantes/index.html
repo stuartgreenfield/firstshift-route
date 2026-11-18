@@ -43,7 +43,7 @@ if (window.FS_MARK) { document.documentElement.classList.add('fssolent', 'fsmark
   --route:#FF4FB4; --onroute:#08131C; --wind:#8DB8DC; --tide:#55D1AE; --ghost:#8EA2AF; --good:#5FC488; --warn:#F0A43A;
   --out:#091620; --m1:#5CB8E0; --m2:#FF6F7F; --m3:#F2B861; --m4:#A98BD6; --m5:#6CCB8E; --m6:#4FD1D9; --m7:#E8C547; --m8:#E07BC8; color-scheme:dark}
 /* Night on deck: red only, low brightness, to keep night vision. Declared last so it wins over day and dark. */
-:root[data-night]{filter:url(#fsNightRed)}   /* F46: the whole view red at night, see nightRedFilter() in app.js */
+:root[data-night]:not(.fsnightov){filter:url(#fsNightRed)}#fsNightOv{display:none;position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:#ff0000;mix-blend-mode:multiply}:root[data-night] #fsNightOv{display:block}   /* F46: the whole view red at night, see nightRedFilter() in app.js */
 :root[data-night]{
   --brand:#E0322A; --brandnavy:#E0322A; --bg:#000000; --panel:#0A0000; --glass:rgba(10,0,0,.94); --ink:#E0322A; --muted:#8A1E18; --line:#3A0A08; --soft:#160302;
   --sea:#000000; --sea2:#0E0202; --land:#2A0806; --landedge:#5A120E; --shoal:#3C0604; --shoaledge:#B4231B;
@@ -684,7 +684,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.60</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.61</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -915,6 +915,7 @@ A4, 125, 180, 18, 60</textarea>
 <script src="astro.js"></script>
 <script src="tidegate.js"></script>
 <script src="markhelp.js"></script>
+<script src="marksetup.js"></script>
 <script src="startcoach.js"></script>
 <script src="setorder.js"></script>
 <script src="saver.js"></script>

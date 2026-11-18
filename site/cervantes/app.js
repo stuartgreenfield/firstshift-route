@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.60';
+  var VERSION = 'FirstShift Route v0.12.61';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -37,6 +37,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (document.getElementById('fsNightRedSvg')) return;
     var d = document.createElement('div'); d.innerHTML = '<svg id="fsNightRedSvg" width="0" height="0" style="position:absolute;width:0;height:0" aria-hidden="true"><filter id="fsNightRed" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.45 0.6 0.2 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/></filter></svg>';
     (document.body || document.documentElement).appendChild(d.firstChild);
+    /* Safari and every iPhone browser (WebKit) do not apply an SVG filter to the page (Stuart's iPhone, 18 Nov 19:44: "Red view still has
+       colours"): there a red sheet over everything, multiplied, leaves only red light; it takes no taps */
+    var ua = navigator.userAgent || '', webkit = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) || (/Safari\//.test(ua) && !/Chrome|Chromium|Edg|OPR|Android/.test(ua));
+    if (webkit) { document.documentElement.classList.add('fsnightov'); var ov = document.createElement('div'); ov.id = 'fsNightOv'; ov.setAttribute('aria-hidden', 'true'); document.body.appendChild(ov); }
   }
   function setNight(on) { setMode(on ? 'night' : dayMode); }
 
@@ -315,7 +319,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.60 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.61 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1838,7 +1842,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsRedraw = function () { draw(); };
   window.__fsOpenTab = function (t) { try { openTab(t); } catch (e) {} };   /* Mark: its tabs live in Route's panel (17 Nov 06:05) */
   window.__fsFit = function () { try { fit(); draw(); } catch (e) {} };
-  window.__fsFitBox = function (s, n, w, e) { try { var pw = Math.max(e - w, 0.004), ph = Math.max(n - s, 0.003); view.s = Math.max(20, Math.min(W / (pw * 1.6 * K), (H - 120) / (ph * 1.6))); view.lo = (w + e) / 2; view.la = (s + n) / 2; draw(); } catch (x) {} };   /* Mark: zoom into the start line (Stuart 17 Nov 05:49) */   /* Mark: the chart fits the course */
+  window.__fsFitBox = function (s, n, w, e, gap) { try { var pw = Math.max(e - w, 0.004), ph = Math.max(n - s, 0.003), mt = 0, hh = H - 120, gy = H / 2; if (gap && gap.b - gap.t > 60) { var mc = $('map'); mt = mc ? mc.getBoundingClientRect().top : 0; hh = gap.b - gap.t - 16; gy = (gap.t + gap.b) / 2 - mt; } view.s = Math.max(20, Math.min(W / (pw * 1.6 * K), hh / (ph * 1.6))); view.lo = (w + e) / 2; view.la = (s + n) / 2 + (gy - H / 2) / view.s; draw(); } catch (x) {} };   /* gap: fit into a strip of the screen (the see-through start screen, 18 Nov) */   /* Mark: zoom into the start line (Stuart 17 Nov 05:49) */   /* Mark: the chart fits the course */
   window.__navFollow = function (on) { if (on == null) return follow; followSet(!!on); };
   window.__navScale = function (nm) { view.s = Math.max(20, Math.min(ZMAX(), H * 0.22 / (nm / 60))); followSet(true); draw(); };   /* the boat and the next mark on screen */
   window.__navPanelMin = function () { if (!wide()) closePanel(); };
@@ -2200,6 +2204,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function lineGet() { try { var l = JSON.parse(store(lineKey()) || 'null'); if ((!l || (!l.boat && !l.pin)) && S.inshore) l = JSON.parse(store('fs-line-solent') || 'null'); return l || {}; } catch (e) { return {}; } }   /* Solent (18:40): the start line is kept from one course to the next */
   window.__fsSetLine = function (end, la, lo) { var l = lineGet(); if (la == null) delete l[end]; else l[end] = [+la.toFixed(6), +lo.toFixed(6), Date.now(), 0]; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); try { if (LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {} draw(); };
   window.__fsLine = function () { return lineGet(); };
+  window.__fsPing = function (end) { linePing(end === 'pin' ? 'pin' : 'boat'); };   /* for the start screen's own ping buttons */
   window.__fsLineKind = function (transit) { var l = lineGet(); if (transit) l.transit = true; else delete l.transit; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); draw(); };   /* Stuart 21:50: a shore transit line (ping on the transit close inshore, then at the outer distance mark), as the Startline tool */
   /* J3 (Stuart 15 Nov): the ping is where the bow is: the GPS position moved forward by the bow offset along the heading (the boat's
      compass in Route+, else the course over the ground when moving) */
@@ -2868,7 +2873,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     return null;
   }
   function oriUpdate() {
-    var t = ORI.mode === 'north' ? null : oriTarget();
+    var t = ORI.mode === 'north' || window.__fsNorthHold ? null : oriTarget();   /* the see-through start screen holds the chart north up (Stuart 18 Nov 19:44) */
     if (t == null) { ORI.ang = 0; ORI.sm = null; } else { if (ORI.sm == null) ORI.sm = t; else { var d = ((t - ORI.sm + 540) % 360) - 180; ORI.sm = (ORI.sm + d * 0.35 + 360) % 360; } ORI.ang = ORI.sm; }
     var bp = LIVE.on && LIVE.fix ? { la: LIVE.fix.la, lo: LIVE.fix.lo } : (S.sel && S.sel.r ? posAt(tsOf(S.sel.r.path), S.sel.r.path, S.t) : null);
     if (ORI.ang && follow && bp) { ORI.cx = X(bp.lo); ORI.cy = Y(bp.la); } else { ORI.cx = W / 2; ORI.cy = H / 2; }
