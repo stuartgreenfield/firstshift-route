@@ -47,7 +47,7 @@
   function img(src, alt, cls) { return '<img class="' + cls + '" loading="lazy" alt="' + esc(alt) + '" src="' + esc(src) + '" onerror="this.hidden=true">'; }
   function css() {
     if ($('hfCss')) return; var s = document.createElement('style'); s.id = 'hfCss';
-    s.textContent = '#help.hfon .sbody>:not(#hfView):not(.askcl){display:none!important}#help.hfon .askcl{margin-top:4px}#hfView{display:flex;flex-direction:column;gap:12px;padding-bottom:16px}' +
+    s.textContent = '#help.hfon .sbody>:not(#hfView):not(.askcl){display:none!important}#help.hfon .askcl{margin-top:4px}#hfView{display:flex;flex-direction:column;gap:12px;padding-bottom:16px}.hfask{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.hfask p{flex-basis:100%;margin:0}.hfhere>b{display:block;margin-bottom:4px}' +
       '.hfsearch{display:flex;gap:8px}.hfsearch input{flex:1;min-width:0;min-height:44px;font-size:16px;padding:0 12px;border-radius:10px;border:1px solid var(--line,#ccc);background:var(--bg,#fff);color:var(--ink,#000)}' +
       '.hfcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.hfcard{display:flex;flex-direction:column;text-align:left;padding:0;border:1px solid var(--line,#ccc);border-radius:12px;overflow:hidden;background:var(--panel,#fff);color:var(--ink,#000);cursor:pointer;font:inherit}' +
       '.hfcard .hfth{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top;display:block;background:var(--line,#ccc)}.hfcard b{display:block;padding:8px 10px 0;font-size:15px}.hfcard span{display:block;padding:2px 10px 10px;font-size:12px;color:var(--muted,#667)}' +
@@ -76,11 +76,57 @@
     });
     function speak() { if (!window.speechSynthesis) return stop(); var u = new SpeechSynthesisUtterance(words); u.lang = 'en-GB'; var v = femaleVoice(); if (v) u.voice = v; u.onend = function () { if (playing === tp.s) stop(); }; speechSynthesis.speak(u); }
   }
+
+  /* F50 (Stuart 18 Nov 08:00; answers 12:49 and 14:09): a smarter Help search, no download. Words are matched by meaning as sailors say them
+     (a hand-made synonym list, Stuart to check: docs/HELP-SYNONYMS.md), by their start ("tac" finds tack), with one or two letters wrong
+     ("polr" finds polar), and with plurals and -ing endings folded; titles count most. Help for this screen comes first on the home view.
+     With nothing found: Ask Claude, then a WhatsApp message to FirstShift (Stuart's number, usually within 24 hours), then email. */
+  var SYN = [['kite', 'spinnaker', 'spin', 'asymmetric', 'a2', 'a3', 'code zero'], ['gybe', 'jibe'], ['tack', 'go about'], ['sail', 'sails', 'headsail', 'jib', 'genoa'],
+    ['reef', 'reefing'], ['polar', 'polars', 'boat speed table', 'target'], ['tide', 'tidal', 'stream', 'current'], ['wind', 'breeze'], ['forecast', 'grib', 'model', 'models', 'weather'],
+    ['mob', 'man overboard', 'overboard'], ['start', 'starting', 'gun', 'sequence', 'countdown'], ['line', 'start line', 'committee boat', 'pin'], ['ping', 'pinging'],
+    ['time to burn', 'burn'], ['bias', 'favoured end', 'favored'], ['layline', 'laylines'], ['mark', 'buoy', 'rounding', 'waypoint'], ['vmg', 'velocity made good'],
+    ['heading', 'compass', 'hdg'], ['cog', 'course over ground'], ['sog', 'speed over ground'], ['bsp', 'boat speed', 'log', 'speedo'], ['depth', 'shallow', 'shoal', 'echo sounder', 'dpt'],
+    ['ais', 'ships', 'ship', 'collision', 'cpa', 'traffic'], ['tss', 'traffic separation', 'lanes'], ['gps', 'position', 'fix'], ['dead reckoning', 'dr', 'gps lost'],
+    ['nmea', 'instruments', 'boat link', 'gateway', 'wifi', 'wi-fi', 'router'], ['night', 'red', 'dark'], ['offline', 'no signal', 'no internet'], ['battery', 'saver', 'power'],
+    ['crew', 'boat code', 'sync', 'share'], ['follow', 'family', 'friends', 'tracker'], ['track', 'tracks', 'trail'], ['plotter', 'chart', 'map'], ['zoom', 'pinch'],
+    ['course', 'route', 'routing', 'router'], ['plan', 'brief', 'briefing'], ['fleet', 'rivals', 'competitors', 'tcc', 'irc', 'handicap', 'rating'], ['finish', 'finishing'],
+    ['recall', 'general recall', 'over early', 'ocs', 'course side'], ['flag', 'flags', 'p flag', 'black flag', 'u flag', 'z flag'], ['settings', 'options', 'set up', 'setup'],
+    ['help', 'how', 'guide', 'tutorial', 'tour'], ['ask', 'question', 'support', 'contact'], ['log', 'logbook', 'log book'], ['export', 'save', 'download', 'gpx', 'pdf'],
+    ['tide gate', 'gate', 'headland'], ['header', 'lift', 'shift', 'wind shift'], ['heel', 'heeling'], ['practice', 'test mode', 'emma', 'simulator', 'demo']];
+  function norm(w) { w = String(w || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9+ -]/g, ' ').trim(); return w; }
+  function stem(w) { if (w.length > 4 && /ing$/.test(w)) return w.slice(0, -3); if (w.length > 4 && /ies$/.test(w)) return w.slice(0, -3) + 'y'; if (w.length > 3 && /es$/.test(w) && !/[aeiou]es$/.test(w)) return w.slice(0, -2); if (w.length > 3 && /s$/.test(w) && !/ss$/.test(w)) return w.slice(0, -1); return w; }
+  function lev(a, b, max) { if (Math.abs(a.length - b.length) > max) return max + 1; var p = []; for (var j = 0; j <= b.length; j++) p[j] = j; for (var i = 1; i <= a.length; i++) { var c = [i], lo = i; for (var k = 1; k <= b.length; k++) { c[k] = Math.min(p[k] + 1, c[k - 1] + 1, p[k - 1] + (a[i - 1] === b[k - 1] ? 0 : 1)); if (c[k] < lo) lo = c[k]; } if (lo > max) return max + 1; p = c; } return p[b.length]; }
+  function alts(q) { var n = norm(q), out = [n]; SYN.forEach(function (g) { if (g.indexOf(n) >= 0 || g.indexOf(stem(n)) >= 0) g.forEach(function (x) { if (out.indexOf(x) < 0) out.push(x); }); }); return out; }
+  function tokens(s) { return norm(s).split(/\s+/).filter(Boolean).map(stem); }
+  function termScore(tp, term) {   /* how well one query term (with its synonyms) matches a topic: title counts three times the text */
+    var best = 0, T = tp.__tt || (tp.__tt = tokens(tp.t)), X = tp.__tx || (tp.__tx = tokens(tp.text)), tl = tp.__tl || (tp.__tl = norm(tp.t)), xl = tp.__xl || (tp.__xl = norm(tp.text));
+    alts(term).forEach(function (a, ai) { var syn = ai > 0 ? 0.8 : 1;
+      if (a.indexOf(' ') > 0) { if (tl.indexOf(a) >= 0) best = Math.max(best, 3 * syn); else if (xl.indexOf(a) >= 0) best = Math.max(best, 1 * syn); return; }
+      var s = stem(a), max = s.length >= 7 ? 2 : s.length >= 4 ? 1 : 0, m = function (list) { var v = 0; for (var i = 0; i < list.length; i++) { var w = list[i]; if (w === s) return 1; if (ai === 0 && s.length >= 3 && w.indexOf(s) === 0) v = Math.max(v, 0.85); else if (ai === 0 && max && lev(s, w, max) <= max) v = Math.max(v, 0.6);   /* start-of-word and near misses for the word typed, not its synonyms */ } return v; };
+      best = Math.max(best, 3 * syn * m(T), syn * m(X)); });
+    return best; }
+  function search(q) { var terms = norm(q).split(/\s+/).filter(function (x) { return x.length > 1; }); if (!terms.length) return [];
+    return topics().map(function (tp) { var sc = 0, all = true; terms.forEach(function (t) { var v = termScore(tp, t); if (!v) all = false; sc += v; }); return { tp: tp, sc: all ? sc : terms.length > 1 && sc > 0 ? sc * 0.4 : 0, all: all }; })
+      .filter(function (r) { return r.sc > 0; }).sort(function (a, b) { return (b.all - a.all) || (b.sc - a.sc); }).map(function (r) { return r.tp; }); }
+  /* Help for this screen: what is open now, as search words */
+  function hereWords() { var v = function (id) { var e = $(id); return !!(e && !e.hidden && e.getClientRects().length); }, w = [];
+    if (v('solStartScr')) w.push('start screen'); if (v('solSeq')) w.push('start sequence'); if (v('kitLine')) w.push('start line'); if (v('deckNums') || document.body.classList.contains('fsdeck')) w.push('deck');
+    if (v('liveBox')) w.push('live gps'); if (v('sheet')) w.push('settings'); if (v('navHelm')) w.push('helm'); if (v('fsPlot')) w.push('plotter'); if (v('solCard') || v('solLegs')) w.push('course');
+    var tab = document.querySelector('#panel .tabs .tab[aria-selected="true"]'); if (tab && !$('panel').hidden) w.push(tab.textContent.trim().toLowerCase()); return w; }
+  function hereTopics() { var seen = {}, out = []; hereWords().forEach(function (w) { search(w).slice(0, 2).forEach(function (tp) { if (!seen[tp.s]) { seen[tp.s] = 1; out.push(tp); } }); }); return out.slice(0, 4); }
+  function tool() { var plus = !!window.NAV_VERSION; return window.FS_MARK ? (plus ? 'Mark+' : 'Mark') : (plus ? 'Route+' : 'Route'); }
+  function waUrl(q) { var ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || window.FS_VERSION || (document.querySelector('#sheet .shead h2 span') || {}).textContent || '') || [])[1] || '', here = hereWords().join(', ');
+    return 'https://wa.me/447788662697?text=' + encodeURIComponent('FirstShift ' + tool() + (ver ? ' v' + ver : '') + ' question' + (here ? ' (screen: ' + here + ')' : '') + ': ' + (q || '')); }   /* never the race or the boat's position */
+  function missLog(q) { try { var a = JSON.parse(localStorage.getItem('fs-help-miss') || '[]'); a.push([Date.now(), q]); localStorage.setItem('fs-help-miss', JSON.stringify(a.slice(-50))); } catch (e) {} }
+  function askBox(q) { var ac = window.__fsAskClaude ? window.__fsAskClaude() : null, url = ac ? ac.url + encodeURIComponent(q || '') : 'https://claude.ai/new';
+    return '<div class="hfask"><p><b>Not found? Ask.</b></p><a class="btn primary" id="hfAskC" target="_blank" rel="noopener" href="' + esc(url) + '">Ask Claude about ' + esc(tool()) + '</a>' +
+      '<a class="btn" id="hfWa" target="_blank" rel="noopener" href="' + esc(waUrl(q)) + '">Message FirstShift on WhatsApp</a><p class="hfnote">WhatsApp goes to FirstShift (+44 7788 662697): usually replies within 24 hours; not watched during races. Your question, the tool and its version are filled in; never your position. Or email via firstshiftsailing.com.</p></div>'; }
   /* ---- the views ---- */
   function render() {
     var vw = $('hfView'); if (!vw) return; stop(); var all = grouped(), h = '';
     if (V.view === 'home') {
       h = '<div class="hfsearch"><input type="search" id="hfQ" placeholder="Search Help, for example polar, tide, MOB" aria-label="Search Help" enterkeyhint="search" value="' + esc(V.q) + '"><button class="btn primary" type="button" id="hfGo">Search</button></div>' +
+        (function () { var ht = hereTopics(); return ht.length ? '<div class="hfhere"><b>Help for this screen</b><ul class="hflist">' + ht.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t) + '</b><span>' + esc(first(tp.text)) + '</span></div></button></li>'; }).join('') + '</ul></div>' : ''; })() +
         paths() + '<div class="hfcards">' + SECTIONS.filter(function (s) { return s.items.length; }).map(function (s) { return '<button class="hfcard" type="button" data-sec="' + s.id + '">' + img(secPic(s), s.name, 'hfth') + '<b>' + esc(s.name) + '</b><span>' + esc(s.blurb) + ' · ' + s.items.length + ' topic' + (s.items.length === 1 ? '' : 's') + '</span></button>'; }).join('') + '</div>' +
         ($('tourListen') || document.querySelector('#help [data-tour]') ? '' : '');
     } else if (V.view === 'path') {
@@ -94,13 +140,13 @@
         '<ul class="hflist">' + s.items.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t) + '</b><span>' + esc(first(tp.text)) + '</span></div></button></li>'; }).join('') + '</ul>';
     } else if (V.view === 'find') {
       var words = V.q.toLowerCase().split(/\s+/).filter(function (x) { return x.length > 1; });
-      var hits = all.filter(function (tp) { var t = (tp.t + ' ' + tp.text).toLowerCase(); return words.every(function (w) { return t.indexOf(w) >= 0; }); });
+      var hits = search(V.q), byS = {}; all.forEach(function (x) { byS[x.s] = x; }); hits = hits.map(function (x) { return byS[x.s] || x; }); if (!hits.length && V.q.trim().length > 2 && V.q !== V.lastMiss) { V.lastMiss = V.q; missLog(V.q.trim()); }
       V.list = hits.map(function (tp) { return tp.s; });
       var re = new RegExp('(' + words.map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'gi');
       var line = function (tp) { var ss = tp.text.match(/[^.!?]+[.!?]*/g) || [tp.text], f = ss.filter(function (x) { re.lastIndex = 0; return re.test(x); })[0] || ss[0]; re.lastIndex = 0; return esc(f).replace(re, '<mark class="hfq">$1</mark>'); };
       h = '<div class="hfsearch"><input type="search" id="hfQ" aria-label="Search Help" enterkeyhint="search" value="' + esc(V.q) + '"><button class="btn primary" type="button" id="hfGo">Search</button></div>' +
-        '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><p class="hfnote" id="hfNote">' + (hits.length ? hits.length + ' topic' + (hits.length === 1 ? '' : 's') + ' mention ' + esc(V.q.trim()) + '.' : 'No topic mentions ' + esc(V.q.trim()) + '. Try fewer or other words.') + '</p></div>' +
-        '<ul class="hflist">' + hits.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t).replace(re, '<mark class="hfq">$1</mark>') + '</b><span>' + line(tp) + '</span></div></button></li>'; }).join('') + '</ul>';
+        '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><p class="hfnote" id="hfNote">' + (hits.length ? hits.length + ' topic' + (hits.length === 1 ? '' : 's') + ' mention ' + esc(V.q.trim()) + '.' : 'No topic matches ' + esc(V.q.trim()) + '. Try other words, or ask below.') + '</p></div>' +
+        '<ul class="hflist">' + hits.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t).replace(re, '<mark class="hfq">$1</mark>') + '</b><span>' + line(tp) + '</span></div></button></li>'; }).join('') + '</ul>' + (hits.length < 3 ? askBox(V.q.trim()) : '');
     } else {
       var tp = all.filter(function (x) { return x.s === V.t; })[0]; if (!tp) { V.view = 'home'; return render(); }
       var list = V.from === 'find' || V.from === 'path' ? V.list : tp.sec.items.map(function (x) { return x.s; }), k = list.indexOf(tp.s), pv = all.filter(function (x) { return x.s === list[k - 1]; })[0], nx = all.filter(function (x) { return x.s === list[k + 1]; })[0];

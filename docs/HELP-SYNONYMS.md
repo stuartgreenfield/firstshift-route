@@ -1,0 +1,55 @@
+# Help search: sailing words treated as the same (F50)
+
+Stuart, 18 Nov 12:49: Claude drafts the first list, Stuart checks it. Each line is one group: search for any word and Help finds topics using the others. Edit, add or strike out and I will change the app.
+
+- kite, spinnaker, spin, asymmetric, a2, a3, code zero
+- gybe, jibe
+- tack, go about
+- sail, sails, headsail, jib, genoa
+- reef, reefing
+- polar, polars, boat speed table, target
+- tide, tidal, stream, current
+- wind, breeze
+- forecast, grib, model, models, weather
+- mob, man overboard, overboard
+- start, starting, gun, sequence, countdown
+- line, start line, committee boat, pin
+- ping, pinging
+- time to burn, burn
+- bias, favoured end, favored
+- layline, laylines
+- mark, buoy, rounding, waypoint
+- vmg, velocity made good
+- heading, compass, hdg
+- cog, course over ground
+- sog, speed over ground
+- bsp, boat speed, log, speedo
+- depth, shallow, shoal, echo sounder, dpt
+- ais, ships, ship, collision, cpa, traffic
+- tss, traffic separation, lanes
+- gps, position, fix
+- dead reckoning, dr, gps lost
+- nmea, instruments, boat link, gateway, wifi, wi-fi, router
+- night, red, dark
+- offline, no signal, no internet
+- battery, saver, power
+- crew, boat code, sync, share
+- follow, family, friends, tracker
+- track, tracks, trail
+- plotter, chart, map
+- zoom, pinch
+- course, route, routing, router
+- plan, brief, briefing
+- fleet, rivals, competitors, tcc, irc, handicap, rating
+- finish, finishing
+- recall, general recall, over early, ocs, course side
+- flag, flags, p flag, black flag, u flag, z flag
+- settings, options, set up, setup
+- help, how, guide, tutorial, tour
+- ask, question, support, contact
+- log, logbook, log book
+- export, save, download, gpx, pdf
+- tide gate, gate, headland
+- header, lift, shift, wind shift
+- heel, heeling
+- practice, test mode, emma, simulator, demo

@@ -1,0 +1,20 @@
+/* F50 (Stuart 18 Nov 08:00, answers 12:49, 14:09): smarter Help search. Run: node tests/f50-search.js <base> [path] */
+const { chromium } = require('playwright');
+const BASE = process.argv[2] || 'http://localhost:8779', PATH = process.argv[3] || '/channel-area/';
+let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); const x = new Date(); localStorage.setItem('fs-terms', x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); });
+  const p = await c.newPage(); p.errs = []; p.on('pageerror', e => p.errs.push(e.message)); await p.goto(BASE + PATH); await p.waitForFunction(() => document.getElementById('helpBtn'), null, { timeout: 60000 }); await p.waitForTimeout(4000);
+  await p.evaluate(() => document.getElementById('setBtn').click()); await p.waitForTimeout(500);
+  await p.evaluate(() => document.getElementById('helpBtn').click()); await p.waitForTimeout(1500);
+  const here = await p.evaluate(() => { const h = document.querySelector('.hfhere'); return h ? h.textContent.replace(/\s+/g, ' ').slice(0, 200) : ''; });
+  ok(/Help for this screen/.test(here), 'home: Help for this screen, with Settings open', here);
+  const q = async (s) => { await p.fill('#hfQ', s); await p.press('#hfQ', 'Enter'); await p.waitForTimeout(500); return p.evaluate(() => ({ n: document.querySelectorAll('#hfView .hflist li').length, first: (document.querySelector('#hfView .hflist li b') || {}).textContent || '', ask: !!document.getElementById('hfAskC'), wa: (document.getElementById('hfWa') || {}).href || '' })); };
+  let r = await q('kite'); ok(r.n === 0 ? r.ask : true, 'synonym: "kite" finds spinnaker topics, or offers Ask when Help has none', r);
+  r = await q('jibe'); ok(r.n > 0, 'synonym: "jibe" finds gybe topics', r);
+  r = await q('polr'); const pol = await p.evaluate(() => [...document.querySelectorAll('#hfView .hflist li b')].map(e => e.textContent)); ok(pol.some(t => /Your boat|Live GPS/.test(t)), 'one letter wrong: "polr" finds the topics about the polar', pol);
+  r = await q('tac'); ok(r.n > 0, 'start of a word: "tac" finds tack topics', r);
+  r = await q('man overboard'); ok(r.n > 0 && /man overboard|mob/i.test(r.first), 'phrase: "man overboard" first', r);
+  r = await q('xyzzy frobnicate'); ok(r.n === 0 && r.ask && /wa\.me\/447788662697\?text=FirstShift/.test(r.wa), 'nothing found: Ask Claude and WhatsApp to FirstShift', r);
+  ok(await p.evaluate(() => (JSON.parse(localStorage.getItem('fs-help-miss') || '[]')).some(x => /xyzzy/.test(x[1]))), 'the failed search is kept on the phone to improve Help');
+  ok(!p.errs.length, 'no script errors', p.errs.slice(0, 2)); await b.close(); console.log(pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0); })();
