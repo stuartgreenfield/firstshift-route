@@ -175,7 +175,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if ($('spTour')) { S.splashDone = function () {}; sp.addEventListener('click', hide); return; }   /* Show me round? Yes or No, asked every time: the splash waits for the answer (Stuart 14 Nov) */
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
-  fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
+  /* Mark's Solent pack (18 Nov 19:30); until the forecast job has built it, or if it ever fails, Mark uses the whole Channel as before */
+  fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { if (!r.ok && window.FS_MARK && /solent-area/.test(window.FS_PACK)) { window.FS_PACK = '../channel-area/pack/'; return fetch(window.FS_PACK + 'pack.json', { cache: 'no-store' }); } return r; }).then(function (r) { return r.json(); }).then(function (m) {
     meta = m; T0 = m.t0; if (window.FS_MARK) meta.fleet = [];   /* Mark: no RORC or JOG entry lists (Stuart 17 Nov 06:38: offshore fleet out) */
     if (S.splashDone) S.splashDone(); setup(); loadRaces(); [loadChartExtras, xInit, adjInit, helpInit, racesInit, mobInit, aisInit, spdInit, mfInit, wizInit, crewInit, shareInit, askInit, bcInit].forEach(function (f) { try { f(); } catch (e) { if (window.console) console.error('Route: ' + (f.name || 'a part') + ' did not start: ' + e.message); } });   /* 17 Nov: a fault in one extra must never stop the forecasts loading */
     /* depth view and closest zoom (Stuart 15 Nov 2026, C and D): routes always follow the depth squares; the chart can show them smoothed or as they are */
