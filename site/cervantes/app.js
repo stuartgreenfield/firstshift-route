@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.51';
+  var VERSION = 'FirstShift Route v0.12.52';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -305,7 +305,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.51 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.52 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -809,6 +809,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var AIS = { tg: new FSAIS.Targets(), src: 'off', danger: {}, lastEmit: -1, fleet: null, warned: {} };
   function aisNowMs() { return AIS.src === 'test' ? (T0 + S.t * 3600) * 1000 : Date.now(); }
   function ownForCpa() {
+    /* F53 (Stuart 18 Nov 2026, found by the boat simulator): our position for the collision warning is the Live GPS fix whenever Live GPS
+       is on (the boat's GPS on the + tools, or dead reckoning when the GPS is lost). It used to be the phone's GPS only while MOB was running,
+       otherwise where the planned route said the boat should be at the slider time, and nothing at all without a route: a ferry on a
+       collision course closed to 0.8 nm with no warning. The plan is used only when Live GPS is off (planning at home). */
+    var lf = LIVE.on ? LIVE.fix : null;
+    if (lf && lf.la != null && Date.now() - (lf.at || 0) < 30000 && AIS.src !== 'test') return { lat: lf.la, lon: lf.lo, sog: lf.sog || 0, cog: lf.cog || 0, src: lf.dr ? 'dead reckoning' : 'GPS' };
     if (me && Date.now() - me.at < 30000 && AIS.src !== 'test') return { lat: me.lat, lon: me.lon, sog: (me.sog || 0) / KN, cog: me.cog || 0, src: 'GPS' };
     var s = S.sel; if (!s) return null; var p = s.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos || pos.done) return null;
     var q = p[Math.min(p.length - 1, (pos.i || 0) + 1)]; return { lat: pos.la, lon: pos.lo, sog: q.bsp || 0, cog: q.hdg || 0, src: 'route' };
@@ -886,7 +892,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('aisTable').innerHTML = h; $('aisBox').hidden = false;
     if (AIS.open && Date.now() - AIS.open.at < 90000) { var ob = $('rb' + AIS.open.m), obt = $('aisTable').querySelector('[data-rb="' + AIS.open.m + '"]'); if (ob) { ob.hidden = false; if (obt) obt.hidden = true; var oi = ob.querySelector('input'); oi.value = AIS.open.v || ''; oi.oninput = function () { AIS.open.v = this.value; }; } }
     if ($('aisWarn')) $('aisWarn').hidden = AIS.src !== 'live';   /* the free online feed always carries its warning (Stuart 12 Nov) */
-    $('aisNote').textContent = (shown.length < list.length ? shown.length + ' of ' : '') + list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'free online AIS: not every target, not for navigation; updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : 'the route boat') : ' · route first for CPA');
+    $('aisNote').textContent = (shown.length < list.length ? shown.length + ' of ' : '') + list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'free online AIS: not every target, not for navigation; updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : own.src === 'dead reckoning' ? 'dead reckoning' : 'the route boat') : ' · route first for CPA');
     [].forEach.call($('aisTable').querySelectorAll('[data-rb]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var box = $('rb' + b.dataset.rb); box.hidden = false; b.hidden = true; var x = AIS.tg.t[b.dataset.rb], k = x && x.name && (meta.fleet || []).filter(function (f) { return f.name.toUpperCase() === x.name.toUpperCase(); })[0]; if (k) box.querySelector('input').value = k.tcc; var inp = box.querySelector('input'); AIS.open = { m: b.dataset.rb, v: inp.value, at: Date.now() }; inp.oninput = function () { AIS.open.v = this.value; AIS.open.at = Date.now(); }; inp.focus(); AIS.hold = Date.now(); }; });
     [].forEach.call($('aisTable').querySelectorAll('[data-rbok]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var x = AIS.tg.t[b.dataset.rbok], v = b.previousSibling.value; AIS.open = null; AIS.forceTable = true; if (!mfAdd(x ? x.name || String(x.mmsi) : b.dataset.rbok, v, +b.dataset.rbok)) { busy('Enter the TCC, for example 1.021.'); setTimeout(function () { busy(''); }, 2000); } }; });
     [].forEach.call($('aisTable').querySelectorAll('.aistcc input'), function (i) { i.onclick = function (e) { e.stopPropagation(); }; });
@@ -988,7 +994,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.51) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.52) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -1807,6 +1813,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__navCourse = function () { var c = meta && meta.course; if (S.cleared || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
   window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };
+  window.__fsAisWarn = function () { return { warned: Object.keys(AIS.warned || {}), own: AIS.own || null }; };   /* F53 test hook */
   /* Mark's test mode (Stuart 17 Nov 05:13): a practice boat feeds the GPS instead of the phone's own; nothing is sent anywhere */
   window.__fsSim = function (on) { if (on) { if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; LIVE.on = true; LIVE.sim = true; LIVE.fix = null; } else if (LIVE.sim) { LIVE.sim = false; liveStop(); } };
   window.__fsSimFix = function (la, lo, kn, cog) { if (!LIVE.sim) return; liveFix({ coords: { latitude: la, longitude: lo, accuracy: 4, speed: kn / 1.94384, heading: cog } }); };
