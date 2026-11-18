@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-18T03:41:28.927Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 15,
+   "note": "Routed in 9.6 s. First answer in 4.0 s. Leaving the start the route crosses water about 0.6 m deep on the chart, less th"
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 28,
+   "note": "Routed in 8.7 s. First answer in 3.8 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 40,
+   "note": "Routed in 9.0 s. First answer in 3.2 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 52,
+   "note": "Routed in 8.8 s. First answer in 3.3 s. Leaving the start the route crosses water about 0.6 m deep on the chart, less th"
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 66,
+   "note": "Routed in 10.0 s. First answer in 3.3 s."
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 80,
+   "note": "Routed in 10.5 s. First answer in 3.5 s."
+  }
+ ]
+}
