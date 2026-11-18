@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.46';
+  var VERSION = 'FirstShift Route v0.12.48';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -305,7 +305,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.46 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.48 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -988,7 +988,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.46) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.48) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -2854,6 +2854,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* the no-go (safety) depth has three sliders, Course tab, Chart tab and Layers panel, kept in step (Stuart 15 Nov 08:13) */
   function depthSet(v, quiet) { v = Math.max(0, Math.min(20, +v || 0)); var t = v.toFixed(1) + ' m'; [['depth', 'depthV'], ['depth2', 'depth2V'], ['lDepth', 'lDepthV']].forEach(function (p) { var el = $(p[0]); if (el && +el.value !== v) el.value = v; if ($(p[1])) $(p[1]).textContent = t; }); if (!quiet) { buildDepth(); draw(); } }
   function depthSquares() { return !!($('depthView') && $('depthView').value === 'squares'); }
+  function depthChunks(F, L, nx, ny) {
+    var job = depthChunks.job; if (job && job.F === F && job.coast === coastBits) return;
+    job = depthChunks.job = { F: F, coast: coastBits, Z: new Float32Array(nx * ny), y: 0 };
+    (function step() {
+      if (depthChunks.job !== job) return; var t0 = Date.now();
+      while (job.y < ny && Date.now() - t0 < 25) { var yy = job.y++; for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); job.Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); } }
+      if (job.y < ny) { setTimeout(step, 0); return; }
+      buildDepth.z = job.Z; buildDepth.zOf = F; buildDepth.zCoast = job.coast; depthChunks.job = null; buildDepth(); draw();
+    })();
+  }
   function buildDepth() {
     marginNote();
     if (!P.depth) { depthImg = null; return; }
@@ -2864,7 +2874,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     /* F11 (15 Nov 2026, Stuart: "Yes, in this release"): the depths of every square are worked out once per depth grid and kept; a change of
        screen mode or safety depth only recolours them. Before, every mode change rebuilt them (2 to 4.6 s at phone speed). */
     var Z = buildDepth.z && buildDepth.zOf === F && buildDepth.zCoast === coastBits ? buildDepth.z : null;   /* and again when the coastline arrives */
-    if (!Z) { Z = new Float32Array(nx * ny); for (var yy = 0; yy < ny; yy++) for (var xx = 0; xx < nx; xx++) { var q = F.cellAt('z', 0, yy, xx); Z[yy * nx + xx] = q === q ? q : (coastLand(L.lat0 + yy * L.dlat, L.lon0 + xx * L.dlon) ? 2 : 999); } buildDepth.z = Z; buildDepth.zOf = F; buildDepth.zCoast = coastBits; }
+    /* 18 Nov 04:40 (Stuart's tablet: "Mark+ isn't responding" on opening, offline): the depths of every square took one 2.5 s block on a
+       slowed processor, longer on the tablet, past Android's 5 s. Now worked out a few rows at a time with a break between, and the
+       chart shows at once without depth shading until they are ready (half a second or so) */
+    if (!Z) { depthChunks(F, L, nx, ny); return; }
     function z(y, x) { var v = Z[y * nx + x]; return v === 999 ? -99 : v; }
     /* squares view: mark the margin squares, each within the margin of a square that is land, shallower than the safety depth or without data, as the router does */
     var MG = null, mgn = +($('margin') ? $('margin').value : 1) || 0;
@@ -2882,10 +2895,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     g.putImageData(im, 0, 0); depthImg = c;
     /* the coastline and the safety-depth line as vector segments (marching squares), so they stay sharp at any zoom (Stuart 12 Nov) */
-    function contour(level) {
-      var out2 = [], la0 = L.lat0, lo0 = L.lon0, dla = L.dlat, dlo = L.dlon;
+    function contour(level, y0, y1, out2) {
+      out2 = out2 || []; var la0 = L.lat0, lo0 = L.lon0, dla = L.dlat, dlo = L.dlon; y0 = y0 || 0; y1 = Math.min(y1 == null ? ny - 1 : y1, ny - 1);
       function val(y, x) { var v = Z[y * nx + x]; return v === 999 ? -99 : v; }
-      for (var y = 0; y < ny - 1; y++) for (var x = 0; x < nx - 1; x++) {
+      for (var y = y0; y < y1; y++) for (var x = 0; x < nx - 1; x++) {
         var a = val(y, x), b = val(y, x + 1), c2 = val(y + 1, x + 1), d2 = val(y + 1, x), k = (a > level ? 8 : 0) | (b > level ? 4 : 0) | (c2 > level ? 2 : 0) | (d2 > level ? 1 : 0);
         if (k === 0 || k === 15) continue;
         var e = function (p, q, py, px, qy, qx) { var f = (level - p) / (q - p); return [lo0 + (px + (qx - px) * f) * dlo, la0 + (py + (qy - py) * f) * dla]; };
@@ -2894,10 +2907,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           case 5: segs = [Lf, T, B, R2]; break; case 6: case 9: segs = [T, B]; break; case 7: case 8: segs = [Lf, T]; break; case 10: segs = [Lf, B, T, R2]; break; }
         for (var i = 0; i < segs.length; i += 2) out2.push(segs[i][0], segs[i][1], segs[i + 1][0], segs[i + 1][1]);
       }
-      return new Float32Array(out2);
+      return y0 === 0 && y1 === ny - 1 ? new Float32Array(out2) : out2;
     }
+    /* a line a few rows at a time, with a break between (18 Nov 04:50) */
+    function contourSlow(level, ck, done) { var acc = [], y = 0; (function st() { if (buildDepth.lpend !== ck) return; var t0 = Date.now(); while (y < ny - 1 && Date.now() - t0 < 25) { contour(level, y, y + 8, acc); y += 8; } if (y < ny - 1) setTimeout(st, 0); else done(new Float32Array(acc)); })(); }
     /* F11: the coast and safety-depth lines depend only on the depths and the safety depth, not the colours: kept between mode changes */
-    var ck = safety + '|' + (Z === buildDepth.lz ? 1 : 0); if (!(buildDepth.lines && buildDepth.lk === ck)) { buildDepth.lines = { coast: contour(0.5), safe: safety > 0 ? contour(-safety) : null }; buildDepth.lk = safety + '|1'; buildDepth.lz = Z; }
+    var ck = safety + '|' + (Z === buildDepth.lz ? 1 : 0);
+    if (!(buildDepth.lines && buildDepth.lk === ck)) {   /* the two lines in two later steps (18 Nov 04:40), so opening never blocks in one go */
+      if (buildDepth.lpend !== ck) { buildDepth.lpend = ck; contourSlow(0.5, ck, function (co) { var fin = function (sf) { if (buildDepth.lpend !== ck) return; buildDepth.lines = { coast: co, safe: sf }; buildDepth.lk = safety + '|1'; buildDepth.lz = Z; buildDepth.lpend = null; depthLines = buildDepth.lines; draw(); }; if (safety > 0) contourSlow(-safety, ck, fin); else fin(null); }); }
+      if (buildDepth.lz !== Z) buildDepth.lines = null;
+    }
     depthLines = buildDepth.lines;
   }
   var depthLines = null;
@@ -2936,16 +2955,36 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var y0 = my(b.n), y1 = my(b.s);
     if ((x1 - x0 + 1) * (y1 - y0 + 1) > 120) return;   /* too far out for this layer: nothing sensible to show */
     ctx.save(); ctx.globalAlpha = c.alpha; ctx.imageSmoothingEnabled = true;
-    if (id === 'cmarks') try { ctx.filter = 'drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 2px rgba(255,255,255,.6))'; } catch (e) {}   /* Stuart 17 Nov 13:39: OpenSeaMap's black buoy names could not be read on the dark chart: a white halo round them */
-    for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
-      var lw = tLon(x, z), le = tLon(x + 1, z), ln = tLat(y, z), ls = tLat(y + 1, z), px = X(lw), py = Y(ln), pw = X(le) - px, ph = Y(ls) - py;
-      var t = tileGet(id, c, z, ((x % n) + n) % n, y);
-      if (t.ok) { ctx.drawImage(t.img, px, py, pw + 0.5, ph + 0.5); continue; }
-      for (var u = 1; u <= 3 && z - u >= c.zmin; u++) {   /* while a tile loads, stretch its parent so the chart never flashes empty */
-        var pz = z - u, f = Math.pow(2, u), pt = TILES[id + '/' + pz + '/' + Math.floor(x / f) + '/' + Math.floor(y / f)];
-        if (pt && pt.ok) { var sx = (x % f) * 256 / f, sy = (y % f) * 256 / f; ctx.drawImage(pt.img, sx, sy, 256 / f, 256 / f, px, py, pw + 0.5, ph + 0.5); break; }
+    /* Stuart 17 Nov 13:39: OpenSeaMap's black buoy names could not be read on the dark chart: a white halo round them.
+       18 Nov 05:00 (Stuart: Mark+ "incredibly slow", online): the halo filter on every tile at every redraw was the cost on Android,
+       so each tile gets its halo once, when it first shows, and is redrawn from that copy with no filter; at most 4 new tiles a redraw; the halo is drawn without a blur filter */
+    var bakes = 0, halo = id === 'cmarks';
+    var pic = function (t) { if (!halo) return t.img; if (t.cv) return t.cv; if (t.cv === false || bakes >= 4) return t.img; bakes++;
+      try {   /* the halo without a blur filter (far too slow on tablets): the tile's shape in white, drawn a pixel or two off each way, then the tile on top */
+        var wh = document.createElement('canvas'); wh.width = wh.height = 256; var w2 = wh.getContext('2d'); w2.drawImage(t.img, 0, 0, 256, 256); w2.globalCompositeOperation = 'source-in'; w2.fillStyle = '#fff'; w2.fillRect(0, 0, 256, 256);
+        var cv = document.createElement('canvas'); cv.width = cv.height = 256; var g = cv.getContext('2d');
+        g.globalAlpha = 0.55; [[2, 0], [-2, 0], [0, 2], [0, -2]].forEach(function (o) { g.drawImage(wh, o[0], o[1]); });
+        g.globalAlpha = 0.95; [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].forEach(function (o) { g.drawImage(wh, o[0], o[1]); });
+        g.globalAlpha = 1; g.drawImage(t.img, 0, 0, 256, 256); t.cv = cv; } catch (e) { t.cv = false; return t.img; }
+      if (bakes >= 4 && !tileRaf) tileRaf = requestAnimationFrame(function () { tileRaf = 0; draw(); });
+      return t.cv; };
+    function paint(g, MX, MY, X0, X1, Y0, Y1) {
+      for (var x = X0; x <= X1; x++) for (var y = Y0; y <= Y1; y++) {
+        var lw = tLon(x, z), le = tLon(x + 1, z), ln = tLat(y, z), ls = tLat(y + 1, z), px = MX(lw), py = MY(ln), pw = MX(le) - px, ph = MY(ls) - py;
+        var t = tileGet(id, c, z, ((x % n) + n) % n, y);
+        if (t.ok) { g.drawImage(pic(t), px, py, pw + 0.5, ph + 0.5); continue; }
+        for (var u = 1; u <= 3 && z - u >= c.zmin; u++) {   /* while a tile loads, stretch its parent so the chart never flashes empty */
+          var pz = z - u, f = Math.pow(2, u), pt = TILES[id + '/' + pz + '/' + Math.floor(x / f) + '/' + Math.floor(y / f)];
+          if (pt && pt.ok) { var sx = (x % f) * 256 / f, sy = (y % f) * 256 / f; g.drawImage(pic(pt), sx, sy, 256 / f, 256 / f, px, py, pw + 0.5, ph + 0.5); break; }
+        }
       }
     }
+    /* 18 Nov 05:10 (Stuart: Mark+ "incredibly slow" on the tablet, online): painting some 45 separate buoy tiles on every frame of a
+       pan or pinch was the cost (17.6 s of 22 s on a slowed tablet). While a finger is moving the buoy layer is left out; it comes
+       back about a third of a second after the chart stops (a ready-made picture of the tiles was tried and measured slower) */
+    var live = (ptrs && ptrs.size > 0) || (SV && Date.now() - SV.touch < 300);
+    if (live) { ctx.restore(); settle(); return; }
+    paint(ctx, X, Y, x0, x1, y0, y1);
     ctx.restore();
   }
   function chartCredit() {
@@ -2984,14 +3023,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var wait = 500 - (Date.now() - SV.last); if (wait <= 0) { clearTimeout(SV.t); SV.t = 0; SV.last = Date.now(); drawNow(); return; }
     if (!SV.t) SV.t = setTimeout(function () { SV.t = 0; SV.last = Date.now(); drawNow(); }, wait);
   }
+  function settle() { clearTimeout(settle.t); settle.t = setTimeout(function () { settle.t = 0; draw(); }, 350); }   /* 18 Nov: one full-quality redraw once a finger stops */
   function drawNow() {
     if (!W || !meta) return;
+    if ((ptrs && ptrs.size > 0) || (SV && Date.now() - SV.touch < 300)) settle();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (S.big) { drawBig(); return; }
     ctx.fillStyle = css['--sea']; ctx.fillRect(0, 0, W, H);
     oriUpdate(); ORI.turned = !!ORI.ang; if (ORI.ang) { ctx.translate(ORI.cx, ORI.cy); ctx.rotate(-ORI.ang * R); ctx.translate(-ORI.cx, -ORI.cy); }
     baseLand();
-    if (depthImg) { var L = P.depth.L; var sq = depthSquares(); ctx.imageSmoothingEnabled = !sq; ctx.imageSmoothingQuality = 'high';   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
+    if (depthImg) { var L = P.depth.L; var sq = depthSquares(); ctx.imageSmoothingEnabled = !sq; ctx.imageSmoothingQuality = (ptrs && ptrs.size > 0) || (SV && Date.now() - SV.touch < 300) ? 'low' : 'high';   /* 18 Nov: the quicker smoothing while a finger moves (about 4 s of 12 s on a slowed tablet); full quality once it stops */   /* smooth the coast and shoal edges when zoomed in, instead of square cells */ ctx.drawImage(depthImg, X(L.lon0 - L.dlon / 2), Y(L.lat0 + (L.ny - 0.5) * L.dlat), (L.nx * L.dlon) * K * view.s, L.ny * L.dlat * view.s); }
     try { drawDepthLines(); } catch (e) {}
     grid();
     if (S.show.band) bandEdge();
