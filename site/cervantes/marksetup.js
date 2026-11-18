@@ -10,7 +10,7 @@
   'use strict';
   if (!window.FS_MARK) return;
   var R = Math.PI / 180, U = { on: false, open: 'line', end: 'boat', lm: 'tap', cm: 'tap', wpick: 'w', fpick: false, msg: '', hot: null, P: null, clr: 0 };
-  var ROWS = [['line', 'Start line'], ['course', 'Course'], ['finish', 'Finish'], ['wind', 'Wind'], ['gun', 'Gun and sequence']];
+  var ROWS = [['line', 'Start line'], ['course', 'Course'], ['finish', 'Finish'], ['wind', 'Wind, tide and routing'], ['gun', 'Gun and sequence']];
   var SEQ = [[5, '5-4-1-0'], [10, '10-5-0'], [104, '10-4-1-0'], [3, '3-2-1-0']];
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
@@ -60,7 +60,7 @@
       var ms = b.marks || []; if (!ms.length) return 'Round the cans: no buoys yet'; var pts = [mid()].concat(ms.map(function (m) { return [m.lat, m.lon]; })).filter(Boolean), d = 0; for (var i = 1; i < pts.length; i++) d += nm(pts[i - 1], pts[i]);
       return ms.map(function (m) { return (m.code || m.name) + ' ' + (m.side === 'starboard' || m.side === 'stbd' ? 'S' : 'P'); }).join(', ') + ' · ' + d.toFixed(1) + ' nm'; }
     if (k === 'finish') { if (b.type === 'wl') { var f = wl().fin || 'lee'; return f === 'start' ? 'At the start line' : f === 'wind' ? 'At the windward mark' : 'At the leeward mark'; } return b.fin === 'mark' && b.finish ? 'At ' + (b.finish.code || b.finish.name) : 'At the start line'; }
-    if (k === 'wind') { var w3 = b.wind; return w3 && w3.twd != null ? d3(w3.twd) + '°T' + (w3.tws ? ' ' + w3.tws + ' kn' : '') + ' (' + (w3.src === 'typed' ? 'typed' : w3.src || 'set') + ')' : 'From the forecast'; }
+    if (k === 'wind') { var w3 = b.wind, td = b.tide || {}; return (w3 && w3.twd != null ? 'Wind ' + d3(w3.twd) + '°T' + (w3.tws ? ' ' + w3.tws + ' kn' : '') + ' (' + (w3.src === 'typed' ? 'typed' : w3.src || 'set') + ')' : 'Wind from the forecast') + ' · tide ' + (td.mode === 'hand' ? (td.spd != null && td.dir != null ? td.spd + ' kn to ' + d3(td.dir) + '°T' : 'by hand, not given') : td.mode === 'boat' ? 'from the boat' : 'from the forecast') + ' · ' + (b.plan === 'route' ? 'routed (' + ((b.models && b.models.length ? b.models : [b.model || 'ukv']).join(', ')) + ')' : 'not routed'); }
     if (k === 'gun') { if (!b.startAt) return 'Not set'; var g = new Date(b.startAt * 1000); return 'Gun ' + ('0' + g.getHours()).slice(-2) + ':' + ('0' + g.getMinutes()).slice(-2) + ', ' + (SEQ.filter(function (q) { return q[0] === (b.seq || 5); })[0] || SEQ[0])[1]; } return ''; }
 
   /* ---- the chart: what the set-up draws, and where it looks ---- */
@@ -86,8 +86,10 @@
     var label = function (x, y, t, col) { ctx.font = '800 13px system-ui,sans-serif'; var w = ctx.measureText(t).width + 10; ctx.fillStyle = 'rgba(8,26,46,.9)'; ctx.fillRect(x, y - 10, w, 20); ctx.fillStyle = col || '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(t, x + 5, y); };
     /* the start line: orange, committee boat end a square, pin end a circle */
     if (l.boat && l.pin) { ctx.beginPath(); ctx.moveTo(X(l.boat[1]), Y(l.boat[0])); ctx.lineTo(X(l.pin[1]), Y(l.pin[0])); ctx.lineWidth = 4 * dpr; ctx.strokeStyle = '#f59e0b'; ctx.stroke(); }
-    if (l.boat) { var bx = X(l.boat[1]), by = Y(l.boat[0]); ctx.fillStyle = '#f59e0b'; ctx.fillRect(bx - 7, by - 7, 14, 14); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.strokeRect(bx - 7, by - 7, 14, 14); label(bx + 10, by - 12, 'Committee boat'); }
-    if (l.pin) { dot(l.pin[0], l.pin[1], 7, '#f59e0b', '#fff', 2); ctx.font = '800 13px system-ui,sans-serif'; label(X(l.pin[1]) - 10 - ctx.measureText('Pin').width - 10, Y(l.pin[0]) + 14, 'Pin'); }
+    /* each label on the outer side of its end, away from the other end, so the two never sit on each other */
+    var outer = function (p, q, t, y0) { ctx.font = '800 13px system-ui,sans-serif'; var w = ctx.measureText(t).width + 10, px = X(p[1]), qx = q ? X(q[1]) : px + 1; return [qx >= px ? px - 12 - w : px + 12, Y(p[0]) + y0]; };
+    if (l.boat) { var bx = X(l.boat[1]), by = Y(l.boat[0]); ctx.fillStyle = '#f59e0b'; ctx.fillRect(bx - 7, by - 7, 14, 14); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.strokeRect(bx - 7, by - 7, 14, 14); var lb = outer(l.boat, l.pin, 'Committee boat', -12); label(lb[0], lb[1], 'Committee boat'); }
+    if (l.pin) { dot(l.pin[0], l.pin[1], 7, '#f59e0b', '#fff', 2); var lp = outer(l.pin, l.boat, 'Pin', 14); label(lp[0], lp[1], 'Pin'); }
     /* the course: a blue line from the middle of the start line through each mark, each mark ringed and numbered */
     var pts = [], m0 = mid(); if (m0) pts.push([m0[0], m0[1], null]);
     if (b.type === 'wl') { var W = wlW(), L = wlL(); if (W) pts.push([W[0], W[1], 'W ' + W[2], wl().side]); if (L && wl().lkind && wl().lkind !== 'start') pts.push([L[0], L[1], 'L ' + L[2], wl().side]); }
@@ -117,6 +119,21 @@
     window.__fsSetLine(end, la, lo); var sp = startPt(); if (sp) setB({ sk: 'line', start: sp });
     U.msg = (end === 'pin' ? 'Pin end' : 'Committee boat end') + ' set' + (how ? ' ' + how : '') + ': ' + llTxt([la, lo]) + '.'; U.good = true;
     if (!line()[end === 'pin' ? 'boat' : 'pin']) U.end = end === 'pin' ? 'boat' : 'pin'; return true; }
+  function fixWind() { try { var w = B().wind; if (window.__fsFix && w && w.twd != null && w.tws > 0) window.__fsFix.set({ on: true, tws: +w.tws, twd: +w.twd }); } catch (e) {} }   /* the typed wind feeds Route's Fixed wind route, as before */
+  function pushTide() { try { var t = B().tide || {}, z = null; if (t.mode === 'hand' && t.spd >= 0 && t.dir != null) z = { spd: +t.spd, dir: +t.dir, src: 'by hand' }; else if (t.mode === 'boat' && window.__navTide) { var nt = window.__navTide(); if (nt) z = { spd: nt.spd, dir: nt.dir, src: nt.src || 'the boat' }; } if (window.__fsTideHand) window.__fsTideHand(z ? { on: true, spd: +(+z.spd).toFixed(2), dir: Math.round(z.dir), src: z.src } : { on: false }); } catch (e) {} }
+  /* the wind from the compass, bow to wind (the boat's own heading first), and from the two tacks (as Vakaros and Velocitek): the wind is midway */
+  function headToWind() { var fin = function (h, src) { setB({ wind: { twd: Math.round(((h % 360) + 360) % 360), tws: (B().wind || {}).tws || null, src: src, at: Date.now() } }); U.msg = 'Wind from ' + d3(h) + '°T (' + src + ').'; U.good = true; render(); redraw(); };
+    var dr = null; try { dr = window.__navDR && window.__navDR(); } catch (e) {} if (dr && dr.hdg != null) return fin(dr.hdg, 'the boat\'s heading');
+    var got = false, onO = function (e) { var h = e.webkitCompassHeading != null ? e.webkitCompassHeading : (e.absolute && e.alpha != null ? 360 - e.alpha : null); if (h == null || got) return; got = true; off2(); fin(h, 'the phone\'s compass, magnetic'); };
+    var off2 = function () { removeEventListener('deviceorientationabsolute', onO, true); removeEventListener('deviceorientation', onO, true); };
+    var go = function () { addEventListener('deviceorientationabsolute', onO, true); addEventListener('deviceorientation', onO, true); setTimeout(function () { if (!got) { got = true; off2(); U.msg = 'No compass on this device: type the wind direction.'; render(); } }, 4000); };
+    U.msg = 'Point the bow, and the top of the phone, into the wind.'; render();
+    try { if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().then(function (r) { if (r === 'granted') go(); else { U.msg = 'Compass not allowed: type the wind direction.'; render(); } }, go); else go(); } catch (e) { go(); } }
+  function tackRef(side) { var h = null, src = ''; try { var dr = window.__navDR && window.__navDR(); if (dr && dr.hdg != null) { h = dr.hdg; src = 'heading'; } } catch (e) {} if (h == null) { try { h = window.__fsCog ? window.__fsCog() : null; src = 'course over the ground'; } catch (e) {} }
+    if (h == null) { U.msg = 'Needs the boat moving with the GPS on: sail close-hauled for half a minute, then tap again.'; return; }
+    U.tref = U.tref || {}; U.tref[side] = Math.round(h); var s1 = U.tref.stbd, p1 = U.tref.port;
+    if (s1 != null && p1 != null) { var d = ((p1 - s1 + 540) % 360) - 180, md = (s1 + d / 2 + 360) % 360; if (Math.abs(d) / 2 < 25 || Math.abs(d) / 2 > 65) { U.msg = 'The two headings are ' + Math.round(Math.abs(d)) + '° apart, not a tack: record each tack again.'; U.tref = {}; } else { setB({ wind: { twd: Math.round(md), tws: (B().wind || {}).tws || null, src: 'your two tacks (' + src + ')', at: Date.now() } }); U.msg = 'Wind from ' + d3(md) + '°T, from your two tacks.'; U.good = true; U.tref = {}; } }
+    else U.msg = (side === 'stbd' ? 'Starboard' : 'Port') + ' tack: ' + d3(h) + '°. Now the other tack.'; }
   function useBuoy(m) { var k = U.open, b = B(); U.choose = null; U.hot = [m.lat, m.lon]; U.good = true;
     if (k === 'line') { setEnd(U.end, m.lat, m.lon, 'at buoy ' + m.id); return; }
     if (k === 'course') {
@@ -167,8 +184,15 @@
     if (b.type === 'wl') h = seg('wfin', wl().fin || 'lee', [['lee', 'Leeward mark'], ['start', 'Start line'], ['wind', 'Windward mark']]);
     else h = seg('fin', b.fin === 'mark' ? 'mark' : 'start', [['start', 'The start line'], ['mark', 'A buoy']]) + (b.fin === 'mark' ? '<p class="msu-say">Tap the finish buoy, or type its code.</p><div class="msu-in"><input id="msuCode" placeholder="Code" autocapitalize="characters" aria-label="Finish buoy code"><button class="btn" data-a="fcode">Use</button></div>' : '');
     return h + msg() + doneBtn('finish'); }
-  function bodyWind() { var w = B().wind || {};
-    return '<p class="msu-say">The wind at the start, for the line bias and the leg types. Leave it to use the forecast.</p><div class="msu-in"><input class="sm" id="msuTwd" type="number" inputmode="numeric" min="0" max="360" placeholder="°T" value="' + (w.src === 'typed' && w.twd != null ? w.twd : '') + '" aria-label="Wind direction, degrees true"><label>°T</label><input class="sm" id="msuTws" type="number" inputmode="decimal" min="0" max="60" placeholder="kn" value="' + (w.src === 'typed' && w.tws ? w.tws : '') + '" aria-label="Wind speed, knots"><label>kn</label><button class="btn" data-a="wind">Use</button><button class="btn" data-a="windfc">Use the forecast</button></div>' + msg() + doneBtn('wind'); }
+  function models() { return [].slice.call(document.querySelectorAll('[data-m]')).filter(function (c) { return !c.disabled; }).map(function (c) { var l = c.closest('label'), t = l ? l.textContent.trim().split(/\s{2,}|\n|·|\(/)[0].trim() : c.getAttribute('data-m'); return { id: c.getAttribute('data-m'), name: t.slice(0, 18) }; }); }
+  function bodyWind() { var b = B(), w = b.wind || {}, td = b.tide || {}, tm = td.mode || 'model', rt = b.plan === 'route', sel = b.models && b.models.length ? b.models : [b.model || 'ukv'];
+    var h = '<p class="msu-say"><b>Wind</b> at the start, for the line bias, the laylines and the leg types. Leave it to use the forecast.</p><div class="msu-in"><input class="sm" id="msuTwd" type="number" inputmode="numeric" min="0" max="360" placeholder="°T" value="' + (w.src === 'typed' && w.twd != null ? w.twd : '') + '" aria-label="Wind direction, degrees true"><label>°T</label><input class="sm" id="msuTws" type="number" inputmode="decimal" min="0" max="60" placeholder="kn" value="' + (w.src === 'typed' && w.tws ? w.tws : '') + '" aria-label="Wind speed, knots"><label>kn</label><button class="btn" data-a="wind">Use</button><button class="btn" data-a="windfc">Use the forecast</button></div>' +
+      '<div class="msu-in"><button class="btn" data-a="h2w">Head to wind: use the compass</button><button class="btn" data-a="tack" data-v="stbd">On starboard tack now</button><button class="btn" data-a="tack" data-v="port">On port tack now</button></div>' +
+      '<p class="msu-say"><b>Tide</b> at the line.</p>' + seg('tm', tm, [['model', 'Forecast'], ['hand', 'By hand']].concat(window.__navTide ? [['boat', 'From the boat']] : []));
+    if (tm === 'hand') h += '<div class="msu-in"><input class="sm" id="msuTdS" type="number" inputmode="decimal" min="0" max="8" step="0.1" placeholder="kn" value="' + (td.spd != null ? td.spd : '') + '" aria-label="Tide rate, knots"><label>kn, running to</label><input class="sm" id="msuTdD" type="number" inputmode="numeric" min="0" max="359" placeholder="°T" value="' + (td.dir != null ? td.dir : '') + '" aria-label="Direction the tide runs to, degrees true"><label>°T</label><button class="btn" data-a="tide">Use</button></div>';
+    h += '<p class="msu-say"><b>Routing</b>: the course as a list of legs, or routed on the forecast.</p>' + seg('plan', rt ? 'route' : 'list', [['list', 'No routing'], ['route', 'Route it']]);
+    if (rt) { var mm = models(); h += mm.length ? '<div class="msu-seg">' + mm.map(function (q) { return '<button type="button" data-a="model" data-v="' + esc(q.id) + '" aria-pressed="' + (sel.indexOf(q.id) >= 0) + '">' + esc(q.name) + '</button>'; }).join('') + '</div>' : '<p class="msu-say">The forecast models are still loading.</p>'; }
+    return h + msg() + doneBtn('wind'); }
   function bodyGun() { var b = B(), g = b.startAt ? new Date(b.startAt * 1000) : new Date(Date.now() + 15 * 60000), t = ('0' + g.getHours()).slice(-2) + ':' + ('0' + g.getMinutes()).slice(-2);
     return '<div class="msu-in"><label for="msuGun">Gun (this phone’s time)</label><input id="msuGun" type="time" value="' + t + '"><button class="btn" data-a="gun">Set</button></div>' + seg('seq', b.seq || 5, SEQ) + msg() + doneBtn('gun'); }
   function render() { var s = $('msu'); if (!s) return;
@@ -207,7 +231,13 @@
     else if (a === 'wfin') setB({ wl: Object.assign({}, wl(), { fin: v }) });
     else if (a === 'fin') { setB(v === 'start' ? { fin: 'start', finish: null } : { fin: 'mark' }); }
     else if (a === 'fcode') { var fm = byCode(val('msuCode')); if (!fm) U.msg = 'No buoy with that code.'; else { setB({ fin: 'mark', finish: { code: fm.id, name: fm.id + ' ' + fm.name, lat: fm.lat, lon: fm.lon } }); U.msg = 'Finish at ' + fm.id + ' ' + fm.name + '.'; U.good = true; } }
-    else if (a === 'wind') { var twd = +val('msuTwd'), tws = val('msuTws') === '' ? null : +val('msuTws'); if (!(twd >= 0 && twd <= 360)) U.msg = 'Type the wind direction, 0 to 360°T.'; else { setB({ wind: { twd: Math.round(twd) % 360, tws: tws > 0 ? tws : null, src: 'typed', at: Date.now() } }); U.msg = 'Wind ' + d3(twd) + '°T' + (tws > 0 ? ' ' + tws + ' kn' : '') + '.'; U.good = true; } }
+    else if (a === 'wind') { var twd = +val('msuTwd'), tws = val('msuTws') === '' ? null : +val('msuTws'); if (!(twd >= 0 && twd <= 360)) U.msg = 'Type the wind direction, 0 to 360°T.'; else { setB({ wind: { twd: Math.round(twd) % 360, tws: tws > 0 ? tws : null, src: 'typed', at: Date.now() } }); fixWind(); U.msg = 'Wind ' + d3(twd) + '°T' + (tws > 0 ? ' ' + tws + ' kn' : '') + '.'; U.good = true; } }
+    else if (a === 'h2w') { headToWind(); return; }
+    else if (a === 'tack') { tackRef(v); }
+    else if (a === 'tm') { setB({ tide: Object.assign({}, b.tide, { mode: v }) }); pushTide(); }
+    else if (a === 'tide') { var sp = +val('msuTdS'), dr = +val('msuTdD'); if (!(sp >= 0 && sp <= 8) || !(dr >= 0 && dr < 360) || val('msuTdS') === '' || val('msuTdD') === '') U.msg = 'Give the rate in knots and the direction it runs to, 0 to 359°T.'; else { setB({ tide: { mode: 'hand', spd: sp, dir: Math.round(dr) } }); pushTide(); U.msg = 'Tide ' + sp + ' kn running to ' + d3(dr) + '°T.'; U.good = true; } }
+    else if (a === 'plan') setB({ plan: v === 'route' ? 'route' : 'list' });
+    else if (a === 'model') { var cur = (b.models && b.models.length ? b.models : [b.model || 'ukv']).slice(), ix = cur.indexOf(v); if (ix >= 0) { if (cur.length > 1) cur.splice(ix, 1); } else cur.push(v); setB({ models: cur, model: cur[0] }); }
     else if (a === 'windfc') { setB({ wind: null }); U.msg = 'The forecast wind will be used.'; U.good = true; }
     else if (a === 'gun') { var gv = val('msuGun').split(':'); if (gv.length < 2) U.msg = 'Choose the time of the gun.'; else { var d = new Date(); d.setHours(+gv[0], +gv[1], 0, 0); if (d.getTime() < Date.now() - 60000) d.setDate(d.getDate() + 1); var ep = Math.round(d.getTime() / 1000); setB({ startAt: ep, seq: b.seq || 5, pp: false, ended: null }); try { window.__fsGun && window.__fsGun(ep); } catch (e) {} U.msg = 'Gun at ' + val('msuGun') + (d.getDate() !== new Date().getDate() ? ' tomorrow' : '') + '.'; U.good = true; } }
     else if (a === 'seq') setB({ seq: +v });

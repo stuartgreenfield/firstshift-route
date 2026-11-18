@@ -55,6 +55,12 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   await click('#msu [data-a="done"]'); s = await st(); ok(s.done.find(x => x[0] === 'course')[1] && s.open === 'finish', 'Done ticks the course and opens the finish');
   await click('#msu [data-a="done"]'); s = await st(); ok(s.open === 'wind', 'Finish at the start line, ticked; wind next');
   await p.fill('#msuTwd', '230'); await p.fill('#msuTws', '12'); await click('#msu [data-a="wind"]'); bb = await B(); ok(bb.wind && bb.wind.twd === 230, 'Wind typed');
+  await click('#msu [data-a="tm"][data-v="hand"]'); await p.fill('#msuTdS', '1.2'); await p.fill('#msuTdD', '248'); await click('#msu [data-a="tide"]'); bb = await B();
+  ok(bb.tide && bb.tide.mode === 'hand' && bb.tide.spd === 1.2 && bb.tide.dir === 248, 'Tide by hand: 1.2 kn to 248°T', bb.tide);
+  ok(await p.evaluate(() => { const t = window.__fsTideHand && window.__fsTideHand(); return !!(t && t.on && Math.abs(t.spd - 1.2) < 0.01); }), 'The tide by hand reaches Route');
+  await click('#msu [data-a="plan"][data-v="route"]'); bb = await B(); ok(bb.plan === 'route', 'Route it chosen');
+  const nm = await p.locator('#msu [data-a="model"]').count(); ok(nm > 0, 'The forecast models are offered', nm);
+  await click('#msu [data-a="plan"][data-v="list"]'); bb = await B(); ok(bb.plan === 'list', 'No routing chosen again');
   await click('#msu [data-a="done"]'); s = await st(); ok(s.open === 'gun', 'Gun next');
   const gt = await p.evaluate(() => { const d = new Date(Date.now() + 20 * 60000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); });
   await p.fill('#msuGun', gt); await click('#msu [data-a="gun"]'); await click('#msu [data-a="seq"][data-v="5"]'); await click('#msu [data-a="done"]'); s = await st();
