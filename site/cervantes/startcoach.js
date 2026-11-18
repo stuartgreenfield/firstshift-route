@@ -5,11 +5,11 @@
    One voice at a time and the countdown first. Clips are recorded phrases (helpmedia/startcoach/, start.json), so they work offline
    and Stuart's own voice can replace Emma's by recording the same list (tools/coach_voice.py with the list in docs/START-COACH-M68.md). */
 (function () {
-  if (!window.FS_MARK) return;
-  var KEY = 'fs-coach-level', MEDIA = (window.FS_HELPMEDIA || '../helpmedia/') + 'startcoach/', MAN = null, A = null, busyTo = 0;
+  if (!window.FS_MARK && window.FS_SOLENT) return;   /* F44: Mark, Route and Route+ (in Route off until chosen, Stuart 18 Nov 15:25) */
+  var KEY = window.FS_SOLENT ? 'fs-coach-level' : 'fs-coach-level-route', MEDIA = (window.FS_HELPMEDIA || '../helpmedia/') + 'startcoach/', MAN = null, A = null, busyTo = 0;
   var NAMES = ['Off', 'Countdown', 'Countdown and time to burn', 'Countdown, time to burn and the line', 'Everything: countdown, burn, line and speed'];
   var SHORT = ['Off', 'Count', 'Burn', 'Line', 'All'];
-  function lvl() { try { var v = localStorage.getItem(KEY); return v == null ? 2 : Math.max(0, Math.min(4, +v)); } catch (e) { return 2; } }
+  function lvl() { try { var v = localStorage.getItem(KEY); return v == null ? (window.FS_SOLENT ? 2 : 0) : Math.max(0, Math.min(4, +v)); } catch (e) { return window.FS_SOLENT ? 2 : 0; } }   /* Route: off by default (Stuart 18 Nov 15:25) */
   function setLvl(v) { try { localStorage.setItem(KEY, String(v)); } catch (e) {} if (v === 0) stop(); paint(); }
   function load() { if (MAN) return; MAN = {}; fetch(MEDIA + 'start.json').then(function (r) { return r.json(); }).then(function (j) { MAN = j; }).catch(function () {}); }
   function stop() { if (A) { try { A.pause(); } catch (e) {} A = null; } busyTo = 0; }

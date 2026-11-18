@@ -8,9 +8,12 @@
    The marks: JOG / SCRA "Solent Area Mark Codes 2026" (list dated 23 February 2026), in ../courses/solent-marks.json. */
 (function () {
   /* FirstShift Solent only (Stuart 16 Nov 19:35): Route and Route+ have no Solent screens, marks or settings */
-  if (!window.FS_SOLENT) { window.FSSolent = { isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; } }; return; }
+  /* F44 (Stuart 18 Nov 07:29 and 15:25): Route and Route+ now run Mark's start kit from this file (start sequence, start screen, race buttons,
+     flags, start maths, coach), and nothing else: no Solent marks, course builder, cards or settings. ROUTE says which. */
+  var ROUTE = !window.FS_SOLENT, KIT = !!window.FS_MARK || ROUTE;
+  if (ROUTE) { window.FSSolent = { isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; } }; }
   'use strict';
-  var R = Math.PI / 180, KEY = 'fs-solent', BKEY = 'fs-solent-b';
+  var R = Math.PI / 180, KEY = ROUTE ? 'fs-route-solent-off' : 'fs-solent', BKEY = ROUTE ? 'fs-route-start' : 'fs-solent-b';
   function ld(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
   function INK() { var r = document.documentElement, cs = getComputedStyle(r); var v = (cs.getPropertyValue('--ink') || '').trim(); return v || '#0f172a'; }
   function sv(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -93,6 +96,7 @@
   function ddm(v, pos, neg) { var a = Math.abs(v), d = Math.floor(a), mn = (a - d) * 60; return (d < 10 && pos === 'E' ? '00' : d < 100 && pos === 'E' ? '0' : '') + d + '° ' + mn.toFixed(2) + "' " + (v >= 0 ? pos : neg); }
   function tapHook(la, lo, x, y, editing) {
     if (BV.on) { BV.on = false; if (BV.box) { BV.box = false; wzRender(); } redraw(); return true; }   /* the bias picture: a tap on the chart puts it away and brings the step box back */
+    if (ROUTE) { try { return !!(window.__fsKitTap && window.__fsKitTap(la, lo)); } catch (e) { return false; } }   /* F44: in Route only the start line taps */
     if (CE.i != null) { var mce = hit(x, y); if (mce) sidePop(mce, x, y); else if (window.__fsOnLand && window.__fsOnLand(la, lo)) toast('That point is on land: tap in the water.'); else ceUse({ id: null, name: 'Waypoint ' + llTxt([la, lo]), lat: la, lon: lo, wp: true }, null); return true; }   /* Stuart 13:20: a waypoint anywhere, as well as buoys */   /* a course change in hand (13:12) */
     if (WZ.on && !editing) { var wr = wzTap(la, lo, x, y); if (wr) return true; }
     if (pick === 'chain') { var mc = hit(x, y); if (mc) sidePop(mc, x, y); else toast('Tap one of the Solent buoys.'); return true; }
@@ -364,13 +368,13 @@
   function nextHtml() {
     var pad = function (v) { return ('0' + v).slice(-2); }, now = Date.now() / 1000, t = B.startAt ? new Date(B.startAt * 1000) : null, l = lineNow(), bi = biasNow(), tdz = tideRef();
     var inm = B.startAt ? Math.round((B.startAt - now) / 60) : null, sgb = function (k, v, cur, lab) { return '<button type="button" data-k="' + k + '" data-v="' + v + '" aria-pressed="' + (cur === v) + '">' + lab + '</button>'; };
-    var seq = B.seq === 3 ? 3 : B.seq === 10 ? 10 : 5, ssm = B.ssMin == null ? 10 : B.ssMin;
+    var seq = B.seq === 3 ? 3 : B.seq === 10 ? 10 : B.seq === 104 ? 104 : 5, ssm = B.ssMin == null ? 10 : B.ssMin;
     return '<div class="solnext"><b class="solk">Next</b>' +
       '<div class="solcl"><label class="solk" for="solNxT">Start</label><input id="solNxT" type="time" step="60" value="' + (t ? pad(t.getHours()) + ':' + pad(t.getMinutes()) : '') + '"><span class="soln">' + (inm == null ? 'set the gun time' : inm > 0 ? 'in ' + (inm >= 120 ? Math.floor(inm / 60) + ' h ' + (inm % 60) + ' min' : inm + ' min') : inm > -2 ? 'now' : 'started') + '</span></div>' +
       '<div class="solcl"><span class="solk">Start line</span><span class="soln">' + (l ? (bi ? (bi.m < 2 ? 'set · square to the wind' : 'set · ' + esc(bi.end) + ' end favoured by ' + bi.m + ' m') : 'set · ' + Math.round(lineLen()) + ' m') : 'not set') + '</span><button class="btn" data-k="nxline">' + (l ? 'Change' : 'Ping, or boat and direction') + '</button></div>' +
       '<div class="solcl"><span class="solk">Tide</span><span class="soln">' + esc(tideTxt(tdz)) + '</span><button class="btn" data-k="nxtide">Set</button></div>' +
       (l ? lineCheck().map(function (x) { return '<p class="solmsg">' + esc(x) + '</p>'; }).join('') : '') +
-      '<div class="solcl"><span class="solk">Sequence</span><span class="seg">' + sgb('nxseq', 10, seq, '10-5-0') + sgb('nxseq', 5, seq, '5-4-1-0') + sgb('nxseq', 3, seq, '3-2-1-0') + '</span></div>' +
+      '<div class="solcl"><span class="solk">Sequence</span><span class="seg">' + sgb('nxseq', 10, seq, '10-5-0') + sgb('nxseq', 104, seq, '10-4-1-0') + sgb('nxseq', 5, seq, '5-4-1-0') + sgb('nxseq', 3, seq, '3-2-1-0') + '</span></div>' +
       '<div class="solcl"><span class="solk">Our start</span><span class="seg">' + [1, 2, 3, 4, 5].map(function (n) { return sgb('nxpos', n, series().pos, n === 1 ? 'First' : n + (n === 2 ? 'nd' : n === 3 ? 'rd' : 'th')); }).join('') + '</span>' + (series().pos > 1 ? '<span class="seg">' + [3, 5, 10].map(function (n) { return sgb('nxiv', n, series().iv, 'every ' + n + ' min'); }).join('') + '</span>' : '') + '</div>' +
       (seriesTxt() ? '<p class="soln">' + esc(seriesTxt()) + '</p>' : '') +
       '<div class="solcl"><label class="solk" for="solLoa">Boat length</label><input id="solLoa" type="number" inputmode="decimal" min="3" max="40" step="0.1" value="' + (B.loa || '') + '" placeholder="m" aria-label="Boat length, metres"> m <label class="solk" for="solAccM">To full speed</label><select id="solAccM" aria-label="Where the time to full speed comes from">' + [['typed', 'Typed'], ['size', 'Boat size'], ['learn', window.__navBoat ? 'Learn from the log' : 'Learn from the GPS']].map(function (o) { return '<option value="' + o[0] + '"' + ((B.accMode || (window.__navBoat ? 'learn' : 'typed')) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
@@ -525,7 +529,10 @@
     var w = windRef(); if (w && w.twd != null) { var ux = Math.sin(w.twd * R), uy = Math.cos(w.twd * R), up = (dx * ux + dy * uy) * 1852; t += Math.abs(up) < 2 ? ', square to the wind' : ', ' + (up > 0 ? 'pin' : 'committee boat') + ' end favoured by ' + Math.round(Math.abs(up)) + ' m'; } return t + '.'; }
   function ping(fn) { var f = null; try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} if (!f || f.dr || Date.now() - f.at > 30000) { if (window.__fsLiveOpen) window.__fsLiveOpen(); WZ.msg = 'No GPS fix yet: the GPS is starting. Tap Ping again in a moment.'; wzRender(); return; } if (window.__fsOnLand && window.__fsOnLand(f.la, f.lo)) { WZ.msg = 'The GPS puts you on land, so nothing was pinged. Ping from the boat, or tap the point on the chart.'; wzRender(); return; } fn(f.la, f.lo); }
   /* the race's wind: typed, head to wind, or the boat's instruments (Route+); used for the leg list, line bias and header or lift */
-  function windRef() { if (B.wind && B.wind.twd != null) return B.wind; var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} if (nw && nw[1] != null) { B.wind = { twd: Math.round(nw[1]), src: 'boat', at: Date.now() }; saveB(); return B.wind; } return null; }
+  function windRef() { if (B.wind && B.wind.twd != null) return B.wind; var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} if (nw && nw[1] != null) { B.wind = { twd: Math.round(nw[1]), src: 'boat', at: Date.now() }; saveB(); return B.wind; }
+    if (ROUTE && window.__fsWindAt) { var p0 = kitPos(), fw = p0 ? window.__fsWindAt(p0[0], p0[1], B.startAt || null) : null; if (fw && fw.twd != null) return { twd: Math.round(fw.twd), tws: Math.round(fw.tws), src: 'forecast' }; }   /* F44: Route has the forecast */
+    return null; }
+  function kitPos() { var l = lineNow(); if (l) return [(l.boat[0] + l.pin[0]) / 2, (l.boat[1] + l.pin[1]) / 2]; var f = null; try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} return f ? [f.la, f.lo] : null; }
   function headToWind() { var done = false, fin = function (h, src) { if (done) return; done = true; window.removeEventListener('deviceorientationabsolute', onO, true); window.removeEventListener('deviceorientation', onO, true); B.wind = { twd: Math.round(((h % 360) + 360) % 360), src: src, at: Date.now() }; saveB(); WZ.msg = 'Wind set from ' + src + ': ' + ('00' + B.wind.twd).slice(-3) + '°.'; wzRender(); };
     var dr = null; try { dr = window.__navDR && window.__navDR(); } catch (e) {} if (dr && dr.hdg != null) return fin(dr.hdg, 'the boat\'s heading');
     function onO(e) { var h = e.webkitCompassHeading != null ? e.webkitCompassHeading : (e.absolute && e.alpha != null ? 360 - e.alpha : null); if (h != null) fin(h, 'the phone\'s compass (magnetic, within a degree in the Solent)'); }
@@ -789,15 +796,15 @@
   var SQ = { shown: false, last: null, ac: null, hide: 0 };
   var FLAGS = { P: 'P: the ordinary start.', I: 'I: in the last minute, a boat on the course side must sail round an end to start.', Z: 'Z: in the last minute, a boat in the triangle (the line ends and the first mark) takes a 20% penalty.', U: 'U: in the last minute, a boat in the triangle is disqualified.', B: 'Black flag: in the last minute, a boat in the triangle is disqualified.' };
   /* Stuart 17 Nov 09:35: "5,4,1 or 3,2,1 or 10,5 go" */
-  function sqSignals() { return B.seq === 3 ? [180, 120, 60, 0] : B.seq === 10 ? [600, 300, 0] : [300, 240, 60, 0]; }
-  function seqName() { return B.seq === 3 ? '3-2-1-0' : B.seq === 10 ? '10-5-0' : '5-4-1-0'; }
-  function seqLen() { return B.seq === 3 ? 3 : B.seq === 10 ? 10 : 5; }
+  function sqSignals() { return B.seq === 3 ? [180, 120, 60, 0] : B.seq === 10 ? [600, 300, 0] : B.seq === 104 ? [600, 240, 60, 0] : [300, 240, 60, 0]; }   /* 104: 10-4-1-0, the Fastnet's (RFR 2025 SIs 13) */
+  function seqName() { return B.seq === 3 ? '3-2-1-0' : B.seq === 10 ? '10-5-0' : B.seq === 104 ? '10-4-1-0' : '5-4-1-0'; }
+  function seqLen() { return B.seq === 3 ? 3 : B.seq === 10 || B.seq === 104 ? 10 : 5; }
   function sqTone(long) { try { SQ.ac = SQ.ac || new (window.AudioContext || window.webkitAudioContext)(); var a = SQ.ac, o = a.createOscillator(), g = a.createGain(); o.frequency.value = long ? 880 : 1200; g.gain.value = 0.25; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + (long ? 0.9 : 0.15)); } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(long ? [500] : [80]); } catch (e) {} }
-  function sqGun(t) { B.startAt = Math.round(t); B.raced = null; saveB(); try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {} sqRender(); }
+  function sqGun(t) { SQ.setAt = Date.now(); B.startAt = Math.round(t); B.raced = null; saveB(); try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {} sqRender(); }
   function sqOn() { var now = Date.now() / 1000; if (SQ.hide && SQ.hide === B.startAt) return false; if (B.pp) return true; if (SQ.force && SQ.force === B.startAt && now < B.startAt + 60) return true; var q0 = series(); return !!(B.startAt && now > B.startAt - 900 - (q0.pos - 1) * q0.iv * 60 && now < B.startAt + 60); }
   function sqRender() {
-    var b = $('solSeq'), on = window.FS_MARK && sqOn() && !($('solCard') && !$('solCard').hidden), ss = $('solStartScr');   /* the race menu sheet comes first */ if (!on) { if (b) b.hidden = true; if (ss) ss.hidden = true; return; } css();
-    var rem0 = B.startAt ? B.startAt - Date.now() / 1000 : null, mins = B.ssMin == null ? 10 : B.ssMin, big = !B.pp && rem0 != null && rem0 > -5 && (SQ.force === B.startAt || (mins > 0 && rem0 <= mins * 60 && !(SQ.small && Math.abs(SQ.small - B.startAt) < 900)));
+    var b = $('solSeq'), on = KIT && sqOn() && !($('solCard') && !$('solCard').hidden), ss = $('solStartScr');   /* the race menu sheet comes first */ if (!on) { if (b) b.hidden = true; if (ss) ss.hidden = true; return; } css();
+    var rem0 = B.startAt ? B.startAt - Date.now() / 1000 : null, mins = B.ssMin == null ? 10 : B.ssMin, big = !B.pp && rem0 != null && rem0 > -5 && (SQ.force === B.startAt || (mins > 0 && rem0 <= mins * 60 && !(SQ.small && Math.abs(SQ.small - B.startAt) < 900) && !document.body.classList.contains('fsdeck')));   /* F44: the start screen does not open by itself over the deck screen the crew chose */
     if (big) { if (b) b.hidden = true; if (!SQ.gps) { SQ.gps = 1; try { if (window.__fsLiveOpen && !(window.__fsLiveFix && window.__fsLiveFix())) window.__fsLiveOpen(); } catch (x) {} } ssRender(rem0); return; }   /* M28: the start screen */
     if (ss) ss.hidden = true;
     if (!b) { b = document.createElement('div'); b.id = 'solSeq'; b.className = 'solseq'; b.setAttribute('role', 'timer'); document.body.appendChild(b);
@@ -806,7 +813,7 @@
   function sqClick(e) { var b = $('solSeq'); var t = e.target.closest('[data-q]'); if (!t) return; var q = t.dataset.q, now = Date.now() / 1000; try { SQ.ac = SQ.ac || new (window.AudioContext || window.webkitAudioContext)(); if (SQ.ac.resume) SQ.ac.resume(); } catch (x) {}
         if (q === 'sync') { var rem = B.startAt - now; sqGun(now + Math.round(rem / 60) * 60); toast('Synced: gun at ' + clk(B.startAt) + '.'); }
         else if (q === 'm1') sqGun(B.startAt - 60); else if (q === 'p1') sqGun(B.startAt + 60);
-        else if (q === 'seq') { B.seq = B.seq === 3 ? 10 : B.seq === 10 ? 5 : 3; saveB(); sqRender(); }
+        else if (q === 'seq') { B.seq = B.seq === 3 ? 10 : B.seq === 10 ? 104 : B.seq === 104 ? 5 : 3; saveB(); sqRender(); }
         else if (q === 'flag') { var o = ['P', 'I', 'Z', 'U', 'B'], i = o.indexOf(B.flag || 'P'); B.flag = o[(i + 1) % o.length]; saveB(); sqRender(); toast(FLAGS[B.flag]); }
         else if (q === 'ap') { B.pp = true; saveB(); sqRender(); toast('Postponed. Tap Warning when the warning signal goes.'); }
         else if (q === 'warn') { B.pp = false; sqGun(now + seqLen() * 60); }
@@ -888,7 +895,7 @@
   function tideRef() { var t = B.tide || {}, md = t.mode || 'model';
     if (md === 'hand') return t.spd >= 0 && t.dir != null && t.dir !== '' ? { spd: +t.spd, dir: +t.dir, src: 'by hand', mode: md } : { mode: md, need: true };
     if (md === 'boat') { var nt = null; try { nt = window.__navTide ? window.__navTide() : null; } catch (e) {} return nt ? { spd: nt.spd, dir: nt.dir, src: nt.src || 'the boat', mode: md } : { mode: md, need: true }; }
-    var l = lineNow(), at = l ? [(l.boat[0] + l.pin[0]) / 2, (l.boat[1] + l.pin[1]) / 2] : B.start ? [B.start.lat, B.start.lon] : null, v = null; if (!at) return { mode: md, need: true };
+    var l = lineNow(), at = l ? [(l.boat[0] + l.pin[0]) / 2, (l.boat[1] + l.pin[1]) / 2] : B.start ? [B.start.lat, B.start.lon] : ROUTE ? kitPos() : null, v = null; if (!at) return { mode: md, need: true };
     try { v = window.__fsTideAt ? window.__fsTideAt(at[0], at[1]) : null; } catch (e) {} if (!v) return { mode: md, need: true }; return { spd: Math.hypot(v[0], v[1]), dir: (Math.atan2(v[0], v[1]) / R + 360) % 360, src: 'forecast', mode: md }; }
   function tideTxt(z) { if (!z || z.need) return z && z.mode === 'hand' ? 'by hand: give the rate and direction' : z && z.mode === 'boat' ? 'from the boat: no set and drift yet' : 'forecast: none at the line yet'; return z.spd.toFixed(1) + ' kn to ' + ('00' + Math.round(z.dir)).slice(-3) + '°T (' + z.src + ')'; }
   function pushTide() { try { var t = B.tide || {}, z = tideRef(); if (window.__fsTideHand) window.__fsTideHand(t.mode === 'hand' || t.mode === 'boat' ? (z && !z.need ? { on: true, spd: +z.spd.toFixed(2), dir: Math.round(z.dir), src: z.src } : { on: false }) : { on: false }); } catch (e) {} }
@@ -961,12 +968,12 @@
         if (nb && (fr('twa') || fr('awa') || fr('bsp'))) { h += cell('BSP', fr('bsp') ? (+nb.bsp).toFixed(1) + ' kn' : '--', 'log') + cell('TWA', fr('twa') ? Math.abs(Math.round(nb.twa)) + '° ' + (nb.twa < 0 ? 'port' : 'stbd') : '--', fr('tws') ? (+nb.tws).toFixed(1) + ' kn true' : '') + cell('AWA', fr('awa') ? Math.abs(Math.round(nb.awa)) + '° ' + (nb.awa < 0 ? 'port' : 'stbd') : '--', fr('aws') ? (+nb.aws).toFixed(1) + ' kn apparent' : ''); if (fr('heel')) h += cell('Heel', Math.abs(Math.round(nb.heel)) + '°', nb.heel < 0 ? 'to port' : 'to starboard'); }
         else { var wq = windRef(); h += cell('Wind', wq && wq.twd != null ? ('00' + Math.round(wq.twd)).slice(-3) + '°' : '--', wq ? (wq.tws > 0 ? wq.tws + ' kn · ' : '') + (wq.src === 'typed' || !wq.src ? 'typed' : esc(wq.src)) : 'give the wind'); }
         return h; })() +
-      (function () { var tz = tideRef(); return cell('Tide', tz && !tz.need ? tz.spd.toFixed(1) + ' kn' : '--', tz && !tz.need ? 'to ' + ('00' + Math.round(tz.dir)).slice(-3) + '° · ' + tz.src : 'set it: Next, Tide'); })();
+      (function () { var tz = tideRef(); return cell('Tide', tz && !tz.need ? tz.spd.toFixed(1) + ' kn' : '--', tz && !tz.need ? 'to ' + ('00' + Math.round(tz.dir)).slice(-3) + '° · ' + tz.src : ROUTE ? 'no forecast tide here' : 'set it: Next, Tide'); })();
     var ov = e.querySelector('.ssov'), ot = ''; if (lc && lc.over && rem <= 60 && rem > -5) ot = B.flag && B.flag !== 'P' ? FLAGS[B.flag].replace(/^[^:]*: /, '') : 'On the course side: go back before the gun.'; else if (seriesTxt() && rem > 60) ot = seriesTxt(); else if (chk.length && rem > 120) ot = chk[0]; ov.hidden = !ot; ov.textContent = ot; ov.classList.toggle('ssinfo', !(lc && lc.over && rem <= 60));
     e.hidden = false; e.classList.toggle('sqlast', rem <= 60 && rem > 0); ssDraw(e.querySelector('.sscv'), lc, rem);
   }
   function clk(t) { var d = new Date(t * 1000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + (d.getSeconds() ? ':' + ('0' + d.getSeconds()).slice(-2) : ''); }
-  if (window.FS_MARK) setInterval(function () { var tn = Date.now(); if (!SS.lastNote || tn - SS.lastNote > 1000) { SS.lastNote = tn; try { var fq = window.__fsLiveFix && window.__fsLiveFix(); if (fq && (!SS.sp.length || SS.sp[SS.sp.length - 1][0] < tn - 900)) spdNote(fq); learnTick(fq); } catch (e) {} }   /* M36: speeds kept all the time, not only while the start screen shows */
+  if (KIT) setInterval(function () { var tn = Date.now(); if (!SS.lastNote || tn - SS.lastNote > 1000) { SS.lastNote = tn; try { var fq = window.__fsLiveFix && window.__fsLiveFix(); if (fq && (!SS.sp.length || SS.sp[SS.sp.length - 1][0] < tn - 900)) spdNote(fq); learnTick(fq); } catch (e) {} }   /* M36: speeds kept all the time, not only while the start screen shows */
     sqRender(); if (!B.startAt || B.pp) return; var rem = Math.round(B.startAt - Date.now() / 1000); if (rem === SQ.last) return; SQ.last = rem; if (sqSignals().indexOf(rem) >= 0) sqTone(true); else if (rem > 0 && rem <= 10) sqTone(false); }, 250);
   /* M2 (Stuart 17 Nov 05:04): laylines to the next mark when it is upwind, from the typed wind (Mark) or the boat's wind (Mark+) */
   function laylines(ctx, X, Y) {
@@ -985,7 +992,7 @@
   function target(ctx, x, y, col) { ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 2 * Math.PI); ctx.fill(); [[0, -14, 0, -10], [0, 10, 0, 14], [-14, 0, -10, 0], [10, 0, 14, 0]].forEach(function (q) { ctx.beginPath(); ctx.moveTo(x + q[0], y + q[1]); ctx.lineTo(x + q[2], y + q[3]); ctx.stroke(); }); ctx.restore(); }
   function extras(ctx, X, Y) {
     var l = window.__fsLine ? window.__fsLine() : {};
-    if (window.FS_MARK && BV.on) biasDraw(ctx, X, Y);
+    if (KIT && BV.on) biasDraw(ctx, X, Y);
     if (window.FS_MARK && l.boat && l.pin) { ctx.save(); ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(l.boat[1]), Y(l.boat[0])); ctx.lineTo(X(l.pin[1]), Y(l.pin[0])); ctx.stroke(); var bi = biasNow(); if (bi && !BV.on && bi.m >= 2) { var fe = /Pin|Outer/.test(bi.end) ? l.pin : l.boat; ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ctx.fillText('FAVOURED ' + bi.m + ' m', X(fe[1]) + 12, Y(fe[0]) + 12); } ctx.restore(); }
     if (window.FS_MARK) { if (l.boat) boatSym(ctx, X(l.boat[1]), Y(l.boat[0])); if (l.pin) pinSym(ctx, X(l.pin[1]), Y(l.pin[0])); }
     if (window.FS_MARK && !window.__navPlot) laylines(ctx, X, Y);   /* Mark+ draws its own laylines, with the tide, in Route+'s plotter */
@@ -1016,7 +1023,7 @@
      They sit together in the middle of the bottom edge of the chart, above the race panel or the menu bar, where the eye is. STOP RACE asks for a second tap within 4 seconds, so a knock never ends a race. */
   var RB = { el: null, arm: 0, key: '' };
   function rbState() {
-    if (!window.FS_MARK || !B.shown || !B.startAt || B.ended > B.startAt * 1000) return '';
+    if (!KIT || !B.shown || !B.startAt || B.ended > B.startAt * 1000) return '';
     var now = Date.now() / 1000; if (now > B.startAt + 10 * 3600) return '';
     if (['solCard', 'sheet', 'liveBig', 'navHelm', 'solStartScr', 'help', 'fsTour', 'races'].some(function (id) { var e = $(id); return e && !e.hidden && e.getClientRects().length; })) return '';
     if (document.body.classList.contains('navclear')) return '';
@@ -1043,8 +1050,44 @@
     RB.el.style.top = Math.round(top) + 'px';
   }
   setInterval(rbRender, 1000);
-  (function () { var st = document.createElement('style'); st.textContent = '.solrb{position:fixed;z-index:56;left:50%;translate:-50% 0;display:flex;gap:8px;pointer-events:none}.solrb .btn{pointer-events:auto;font:800 13px/1 var(--f-body,system-ui);letter-spacing:.06em;padding:11px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}.solrb .solrbseq{background:#6FA9E0;color:#042D5E;border:1px solid #042D5E}.solrb .solrbstop{background:#C8372D;color:#fff;border:1px solid #7a1c16}.solrb .solrbstop.armed{background:#fff;color:#C8372D;border:2px solid #C8372D}'; document.head.appendChild(st); })();
+  (function () { var st = document.createElement('style'); st.textContent = 'body.fsdeck #solSeq{display:none}' /* F44: the deck screen has its own GUN box; the bar covered its MENU button */ + '.solrb{position:fixed;z-index:56;left:50%;translate:-50% 0;display:flex;gap:8px;pointer-events:none}.solrb .btn{pointer-events:auto;font:800 13px/1 var(--f-body,system-ui);letter-spacing:.06em;padding:11px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}.solrb .solrbseq{background:#6FA9E0;color:#042D5E;border:1px solid #042D5E}.solrb .solrbstop{background:#C8372D;color:#fff;border:1px solid #7a1c16}.solrb .solrbstop.armed{background:#fff;color:#C8372D;border:2px solid #C8372D}'; document.head.appendChild(st); })();
   window.FSSolent = { ss: function () { return SS; }, em: function () { return EM; }, tideReset: function () { B.tide = { mode: 'model' }; saveB(); try { wzRender(); } catch (e) {} var lg = $('solLegs'); if (lg && !lg.hidden) showList(); }, test: function (on) { if (on === false) testStop(); else testStart(); }, testing: function () { return SIM.on; }, share: share, applyRemote: applyRemote, showList: showList, newCourse: newCourse, windRef: windRef, legType: legType, start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, startNow: function () { if (!B.startAt || B.pp) return null; var rem = B.startAt - Date.now() / 1000, lc = null, f = null, sm = null; try { lc = window.__fsLineCalc ? window.__fsLineCalc(B.startAt) : null; } catch (e) {} try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} try { sm = startMaths(lc, f, rem); } catch (e) {} return { rem: rem, burn: sm && sm.burn != null ? sm.burn : lc && lc.burn != null ? lc.burn : null, d: lc && lc.d != null ? lc.d * 1852 : null, over: !!(lc && lc.over), sog: f && f.sog != null ? f.sog : null }; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
+  if (ROUTE) {   /* F44: Route and Route+ keep only the start kit's face; the gun is Route's class start, both ways */
+    var full = window.FSSolent; window.FSSolent = { kit: true, isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; }, ss: full.ss, state: full.state, startNow: full.startNow };
+    B.shown = B.shown || 1; B.type = 'route'; C.on = false;
+    var gunSync = function () { var g = null; try { g = window.__fsGunAt ? window.__fsGunAt() : null; } catch (e) {} if (!g) { if (B.startAt && !(SQ.setAt && Date.now() - SQ.setAt < 3000)) { B.startAt = null; saveB(); } return; } if (Math.abs(g - (B.startAt || 0)) > 1 && !(SQ.setAt && Date.now() - SQ.setAt < 3000)) { B.startAt = g; B.ended = null; SQ.hide = 0; saveB(); } };
+    gunSync(); setInterval(gunSync, 1000);
+    /* F44 (Stuart 18 Nov 15:25): the start line five ways in Route: ping (the GPS window), shore transit (the GPS window), typed latitude and
+       longitude from the sailing instructions, bearing and length from one end, or two taps on the chart; and the RYS line preset. */
+    var RYS = { boat: [50.766733, -1.300917], brg: 346, m: 2290 };   /* Rolex Fastnet Race 2025 SIs 14.1 to 14.2; RYS SIs give the transit as about 346 T */
+    var LP = 0;   /* taps still wanted on the chart: 2 boat then pin, 1 pin */
+    var putLine = function (bq, pq, why) { window.__fsSetLine('boat', bq[0], bq[1]); window.__fsSetLine('pin', pq[0], pq[1]); if (window.__fsLineKind) window.__fsLineKind(false); toast('Start line set: ' + why + '. Check it against the sailing instructions for this race.'); redraw(); };
+    window.__fsLineSet = function () {
+      var c = $('kitLine'); if (!c) { css(); c = document.createElement('div'); c.id = 'kitLine'; c.className = 'solpop sollegs kitline'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', 'Set the start line'); document.body.appendChild(c); }
+      var l = lineNow(), v = function (q) { return q ? llTxt(q) : ''; };
+      c.innerHTML = '<div class="shead"><h2>Start line</h2><button class="close" id="klX" aria-label="Close">×</button></div>' +
+        '<p class="note">Ping each end in the GPS window, or set the line here. Boat end is the committee boat (or the shore end of a transit).</p>' +
+        '<div class="solcl"><button class="btn" id="klRYS">RYS line, Cowes</button><span class="soln">Flagstaff on 346°T to abeam the Williams Shipping Buoy</span></div>' +
+        '<div class="solcl"><label class="solk" for="klB">Boat end</label><input id="klB" placeholder="50 46.004N 001 18.055W" value="' + v(l && l.boat) + '"></div>' +
+        '<div class="solcl"><label class="solk" for="klP">Pin end</label><input id="klP" placeholder="lat, long" value="' + v(l && l.pin) + '"></div>' +
+        '<div class="solcl"><span class="solk">or</span><input id="klBr" type="number" inputmode="decimal" placeholder="bearing °T" style="width:7em"><input id="klLen" type="number" inputmode="decimal" placeholder="length m" style="width:7em"><span class="soln">from the boat end</span></div>' +
+        '<div class="solcl"><button class="btn" id="klSet">Set the line</button><button class="btn" id="klTap">Touch the chart</button></div><p class="solmsg" id="klMsg" hidden></p>';
+      c.hidden = false;
+      var msg = function (m) { var e = $('klMsg'); e.textContent = m; e.hidden = !m; };
+      $('klX').onclick = function () { c.hidden = true; LP = 0; };
+      $('klRYS').onclick = function () { var q = offset({ lat: RYS.boat[0], lon: RYS.boat[1] }, RYS.brg, RYS.m / 1852); putLine(RYS.boat, [q.lat, q.lon], 'the RYS line'); c.hidden = true; };
+      $('klTap').onclick = function () { LP = 2; c.hidden = true; SQ.small = B.startAt; SQ.force = 0; var ssh = $('solStartScr'); if (ssh) ssh.hidden = true; sqRender(); toast('Tap the chart at the boat end, then at the pin end.'); };
+      $('klSet').onclick = function () { var bq = llParse($('klB').value), pq = llParse($('klP').value), br = $('klBr').value, ln = +$('klLen').value;
+        if (!bq) return msg('Give the boat end, for example 50 46.004N 001 18.055W.');
+        if (!pq && br !== '' && ln > 0) { var q = offset({ lat: bq[0], lon: bq[1] }, +br, ln / 1852); pq = [q.lat, q.lon]; }
+        if (!pq) return msg('Give the pin end, or a bearing and length from the boat end.');
+        var dm = Math.hypot((pq[1] - bq[1]) * Math.cos(bq[0] * R) * 60, (pq[0] - bq[0]) * 60) * 1852; if (dm < 20) return msg('The ends are only ' + Math.round(dm) + ' m apart.');
+        putLine(bq, pq, 'typed'); c.hidden = true; };
+    };
+    window.__fsKitTap = function (la, lo) { if (!LP) return false; if (LP === 2) { window.__fsSetLine('boat', la, lo); LP = 1; toast('Boat end set. Now tap the pin end.'); redraw(); return true; } LP = 0; var l = lineNow() || {}, b0 = (window.__fsLine() || {}).boat; if (b0) { var dm = Math.hypot((lo - b0[1]) * Math.cos(la * R) * 60, (la - b0[0]) * 60) * 1852; if (dm < 20) { LP = 1; toast('Only ' + Math.round(dm) + ' m from the boat end: tap the pin end.'); return true; } } window.__fsSetLine('pin', la, lo); toast('Start line set from the chart. Check it against the sailing instructions.'); redraw(); return true; };
+    window.__fsStartScreen = function () { gunSync(); if (!B.startAt) { toast('Choose your class start first: Routes, Start.'); return; } SQ.hide = 0; SQ.small = 0; SQ.force = B.startAt; sqRender(); rbRender(); };
+    return;
+  }
   if (C.on) load();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookSettings); else hookSettings();
 })();
