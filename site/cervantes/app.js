@@ -809,6 +809,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var AIS = { tg: new FSAIS.Targets(), src: 'off', danger: {}, lastEmit: -1, fleet: null, warned: {} };
   function aisNowMs() { return AIS.src === 'test' ? (T0 + S.t * 3600) * 1000 : Date.now(); }
   function ownForCpa() {
+    /* F53 (Stuart 18 Nov 2026, found by the boat simulator): our position for the collision warning is the Live GPS fix whenever Live GPS
+       is on (the boat's GPS on the + tools, or dead reckoning when the GPS is lost). It used to be the phone's GPS only while MOB was running,
+       otherwise where the planned route said the boat should be at the slider time, and nothing at all without a route: a ferry on a
+       collision course closed to 0.8 nm with no warning. The plan is used only when Live GPS is off (planning at home). */
+    var lf = LIVE.on ? LIVE.fix : null;
+    if (lf && lf.la != null && Date.now() - (lf.at || 0) < 30000 && AIS.src !== 'test') return { lat: lf.la, lon: lf.lo, sog: lf.sog || 0, cog: lf.cog || 0, src: lf.dr ? 'dead reckoning' : 'GPS' };
     if (me && Date.now() - me.at < 30000 && AIS.src !== 'test') return { lat: me.lat, lon: me.lon, sog: (me.sog || 0) / KN, cog: me.cog || 0, src: 'GPS' };
     var s = S.sel; if (!s) return null; var p = s.r.path, pos = posAt(tsOf(p), p, S.t); if (!pos || pos.done) return null;
     var q = p[Math.min(p.length - 1, (pos.i || 0) + 1)]; return { lat: pos.la, lon: pos.lo, sog: q.bsp || 0, cog: q.hdg || 0, src: 'route' };
