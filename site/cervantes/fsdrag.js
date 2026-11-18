@@ -184,7 +184,7 @@
     '.fswtab.l{left:env(safe-area-inset-left,0px);border-radius:0 10px 10px 0}.fswtab.r{right:env(safe-area-inset-right,0px);border-radius:10px 0 0 10px}.fswtab[hidden]{display:none}';
   var st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
-  setInterval(function () { wireButtons(); if (!M.drag) place(); }, 500);
+  var pk = 0; setInterval(function () { wireButtons(); if (window.__fsSaver && !M.el && (pk++ % 2)) return; if (!M.drag) place(); }, 500);   /* Battery saver: every second instead of every half second */
   var rt = 0; window.addEventListener('resize', function () { if (M.drag) return; clearTimeout(rt); rt = setTimeout(apply, 250); });
   var n = 0, w = setInterval(function () { apply(); if (++n > 40) clearInterval(w); }, 500);   /* panels are built after load */
 

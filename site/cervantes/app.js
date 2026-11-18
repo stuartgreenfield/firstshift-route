@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.45';
+  var VERSION = 'FirstShift Route v0.12.46';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -305,7 +305,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.45 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.46 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -988,7 +988,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function updCheck() {
     if (!navigator.onLine || document.hidden) return;
     fetch('app.js?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
-      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.45) */
+      var m = /FirstShift Route v([0-9.]+)/.exec(t || ''), now = /v([0-9.]+)/.exec(VERSION); if (!m || !now || m[1] === now[1]) return; var vn = function (x) { return x.split('.').map(Number); }, a = vn(m[1]), b0 = vn(now[1]), newer = false; for (var vi = 0; vi < 3; vi++) { if ((a[vi] || 0) !== (b0[vi] || 0)) { newer = (a[vi] || 0) > (b0[vi] || 0); break; } } if (!newer) return;   /* an older copy from a cache is not an update (16 Nov: it offered v0.12.26 to v0.12.46) */
       var b = $('updBar'); if (!b) return; b.textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v' + m[1] + ' is ready (you have v' + now[1] + '). Tap to update.'; b.hidden = false;
     }).catch(function () {});
   }
@@ -2974,7 +2974,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var coastBits = null;
   function coastLand(la, lo) { var C = meta.coast; if (!coastBits) return false; var y = Math.round((la - C.lat0) / C.dlat), x = Math.round((lo - C.lon0) / C.dlon); if (y < 0 || x < 0 || y >= C.ny || x >= C.nx) return false; var i = y * C.nx + x; return (coastBits[i >> 3] >> (7 - (i & 7))) & 1; }
   /* 17 Nov 23:00: tried gathering redraws into one per screen frame; measured slower on a slowed tablet (12 s of work in 15 s against 5.5 s), so the chart is drawn at once as before */
-  function draw() { drawNow(); }
+  /* F31 (Stuart 17 Nov 23:43: "a battery save mode or an older processor mode ... under the relevant setting section"; Settings,
+     Display, Battery saver): while nobody is touching the screen, the chart is redrawn at most twice a second; a finger on the
+     screen always gets an immediate redraw */
+  var SV = { last: 0, t: 0, touch: 0 };
+  ['pointerdown', 'pointermove', 'wheel'].forEach(function (n) { window.addEventListener(n, function (e) { if (n !== 'pointermove' || e.buttons || e.pointerType === 'touch') SV.touch = Date.now(); }, { passive: true, capture: true }); });
+  function draw() {
+    if (!window.__fsSaver || Date.now() - SV.touch < 1500) { SV.last = Date.now(); drawNow(); return; }
+    var wait = 500 - (Date.now() - SV.last); if (wait <= 0) { clearTimeout(SV.t); SV.t = 0; SV.last = Date.now(); drawNow(); return; }
+    if (!SV.t) SV.t = setTimeout(function () { SV.t = 0; SV.last = Date.now(); drawNow(); }, wait);
+  }
   function drawNow() {
     if (!W || !meta) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -3582,7 +3591,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ['#editBar', '#navStrip', '#fsPlot', '#navPlot', '#solSeq', '#fsDemo', '#astroLine', '#updBar', '#solTestBar', '#errBox']   /* F7 (Stuart's photo 06:16): an error box goes under the strips, not over the plotter */.forEach(function (q) {   /* 17 Nov (Stuart's tablet photo): the Course changed box, the plotter and the GPS pill stack, not overlap */ var e = document.querySelector(q); if (!e || !vis(e) || e.style.translate) return; var par = e.offsetParent, fx = !par && getComputedStyle(e).position === 'fixed'; if (!par && !fx) return; var pt = par ? par.getBoundingClientRect().top : 0, er = e.getBoundingClientRect(), ot = par ? e.offsetTop : er.top; if (bR && er.left < bR.right + 4 && er.top - (ot - (Math.max(y + 6, 8) - pt)) < bR.bottom + 4) y = Math.max(y, bR.bottom); var want = Math.round(Math.max(y + 6, 8) - pt); if (Math.abs(ot - want) > 1) e.style.top = want + 'px';   /* fixed boxes (the start sequence, test mode) stack too */ y = e.getBoundingClientRect().bottom; }); }
   function tick() { try { fabRow(); liveFit(); topStack(); } catch (e) {} var sb = document.getElementById('solStep'), on = (phone.matches && open()) || !!(sb && !sb.hidden);   /* the Solent step box on any screen */ if (document.body && document.body.classList.contains('fabsoff') !== on) document.body.classList.toggle('fabsoff', on); try { covers(); } catch (e) {} }
   function css() { if (document.getElementById('fabsOffCss')) return; var s = document.createElement('style'); s.id = 'fabsOffCss'; s.textContent = 'body.fabsoff .fabhelp,.fabhelp.fabcov{display:none!important}body.gpsbigshort #navStrip{display:none!important}';   /* a phone held sideways has no room for the instrument strip and the GPS window together; the GPS window shows SOG and COG */ document.head.appendChild(s); }
-  function start() { css(); tick(); setInterval(tick, 300); }
+  var tk = 0; function start() { css(); tick(); setInterval(function () { if (window.__fsSaver && (tk++ % 3)) return; tick(); }, 300); }   /* F31 Battery saver: the layout check every 0.9 s instead of 0.3 s */
   window.__fsFabsTick = tick;
   /* The phone's own keyboard (Stuart 16 Nov 22:29: the device's menus must not overlay ours): while a field in a window placed over the
      chart has the keyboard, the window lifts so the field and the window's top stay in view above the keyboard and its bar; it goes
