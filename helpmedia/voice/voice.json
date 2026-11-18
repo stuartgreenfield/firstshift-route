@@ -508,5 +508,50 @@
   "f": "the-practice-race-with-emma-83ce7003.mp3",
   "t": "The practice race with Emma",
   "sec": 25.1
+ },
+ "basic-plotter-8daec86a": {
+  "f": "basic-plotter-8daec86a.mp3",
+  "t": "Basic plotter",
+  "sec": 48.9
+ },
+ "clear-screen-9406057c": {
+  "f": "clear-screen-9406057c.mp3",
+  "t": "Clear screen",
+  "sec": 20.4
+ },
+ "wind-by-hand-493a44c5": {
+  "f": "wind-by-hand-493a44c5.mp3",
+  "t": "Wind by hand",
+  "sec": 28.6
+ },
+ "move-the-gps-window-69516f3f": {
+  "f": "move-the-gps-window-69516f3f.mp3",
+  "t": "Move the GPS window",
+  "sec": 44.5
+ },
+ "tide-by-hand-9bd6b893": {
+  "f": "tide-by-hand-9bd6b893.mp3",
+  "t": "Tide by hand",
+  "sec": 25.8
+ },
+ "live-gps-while-racing-c2441421": {
+  "f": "live-gps-while-racing-c2441421.mp3",
+  "t": "Live GPS while racing",
+  "sec": 86.5
+ },
+ "family-and-friends-1d25fdf9": {
+  "f": "family-and-friends-1d25fdf9.mp3",
+  "t": "Family and friends",
+  "sec": 28.4
+ },
+ "if-you-think-the-forecast-is-wrong-5c925a47": {
+  "f": "if-you-think-the-forecast-is-wrong-5c925a47.mp3",
+  "t": "If you think the forecast is wrong",
+  "sec": 35.8
+ },
+ "ais-d01fcf2b": {
+  "f": "ais-d01fcf2b.mp3",
+  "t": "AIS",
+  "sec": 30.3
  }
 }
