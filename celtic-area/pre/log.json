@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-18T09:34:09.784Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 33,
+   "note": "Routed in 25.8 s. The forecasts end before the finish on 1 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 64,
+   "note": "Routed in 26.5 s. The forecasts end before the finish on 1 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 89,
+   "note": "Routed in 20.5 s. First answer in 4.0 s."
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 116,
+   "note": "Routed in 22.3 s. First answer in 4.0 s."
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 148,
+   "note": "Routed in 27.6 s. The forecasts end before the finish on 1 routes: they show as far as the forecasts reach, with the dis"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 193,
+   "note": "Routed in 38.9 s. The forecasts end before the finish on 2 routes: they show as far as the forecasts reach, with the dis"
+  }
+ ]
+}
