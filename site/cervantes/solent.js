@@ -806,8 +806,11 @@
   /* the test boat sails the boat's own polar (M81, audit B2; Stuart 03:37 "sail a polar based on the test course"): the same speed function
      and best VMG angles as the routing and the start plan, so the start screen, laylines and test boat agree on one close-hauled angle.
      The fixed test polar below is used only when the app has no polar to give. */
-  function emSp() { try { return window.__fsSpeed ? window.__fsSpeed() : null; } catch (e) { return null; } }
-  function emAng(tws, up) { var sp = emSp(); if (sp && window.FSRouter && FSRouter.bestVmg) { try { var b = FSRouter.bestVmg(sp, tws, up); if (b && b[0] > 0) return b[0]; } catch (e) {} } return up ? 42 : 150; }
+  /* built once per test race and kept (the speed check found the test boat rebuilding the polar every step: 15 pauses over 50 ms); the best
+     angles are kept by half a knot of wind */
+  function emSp() { if (EM.sp === undefined) { try { EM.sp = window.__fsSpeed ? window.__fsSpeed() : null; } catch (e) { EM.sp = null; } } return EM.sp; }
+  function emAng(tws, up) { var key = (up ? 'u' : 'd') + Math.round(tws * 2), C = EM.ang || (EM.ang = {}); if (C[key] != null) return C[key];
+    var sp = emSp(), a = up ? 42 : 150; if (sp && window.FSRouter && FSRouter.bestVmg) { try { var b = FSRouter.bestVmg(sp, Math.round(tws * 2) / 2, up); if (b && b[0] > 0) a = b[0]; } catch (e) {} } return (C[key] = a); }
   function emPolar(twa, tws) { var sp = emSp(); if (sp) { try { var v = sp(tws, Math.abs(twa)); if (v > 0) return v; } catch (e) {} } return emPolarTest(twa, tws); }
   function emPolarTest(twa, tws) { var a = Math.abs(twa), k = Math.min(1, tws / 12), pts = [[0, 0], [38, 4.2], [42, 5.6], [60, 6.4], [90, 6.9], [120, 7.0], [150, 6.4], [180, 5.4]]; for (var i = 1; i < pts.length; i++) if (a <= pts[i][0]) { var f = (a - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return (pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1])) * (0.55 + 0.45 * k); } return 5.4 * k; }   /* a test polar for a 30-foot cruiser-racer, not a real boat's */
   function emTide() { var z = tideRef(); return z && !z.need ? [z.spd * Math.sin(z.dir * R), z.spd * Math.cos(z.dir * R)] : [0, 0]; }
