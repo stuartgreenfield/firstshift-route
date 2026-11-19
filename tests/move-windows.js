@@ -33,14 +33,21 @@ async function hold(p, x, y, ms) { await p.mouse.move(x, y); await p.mouse.down(
     await hold(p, a.x, a.y); await p.mouse.move(tb.x, tb.y, { steps: 10 }); await p.mouse.up(); await p.waitForTimeout(200); a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.up(); await p.waitForTimeout(500);
     m = await box(p, '#oriBtn'); const over = m.l < tb.r && m.r > tb.l && m.t < tb.b && m.b > tb.t;
     ok(!over && m.t >= 0, name + ': dropped on the Settings button, it slides to the nearest gap', JSON.stringify({ btn: [m.l, m.t, m.r, m.b].map(Math.round), set: [tb.l, tb.t, tb.r, tb.b].map(Math.round) }));
+    /* Save new position (Stuart 19 Nov 14:43): the box says it, and it locks the move without a second long press */
+    a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.move(a.x - 120, a.y + 40, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(300);
+    const sv1 = await p.evaluate(() => { const u = document.getElementById('navUndo'); return u && !u.hidden && /Save new position/.test(u.textContent) && /Undo/.test(u.textContent); });
+    await p.waitForTimeout(800); await p.click('#navSaveB'); await p.waitForTimeout(400); m = await box(p, '#oriBtn');
+    const sv2 = await p.evaluate(() => { const u = document.getElementById('navUndo'); return u && !u.hidden && /New position saved/.test(u.textContent); });
+    ok(sv1 && sv2 && !m.on && /oriBtn/.test(await p.evaluate(() => localStorage.getItem('nav-pos'))), name + ': the box says Save new position; tapping it locks the move and says New position saved', JSON.stringify({ sv1, sv2, on: m.on }));
     /* Undo */
+    await p.waitForTimeout(800);   /* Undo ignores a tap in its first 0.7 s (the lifting finger) */
     const before = m.tr; await p.click('#navUndoB'); await p.waitForTimeout(400); m = await box(p, '#oriBtn');
     ok(m.tr !== before, name + ': Undo puts it back where it was', before + ' -> ' + (m.tr || 'home'));
     /* the GPS window: a small grip, all the time (Route) */
     if (name === 'Route') {
       await p.click('#liveBtn').catch(() => {}); await p.waitForTimeout(3000);
       const g = await box(p, '#grip-liveBox'); const lb = await box(p, '#liveBox');
-      ok(g && g.r - g.l <= 34 && g.b - g.t <= 20, 'Route: the GPS window has a small grip', g && JSON.stringify([g.r - g.l, g.b - g.t]));
+      ok(g && g.r - g.l >= 44 && g.b - g.t >= 28 && g.r - g.l <= 48, 'Route: the GPS window has a grip a finger can use (44 by 28, Stuart 19 Nov 14:43)', g && JSON.stringify([g.r - g.l, g.b - g.t]));
       await hold(p, g.x, g.y); await p.mouse.move(g.x - 300, g.y - 200, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200); const lb1 = await box(p, '#liveBox'); await hold(p, lb1.x, lb1.y); await p.mouse.up(); await p.waitForTimeout(500);
       const lb2 = await box(p, '#liveBox'); ok(Math.abs(lb2.l - lb.l) > 50 && !lb2.on, 'Route: the GPS window moves by its grip and locks', JSON.stringify([Math.round(lb.l), Math.round(lb2.l)]));
     }

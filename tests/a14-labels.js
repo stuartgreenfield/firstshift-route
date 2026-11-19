@@ -20,6 +20,9 @@ const LABEL = /favoured|no bias|^Wind \d|^Start|^Finish|°T ·|LAYLINE|HEADER|LI
   let L = await frame();
   ok(L.some(q => /favoured|no bias/.test(q.t)) && L.some(q => /^Wind \d/.test(q.t)), 'Start screen: the bias and wind labels are drawn', L.map(q => q.t));
   ok(clash(L).length === 0, 'Start screen: no two chart labels overlap', clash(L));
+  const ends = await p.evaluate(() => { const l = window.__fsLine(), cr = document.getElementById('map').getBoundingClientRect(); return [l.boat, l.pin].map(q => { const xy = window.__fsXY(q[0], q[1]); return [xy[0] - cr.left, xy[1] - cr.top]; }); });
+  const onEnd = L.filter(q => ends.some(e => e[0] > q.x - 6 && e[0] < q.x + q.w + 6 && e[1] > q.y - 4 && e[1] < q.y + q.h + 14)).map(q => q.t);
+  ok(onEnd.length === 0, 'Start screen: no label sits over the committee boat or the pin', { onEnd, ends });
   const sf = L.filter(q => /^Start|^Finish/.test(q.t)).map(q => q.t);
   ok(sf.length === 1 && /^Start and finish/.test(sf[0]), 'Start and finish on one line: one name, not two on top of each other', sf);
   /* A5: a toast on the start screen sits in the clear chart band */

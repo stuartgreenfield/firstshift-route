@@ -20,7 +20,7 @@
    hand setting"). */
 (function () {
   'use strict';
-  var KEY = 'nav-pos', LONG = 500;
+  var KEY = 'nav-pos', LONG = 500, GW = 44, GH = 28;
   var PANELS = [['liveBox', 'GPS window', 'win', 'GPS'], ['fsPlot', 'Plotter bar', 'win', 'PLOT'], ['navPlot', 'Plotter bar', 'win', 'PLOT'], ['solSeq', 'Start sequence', 'win', 'START'], ['solLegs', 'Course card', 'win', 'COURSE'], ['layers', 'Layers box', 'win', 'LAYERS'], ['navStrip', 'Instrument strip', 'win', 'BOAT'],
     ['fsRulerBtn', 'Ruler button'], ['helpBtn', 'Help button'], ['oriBtn', 'North up button'], ['editFab', 'Edit course button'], ['fromHere', 'From here button'], ['navClearBtn', 'Clear screen button'], ['navMenuBtn', 'MENU button'], ['navCentreBtn', 'Centre on the boat button']];   /* man overboard stays where it is */
   function $(id) { return document.getElementById(id); }
@@ -67,7 +67,7 @@
   var grips = {};
   function mkGrip(p) {
     var g = document.createElement('button'); g.type = 'button'; g.className = 'navgrip2'; g.id = 'grip-' + p[0]; g.hidden = true; g.title = 'Hold to move the ' + p[1].toLowerCase(); g.setAttribute('aria-label', 'Hold to move the ' + p[1].toLowerCase());
-    g.innerHTML = '<svg viewBox="0 0 20 8" width="20" height="8" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="2" r="1.3"/><circle cx="10" cy="2" r="1.3"/><circle cx="17" cy="2" r="1.3"/><circle cx="3" cy="6" r="1.3"/><circle cx="10" cy="6" r="1.3"/><circle cx="17" cy="6" r="1.3"/></g></svg>';
+    g.innerHTML = '<svg viewBox="0 0 20 8" width="26" height="10" aria-hidden="true"><g fill="currentColor"><circle cx="3" cy="2" r="1.5"/><circle cx="10" cy="2" r="1.5"/><circle cx="17" cy="2" r="1.5"/><circle cx="3" cy="6" r="1.5"/><circle cx="10" cy="6" r="1.5"/><circle cx="17" cy="6" r="1.5"/></g></svg>';
     document.body.appendChild(g); grips[p[0]] = g; hold(g, function () { return $(p[0]); }, p[0]);
     /* 17 Nov 21:19 (Stuart, iPhone 14 Plus: "I could see the dots but ... it didn't work"): as in the trial, drag the dots and the
        window comes with you at once; let go and it stays there (or goes to a tab off the side). The long press still works. */
@@ -117,12 +117,13 @@
       if (!M.el && covered(cx, r.top + 6, el, g)) { g.hidden = true; g.__key = null; return; }   /* 18 Nov 05:39 (Stuart: the dots came to the front over other menus): no dots on a window another menu covers */
       var key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height) + ',' + innerWidth + ',' + innerHeight; if (g.__key === key && now - g.__at < 5000 && !M.el) return; g.__key = key; g.__at = now;
       /* the grip goes where it covers no button (17 Nov screen check: on the window's corner it sat on OPEN and on MARK) */
-      var hand = opt('hand', 'c'), first = hand === 'l' ? [r.left + 2, r.top - 19] : hand === 'r' ? [r.right - 34, r.top - 19] : [cx - 16, r.top - 19];
-      var cands = [first, [cx - 16, r.top - 19], [cx - 16, r.bottom + 1], [r.left - 33, r.top + 2], [r.right + 1, r.top + 2], [cx - 16, r.bottom - 9], [r.left + 2, r.bottom - 20], [r.right - 34, r.bottom - 20], [cx - 16, r.top - 9]]; for (var sx = r.left + 2; sx <= r.right - 34; sx += 16) { cands.push([sx, r.bottom - 20]); cands.push([sx, r.top + 2]); } var btns = btnsAll();
+      /* Stuart 19 Nov 14:43 ("the little 6 button handles are really hard to use"): the grip is GW by GH, a finger's size, not 32 by 18 */
+      var hand = opt('hand', 'c'), hw = GW / 2, first = hand === 'l' ? [r.left + 2, r.top - GH - 1] : hand === 'r' ? [r.right - GW - 2, r.top - GH - 1] : [cx - hw, r.top - GH - 1];
+      var cands = [first, [cx - hw, r.top - GH - 1], [cx - hw, r.bottom + 1], [r.left - GW - 1, r.top + 2], [r.right + 1, r.top + 2], [cx - hw, r.bottom - GH / 2], [r.left + 2, r.bottom - GH - 2], [r.right - GW - 2, r.bottom - GH - 2], [cx - hw, r.top - GH / 2]]; for (var sx = r.left + 2; sx <= r.right - GW - 2; sx += 16) { cands.push([sx, r.bottom - GH - 2]); cands.push([sx, r.top + 2]); } var btns = btnsAll();
       /* Stuart's iPhone, 18 Nov 19:44: dots sat on another window lying over this one (the chart's info box, the start screen); a place is
          only used when what lies there is this window, the chart or nothing */
-      var clearAt = function (c) { var hit = document.elementFromPoint(c[0] + 16, c[1] + 9); if (!hit || hit === g || g.contains(hit) || el.contains(hit) || hit === document.body || hit === document.documentElement) return true; var mp = $('map'); return !!(mp && (hit === mp || hit.contains(mp))); };
-      var pick = cands.filter(function (c) { if (!clearAt(c)) return false; if (c[0] < 2 || c[1] < 2 || c[0] + 32 > innerWidth - 2 || c[1] + 18 > innerHeight - 2) return false; var ins0 = window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; if (c[0] < ins0.l + 2 || c[1] < ins0.t + 2 || c[0] + 32 > innerWidth - ins0.r - 2 || c[1] + 18 > innerHeight - ins0.b - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + 32 > b.left && c[1] < b.bottom && c[1] + 18 > b.top; }) && (M.el || !covered(c[0] + 16, c[1] + 9, el, g)); })[0];
+      var clearAt = function (c) { var hit = document.elementFromPoint(c[0] + GW / 2, c[1] + GH / 2); if (!hit || hit === g || g.contains(hit) || el.contains(hit) || hit === document.body || hit === document.documentElement) return true; var mp = $('map'); return !!(mp && (hit === mp || hit.contains(mp))); };
+      var pick = cands.filter(function (c) { if (!clearAt(c)) return false; if (c[0] < 2 || c[1] < 2 || c[0] + GW > innerWidth - 2 || c[1] + GH > innerHeight - 2) return false; var ins0 = window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; if (c[0] < ins0.l + 2 || c[1] < ins0.t + 2 || c[0] + GW > innerWidth - ins0.r - 2 || c[1] + GH > innerHeight - ins0.b - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + GW > b.left && c[1] < b.bottom && c[1] + GH > b.top; }) && (M.el || !covered(c[0] + GW / 2, c[1] + GH / 2, el, g)); })[0];
       if (!pick) { g.hidden = true; return; }   /* nowhere free of a button: no grip rather than one on top of a button */
       g.style.left = Math.round(pick[0]) + 'px'; g.style.top = Math.round(pick[1]) + 'px'; });
   }
@@ -178,8 +179,8 @@
   function undoBar(moving, last) {
     var b = $('navUndo'); if (!b) { b = document.createElement('div'); b.id = 'navUndo'; b.className = 'navundo'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
     clearTimeout(M.ut); b.hidden = false;
-    if (moving) { b.innerHTML = '<span>Moving: drag it, then hold to lock it there.</span><button class="btn" type="button" id="navUndoB">Undo</button>'; $('navUndoB').onclick = function () { var el = M.el; if (!el) return; set(el, M.from[0], M.from[1]); el.classList.remove('navmove-on'); M.el = null; M.drag = null; b.hidden = true; place(); }; return; }
-    b.innerHTML = '<span>Moved.</span><button class="btn" type="button" id="navUndoB">Undo</button>';
+    if (moving) { b.innerHTML = '<span>Moving: drag it where you want it.</span><button class="btn primary" type="button" id="navSaveB">Save new position</button><button class="btn" type="button" id="navUndoB">Undo</button>'; $('navSaveB').onclick = function () { if (M.el) lock(); };   /* Stuart 19 Nov 14:43: the box also says "Save new position" (a hold on the window still locks it too) */ $('navUndoB').onclick = function () { var el = M.el; if (!el) return; set(el, M.from[0], M.from[1]); el.classList.remove('navmove-on'); M.el = null; M.drag = null; b.hidden = true; place(); }; return; }
+    b.innerHTML = '<span>New position saved.</span><button class="btn" type="button" id="navUndoB">Undo</button>';
     var shownAt = Date.now();   /* 23:35: the finger lifting off a moved window must not land on Undo as it appears */
     $('navUndoB').onclick = function () { if (Date.now() - shownAt < 700) return; set(last.el, last.from[0], last.from[1]); save(last.id, last.from[0], last.from[1]); b.hidden = true; place(); try { window.dispatchEvent(new Event('resize')); } catch (x) {} };
     M.ut = setTimeout(function () { b.hidden = true; }, 10000);
@@ -189,7 +190,7 @@
   /* round buttons: the button itself is the grip */
   function wireButtons() { PANELS.forEach(function (p) { if (p[2] === 'win') return; var el = $(p[0]); if (!el || el.__fsHold) return; el.__fsHold = 1; hold(el, function () { return el; }, p[0]); }); }
 
-  var css = '.navgrip2{position:fixed;z-index:59;width:32px;height:18px;border:1px solid rgba(111,169,224,.55);border-radius:9px;padding:0;display:grid;place-items:center;background:rgba(4,45,94,.75);color:#6FA9E0;opacity:.95;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}' +
+  var css = '.navgrip2{position:fixed;z-index:59;width:' + GW + 'px;height:' + GH + 'px;border:1px solid rgba(111,169,224,.7);border-radius:14px;padding:0;display:grid;place-items:center;background:rgba(4,45,94,.75);color:#6FA9E0;opacity:.95;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}' +
     '.navgrip2:hover{opacity:1}.navgrip2[hidden]{display:none}' +
     '.navmove-on{outline:3px solid #F2B233!important;outline-offset:3px;animation:navflash .8s ease-in-out infinite;touch-action:none;z-index:58!important}' +
     '@keyframes navflash{50%{outline-color:rgba(242,178,51,.15)}}@media (prefers-reduced-motion:reduce){.navmove-on{animation:none}}' +
