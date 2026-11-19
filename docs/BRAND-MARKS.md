@@ -4,7 +4,7 @@ Stuart, 09:03: "the branding top left with Route and Navigate is not perfect cou
 
 ## Files
 
-- `site/brand/route-mark.svg`, `site/brand/navigate-mark.svg`: the masters. Each holds two layouts:
+- `site/brand/route-mark.svg`, `site/brand/routeplus-mark.svg`, `site/brand/mark-mark.svg`, `site/brand/markplus-mark.svg`: the masters. Each holds two layouts:
   - **stack** (120 x 100): the sails over the name, used in the small square on phones;
   - **row** (sails beside the name), used on tablets and computers.
 - `site/brand/*-mark.inc.html`: the same two drawings as the page carries them inline (inline so the colours follow
