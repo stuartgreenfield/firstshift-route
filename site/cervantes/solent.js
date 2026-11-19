@@ -775,9 +775,17 @@
     if (SIM.on || !window.__fsSim) return; css(); var lq = window.__fsLine ? window.__fsLine() : {};
     SIM.saved = { B: JSON.parse(JSON.stringify(B)), line: JSON.parse(JSON.stringify(lq)) }; sv('fs-solent-testsave', SIM.saved); SIM.push = window.__fsBcPush; window.__fsBcPush = function () {};
     QUIET = true; try {
-      var c = build(); if (!c || c.err) { B.type = 'marks'; B.marks = parseBoard('3F P, 2C S').marks; B.fin = 'start'; B.finish = null; }
       var mw = B.wind && B.wind.twd != null && B.wind.src !== 'boat' ? B.wind : null; SIM.base = { twd: mw ? +mw.twd : 230, tws: mw && mw.tws > 0 ? +mw.tws : 12 }; B.wind = null;   /* K1: the practice wind is the race's wind source in test mode (a typed wind would hide the shifts); the race's own wind comes back at Stop */
-      var l = window.__fsLine(); if (!(l.boat && l.pin)) { window.__fsSetLine('boat', 50.7700, -1.2950); window.__fsSetLine('pin', 50.7700, -1.2895); }
+      /* a practice race as a committee would lay it (screen audit A2, A22, A26; Stuart 03:37 and 03:55): the line first, about 370 m, square to the
+         wind with 4 degrees of bias; then, if there is no course of the crew's own, a short one of the type chosen: a windward-leeward of a 1 nm
+         beat and run, or round the cans with a beat, a reach and a run of about 1 nm each. About half an hour, not an offshore day. */
+      var tw = SIM.base.twd, ctr = { lat: 50.7700, lon: -1.2925 }, half = 0.1, ld0 = tw + 90 + 4, l = window.__fsLine();
+      if (!(l.boat && l.pin)) { var e1 = offset(ctr, ld0 + 180, half), e2 = offset(ctr, ld0, half); window.__fsSetLine('boat', e1.lat, e1.lon); window.__fsSetLine('pin', e2.lat, e2.lon); }
+      B.start = lineStart(); var c = build();
+      if (!c || c.err) {
+        if (B.type === 'wl') { B.wl = { wkind: 'brg', wcode: '', brg: Math.round(tw), dist: 1, laps: 1, lkind: 'start', lcode: '', side: 'port' }; }
+        else { var mA = offset(ctr, tw, 1), mB = offset(mA, tw + 110, 0.9); B.type = 'marks'; B.marks = [{ code: null, name: 'Test A (beat)', lat: mA.lat, lon: mA.lon, side: 'port' }, { code: null, name: 'Test B (reach)', lat: mB.lat, lon: mB.lon, side: 'port' }]; B.fin = 'start'; B.finish = null; }
+      }
       B.sk = 'line'; B.start = lineStart(); B.plan = 'list'; B.startAt = Math.round(Date.now() / 1000 + 150); saveB(); go(true); B.shown = Date.now(); B.raced = null; saveB();
     } finally { QUIET = false; }
     try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {}
@@ -820,6 +828,7 @@
     if (now < g + (EM.early ? -20 : 0)) {   /* before the gun: close-hauled on starboard, timed to reach the middle of the line at the gun (20 s early when OCS is asked for) */
       var h = n360(W.twd - 42), v = 4.5, cg = emCog(h, v), back = (g + (EM.early ? -20 : 0) - now) * cg.sog * 0.514; EM.p = at(mid, n360(cg.cog + 180), Math.max(0, back - 5)); EM.mode = 'starting, starboard tack'; emFeed(EM.p.lat, EM.p.lon, h, v, cg.sog, cg.cog, n180(W.twd - h)); return; }
     if (!EM.p) EM.p = { lat: mid.lat, lon: mid.lon }; var x = now >= g ? EM.x : 1, dt = x;   /* one step a second, x times the time after the gun */
+    if (x > 1) { B.startAt -= (x - 1); try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {} }   /* audit A17: the race clock runs at the boat's speed-up, so every time on screen matches the sailing */
     var tgt = pts[EM.i]; if (!tgt) return; EM.t += dt;
     var st = emSteer(tgt), bsp = emPolar(st.twa, W.tws), gr = emCog(st.hdg, bsp), d = gr.sog * 0.514 * dt, r = rh(EM.p, tgt);
     if (r.nm * 1852 <= Math.max(25, d)) { EM.p = { lat: tgt.lat, lon: tgt.lon }; EM.i++; SIM.i = EM.i; EM.log.push(['round', EM.i, Math.round(EM.t)]); try { var PL2 = window.__fsPlot || window.__navPlot; if (PL2 && PL2.setMark) PL2.setMark(Math.min(EM.i, pts.length - 1)); } catch (e) {} if (EM.i >= pts.length) { clearInterval(SIM.t); toast('Test mode: finished. Stop test mode puts your own race back.'); } }
