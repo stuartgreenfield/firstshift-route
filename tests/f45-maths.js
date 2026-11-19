@@ -22,7 +22,9 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   /* Stuart 16:55: with nothing typed or learnt, a tack costs one boat length, a gybe a quarter */
   await p.evaluate(() => window.__fsLoa(10)); await put(6, 180); await p.waitForTimeout(3500);
   const tl = await p.evaluate(() => { const s = document.getElementById('solStartScr'); return s ? s.textContent.replace(/\s+/g, ' ') : ''; });
-  ok(/\+3\.\d s to (tack|gybe) \(one boat length\)|\+0\.8 s to gybe \(a quarter of a boat length\)/.test(tl), '10 m boat at 6 kn, nothing typed: a tack costs one length (3.2 s) or a gybe a quarter (0.8 s)', tl.slice(0, 300));
+  /* E3 (Stuart 19 Nov 17:35): 4 / 2 / 3 boat lengths in light / medium / strong, a gybe a quarter; the seconds are those lengths at 6 kn (3.087 m/s) */
+  const mt = /\+(\d+\.\d) s to (tack|gybe) \((one|[\d.]+) boat lengths?/.exec(tl), nL = mt ? (mt[3] === 'one' ? 1 : +mt[3]) : 0;
+  ok(mt && Math.abs(+mt[1] - nL * 10 / (6 * 0.5144)) <= 0.15, '10 m boat at 6 kn, nothing typed: the turn costs its boat lengths at 6 kn (2 lengths in medium wind: 6.5 s)', mt ? mt[0] : tl.slice(0, 300));
   await p.evaluate(() => { window.__fsLineSet(); const e = document.getElementById('kitTk'); e.value = '12'; e.dispatchEvent(new Event('change')); const g = document.getElementById('kitGy'); g.value = '9'; g.dispatchEvent(new Event('change')); document.getElementById('klX').click(); });
   await put(6, 180); await p.waitForTimeout(1500);
   const txt = await p.evaluate(() => { const s = document.getElementById('solStartScr'); return s ? s.textContent.replace(/\s+/g, ' ') : ''; });

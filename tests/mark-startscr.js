@@ -11,7 +11,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   let s = await ss(); ok(s && /To the line/i.test(s) && /burn/i.test(s) && /Bias/i.test(s), 'inside 10 minutes the start screen opens with line, burn and bias', s && s.slice(0, 160));
   const cv = await p.evaluate(() => { const c = document.querySelector('#solStartScr canvas'); return c && c.width > 50 && c.height > 50; }); ok(cv, 'the line picture is drawn');
   await p.screenshot({ path: '/tmp/claude-0/ui/m2/start-screen.png' });
-  await p.click('#solStartScr [data-q=ssmin]'); await p.waitForTimeout(300); ok(await p.evaluate(() => FSSolent.state().ssMin) === 5, '10 min cycles to 5 min');
+  await p.selectOption('#solStartScr select[data-ssmin]', '5'); await p.waitForTimeout(300); ok(await p.evaluate(() => FSSolent.state().ssMin) === 5, 'Opens: 10 min before changed to 5 min before (the list replaced the cycling button, M80)');
   await p.click('#solStartScr [data-q=small]'); await p.waitForTimeout(400); s = await ss(); const sm = await p.evaluate(() => { const e = document.getElementById('solSeq'); return e && !e.hidden; });
   ok(!s && sm, 'Chart takes it back to the small box');
   await p.click('#solSeq [data-q=big]').catch(() => {}); await p.waitForTimeout(400); ok(!!(await ss()), 'Start screen on the small box opens it again');
