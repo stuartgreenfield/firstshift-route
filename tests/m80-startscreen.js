@@ -20,7 +20,7 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   await p.evaluate(() => document.getElementById('lnSS').click()); await p.waitForTimeout(2000);
   ok(await p.evaluate(() => { const s = document.getElementById('solStartScr'); return !!s && !s.hidden; }), 'the start screen is open');
   ok(await p.evaluate(() => document.getElementById('panel').classList.contains('collapsed')), 'Route\'s panel folds away');
-  const shown = await p.evaluate(() => ['.fabhelp', '#prog', '#cbanner', '#liveBox'].filter(q => [...document.querySelectorAll(q)].some(e => e.getClientRects().length && getComputedStyle(e).display !== 'none')));
+  const shown = await p.evaluate(() => ['.fabhelp', '#prog', '#cbanner', '#liveBox', '#navStrip'].filter(q => [...document.querySelectorAll(q)].some(e => e.getClientRects().length && getComputedStyle(e).display !== 'none')));
   ok(shown.length === 0, 'chart buttons, routing progress, course banner and GPS window step aside', shown);
   const back = await p.evaluate(() => ['.ssnum', '.sqrow'].map(q => getComputedStyle(document.querySelector('#solStartScr ' + q)).backgroundColor));
   ok(back.every(c => !/rgba\(0, 0, 0, 0\)|transparent/.test(c)), 'the boxes sit on a solid backing', back);
