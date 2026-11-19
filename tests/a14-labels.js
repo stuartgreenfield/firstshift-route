@@ -3,7 +3,7 @@
    Run: node tests/a14-labels.js http://localhost:8779 */
 const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
-const LABEL = /favoured|no bias|^Wind \d|^Start|^Finish|°T ·|LAYLINE|HEADER|LIFT|^NEXT|layline|^Upwind TWA|^Downwind TWA/;
+const LABEL = /favoured|FAVOURED|no bias|^Wind \d|^Start|^Finish|°T ·|LAYLINE|HEADER|LIFT|^NEXT|layline|^Upwind TWA|^Downwind TWA/;
 (async () => { const b = await chromium.launch();
   const c = await b.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block' });
   await c.addInitScript((src) => { const LABEL = new RegExp(src);
@@ -37,5 +37,6 @@ const LABEL = /favoured|no bias|^Wind \d|^Start|^Finish|°T ·|LAYLINE|HEADER|LI
   await p.evaluate(() => { FSSolent.em().shift = 0; const g = Math.round(Date.now() / 1000 + 2); window.__fsGun(g); FSSolent.set({ startAt: g }); }); await p.waitForTimeout(4000);
   await p.evaluate(() => { FSSolent.em().x = 20; }); await p.waitForTimeout(15000);
   L = await frame(); ok(clash(L).length === 0, 'Racing: no two chart labels overlap', { n: L.length, clash: clash(L) });
+  ok(!L.some(q => /favoured|FAVOURED|no bias/.test(q.t)), 'After the gun the line bias leaves the chart (audit A21)', L.map(q => q.t));
   ok(errs.length === 0, 'No script errors', errs.slice(0, 3));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

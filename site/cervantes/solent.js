@@ -1130,8 +1130,8 @@
   function target(ctx, x, y, col) { ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 2 * Math.PI); ctx.fill(); [[0, -14, 0, -10], [0, 10, 0, 14], [-14, 0, -10, 0], [10, 0, 14, 0]].forEach(function (q) { ctx.beginPath(); ctx.moveTo(x + q[0], y + q[1]); ctx.lineTo(x + q[2], y + q[3]); ctx.stroke(); }); ctx.restore(); }
   function extras(ctx, X, Y) {
     var l = window.__fsLine ? window.__fsLine() : {};
-    if (KIT && BV.on) biasDraw(ctx, X, Y);
-    if (window.FS_MARK && l.boat && l.pin) { ctx.save(); ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(l.boat[1]), Y(l.boat[0])); ctx.lineTo(X(l.pin[1]), Y(l.pin[0])); ctx.stroke(); var bi = biasNow(); if (bi && !BV.on && bi.m >= 2) { var fe = /Pin|Outer/.test(bi.end) ? l.pin : l.boat; ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ctx.fillText('FAVOURED ' + bi.m + ' m', X(fe[1]) + 12, Y(fe[0]) + 12); } ctx.restore(); }
+    if (KIT && BV.on && !gunGone()) biasDraw(ctx, X, Y);
+    if (window.FS_MARK && l.boat && l.pin) { ctx.save(); ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(l.boat[1]), Y(l.boat[0])); ctx.lineTo(X(l.pin[1]), Y(l.pin[0])); ctx.stroke(); var bi = biasNow(); if (bi && !BV.on && bi.m >= 2 && !gunGone()) { var fe = /Pin|Outer/.test(bi.end) ? l.pin : l.boat; ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; var ft = 'FAVOURED ' + bi.m + ' m', fd = window.__fsLabelFit ? window.__fsLabelFit(X(fe[1]) + 12, Y(fe[0]) + 2, ctx.measureText(ft).width, 12, 2) : 0; if (fd != null) ctx.fillText(ft, X(fe[1]) + 12, Y(fe[0]) + 12 + fd); } ctx.restore(); }
     if (window.FS_MARK) { if (l.boat) boatSym(ctx, X(l.boat[1]), Y(l.boat[0])); if (l.pin) pinSym(ctx, X(l.pin[1]), Y(l.pin[0])); }
     if (window.FS_MARK && !window.__navPlot) laylines(ctx, X, Y);   /* Mark+ draws its own laylines, with the tide, in Route+'s plotter */
     if (!window.FS_MARK) return; var w = B.wl, pts = [];
@@ -1156,7 +1156,9 @@
   (window.__fsLabelFirst = window.__fsLabelFirst || []).push(function (ctx, X, Y) {
     BV.lp = null; if (!window.FS_MARK || !(C.on || pick || builderOpen()) || !MK) return; var l = window.__fsLine ? window.__fsLine() : {}, take = window.__fsLabelTake;
     if (take) { if (l.boat) take(X(l.boat[1]) - 13, Y(l.boat[0]) - 21, 26, 28); if (l.pin) take(X(l.pin[1]) - 9, Y(l.pin[0]) - 20, 22, 28); }
-    if (KIT && BV.on) { BV.res = true; try { biasDraw(nullCtx(ctx), X, Y); } finally { BV.res = false; } } });
+    if (KIT && BV.on && !gunGone()) { BV.res = true; try { biasDraw(nullCtx(ctx), X, Y); } finally { BV.res = false; } } });
+  /* audit A21: the line bias leaves the chart at the gun (it stays on the start screen and in the after-race report) */
+  function gunGone() { return !!(B.startAt && Date.now() / 1000 > B.startAt && !(B.ended > B.startAt * 1000)) && !($('solStartScr') && !$('solStartScr').hidden); }
   window.__fsTapHook = tapHook;
   /* M71 (Stuart 18 Nov 05:58: "a button on mark and mark+ easy to see that says stop race and a button that says show start sequence
      screen ... work out a logic tree to be sure exactly where they should go"). Logic tree (docs/MARK-RACE-BUTTONS.md):
