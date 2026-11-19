@@ -336,10 +336,12 @@
          the Rock and sat against the edge of the forecasts) */
       var MS = far ? 72 : 0, NEARM = 20, mx = (tgt[1] - oLo) * kO, my = tgt[0] - oLa, dM = Math.sqrt(mx * mx + my * my) * 60, ux = dM ? mx * 60 / dM : 0, uy = dM ? my * 60 / dM : 0, kT = Math.cos(tgt[0] * R);
       for (var step = 0; step < maxSteps; step++) {
-        var hit = [], calm = 0, ncand = 0, best = new Array(sectors + MS), bestS = new Float64Array(sectors + MS).fill(-Infinity), secW = 360 / sectors, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
+        /* the front is thinned to one point per bearing sector; the sectors are as fine as a step is short (E2, 19 Nov 2026): with a fixed 360, a
+           3-minute or 1-minute step lost the best points and a veering beat came out up to 5% slow; `sectors` is the count for a 10-minute step (or the caller's own coarser step), and grows as the step shortens, to at most 1000 (within 0.05% of 1200 on the veering beat, for 15% less work) */
+        var SEC = Math.max(90, Math.min(1000, 4 * sectors, Math.round(sectors * Math.max(1, dt0 / dt, 600 / dt)))), hit = [], calm = 0, ncand = 0, best = new Array(SEC + MS), bestS = new Float64Array(SEC + MS).fill(-Infinity), secW = 360 / SEC, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
         var gate = leg.gate, ga = gate && gate.a, gb = gate && gate.b;
         for (var pi = 0; pi < pts.length; pi++) {
-          var p = pts[pi], W = o.wind(p.la, p.lo, t), C = o.tide(p.la, p.lo, t), V = o.wave ? o.wave(p.la, p.lo, t) : [0, NaN];
+          var p = pts[pi], tm = t + dt / 7200, W = o.wind(p.la, p.lo, tm), C = o.tide(p.la, p.lo, tm), V = o.wave ? o.wave(p.la, p.lo, tm) : [0, NaN];   /* read at the middle of the step, not its start (E2, 19 Nov 2026): a veering or building wind and a turning tide are met as the boat meets them */
           var tws = W[0], twd = W[1], kp = Math.cos(p.la * R); if (!(tws > 0)) calm++;
           /* headings relative to the wind here, every hstep of true wind angle, plus the best VMG angles up and down on each side
              (14 Nov 2026, review finding 15): with headings fixed to north the angles on offer, and so the time, depended on the
@@ -380,11 +382,11 @@
             var sec = 0, score = 0;
             if (!arrived) {   /* prune as we go: keep only the best point in each bearing sector from the leg origin, and test the water only for a new best */
               var bx2 = (nlo - oLo) * kO, by2 = nla - oLa, bb = (Math.atan2(bx2, by2) / R + 360) % 360;
-              sec = Math.min(sectors - 1, Math.floor(bb / secW));
+              sec = Math.min(SEC - 1, Math.floor(bb / secW));
               var dtg = dist(nla, nlo, tgt[0], tgt[1]), dfo = Math.sqrt(bx2 * bx2 + by2 * by2) * 60;
               score = dfo - wDtg * dtg - (lost > 0 ? 0.01 : 0) + 2 * Math.max(0, near0 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
               if (MS) {
-                if (dtg < NEARM) { var mb = (Math.atan2((nlo - tgt[1]) * kT, nla - tgt[0]) / R + 360) % 360; sec = sectors + Math.min(MS - 1, Math.floor(mb / (360 / MS))); score = 1000 - dtg - (lost > 0 ? 0.01 : 0); }
+                if (dtg < NEARM) { var mb = (Math.atan2((nlo - tgt[1]) * kT, nla - tgt[0]) / R + 360) % 360; sec = SEC + Math.min(MS - 1, Math.floor(mb / (360 / MS))); score = 1000 - dtg - (lost > 0 ? 0.01 : 0); }
                 else { var over = Math.max(0, (bx2 * ux + by2 * uy) * 60 - dM); score = Math.min(dfo, dM) - 2 * over - wDtg * dtg - (lost > 0 ? 0.01 : 0); }
               }
               if (score <= bestS[sec]) { ncand++; continue; }
@@ -454,7 +456,7 @@
   function sailPiece(a, b, t, o, side0) {
     var d = dist(a.la, a.lo, b.la, b.lo); if (d < 1e-4) return { dt: 0, side: side0 };
     var bb = brg(a.la, a.lo, b.la, b.lo), ue = Math.sin(bb * R), un = Math.cos(bb * R), ne = un, nn = -ue;
-    var W = o.wind(a.la, a.lo, t), C = o.tide(a.la, a.lo, t), V = o.wave ? o.wave(a.la, a.lo, t) : [0, NaN];
+    var tm = t + (b.t != null && a.t != null && b.t > a.t ? (b.t - a.t) / 2 : 0), W = o.wind(a.la, a.lo, tm), C = o.tide(a.la, a.lo, tm), V = o.wave ? o.wave(a.la, a.lo, tm) : [0, NaN];   /* mid-piece, as route() reads mid-step (E2) */
     var Ct = C[0] * ue + C[1] * un, Cn = C[0] * ne + C[1] * nn, H = [];
     function at(h) { var twa = ((h - W[1] + 540) % 360) - 180, s = W[0] > 0 ? o.speed(W[0], twa) : 0; if (s > 0.05) s *= seaFactor(V[0], V[1], h, o.sea); else s = 0;
       var ve = s * Math.sin(h * R), vn = s * Math.cos(h * R); return { h: h, twa: twa, al: ve * ue + vn * un, cr: ve * ne + vn * nn + Cn, s: s }; }
