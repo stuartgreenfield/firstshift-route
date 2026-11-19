@@ -21,4 +21,7 @@ const race = async (p, tws) => { await p.evaluate((tws) => { const e = FSSolent.
   const t2 = T.filter(q => q.k === 'tack'), m2 = t2.map(q => q.s * q.bsp * 0.5144);
   ok(t2.length && m2.every(m => Math.abs(m - 40) < 5), 'Light wind (6 kn): each tack costs 4 boat lengths (40 m)', m2.map(m => +m.toFixed(1)));
   ok(p.errs.length === 0, 'No script errors (light)', p.errs.slice(0, 2));
+  p = await page(b); await p.evaluate(() => { const e = document.getElementById('tackLenM'); e.value = 3; e.dispatchEvent(new Event('change')); }); T = await race(p, 12);
+  const t3 = T.filter(q => q.k === 'tack'), m3 = t3.map(q => q.s * q.bsp * 0.5144);
+  ok(t3.length && m3.every(m => Math.abs(m - 30) < 4), 'Settings: medium changed to 3 boat lengths, each tack costs 30 m (Stuart 17:33: a changeable item)', m3.map(m => +m.toFixed(1)));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

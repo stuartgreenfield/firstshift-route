@@ -632,7 +632,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* a Solent race's tide by hand for each leg (Stuart 15 Nov 11:30): a box round each leg, padded 0.15 nm */
   function legTide() { var c = meta && meta.course, L = c && c.legTide; if (!L || !L.some(function (q) { return q && (q.p || q.d); })) return null; var pp = [c.start].concat(c.marks || []).concat([c.finish]), out = []; for (var i = 1; i < pp.length; i++) { var q = L[i - 1]; if (!q || !(q.p || q.d) || !pp[i - 1] || !pp[i]) continue; var a0 = pp[i - 1], b0 = pp[i], pd = 0.15 / 60, pl = pd / Math.cos(a0.lat * Math.PI / 180); out.push({ box: { s: Math.min(a0.lat, b0.lat) - pd, n: Math.max(a0.lat, b0.lat) + pd, w: Math.min(a0.lon, b0.lon) - pl, e: Math.max(a0.lon, b0.lon) + pl }, tspd: q.p || 0, tdir: q.d || 0 }); } return out.length ? out : null; }
   function adjInit() {
-    ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'tdir' && v ? (v > 0 ? ' clockwise' : ' anticlockwise') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
+    ADJ.forEach(function (x) { var el = $(x[0]); if (!el) return; var out = $(x[0] + 'V'), f = function () { var v = +el.value; out.textContent = (v > 0 ? '+' : '') + v + x[2] + (x[1] === 'wdir' && v ? (v > 0 ? ' veer' : ' back') : x[1] === 'wtime' && v ? (v > 0 ? ' later' : ' earlier') : x[1] === 'ttime' && v ? (v > 0 ? ' later' : ' earlier') + (Math.abs(v) >= 60 ? ' (' + (Math.abs(v) / 60).toFixed(Math.abs(v) % 60 ? 2 : 0) + ' h)' : '') : x[1] === 'tdir' && v ? (v > 0 ? ' clockwise' : ' anticlockwise') : ''); $('adjNote').hidden = !adjVals(); if ($('adjPill')) adjPill(); }; el.oninput = f; f(); });
     $('adjReset').onclick = function () { store('nav-adj-until', ''); ADJ.forEach(function (x) { var el = $(x[0]); el.value = 0; el.oninput(); }); TH = {}; store('fs-tidehand', ''); try { if (window.FSSolent && FSSolent.tideReset) FSSolent.tideReset(); } catch (e) {} adjPill(); };   /* Stuart 17 Nov 13:16: Back to the forecast also ends the tide given by hand */
     $('adjPillX').onclick = function () { $('adjReset').onclick(); busy('Back to the forecast: routing again…'); S.from = null; run(); };
     var boxTxt = function () { var b = adjBox(), on = $('adjWhere').value === 'box'; $('adjBoxRow').hidden = $('adjBoxNote').hidden = !on; $('adjBoxTxt').textContent = b ? dm(b.s, 'NS') + ' to ' + dm(b.n, 'NS') + ', ' + dm(b.w, 'EW') + ' to ' + dm(b.e, 'EW') : 'No area yet: changes are not used until you draw one.'; adjPill(); draw(); };
@@ -2477,7 +2477,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   window.__fsTrail = function () { return LIVE.trail; };
   /* tide gate (Stuart 15 Nov 11:26 to 11:39): the chosen tide model at a place and time, the AIS boats, our TCC */
-  window.__fsTideAt = function (la, lo, ep) { try { var ts = $('tideSel') && $('tideSel').value; if (!ts || !P.tide[ts]) return null; var td = FSRouter.tideSampler(P, ts)(la, lo, ((ep || Date.now() / 1000) - T0) / 3600); return td && td[0] === td[0] ? td : null; } catch (e) { return null; } };
+  /* Stuart 19 Nov 17:33: the tide timing slider moves the time the tidal stream applies (minutes, + = later); the same shift as the routes (adjust, ttime) */
+  function tideShiftH() { var el = $('adjTtime'); if (!el || ($('adjWhere') && $('adjWhere').value === 'box')) return 0; return (+el.value || 0) / 60; }
+  window.__fsTideShift = function () { return Math.round(tideShiftH() * 60); };
+  window.__fsTideAt = function (la, lo, ep) { try { var ts = $('tideSel') && $('tideSel').value; if (!ts || !P.tide[ts]) return null; var td = FSRouter.tideSampler(P, ts)(la, lo, ((ep || Date.now() / 1000) - T0) / 3600 - tideShiftH()); return td && td[0] === td[0] ? td : null; } catch (e) { return null; } };
   window.__fsAisList = function () { try { return AIS.tg.list(); } catch (e) { return []; } };
   /* FirstShift Mark's own screen (Stuart 16 Nov 22:25, rebuilt from the brief): what it reads from and sets in the shared engine */
   window.__fsCalc = function () { return LIVE.on ? LIVE.calc : null; };
@@ -3224,7 +3227,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var la = LA(y), lo = LO(x);
       if (kind === 'tide') { if (!P.depth || !(P.depth.nearest('z', la, lo) < 0)) continue; }
       else if (coastLand(la, lo)) continue;   /* wind symbols only over the sea */
-      var u = f.sample('u', la, lo, S.t), v = f.sample('v', la, lo, S.t); if (!(u === u) || !(v === v)) continue;
+      var tq = kind === 'tide' ? S.t - tideShiftH() : S.t, u = f.sample('u', la, lo, tq), v = f.sample('v', la, lo, tq); if (!(u === u) || !(v === v)) continue;
       var s = Math.hypot(u, v) / KN; if (s < (kind === 'wind' ? 0.5 : 0.15)) continue;
       var dx = u / Math.hypot(u, v), dy = -v / Math.hypot(u, v), lbl = kind === 'wind' || (Math.round(x / sp) + Math.round(y / sp)) % 2 === 0;
       if (kind === 'tide') ctx.font = '9px "JetBrains Mono", monospace';
