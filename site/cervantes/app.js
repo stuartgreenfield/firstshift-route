@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.68';
+  var VERSION = 'FirstShift Route v0.12.69';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -321,7 +321,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.68 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.69 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -3670,7 +3670,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function fabRow() { var fabs = [].slice.call(document.querySelectorAll('.fabhelp')).filter(function (f) { return !f.style.translate; });
     fabs.sort(function (a, b) { var i = ORDER.indexOf(a.id), j = ORDER.indexOf(b.id); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
     var vf = fabs.filter(function (f) { return f.offsetParent; }), host = vf[0] && vf[0].offsetParent;
-    var room = host ? host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) : 999, low0 = !!host && room < (ROWM ? 340 : 300);   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
+    if (!host) return;   /* F77: no button showing (a window over them all): keep the last decision, so the hold below is not restarted */
+    var room = host ? host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) : 999;
+    if (!ROWM && host) { var hb0 = host.getBoundingClientRect().bottom, mt = 1e9; vf.forEach(function (f) { if (f.dataset.fr) return; var r0 = f.getBoundingClientRect(); if (r0.height) mt = Math.min(mt, r0.top); }); if (mt < 1e9) FROW.need = Math.round(hb0 - mt + 8); }   /* F77: the height the column needs (Route+ has more buttons than Route) */
+    var low0 = !!host && room < Math.max(ROWM ? 340 : 300, (FROW.need || 0) + (ROWM ? 40 : 0));   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
     /* Stuart 17 Nov 12:31 (iPhone, Fastnet, panel open): "The gps orange pill is jumping around". The chart's height changes as the panel
        and the strips under the top bar come and go, and the pill flipped between the foot and the top each time. Now the change needs a
        margin (in below 300 px, out above 340) and has to hold for a second and a half before anything moves */
@@ -3685,8 +3688,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function underTop() { var y = insets().t; ['.top', '#mkTop', '#fsBadge', '#editBar', '#navStrip', '#fsPlot', '#solSeq', '#fsDemo', '#astroLine', '#errBox'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
   /* screen rules F77 (19 Nov full check): on a phone held sideways the chart is about 250 px high. With the plotter bar open, the GPS pill
      (whose figures the plotter shows) and the sun line step aside, and come back when the plotter closes */
-  function plotShort() { var pl = document.getElementById('fsPlot') || document.getElementById('navPlot'), on = !!(short.matches && pl && !pl.hidden && pl.getClientRects().length && !pl.classList.contains('mini')); if (document.body.classList.contains('plotshort') !== on) document.body.classList.toggle('plotshort', on); }
-  function liveFit() { plotShort(); var lb = document.getElementById('liveBox'), big = !!(lb && vis(lb) && !lb.classList.contains('mini') && short.matches); if (document.body.classList.contains('gpsbigshort') !== big) document.body.classList.toggle('gpsbigshort', big); if (!lb || !vis(lb)) return; var ut = underTop(), par = lb.offsetParent; if (!par) return; var pr = par.getBoundingClientRect();
+  function plotShort() { var pl = ['fsPlot', 'navPlot'].map(function (i) { return document.getElementById(i); }).filter(function (e) { return e && !e.hidden && e.getClientRects().length; })[0], on = !!(short.matches && pl && !pl.classList.contains('mini')); if (document.body.classList.contains('plotshort') !== on) document.body.classList.toggle('plotshort', on); }
+  var LF = {};   /* the boat strip's last measured foot, kept while the strip is put aside */
+  function liveFit() { plotShort(); var lb = document.getElementById('liveBox'), big = !!(lb && vis(lb) && !lb.classList.contains('mini') && short.matches);
+    if (!big && lb && vis(lb) && short.matches && lb.offsetParent) { var ns = document.getElementById('navStrip'), nsv = ns && vis(ns), nsb = nsv ? ns.getBoundingClientRect().bottom : (ns && document.body.classList.contains('gpsbigshort') ? (LF.nsb || 0) : 0), lpr = lb.offsetParent.getBoundingClientRect(); if (nsv) LF.nsb = nsb; if (nsb && nsb + 6 + (lb.offsetHeight || 48) > lpr.bottom - 8) big = true; }   /* F77 (19 Nov full check): held sideways, if the GPS pill cannot sit under the boat strip, the strip steps aside as it does for the big GPS window */
+    if (document.body.classList.contains('gpsbigshort') !== big) document.body.classList.toggle('gpsbigshort', big); if (!lb || !vis(lb)) return; var ut = underTop(), par = lb.offsetParent; if (!par) return; var pr = par.getBoundingClientRect();
     if (lb.style.translate) return; if (lb.classList.contains('mini')) { var tt = Math.round(ut - pr.top + 6), fits = tt + (lb.offsetHeight || 48) <= par.clientHeight - 8, upright = innerWidth < 600 && innerHeight > innerWidth; if ((short.matches || ROWM || upright) && fits) {   /* Stuart 17 Nov 12:31 "the gps orange pill is jumping around", found again 19 Nov: on a phone held upright the pill has one place, under the strips, so the boat's figures arriving in the bottom bar cannot move it */ if (Math.abs((parseFloat(lb.style.top) || -99) - tt) > 3) lb.style.top = tt + 'px'; lb.style.bottom = 'auto'; }   /* no room under the strips (the panel open on a phone): the pill stays at the foot of the chart rather than off it */ else if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; } lb.style.maxHeight = ''; return; }
     if (lb.style.bottom === 'auto') { lb.style.top = ''; lb.style.bottom = ''; }
     var r = lb.getBoundingClientRect(); lb.style.maxHeight = Math.max(120, Math.round(r.bottom - ut - 6)) + 'px'; }

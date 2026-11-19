@@ -108,14 +108,15 @@
       return false; }
     return false;
   }
+  var GP = [];
   function place() {
-    BC = null; var now = Date.now();
+    BC = null; GP = []; var now = Date.now();
     if (fullView() && !M.el) { Object.keys(grips).forEach(function (k) { grips[k].hidden = true; grips[k].__key = null; }); Object.keys(tabs).forEach(function (k) { tabs[k].hidden = true; }); return; }
     PANELS.forEach(function (p) { if (p[2] === 'win') tabFor(p); });
     PANELS.forEach(function (p) { if (p[2] !== 'win') return; var el = $(p[0]); if (!grips[p[0]] && el) mkGrip(p); var g = grips[p[0]]; if (!g) return;
       var v = shown(el); g.hidden = !v; if (!v) return; var r = el.getBoundingClientRect(), cx = (r.left + r.right) / 2;
       if (!M.el && covered(cx, r.top + 6, el, g)) { g.hidden = true; g.__key = null; return; }   /* 18 Nov 05:39 (Stuart: the dots came to the front over other menus): no dots on a window another menu covers */
-      var key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height) + ',' + innerWidth + ',' + innerHeight; if (g.__key === key && now - g.__at < 5000 && !M.el) return; g.__key = key; g.__at = now;
+      var key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height) + ',' + innerWidth + ',' + innerHeight + ',' + btnsAll().length; if (g.__key === key && now - g.__at < 5000 && !M.el) { GP.push([parseFloat(g.style.left) || 0, parseFloat(g.style.top) || 0]); return; } g.__key = key; g.__at = now;   /* F77: a window opening (more buttons) places the grip again */
       /* the grip goes where it covers no button (17 Nov screen check: on the window's corner it sat on OPEN and on MARK) */
       /* Stuart 19 Nov 14:43 ("the little 6 button handles are really hard to use"): the grip is GW by GH, a finger's size, not 32 by 18 */
       var hand = opt('hand', 'c'), hw = GW / 2, first = hand === 'l' ? [r.left + 2, r.top - GH - 1] : hand === 'r' ? [r.right - GW - 2, r.top - GH - 1] : [cx - hw, r.top - GH - 1];
@@ -123,9 +124,9 @@
       /* Stuart's iPhone, 18 Nov 19:44: dots sat on another window lying over this one (the chart's info box, the start screen); a place is
          only used when what lies there is this window, the chart or nothing */
       var clearAt = function (c) { var hit = document.elementFromPoint(c[0] + GW / 2, c[1] + GH / 2); if (!hit || hit === g || g.contains(hit) || el.contains(hit) || hit === document.body || hit === document.documentElement) return true; var mp = $('map'); return !!(mp && (hit === mp || hit.contains(mp))); };
-      var pick = cands.filter(function (c) { if (!clearAt(c)) return false; if (c[0] < 2 || c[1] < 2 || c[0] + GW > innerWidth - 2 || c[1] + GH > innerHeight - 2) return false; var ins0 = window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; if (c[0] < ins0.l + 2 || c[1] < ins0.t + 2 || c[0] + GW > innerWidth - ins0.r - 2 || c[1] + GH > innerHeight - ins0.b - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + GW > b.left && c[1] < b.bottom && c[1] + GH > b.top; }) && (M.el || !covered(c[0] + GW / 2, c[1] + GH / 2, el, g)); })[0];
+      var pick = cands.filter(function (c) { if (!clearAt(c)) return false; if (c[0] < 2 || c[1] < 2 || c[0] + GW > innerWidth - 2 || c[1] + GH > innerHeight - 2) return false; var ins0 = window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; if (c[0] < ins0.l + 2 || c[1] < ins0.t + 2 || c[0] + GW > innerWidth - ins0.r - 2 || c[1] + GH > innerHeight - ins0.b - 2) return false; return !btns.some(function (b) { return b.width > 0 && c[0] < b.right && c[0] + GW > b.left && c[1] < b.bottom && c[1] + GH > b.top; }) && !GP.some(function (q) { return c[0] < q[0] + GW && c[0] + GW > q[0] && c[1] < q[1] + GH && c[1] + GH > q[1]; }) && (M.el || !covered(c[0] + GW / 2, c[1] + GH / 2, el, g)); })[0];
       if (!pick) { g.hidden = true; return; }   /* nowhere free of a button: no grip rather than one on top of a button */
-      g.style.left = Math.round(pick[0]) + 'px'; g.style.top = Math.round(pick[1]) + 'px'; });
+      g.style.left = Math.round(pick[0]) + 'px'; g.style.top = Math.round(pick[1]) + 'px'; GP.push(pick); });   /* F77: no grip on another grip */
   }
 
   /* ---- long touch to start, drag, long press to lock ---- */
