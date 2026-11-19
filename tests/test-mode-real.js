@@ -16,11 +16,21 @@ const page = async (b, type) => { const c = await b.newContext({ ...devices['iPh
   ok(r.off != null && r.off <= 8, 'The practice line is laid nearly square to the wind (a few degrees of bias)', r.off);
   ok(r.type === 'marks' && r.marks >= 2 && r.nm > 2 && r.nm < 5, 'Round the cans practice course: short (2 to 5 nm), at least two marks', r);
   const legs = await p.evaluate(() => { const s = document.body.innerText; return /beat/i.test(s); }); ok(legs, 'The first leg is a beat');
+  /* A12 and B2: before the gun the boat is lined up on the favoured end; on the beat it sails the polar's best angle, not a fixed 42 */
+  const p1 = await p.evaluate(() => ({ la: FSSolent.em().p.lat, lo: FSSolent.em().p.lon })); await p.waitForTimeout(2500);
+  const fav = await p.evaluate((p1) => { const l = window.__fsLine(), e = FSSolent.em(), t = document.getElementById('solStartScr'), m = t && t.innerText.match(/BIAS\s*(Pin|Committee boat|Boat)/i), k = Math.cos(l.boat[0] * Math.PI / 180);
+    const xy = (la, lo) => [(lo - l.boat[1]) * 60 * k, (la - l.boat[0]) * 60], P = xy(l.pin[0], l.pin[1]), B = xy(e.p.lat, e.p.lon), A = xy(p1.la, p1.lo), dv = [B[0] - A[0], B[1] - A[1]];
+    const den = dv[0] * P[1] - dv[1] * P[0], u = den ? (dv[0] * B[1] - dv[1] * B[0]) / den : null;   /* where along the line (0 the committee boat end, 1 the pin) the track crosses */
+    return { end: m && m[1], cross: u == null ? null : +u.toFixed(2), nearer: u == null ? null : u > 0.5 ? 'pin' : 'boat' }; }, p1);
+  ok(fav.end && fav.cross != null && fav.cross >= -0.02 && fav.cross <= 1.02 && ((/pin/i.test(fav.end) && fav.cross > 0.8) || (!/pin/i.test(fav.end) && fav.cross < 0.2)), 'Before the gun the test boat\'s course crosses the line at the favoured end the screen shows', fav);
   /* x20: the race clock keeps up with the boat */
   await p.evaluate(() => { const g = Math.round(Date.now() / 1000 + 3); window.__fsGun(g); FSSolent.set({ startAt: g }); }); await p.waitForTimeout(5000);
   await p.evaluate(() => { FSSolent.em().x = 20; }); await p.waitForTimeout(30000);
   const k = await p.evaluate(() => ({ sim: FSSolent.em().t, race: Date.now() / 1000 - FSSolent.state().startAt }));
   ok(Math.abs(k.race - k.sim) < Math.max(30, 0.1 * k.sim), 'At x20 the race clock matches the boat\'s sailing time', { sim: Math.round(k.sim), race: Math.round(k.race) });
+  const ang = await p.evaluate(() => { const sp = window.__fsSpeed && window.__fsSpeed(), w = FSSolent.windRef(), best = sp ? FSRouter.bestVmg(sp, w.tws || 12, true)[0] : 42, L = FSSolent.em().log.filter(q => q[0] === 'p').slice(-40);
+    const tw = L.map(q => Math.abs(((q[4] - w.twd + 540) % 360) - 180)).filter(a => a < 90); return { best: best, sailed: tw.length ? Math.round(tw.reduce((a, b) => a + b, 0) / tw.length) : null, mode: FSSolent.em().mode }; });
+  ok(ang.sailed != null && Math.abs(ang.sailed - ang.best) <= 5, 'On the beat the test boat sails the polar\'s best upwind angle', ang);
   ok(p.errs.length === 0, 'No script errors (round the cans)', p.errs.slice(0, 2)); await p.context().close();
   /* windward-leeward chosen, no line and no course: a windward-leeward is sailed */
   p = await page(b, 'wl');

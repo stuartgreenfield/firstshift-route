@@ -794,7 +794,7 @@
   /* ---- The race emulator (Stuart 17 Nov 13:31, Mark+ photo: "why is boat sailing away from mark. Can we build a tool to test mark and
      mark+ in test mode please"). The old test boat went straight at each mark, even dead upwind, and on Mark+ Route+'s own practice boat
      fed the instruments at the same time, sailing its own route: two boats on one screen. Now one emulated boat sails the course as a
-     boat would: close-hauled at 42° true on a beat and tacking on the layline, gybing downwind at 150°, reaching straight at the mark,
+     boat would: close-hauled at the polar's best upwind angle (42° only without a polar) and tacking on the layline, gybing at the polar's best downwind angle (150° without), reaching straight at the mark,
      with the wind and tide given (or 230° 12 kn and no tide), speed from a simple test polar. It feeds the phone's GPS position and, on
      Mark+, the instruments too (RMC, VHW, HDT, MWV, DPT, VDR), so everything on the screen comes from the one boat; Route+'s practice
      boat is stopped while it runs. The test bar has the speed (x1, x5, x20 after the gun) and events: the wind shifts 10° either way,
@@ -803,14 +803,20 @@
   function n180(a) { return ((a % 360) + 540) % 360 - 180; }
   function n360(a) { return ((a % 360) + 360) % 360; }
   function emWind() { var w = EM.base || {}, base = w.twd != null ? +w.twd : 230, tws = w.tws > 0 ? +w.tws : 12;   /* the practice wind starts from EM.base (K1), not from windRef(), which now reads it */ return { twd: n360(base + EM.shift + 4 * Math.sin(EM.t / 240)), tws: tws * (1 + 0.08 * Math.sin(EM.t / 97)) }; }
-  function emPolar(twa, tws) { var a = Math.abs(twa), k = Math.min(1, tws / 12), pts = [[0, 0], [38, 4.2], [42, 5.6], [60, 6.4], [90, 6.9], [120, 7.0], [150, 6.4], [180, 5.4]]; for (var i = 1; i < pts.length; i++) if (a <= pts[i][0]) { var f = (a - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return (pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1])) * (0.55 + 0.45 * k); } return 5.4 * k; }   /* a test polar for a 30-foot cruiser-racer, not a real boat's */
+  /* the test boat sails the boat's own polar (M81, audit B2; Stuart 03:37 "sail a polar based on the test course"): the same speed function
+     and best VMG angles as the routing and the start plan, so the start screen, laylines and test boat agree on one close-hauled angle.
+     The fixed test polar below is used only when the app has no polar to give. */
+  function emSp() { try { return window.__fsSpeed ? window.__fsSpeed() : null; } catch (e) { return null; } }
+  function emAng(tws, up) { var sp = emSp(); if (sp && window.FSRouter && FSRouter.bestVmg) { try { var b = FSRouter.bestVmg(sp, tws, up); if (b && b[0] > 0) return b[0]; } catch (e) {} } return up ? 42 : 150; }
+  function emPolar(twa, tws) { var sp = emSp(); if (sp) { try { var v = sp(tws, Math.abs(twa)); if (v > 0) return v; } catch (e) {} } return emPolarTest(twa, tws); }
+  function emPolarTest(twa, tws) { var a = Math.abs(twa), k = Math.min(1, tws / 12), pts = [[0, 0], [38, 4.2], [42, 5.6], [60, 6.4], [90, 6.9], [120, 7.0], [150, 6.4], [180, 5.4]]; for (var i = 1; i < pts.length; i++) if (a <= pts[i][0]) { var f = (a - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return (pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1])) * (0.55 + 0.45 * k); } return 5.4 * k; }   /* a test polar for a 30-foot cruiser-racer, not a real boat's */
   function emTide() { var z = tideRef(); return z && !z.need ? [z.spd * Math.sin(z.dir * R), z.spd * Math.cos(z.dir * R)] : [0, 0]; }
   function emCog(hdg, bsp) { var T = emTide(), gx = bsp * Math.sin(hdg * R) + T[0], gy = bsp * Math.cos(hdg * R) + T[1]; return { cog: n360(Math.atan2(gx, gy) / R), sog: Math.hypot(gx, gy) }; }
   /* the heading to make good a ground track along brg through the tide, at boat speed v */
   function emHdgFor(brg, v) { var T = emTide(), cross = T[0] * Math.cos(brg * R) - T[1] * Math.sin(brg * R), s = Math.max(-0.9, Math.min(0.9, cross / Math.max(v, 0.5))); return n360(brg - Math.asin(s) / R); }
-  function emSteer(tgt) { var W = emWind(), r = rh(EM.p, tgt), twaD = n180(r.brg - W.twd), up = Math.abs(twaD) < 45, dn = Math.abs(twaD) > 155;
+  function emSteer(tgt) { var W = emWind(), r = rh(EM.p, tgt), twaD = n180(r.brg - W.twd), AU = emAng(W.tws, true), AD = emAng(W.tws, false), up = Math.abs(twaD) < AU, dn = Math.abs(twaD) > AD;
     if (!up && !dn) { var v0 = emPolar(twaD, W.tws), h0 = emHdgFor(r.brg, v0); EM.mode = Math.abs(twaD) < 75 ? 'close reach' : Math.abs(twaD) < 120 ? 'reach' : 'broad reach'; EM.tk = null; return { hdg: h0, twa: n180(W.twd - h0) }; }
-    var A = up ? 42 : 150; if (EM.tk == null || EM.tkFor !== EM.i + (up ? 'u' : 'd')) { EM.tk = twaD >= 0 ? 1 : -1; EM.tkFor = EM.i + (up ? 'u' : 'd'); EM.tkAt = EM.t; }   /* the tack (or gybe) nearer the mark first */
+    var A = up ? AU : AD; if (EM.tk == null || EM.tkFor !== EM.i + (up ? 'u' : 'd')) { EM.tk = twaD >= 0 ? 1 : -1; EM.tkFor = EM.i + (up ? 'u' : 'd'); EM.tkAt = EM.t; }   /* the tack (or gybe) nearer the mark first */
     var hd = function (tk) { return n360(W.twd + tk * A); }, v = emPolar(A, W.tws), cNow = emCog(hd(EM.tk), v).cog, cOther = emCog(hd(-EM.tk), v).cog;
     /* on the layline: the mark now bears as far round as the other tack's track over the ground (with the tide), so tack or gybe */
     var dTgt = n180(r.brg - cNow), dOth = n180(cOther - cNow); if (Math.sign(dTgt) === Math.sign(dOth) && Math.abs(dTgt) >= Math.abs(dOth) - 1 && EM.t - (EM.tkAt || 0) > 20) { EM.tk = -EM.tk; EM.tkAt = EM.t; EM.tacks = (EM.tacks || 0) + 1; }
@@ -826,7 +832,9 @@
     var now = Date.now() / 1000, g = B.startAt || now, mid = { lat: (l.boat[0] + l.pin[0]) / 2, lon: (l.boat[1] + l.pin[1]) / 2 }, pts = (c.marks || []).concat(c.finish ? [c.finish] : []); SIM.i = EM.i || 0; if (!pts[0]) return;
     var W = emWind(), k = Math.cos(mid.lat * R), at = function (p, b, m) { return { lat: p.lat + m / 1852 * Math.cos(b * R) / 60, lon: p.lon + m / 1852 * Math.sin(b * R) / (60 * k) }; };
     if (now < g + (EM.early ? -20 : 0)) {   /* before the gun: close-hauled on starboard, timed to reach the middle of the line at the gun (20 s early when OCS is asked for) */
-      var h = n360(W.twd - 42), v = 4.5, cg = emCog(h, v), back = (g + (EM.early ? -20 : 0) - now) * cg.sog * 0.514; EM.p = at(mid, n360(cg.cog + 180), Math.max(0, back - 5)); EM.mode = 'starting, starboard tack'; emFeed(EM.p.lat, EM.p.lon, h, v, cg.sog, cg.cog, n180(W.twd - h)); return; }
+      /* audit A12: the test boat starts where the screen advises, at the favoured end (a boat length in, as the start plan aims), on starboard at the polar's angle */
+      var bi = biasNow(), aimP = mid; if (bi && bi.m >= 5) { var pinF = /Pin|Outer/.test(bi.end), E = pinF ? l.pin : l.boat, O = pinF ? l.boat : l.pin, Ln = lineLen() || 1, fr = Math.min(0.5, 10 / Ln); aimP = { lat: E[0] + (O[0] - E[0]) * fr, lon: E[1] + (O[1] - E[1]) * fr }; }
+      var h = n360(W.twd - emAng(W.tws, true)), v = 4.5, cg = emCog(h, v), back = (g + (EM.early ? -20 : 0) - now) * cg.sog * 0.514; EM.p = at(aimP, n360(cg.cog + 180), Math.max(0, back - 5)); EM.mode = 'starting, starboard tack'; emFeed(EM.p.lat, EM.p.lon, h, v, cg.sog, cg.cog, n180(W.twd - h)); return; }
     if (!EM.p) EM.p = { lat: mid.lat, lon: mid.lon }; var x = now >= g ? EM.x : 1, dt = x;   /* one step a second, x times the time after the gun */
     if (x > 1) { B.startAt -= (x - 1); try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {} }   /* audit A17: the race clock runs at the boat's speed-up, so every time on screen matches the sailing */
     var tgt = pts[EM.i]; if (!tgt) return; EM.t += dt;
