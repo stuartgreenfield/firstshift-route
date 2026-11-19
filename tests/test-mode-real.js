@@ -25,6 +25,17 @@ const page = async (b, type) => { const c = await b.newContext({ ...devices['iPh
   ok(fav.end && fav.cross != null && fav.cross >= -0.02 && fav.cross <= 1.02 && ((/pin/i.test(fav.end) && fav.cross > 0.8) || (!/pin/i.test(fav.end) && fav.cross < 0.2)), 'Before the gun the test boat\'s course crosses the line at the favoured end the screen shows', fav);
   const cov = await p.evaluate(() => [...document.querySelectorAll('#solTestBar button, .soltest button')].filter(x => x.getClientRects().length).map(x => { const r = x.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return x.contains(t) ? null : x.textContent.trim(); }).filter(Boolean));
   ok(cov.length === 0, 'No test bar button is covered (man overboard sits clear of it, audit A1)', cov);
+  /* audit A8 (Stuart 12:38 "Fix the orange bar"): on a phone the bar is one line, the chart band stays open, man overboard sits in it, More opens the rest */
+  const bar = await p.evaluate(() => { const b = document.getElementById('solTestBar'), r = b.getBoundingClientRect(), st = parseFloat(getComputedStyle(document.body).getPropertyValue('--sst')), sb = parseFloat(getComputedStyle(document.body).getPropertyValue('--ssb'));
+    const m = document.getElementById('mobBtn').getBoundingClientRect(), n = document.querySelector('#solStartScr .ssnum').getBoundingClientRect();
+    return { h: Math.round(r.height), band: Math.round(sb - st), mobClear: m.bottom <= n.top + 1 && m.top >= st - 1, shown: [...b.querySelectorAll('button')].filter(x => x.getClientRects().length).map(x => x.textContent.trim()) }; });
+  ok(bar.h <= 44 && bar.shown.length <= 2, 'Phone: the test bar is one line (speed and More)', bar);
+  ok(bar.band >= 100, 'Phone: a band of chart at least 100 px tall stays open above the boxes', bar.band);
+  ok(bar.mobClear, 'Phone: man overboard sits in the chart band, clear of the boxes and the bars');
+  await p.evaluate(() => document.querySelector('#solTestBar [data-em=more]').click()); await p.waitForTimeout(500);
+  const open = await p.evaluate(() => [...document.querySelectorAll('#solTestBar button')].filter(x => x.getClientRects().length).map(x => x.textContent.trim()));
+  ok(open.some(t => /Stop/.test(t)) && open.some(t => /Wind \+10/.test(t)) && open.some(t => /Less/.test(t)), 'More opens the wind shifts, course change, early start and Stop', open);
+  await p.evaluate(() => document.querySelector('#solTestBar [data-em=more]').click()); await p.waitForTimeout(400);
   /* x20: the race clock keeps up with the boat */
   await p.evaluate(() => { const g = Math.round(Date.now() / 1000 + 3); window.__fsGun(g); FSSolent.set({ startAt: g }); }); await p.waitForTimeout(5000);
   await p.evaluate(() => { FSSolent.em().x = 20; }); await p.waitForTimeout(30000);

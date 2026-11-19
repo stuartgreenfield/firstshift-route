@@ -20,7 +20,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const ml = await p.evaluate(() => FSSolent.ss().ml); ok(ml && ml.D > 0 && ml.burn != null, 'the moving line is worked out (distance back, seconds early or late)', JSON.stringify(ml && { D: Math.round(ml.D), burn: Math.round(ml.burn), early: ml.early }));
   const ss = await p.evaluate(() => document.getElementById('solStartScr').innerText.replace(/\s+/g, ' '));
   ok(/to speed up \(typed\)/.test(ss), 'time to line says where the speed-up time came from', ss.slice(ss.indexOf('TIME TO LINE'), ss.indexOf('TIME TO LINE') + 90));
-  if (plus) ok(/BSP/.test(ss) && /TWA/.test(ss) && /AWA/.test(ss), 'Mark+: BSP, TWA and AWA from the boat on the start screen', ss.slice(ss.indexOf('BSP'), ss.indexOf('BSP') + 80));
+  if (plus) ok(/BSP/.test(ss) && /TWA/.test(ss) && /WIND/i.test(ss), 'Mark+: wind, BSP and TWA from the boat on the start screen (AWA dropped, audit C2)', ss.slice(ss.indexOf('BSP'), ss.indexOf('BSP') + 80));
   else ok(/WIND 250°/i.test(ss), 'Mark: the typed wind on the start screen', ss.slice(ss.search(/WIND/i), ss.search(/WIND/i) + 40));
   const z0 = await p.evaluate(() => FSSolent.ss().zoom || 1); await p.click('#solStartScr .sszoom [data-z=in]'); await p.waitForTimeout(300); const z1 = await p.evaluate(() => FSSolent.ss().zoom);
   ok(z1 > z0, 'the picture zooms in with +', z0 + ' -> ' + z1);
