@@ -2576,7 +2576,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var FINE = ['ukv', 'arome', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends */
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       if (fixOn() && !S.to) sets.push({ id: 'fixed', name: 'Fixed wind ' + FIX.tws + ' kn from ' + ('00' + Math.round(FIX.twd)).slice(-3) + '°', models: [ms[0]], fixed: true, adj: fixAdj(base.adj) });
-      var jobs = sets.length * 2 + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
+      var jobs = sets.length + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
       var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
       return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }, s.adj ? { adj: s.adj } : {}) }).then(function (r) { tick(); s.r = r; return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
@@ -2584,10 +2584,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         S.routes = res.filter(function (s) { return s.r; });
         var errs = res.filter(function (s) { return s.err; });
         if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
-        var selfJobs = S.routes.map(function (s) { return pool({ type: 'sail', o: Object.assign({}, base, { models: s.models }, s.adj ? { adj: s.adj } : {}), paths: [s.r.path] }).then(function (x) { tick(); return x; }); });
-        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }).then(function (x) { tick(); return x; }); }).concat(selfJobs)).then(function (allr) { if (gen !== S.gen) throw { abandoned: true };
-          var cols = allr.slice(0, ms.length), self = allr.slice(ms.length).map(function (x) { return x[0]; });
-          S.routes.forEach(function (s, i) { var k = (s.r.finish - start.t) / Math.max(0.1, self[i] - start.t); cols.forEach(function (c) { c[i] = start.t + (c[i] - start.t) * k; }); });
+        /* E1 (19 Nov 2026): the re-timing now sails by the route's own rules, so a route re-timed in its own forecast takes its own time. The old
+           patch, re-timing every route in its own forecast and scaling its row to match, is removed: one job per route less, and no scaling. */
+        return Promise.all(ms.map(function (m) { return pool({ type: 'sail', o: Object.assign({}, base, { models: [m] }), paths: S.routes.map(function (s) { return s.r.path; }) }).then(function (x) { tick(); return x; }); })).then(function (allr) { if (gen !== S.gen) throw { abandoned: true };
+          var cols = allr.slice(0, ms.length);
           S.matrix = { models: ms, cols: cols, start: start.t };
           S.routes.forEach(function (s, i) { var v = cols.map(function (c) { return c[i]; }); s.mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length; s.worst = Math.max.apply(null, v); });
           var rank = function (x) { return (x.fixed ? 2e6 : 0) + (x.r.partial ? 1e6 + x.r.partial.togo : x.mean); };   /* the Fixed wind route is shown, never picked as best */   /* a route cut short by the end of the forecasts ranks by distance still to sail */
@@ -2695,7 +2695,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '" data-id="' + s.id + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + (fastT < Infinity ? '; other models carry on to the finish' : '') + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + (handOver(s) != null ? ' · ' + short(s.id) + ' to ' + clockH(handOver(s)).slice(0, 3) + ' ' + clockH(handOver(s)).slice(-5) + ', then the other models' : '') + '</em>') + '</div>'; }).join('');
     try { checksRender(); setupRender(); } catch (e) {}
     try { liveAfterRoute(); if (LIVE.on && LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}
-    $('decNote').innerHTML = 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (!best ? 'chosen' : best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
+    /* K3 (Mark review, 19 Nov 2026): with one forecast there is nothing to compare, so no claim that a route "loses least on average" and no spread */
+    var nM = S.matrix && S.matrix.models ? S.matrix.models.length : 0;
+    $('decNote').innerHTML = nM < 2 ? 'One forecast only (' + (S.matrix && S.matrix.models && S.matrix.models[0] ? short(S.matrix.models[0]) : (best ? short(best.id) : 'one model')) + '): this route is that forecast’s best, with nothing to compare it against. Route with more forecasts ticked to see how it holds up if the forecast is wrong.'
+      : 'Each row is a route; each column times it in one model’s wind, from ' + (S.from ? 'the chosen point' : 'your start') + '. The <b>' + (!best ? 'chosen' : best.combined ? 'combined' : short(best.id)) + '</b> route loses least on average across these ' + nM + ' forecasts if the forecast is wrong. The models’ own best times differ by ' + fmtH(spread) + (spread > 2 ? ': low confidence.' : '.') + ' Tap a row to show it.';
   }
   function sailsList() { return FSRouter.parseCrossover($('sails').value); }
   function mainsList() { return FSRouter.parseCrossover($('mains').value); }
