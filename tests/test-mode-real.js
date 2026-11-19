@@ -32,6 +32,8 @@ const page = async (b, type) => { const c = await b.newContext({ ...devices['iPh
     return { h: Math.round(r.height), band: Math.round(sb - st), mobClear: m.bottom <= n.top + 1 && m.top >= st - 1, shown: [...b.querySelectorAll('button')].filter(x => x.getClientRects().length).map(x => x.textContent.trim()) }; });
   ok(bar.h <= 44 && bar.shown.length <= 2, 'Phone: the test bar is one line (speed and More)', bar);
   ok(bar.band >= 100, 'Phone: a band of chart at least 100 px tall stays open above the boxes', bar.band);
+  await p.waitForTimeout(2000); const lineIn = await p.evaluate(() => { const l = window.__fsLine(), st = parseFloat(getComputedStyle(document.body).getPropertyValue('--sst')), sb = parseFloat(getComputedStyle(document.body).getPropertyValue('--ssb')); const xy = window.__fsXY ? [window.__fsXY(l.boat[0], l.boat[1]), window.__fsXY(l.pin[0], l.pin[1])] : null; return xy ? xy.every(q => q && q[1] > st && q[1] < sb) : null; });
+  ok(lineIn !== false, 'Phone: both ends of the line are in the chart band, not under the boxes or the bars', lineIn);
   ok(bar.mobClear, 'Phone: man overboard sits in the chart band, clear of the boxes and the bars');
   await p.evaluate(() => document.querySelector('#solTestBar [data-em=more]').click()); await p.waitForTimeout(500);
   const open = await p.evaluate(() => [...document.querySelectorAll('#solTestBar button')].filter(x => x.getClientRects().length).map(x => x.textContent.trim()));
