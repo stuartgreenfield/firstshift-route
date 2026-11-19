@@ -15,7 +15,8 @@ const adiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
     await ctx.addInitScript(NOTOUR); await ctx.addInitScript(() => { const x = new Date(); localStorage.setItem('fs-terms', x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-livetrail', '[]'); });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.clock.install({ time: new Date() });
-    await p.goto(BASE + '/' + race); await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length > 0, null, { timeout: 180000 });
+    await p.goto(BASE + '/' + race);
+    for (let k = 0; k < 180 && !(await p.evaluate(() => { if (!document.getElementById('startSel') || document.getElementById('startSel').value) return document.querySelectorAll('#finBox .fin').length > 0; const s = document.getElementById('startSel'); if (s.options.length) { s.selectedIndex = Math.min(1, s.options.length - 1); s.dispatchEvent(new Event('change')); } return false; })); k++) await p.clock.runFor(1000);   /* the clock is the test's: move it on; and choose a class start, as routing waits for one (F44) */
     /* let the refine finish: the plan must not change under the test (live site, 12 Nov: a refine landed mid-test) */
     for (let k = 0; k < 80; k++) { await p.clock.runFor(5000); await p.waitForTimeout(500); const st = await p.evaluate(() => ({ prog: document.getElementById('prog').hidden, note: document.getElementById('runNote').textContent })); if (st.prog && !/Quick route|Refining|Routing/.test(st.note)) break; }
     const name = race.split('=')[1] || race; let P, TS, T0, k, A, Bp, trk, mid, tMid;

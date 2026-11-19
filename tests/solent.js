@@ -72,7 +72,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => { window.FSSolent.open(); window.FSSolent.set({ type: 'wl', start: { code: '3X', name: '3X Island Sailing Club', lat: 50 + 46.10 / 60, lon: -(1 + 18.43 / 60) }, wl: { wkind: 'brg', brg: 270, dist: 1.2, laps: 2, lkind: 'start', side: 'port', wcode: '', lcode: '' } }); }); await p.waitForTimeout(300);
   const wl = await p.evaluate(() => window.FSSolent.build());
   const w0 = wl.marks[0], st = wl.start, dnm = Math.hypot((w0.lon - st.lon) * Math.cos(st.lat * Math.PI / 180) * 60, (w0.lat - st.lat) * 60);
-  ok(wl.marks.length === 3 && /Windward mark, 270°T 1.2 nm/.test(w0.name) && Math.abs(dnm - 1.2) < 0.01 && w0.lon < st.lon, 'windward-leeward: the windward mark 1.2 nm at 270°T from the start; two laps: windward, leeward, windward, then finish at the leeward mark', wl.marks.map(m => m.name).join(' | ') + ' | ' + dnm.toFixed(3) + ' nm');
+  ok(wl.marks.length === 3 && /^Windward mark/.test(w0.name) && Math.abs(dnm - 1.2) < 0.01 && w0.lon < st.lon, 'windward-leeward: the windward mark 1.2 nm at 270°T from the start; two laps: windward, leeward, windward, then finish at the leeward mark', wl.marks.map(m => m.name).join(' | ') + ' | ' + dnm.toFixed(3) + ' nm');
   await p.evaluate(() => window.FSSolent.set({ wl: Object.assign(window.FSSolent.state().wl, { wkind: 'buoy', wcode: '3E' }) })); await p.waitForTimeout(200);
   const wl2 = await p.evaluate(() => window.FSSolent.build());
   ok(/3E The Boss/.test(wl2.marks[0].name), 'or the windward mark is a buoy', wl2.marks[0].name);

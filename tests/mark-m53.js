@@ -22,7 +22,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(/to speed up \(typed\)/.test(ss), 'time to line says where the speed-up time came from', ss.slice(ss.indexOf('TIME TO LINE'), ss.indexOf('TIME TO LINE') + 90));
   if (plus) ok(/BSP/.test(ss) && /TWA/.test(ss) && /WIND/i.test(ss), 'Mark+: wind, BSP and TWA from the boat on the start screen (AWA dropped, audit C2)', ss.slice(ss.indexOf('BSP'), ss.indexOf('BSP') + 80));
   else ok(/WIND 250°/i.test(ss), 'Mark: the typed wind on the start screen', ss.slice(ss.search(/WIND/i), ss.search(/WIND/i) + 40));
-  const z0 = await p.evaluate(() => FSSolent.ss().zoom || 1); await p.click('#solStartScr .sszoom [data-z=in]'); await p.waitForTimeout(300); const z1 = await p.evaluate(() => FSSolent.ss().zoom);
+  const z0 = await p.evaluate(() => FSSolent.ss().zoom || 1); if (await p.evaluate(() => !!document.querySelector('#solStartScr.ssthru, #solStartScr .ssthru, .solss.ssthru'))) { await p.click('#solStartScr [data-q=ssview]'); await p.waitForTimeout(400); }   /* M80: the zoom buttons are in Picture view; the see-through view zooms by pinching the chart */
+  await p.click('#solStartScr .sszoom [data-z=in]'); await p.waitForTimeout(300); const z1 = await p.evaluate(() => FSSolent.ss().zoom);
   ok(z1 > z0, 'the picture zooms in with +', z0 + ' -> ' + z1);
   await p.screenshot({ path: '/tmp/claude-0/ui/m2/start-m53' + (plus ? '-plus' : '') + '.png' });
   ok(!errs.length, 'no page errors', errs.join(' | ') || null);

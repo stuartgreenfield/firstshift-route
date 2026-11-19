@@ -100,7 +100,6 @@
   function qCss() { if (document.getElementById('mkqCss')) return; var st = document.createElement('style'); st.id = 'mkqCss';
     st.textContent = '.mkq{flex:none;width:32px;height:32px;min-height:0;padding:0;border-radius:50%;border:1px solid var(--line,#456);background:var(--panel,#13283c);color:var(--ink,#e6edf2);font:700 15px system-ui,sans-serif;cursor:pointer;margin-left:auto}.mkq.abs{position:absolute;top:6px;right:46px;z-index:2}.shead .mkq{margin-right:6px}';
     document.head.appendChild(st); }
-  function coachBtn() { var card = document.getElementById('solCard'), m = card && !card.hidden && card.querySelector('.solmenu'); if (!m || document.getElementById('mkCoachBtn')) return; var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn'; bt.id = 'mkCoachBtn'; bt.textContent = 'Practice race with Emma'; bt.onclick = function () { try { tourLevels(); window.FSTour.level(2); } catch (e) {} }; m.appendChild(bt); }
   function qTick() { qCss(); PANELS.forEach(function (P) { var e = document.getElementById(P.id); if (!shownEl(e)) return; var b = e.querySelector('.mkq');
     if (!b) { b = document.createElement('button'); b.type = 'button'; b.className = 'mkq' + (P.abs ? ' abs' : ''); b.textContent = '?'; b.setAttribute('aria-label', 'Help for this'); b.title = 'Help for this';
       var hd = P.hd ? e.querySelector(P.hd) : null;

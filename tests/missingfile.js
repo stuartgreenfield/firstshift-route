@@ -5,7 +5,8 @@ const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const
 const BASE = process.argv[2] || 'http://localhost:8769';
 (async () => {
   const b = await chromium.launch(), ctx = await b.newContext({ serviceWorkers: 'block' });
-  await ctx.route('**/*', r => { const u = r.request().url(); if (/^https?:\/\/(localhost|127\.0\.0\.1)/.test(u) || /^(data|blob):/.test(u)) return r.continue(); return r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
+  await ctx.route('**/*', r => { const u = r.request().url(); if (/\/pre\/routes\.json/.test(u)) return r.fulfill({ status: 404, body: 'Not found' });   /* the test removes the file itself: no special site copy needed */
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)/.test(u) || /^(data|blob):/.test(u)) return r.continue(); return r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); });
   const p = await ctx.newPage(); await p.addInitScript(NOTOUR); let loads = 0, miss = 0; p.on('load', () => loads++); p.on('response', r => { if (r.status() === 404) miss++; });
   await p.goto(BASE + '/channel-area/'); await p.waitForTimeout(75000);
   const ok = miss > 0 && loads === 1;

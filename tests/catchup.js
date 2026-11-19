@@ -26,7 +26,7 @@ const init = () => { if (sessionStorage.getItem('t')) return; sessionStorage.set
   await p.click('#setFindRes button'); await p.waitForTimeout(500);
   ok(await p.evaluate(() => !!document.querySelector('.sethit')), 'choosing a result highlights the setting');
   await p.click('#sheet .stabs .tab[data-s="mine"]'); await p.waitForTimeout(1500);
-  const mine = await p.evaluate(() => ({ prefs: !!document.getElementById('navPrefs'), off: !!document.getElementById('navOff'), move: !!document.getElementById('navMoveBtn') }));
+  const mine = await p.evaluate(() => ({ prefs: !!document.getElementById('navPrefs'), off: !!document.getElementById('navOff'), move: !!document.getElementById('navMoveAll') }));   /* the window layout (Reset to FirstShift layout) replaced Move panels, 17 Nov */
   ok(mine.prefs && mine.off && mine.move, 'My set-up holds My defaults, Ready for offline and Move panels', JSON.stringify(mine));
   await p.screenshot({ path: OUT + '/rc-mine.png' });
   ok(await p.evaluate(() => { const s = window.__navPrefs.snap(); return Object.keys(s.data).length > 3 && !Object.keys(s.data).some(k => /mymarks|fs-race$|fs-mob/.test(k)); }), 'a set-up holds settings, never the race, marks or MOB');
@@ -56,7 +56,7 @@ const init = () => { if (sessionStorage.getItem('t')) return; sessionStorage.set
   await p.evaluate(() => { document.getElementById('tip').hidden = true; });
   /* help */
   await p.click('#helpBtn'); await p.waitForTimeout(2500);
-  const hp = await p.evaluate(() => ({ topics: document.querySelectorAll('#navHelp .navht').length, pics: [...document.querySelectorAll('#navHelp img[data-pic]')].filter(i => i.src && !i.hidden).length, boat: /instrument strip|BOAT in the top bar|Practice/.test((document.getElementById('navHelp') || {}).textContent || ''), models: !!document.querySelector('.navmodels') }));
+  const hp = await p.evaluate(() => ({ topics: document.querySelectorAll('#navHelp .navht').length, pics: [...document.querySelectorAll('#navHelp img[data-pic]')].filter(i => i.src && !i.hidden).length, boat: /instrument strip|BOAT in the top bar/.test((document.getElementById('navHelp') || {}).textContent || ''), models: !!document.querySelector('.navmodels') }));
   ok(hp.topics >= 6 && !hp.boat, 'Help has the new Route topics and no boat topics', JSON.stringify(hp));
   ok(hp.pics >= 6, 'each new Help topic has its picture', hp.pics);
   ok(hp.models, 'Help has the forecast models guide');

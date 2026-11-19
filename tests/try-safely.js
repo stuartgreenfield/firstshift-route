@@ -9,9 +9,9 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const v = await p.evaluate(() => { const b = document.getElementById('spTry'); if (!b) return null; const q = b.getBoundingClientRect(); return { w: q.width, inView: q.bottom <= innerHeight && q.right <= innerWidth, t: b.textContent }; });
   ok(v && v.w > 40 && v.inView, 'Try it safely sits beside Show me round on the landing page', JSON.stringify(v));
   await p.waitForFunction(() => document.querySelectorAll('#finBox *').length > 2, null, { timeout: 300000 }).catch(() => {});
-  await p.tap('#spTry'); await p.waitForTimeout(4000);
-  const r = await p.evaluate(() => { const sp = document.getElementById('splash'); return { splash: !!sp && !sp.hidden && getComputedStyle(sp).display !== 'none', nav: window.__navBoat ? window.__navBoat().practice : null, play: (document.getElementById('play') || {}).getAttribute && document.getElementById('play').getAttribute('aria-label') }; });
+  await p.tap('#spTry'); await p.waitForFunction(() => { const d = document.getElementById('fsDemo'); return (d && !d.hidden) || (window.__navBoat && window.__navBoat().practice); }, null, { timeout: 120000 }).catch(() => {}); await p.waitForTimeout(500);   /* F14 (17 Nov): Route starts the demonstration sail once the routes are ready */
+  const r = await p.evaluate(() => { const sp = document.getElementById('splash'); return { splash: !!sp && !sp.hidden && getComputedStyle(sp).display !== 'none', nav: window.__navBoat ? window.__navBoat().practice : null, demo: !!(document.getElementById('fsDemo') && !document.getElementById('fsDemo').hidden), play: (document.getElementById('play') || {}).getAttribute && document.getElementById('play').getAttribute('aria-label') }; });
   ok(!r.splash, 'the landing page closes');
-  ok(r.nav === true || (r.nav === null && /Pause/i.test(r.play || '')), 'the practice starts: Navigate\'s practice boat, or Route playing the race', JSON.stringify(r));
+  ok(r.nav === true || (r.nav === null && r.demo), 'the practice starts: Route+\'s practice boat, or Route\'s demonstration sail (F14)', JSON.stringify(r));
   ok(errs.length === 0, 'no page errors', errs.slice(0, 3).join(' | '));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

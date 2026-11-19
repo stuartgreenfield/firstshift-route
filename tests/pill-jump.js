@@ -18,7 +18,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const tops = new Set(pos.filter(Boolean).map(q => q[1])), lefts = new Set(pos.filter(Boolean).map(q => q[0]));
   ok(tops.size <= 3 && lefts.size <= 2, 'panel closed (one move allowed when the plotter bar arrives): the GPS pill holds still while the boat sails', JSON.stringify([...tops]) + ' ' + JSON.stringify([...lefts]));
   /* the panel open, as in the photo */
-  await p.evaluate(() => { const b = document.querySelector('[data-rp=routes], #rpRoutes, .rpnav button'); if (b) b.click(); }); await p.waitForTimeout(1200);
+  await p.evaluate(() => { const pn = document.getElementById('panel'); if (pn) { pn.hidden = false; pn.classList.remove('collapsed'); } const b = document.querySelector('#panel .tab[data-tab="decision"]'); if (b) b.click(); window.dispatchEvent(new Event('resize')); }); await p.waitForTimeout(2500);   /* the panel really open (the old selector no longer opened it), then settled */
   const pos2 = [];
   for (let i = 0; i < 24; i++) { la += 0.0004; lo -= 0.0007; await p.evaluate(([a, o]) => window.__fsSimFix(a, o, 7.3, 303), [la, lo]);
     for (let k = 0; k < 4; k++) { await p.waitForTimeout(250); pos2.push(await p.evaluate(() => { const e = document.getElementById('liveBox'); if (!e || e.hidden) return null; const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width)]; })); } }

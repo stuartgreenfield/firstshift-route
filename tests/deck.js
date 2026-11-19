@@ -58,6 +58,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(await p.evaluate(() => window.FSDeck.view()) === 'data', 'and on to Fleet and Data');
   await p.screenshot({ path: OUT + '/deck-data.png' });
   await sw(nb[0] + 100, nb[0] - 100, nb[1]);
+  if (await p.evaluate(() => window.FSDeck.view() === 'tact')) await sw(nb[0] + 100, nb[0] - 100, nb[1]);   /* Route+: the Tactician view is in the cycle (15 Nov) */
   ok(await p.evaluate(() => window.FSDeck.view() === 'chart' && getComputedStyle(document.querySelector('.app>.chart')).display !== 'none'), 'and round to the chart again');
   // landscape
   await p.setViewportSize({ width: 915, height: 412 }); await p.waitForTimeout(800);

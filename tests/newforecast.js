@@ -20,8 +20,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
       /* an own course, saved on this device and opened: the Morgan course moved 2 nm south, named Test own course */
       const id = await p.evaluate(() => { const c = window.__navCourse(); const mv = q => Object.assign({}, q, { lat: q.lat - 0.033 }); const course = { name: 'Test own course', start: mv(c.start), marks: c.marks.map(mv), finish: Object.assign(mv(c.finish), { radius_nm: 0.4 }) };
         const a = JSON.parse(localStorage.getItem('fs-myraces') || '[]'); a.unshift({ id: 'rtest', name: course.name, page: 'channel-area', course: course, settings: {}, savedAt: Date.now() }); localStorage.setItem('fs-myraces', JSON.stringify(a)); return 'rtest'; });
-      await p.goto(BASE + '/channel-area/?my=' + id); await p.clock.runFor(1000);
-      await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.P && !f.running; }, null, { timeout: 240000 });
+      await p.goto(BASE + '/channel-area/?my=' + id);
+      for (let k = 0; k < 240 && !(await p.evaluate(() => { const f = window.__navFc && window.__navFc(); return !!(f && f.P && !f.running); })); k++) await p.clock.runFor(1000);   /* the page's clock is under the test's control: move it on while the own course loads */
       await p.evaluate(() => { const r = document.getElementById('races'); if (r) r.hidden = true; });
     }
     await p.waitForTimeout(1500); await p.clock.runFor(2000);

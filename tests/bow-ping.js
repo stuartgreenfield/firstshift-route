@@ -12,9 +12,10 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   const l1 = await p.evaluate(() => { const k = Object.keys(localStorage).find(k => /^fs-line/.test(k)); return k ? JSON.parse(localStorage.getItem(k) || '{}') : null; });
   const dE = l1 && l1.boat ? (l1.boat[1] - (-1.3)) * 60 * 1852 * Math.cos(50.766 * Math.PI / 180) : null, dN = l1 && l1.boat ? (l1.boat[0] - 50.766) * 60 * 1852 : null;
   ok(has && dE != null && Math.abs(dE - 10) < 0.5 && Math.abs(dN) < 0.5, 'Ping boat with a 10 m bow offset, heading 090°, sits 10 m east of the GPS', dE == null ? JSON.stringify(l1) : dE.toFixed(2) + ' m east, ' + dN.toFixed(2) + ' m north');
+  await c.setGeolocation({ latitude: 50.76573, longitude: -1.3, accuracy: 5 }); await p.waitForTimeout(3000);   /* the pin end 30 m south: ends under 20 m apart are refused (F44, 18 Nov) */
   await p.evaluate(() => { window.__navHdg = () => null; document.getElementById('lnPin').click(); }); await p.waitForTimeout(300);
   const l2 = await p.evaluate(() => { const k = Object.keys(localStorage).find(k => /^fs-line/.test(k)); return JSON.parse(localStorage.getItem(k) || '{}'); });
-  ok(l2.pin && Math.abs(l2.pin[0] - 50.766) < 1e-6 && Math.abs(l2.pin[1] + 1.3) < 1e-6, 'with no heading and not moving, the GPS position is used (and the crew is told)', JSON.stringify(l2.pin));
+  ok(l2.pin && Math.abs(l2.pin[0] - 50.76573) < 1e-6 && Math.abs(l2.pin[1] + 1.3) < 1e-6, 'with no heading and not moving, the GPS position is used (and the crew is told)', JSON.stringify(l2.pin));
   /* move the pin so the line has length, then Start from the line */
   await p.evaluate(() => { const k = Object.keys(localStorage).find(k => /^fs-line/.test(k)); const l = JSON.parse(localStorage.getItem(k)); l.pin = [50.7680, -1.3040, Date.now(), 3]; localStorage.setItem(k, JSON.stringify(l)); document.getElementById('lnClr') && 0; }); 
   await p.evaluate(() => { const b = document.getElementById('lnBoat'); if (b) b.click(); }); await p.waitForTimeout(500);
