@@ -755,8 +755,8 @@
     var M0 = [(A[0] + P[0]) / 2, (A[1] + P[1]) / 2], aw = Math.max(40, Lpx * 0.35); ctx.strokeStyle = '#6FA9E0'; ctx.fillStyle = '#6FA9E0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(M0[0] + wx * aw * 1.6, M0[1] + wy * aw * 1.6); ctx.lineTo(M0[0] + wx * aw * 0.5, M0[1] + wy * aw * 0.5); ctx.stroke();
     var tip = [M0[0] + wx * aw * 0.5, M0[1] + wy * aw * 0.5]; ctx.beginPath(); ctx.moveTo(tip[0], tip[1]); ctx.lineTo(tip[0] + wx * 12 + px * 7, tip[1] + wy * 12 + py * 7); ctx.lineTo(tip[0] + wx * 12 - px * 7, tip[1] + wy * 12 - py * 7); ctx.closePath(); ctx.fill();
     ctx.font = '700 14px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.fillStyle = '#fff';
-    var fit = window.__fsLabelFit || function () { return 0; }, lab = bi.m < 2 ? 'Square to the wind: no bias' : bi.end + ' end favoured · ' + bi.m + ' m · ' + bi.deg + '°', lw = ctx.measureText(lab).width, db = fit(F[0] - lw / 2 - 2, F[1] - 44, lw + 4, 18, 3, true); if (db != null) { ctx.strokeText(lab, F[0], F[1] - 26 + db); ctx.fillText(lab, F[0], F[1] - 26 + db); }   /* A14: labels give way to each other */
-    var wl = 'Wind ' + ('00' + Math.round(tw)).slice(-3) + '°', wlx = M0[0] + wx * aw * 1.7, wly = M0[1] + wy * aw * 1.7, ww = ctx.measureText(wl).width, dw = fit(wlx - ww / 2 - 2, wly - 18, ww + 4, 18, 3); if (dw != null) { ctx.strokeText(wl, wlx, wly + dw); ctx.fillText(wl, wlx, wly + dw); } ctx.restore(); }
+    var fit = window.__fsLabelFit || function () { return 0; }, lab = bi.m < 2 ? 'Square to the wind: no bias' : bi.end + ' end favoured · ' + bi.m + ' m · ' + bi.deg + '°', lw = ctx.measureText(lab).width, lp = !BV.res && BV.lp, db = lp ? lp.db : fit(F[0] - lw / 2 - 2, F[1] - 44, lw + 4, 18, 3, true); if (db != null) { ctx.strokeText(lab, F[0], F[1] - 26 + db); ctx.fillText(lab, F[0], F[1] - 26 + db); }   /* A14: labels give way to each other */
+    var wl = 'Wind ' + ('00' + Math.round(tw)).slice(-3) + '°', wlx = M0[0] + wx * aw * 1.7, wly = M0[1] + wy * aw * 1.7, ww = ctx.measureText(wl).width, dw = lp ? lp.dw : fit(wlx - ww / 2 - 2, wly - 18, ww + 4, 18, 3); BV.lp = BV.res ? { db: db, dw: dw } : null; if (dw != null) { ctx.strokeText(wl, wlx, wly + dw); ctx.fillText(wl, wlx, wly + dw); } ctx.restore(); }
   /* M8 (Stuart 17 Nov 05:13): test mode. A practice boat sails the course (or a sample course off Cowes) on the chart, eight times
      quicker than life after a two-and-a-half-minute start sequence; nothing goes to the crew; Stop puts your own race back. */
   var SIM = { on: false };
@@ -1101,7 +1101,6 @@
   function target(ctx, x, y, col) { ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 5, 0, 2 * Math.PI); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 2 * Math.PI); ctx.fill(); [[0, -14, 0, -10], [0, 10, 0, 14], [-14, 0, -10, 0], [10, 0, 14, 0]].forEach(function (q) { ctx.beginPath(); ctx.moveTo(x + q[0], y + q[1]); ctx.lineTo(x + q[2], y + q[3]); ctx.stroke(); }); ctx.restore(); }
   function extras(ctx, X, Y) {
     var l = window.__fsLine ? window.__fsLine() : {};
-    if (window.FS_MARK && window.__fsLabelTake) { if (l.boat) window.__fsLabelTake(X(l.boat[1]) - 13, Y(l.boat[0]) - 21, 26, 28); if (l.pin) window.__fsLabelTake(X(l.pin[1]) - 9, Y(l.pin[0]) - 20, 22, 28); }   /* A14: no label over the committee boat or the pin */
     if (KIT && BV.on) biasDraw(ctx, X, Y);
     if (window.FS_MARK && l.boat && l.pin) { ctx.save(); ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(l.boat[1]), Y(l.boat[0])); ctx.lineTo(X(l.pin[1]), Y(l.pin[0])); ctx.stroke(); var bi = biasNow(); if (bi && !BV.on && bi.m >= 2) { var fe = /Pin|Outer/.test(bi.end) ? l.pin : l.boat; ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ctx.fillText('FAVOURED ' + bi.m + ' m', X(fe[1]) + 12, Y(fe[0]) + 12); } ctx.restore(); }
     if (window.FS_MARK) { if (l.boat) boatSym(ctx, X(l.boat[1]), Y(l.boat[0])); if (l.pin) pinSym(ctx, X(l.pin[1]), Y(l.pin[0])); }
@@ -1122,6 +1121,13 @@
   /* M12 (Stuart 17 Nov 05:30): at the gun the racing window opens by itself: the plotter, steering to the next mark (rhumb line) or along the route */
   if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); toast('The gun: the racing window is open. Tap MARK or ROUTE in it to steer to the next mark or along the route.'); } catch (e) {} }, 1000);
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
+  /* A14: before any other label in the frame, Mark keeps the committee boat and the pin clear of labels, and the line's bias and wind
+     labels take their places; biasDraw then draws them where they were placed */
+  function nullCtx(c) { var o = { font: '' }; ['save', 'restore', 'beginPath', 'moveTo', 'lineTo', 'closePath', 'fill', 'stroke', 'setLineDash', 'strokeText', 'fillText', 'arc', 'fillRect', 'strokeRect'].forEach(function (k) { o[k] = function () {}; }); o.measureText = function (t) { c.save(); c.font = o.font; var m = c.measureText(t); c.restore(); return m; }; return o; }
+  (window.__fsLabelFirst = window.__fsLabelFirst || []).push(function (ctx, X, Y) {
+    BV.lp = null; if (!window.FS_MARK || !(C.on || pick || builderOpen()) || !MK) return; var l = window.__fsLine ? window.__fsLine() : {}, take = window.__fsLabelTake;
+    if (take) { if (l.boat) take(X(l.boat[1]) - 13, Y(l.boat[0]) - 21, 26, 28); if (l.pin) take(X(l.pin[1]) - 9, Y(l.pin[0]) - 20, 22, 28); }
+    if (KIT && BV.on) { BV.res = true; try { biasDraw(nullCtx(ctx), X, Y); } finally { BV.res = false; } } });
   window.__fsTapHook = tapHook;
   /* M71 (Stuart 18 Nov 05:58: "a button on mark and mark+ easy to see that says stop race and a button that says show start sequence
      screen ... work out a logic tree to be sure exactly where they should go"). Logic tree (docs/MARK-RACE-BUTTONS.md):
