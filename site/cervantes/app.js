@@ -176,6 +176,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (tb) tb.addEventListener('click', function (ev) { ev.stopPropagation(); });
       return;
     }
+    var keep = false; try { keep = sessionStorage.getItem('fs-keep') === '1'; sessionStorage.removeItem('fs-keep'); } catch (e) {}
+    if (keep) { gone = true; sp.hidden = true; S.splashDone = function () {}; setTimeout(function () { var n = $('spTourNo'); if (n) n.click(); }, 300); return; }   /* after Reload: straight back to the chart */
     if ($('spTour')) { S.splashDone = function () {}; sp.addEventListener('click', hide); return; }   /* Show me round? Yes or No, asked every time: the splash waits for the answer (Stuart 14 Nov) */
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
@@ -2560,7 +2562,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var sp = S.inshore && meta.course && meta.course.race && meta.course.race.solPlan;
     if (sp && !sp.route && !S.from && !S.to) {   /* a Solent race without routing (Stuart 16 Nov 18:30): the course and a list of bearings and distances, no forecasts */
       S.gen = (S.gen || 0) + 1; S.routes = []; S.sel = null; S.ghosts = []; S.legs = legsFor(null); S.running = false; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = '';
-      if ($('runNote')) $('runNote').textContent = 'Not routed: the course list shows the bearing and distance of each leg.'; try { if (window.FSSolent && FSSolent.showList) FSSolent.showList(); } catch (e) {} draw(); return; }
+      if ($('runNote')) $('runNote').textContent = 'Not routed: the course list shows the bearing and distance of each leg.'; try { if (window.FSSolent && FSSolent.showList) FSSolent.showList(true); } catch (e) {} draw(); return; }
     var ms = selectedModels(); if (sp && sp.route) { var pick = (sp.models && sp.models.length ? sp.models : sp.model ? [sp.model] : []).filter(function (m) { return ms.indexOf(m) >= 0; }); if (pick.length) ms = pick; }   /* FirstShift Mark routes on the models chosen, 1 to 6, plus Fixed wind (Stuart 16 Nov 19:35) */
     if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
     if (!P.depth) { openTab('data'); $('dlNote').textContent = 'Download the seabed depth first: the router needs it to keep off the land.'; return; }
@@ -2796,7 +2798,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('sayAll').onclick = function () { say(HELP.map(function (h, i) { return i; })); };
     $('sayStop').onclick = sayStop;
     $('helpBtn').onclick = function () { $('help').hidden = false; };
-    if ($('updBar')) { $('updBar').onclick = function () { try { sessSave(); } catch (e) {} location.reload(); }; setTimeout(updCheck, 8000); setInterval(updCheck, 5 * 60000); document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(updCheck, 1500); }); }
+    /* Stuart 19 Nov 18:30: Reload, "refresh, keep my place": the newest app and forecasts, the race, course, chart view and GPS kept, and no
+       landing page or start-up question on the way back. The update bar uses the same reload. */
+    window.__fsReload = function () { try { sessSave(); } catch (e) {} try { if (window.__navResume) window.__navResume.save(); } catch (e) {} try { sessionStorage.setItem('fs-keep', '1'); } catch (e) {} location.reload(); };
+    if ($('setReload')) $('setReload').onclick = function () { window.__fsReload(); };
+    if ($('updBar')) { $('updBar').onclick = function () { window.__fsReload(); }; setTimeout(updCheck, 8000); setInterval(updCheck, 5 * 60000); document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(updCheck, 1500); }); }
     if ($('editFab')) $('editFab').onclick = function () { startEdit(courseCopy()); };   /* drag the marks straight on the chart; Done re-routes */
     var suT = 0; document.addEventListener('change', function () { clearTimeout(suT); suT = setTimeout(function () { try { setupRender(); } catch (e) {} }, 300); }, true);   /* the set-up card follows every change */
     /* Help is a round ? on the chart, bottom right, the same on every screen (Stuart 12 Nov) */

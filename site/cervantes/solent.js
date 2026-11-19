@@ -331,7 +331,21 @@
   /* Stuart 17 Nov 14:19: "mark first action screen after landing page should open with the start new race box in view". Once the landing
      page has gone, the Start new race card shows, unless a race is under way, a course is being set or test mode is on */
   if (window.FS_MARK) (function () { var n = 0, t = setInterval(function () { n++; var sp = document.getElementById('splash'), up = !sp || sp.hidden || getComputedStyle(sp).display === 'none';
-    if (n > 240) { clearInterval(t); return; } if (!up || !MK && n < 40) return; clearInterval(t); if (raceOn() || WZ.on || SIM.on || ($('solCard') && !$('solCard').hidden)) return; try { startCard(); } catch (e) {} }, 500); })();
+    if (n > 240) { clearInterval(t); BOOT = false; return; } if (!up || !MK && n < 40) return; clearInterval(t); BOOT = false;
+      if (WZ.on || SIM.on || ($('solCard') && !$('solCard').hidden)) return; var lg = $('solLegs');
+      if (B.shown && earlier() && !(B.ended > (B.startAt ? B.startAt * 1000 : B.shown))) { if (lg) lg.hidden = true; try { oldCard(); } catch (e) {} return; }   /* not one already ended with New race or Stop race */   /* a race from an earlier day: carry on or new */
+      if (raceOn()) { try { if ((!lg || lg.hidden) && window.__navCourse && window.__navCourse()) showList(); } catch (e) {} return; }   /* a race under way: its course card */
+      if (lg) lg.hidden = true; try { startCard(); } catch (e) {} }, 500); })();   /* otherwise the Start new race card (17 Nov 14:19), and only that */
+  var BOOT = !!window.FS_MARK;
+  /* a race from an earlier day (Stuart 19 Nov 18:30, "one card: carry on or new"): its name and when, Carry on or New race */
+  function oldCard() {
+    css(); var c = $('solCard'); if (!c) { c = document.createElement('div'); c.id = 'solCard'; c.className = 'sheet'; c.hidden = true; document.body.appendChild(c); }
+    var cc = window.__navCourse && window.__navCourse(), t = B.startAt || B.shown / 1000, d = new Date(t * 1000), when = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    c.className = 'sheet solmk'; c.innerHTML = '<div class="in" role="dialog" aria-label="Your last race"><div class="shead"><h2>Your last race</h2><button class="close" id="solCardX" aria-label="Close">×</button></div><div class="sbody"><p><b>' + esc(cc && cc.name ? cc.name : 'Solent race') + '</b></p><p class="note">' + (B.startAt ? 'Gun ' : 'Set ') + esc(when) + '.</p><div class="solmenu"><button class="btn primary" id="solOldGo">Carry on</button><button class="btn" id="solOldNew">New race</button></div><p class="note">New race keeps this one in Stored races.</p></div></div>';
+    c.hidden = false;
+    $('solCardX').onclick = function () { c.hidden = true; };
+    $('solOldGo').onclick = function () { c.hidden = true; showList(); };
+    $('solOldNew').onclick = function () { B.ended = Date.now(); saveB(); try { startCard(); } catch (e) {} }; }
   /* Stuart 17 Nov 13:27 (tablet photo): "What does the slider do in this set up. If it has no use when used in this senario can it disappear to
      give more screen space then come back when needed". The slider moves the chart's time through the forecast (wind and tide arrows, the
      boats on the routes) for planning. With the GPS live in a race the chart is at now, so on Mark and Mark+ the slider and the UTC and local
@@ -342,7 +356,11 @@
     var fold = live && !SQ.tshow, was = document.body.classList.contains('mkfold'); tb.hidden = !live; tb.querySelector('b').textContent = fold ? '▴' : '▾'; tb.title = fold ? 'Show the time slider' : 'Fold the time slider away';
     if (was !== fold) { document.body.classList.toggle('mkfold', fold); setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50); } }
   if (window.FS_MARK) setInterval(timeFold, 1000);
-  function showList() {
+  /* Stuart 19 Nov 18:23 (photo): at start-up the course card slid over the Start new race card. One window only: the course card opened by
+     itself (auto) gives way to a card already open, and a race from an earlier day asks first (oldCard) */
+  function earlier() { var t = B.startAt || (B.shown ? B.shown / 1000 : 0); if (!t) return false; var d = new Date(t * 1000), n = new Date(); return t < n.getTime() / 1000 && d.toDateString() !== n.toDateString(); }
+  function showList(auto) {
+    if (auto === true && window.FS_MARK && (BOOT || ($('solCard') && !$('solCard').hidden))) return;   /* opened by routing: never during start-up, never over a card */
     css(); var cc = window.__navCourse && window.__navCourse(); if (!cc) return; var pts = [cc.start].concat(cc.marks || [], [cc.finish]), w = windRef(), tot = 0, rows = [];
     for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], q = pts[i], k = Math.cos(a.lat * R), dx = (q.lon - a.lon) * k * 60, dy = (q.lat - a.lat) * 60, d = Math.hypot(dx, dy), br = (Math.atan2(dx, dy) / R + 360) % 360; tot += d;
       rows.push('<tr><td>' + i + '</td><td>' + esc(String(q.name || '').replace(/^(Start|Finish), /, '')) + (q.side ? ' <small>' + (q.side === 'starboard' || q.side === 'stbd' ? 'S' : 'P') + '</small>' : '') + (w && w.twd != null ? '<br><small class="sollty">' + legType(br, w.twd) + '</small>' : '') + '</td><td><b>' + ('00' + Math.round(br)).slice(-3) + '°T</b></td><td>' + d.toFixed(1) + ' nm</td></tr>' + (window.FS_MARK ? '<tr class="solcer"><td></td><td colspan="3"><div class="solce">' + ceBtns(i, pts.length - 1) + '</div></td></tr>' : '')); }
