@@ -390,7 +390,7 @@
               if (score <= bestS[sec]) { ncand++; continue; }
             }
             if (!wetLine(p.la, p.lo, nla, nlo)) continue;
-            var c = { la: nla, lo: nlo, par: pi, hdg: HH[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0 };
+            var c = { la: nla, lo: nlo, par: pi, hdg: HH[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0, lost: Math.min(lost, dt) };
             if (arrived) { c.fr = fr; c.la = p.la + (nla - p.la) * fr; c.lo = p.lo + (nlo - p.lo) * fr; hit.push(c); } else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
           }
         }
@@ -399,7 +399,10 @@
           /* the mark is rounded (or the finish reached) at the moment the first boat crosses, not at the end of the step: the leg
              is timed from there and the next leg starts from that point (13 Nov 2026, review finding 1: up to a whole step late before,
              and the next leg started up to a step's sailing beyond the mark) */
-          var first = hit.reduce(function (a, c) { return c.fr < a.fr ? c : a; }, hit[0]), tArr = t - dt / 3600 + first.fr * dt / 3600;
+          /* a tack or gybe in the arrival step costs its whole time, not the share of it the boat had sailed (19 Nov 2026, peer review: the
+             arrival was timed as a share of the whole step, so a tack just before a mark or the finish was partly free) */
+          var arrT = function (c) { var L = c.lost || 0; return L + c.fr * (dt - L); };
+          var first = hit.reduce(function (a, c) { return arrT(c) < arrT(a) ? c : a; }, hit[0]), tArr = t - dt / 3600 + arrT(first) / 3600;
           t = tArr;
           hist.push({ pts: [first], t: tArr, leg: li }); arrivals.push({ name: leg.name, t: tArr });
           pts = [{ la: first.la, lo: first.lo, side: first.side, par: 0 }];
@@ -441,23 +444,51 @@
     return { arrivals: arrivals, path: path, finish: arrivals.length ? arrivals[arrivals.length - 1].t : null, iso: iso };
   }
 
-  /* Sail a fixed track through a different forecast: time on each piece from the best speed made good along it. */
-  function sailTrack(path, o) {
-    var t = path[0].t;
-    for (var i = 1; i < path.length; i++) {
-      var a = path[i - 1], b = path[i], d = dist(a.la, a.lo, b.la, b.lo); if (d < 1e-4) continue;
-      var bb = brg(a.la, a.lo, b.la, b.lo), W = o.wind(a.la, a.lo, t), C = o.tide(a.la, a.lo, t), V = o.wave ? o.wave(a.la, a.lo, t) : [0, NaN];
-      var best = 0;
-      for (var h = 0; h < 360; h += 5) {
-        var twa = ((h - W[1] + 540) % 360) - 180, s = o.speed(W[0], twa) * seaFactor(V[0], V[1], h, o.sea), m = s * Math.cos((h - bb) * R);
-        if (m > best) best = m;
-      }
-      var cur = C[0] * Math.sin(bb * R) + C[1] * Math.cos(bb * R), v = Math.max(0.3, best + cur);
-      t += d / v;
+  /* Sail a fixed track through a forecast, by the optimiser's own rules (peer review, 19 Nov 2026; ROUTING-ENGINE-PLAN E1). Each piece of the
+     track is sailed as route() sails a step: the polar at the true wind angle of the heading (wind over the water when the samplers give it),
+     the sea factor, and the tide added as a vector. The heading is the one whose ground track runs along the piece; where no heading can
+     (the piece points into the no-go zone or dead downwind) the boat zig-zags on the two headings that make the piece good fastest, with
+     one tack or gybe. A tack or gybe costs the same seconds as in route(), during which the tide still carries the boat. Before this, the
+     replay credited the speed made good along the piece at any heading, added only the along-track tide and charged no tacks: it was 1% to
+     14% quicker than the optimiser in the optimiser's own forecast (tests/replay/identity.js). */
+  function sailPiece(a, b, t, o, side0) {
+    var d = dist(a.la, a.lo, b.la, b.lo); if (d < 1e-4) return { dt: 0, side: side0 };
+    var bb = brg(a.la, a.lo, b.la, b.lo), ue = Math.sin(bb * R), un = Math.cos(bb * R), ne = un, nn = -ue;
+    var W = o.wind(a.la, a.lo, t), C = o.tide(a.la, a.lo, t), V = o.wave ? o.wave(a.la, a.lo, t) : [0, NaN];
+    var Ct = C[0] * ue + C[1] * un, Cn = C[0] * ne + C[1] * nn, H = [];
+    function at(h) { var twa = ((h - W[1] + 540) % 360) - 180, s = W[0] > 0 ? o.speed(W[0], twa) : 0; if (s > 0.05) s *= seaFactor(V[0], V[1], h, o.sea); else s = 0;
+      var ve = s * Math.sin(h * R), vn = s * Math.cos(h * R); return { h: h, twa: twa, al: ve * ue + vn * un, cr: ve * ne + vn * nn + Cn, s: s }; }
+    for (var h = 0; h < 360; h += 2) H.push(at(h));
+    var best = null;
+    for (var k = 0; k < H.length; k++) {   /* a single heading: where the cross-track speed changes sign, the heading that holds the line */
+      var p = H[k], q = H[(k + 1) % H.length]; if (!(p.s > 0 && q.s > 0) || (p.cr > 0) === (q.cr > 0)) continue;
+      var lo2 = p.h, hi2 = p.h + 2, ex = null;   /* the exact heading, by halving: the polar is read at it, not interpolated between headings */
+      for (var it = 0; it < 18; it++) { var mid = (lo2 + hi2) / 2; ex = at(mid); if ((ex.cr > 0) === (p.cr > 0)) lo2 = mid; else hi2 = mid; }
+      var al = ex.al + Ct; if (ex.s > 0 && al > 0.05 && (!best || al > best.g)) best = { g: al, side: ex.twa < 0 ? -1 : 1, twa: ex.twa, zig: false };
     }
+    /* and the heading that holds the line found directly through the tide (h = bearing less the tide's crab), which also finds it at the
+       edge of the polar, where a neighbouring heading has no speed and the search above cannot bracket it */
+    var hd = bb; for (var it2 = 0; it2 < 6; it2++) { var e2 = at(hd); if (!(e2.s > 0.05)) break; var sn = Math.max(-0.95, Math.min(0.95, Cn / e2.s)); hd = bb + Math.asin(sn) / R; }
+    var ed = at(hd); if (ed.s > 0.05 && Math.abs(ed.cr) < 0.02) { var gd = ed.al + Ct; if (gd > 0.05 && (!best || gd > best.g)) best = { g: gd, side: ed.twa < 0 ? -1 : 1, twa: ed.twa, zig: false }; }
+    if (!best) {   /* zig-zag: two headings, one on each side of the line, in the share of time that keeps the line */
+      for (var i1 = 0; i1 < H.length; i1 += 2) { var A1 = H[i1]; if (!(A1.s > 0) || A1.cr <= 0) continue;
+        for (var i2 = 0; i2 < H.length; i2 += 2) { var A2 = H[i2]; if (!(A2.s > 0) || A2.cr >= 0) continue;
+          var w = -A2.cr / (A1.cr - A2.cr), g = w * A1.al + (1 - w) * A2.al + Ct;
+          if (g > 0.05 && (!best || g > best.g)) best = { g: g, side: w >= 0.5 ? (A1.twa < 0 ? -1 : 1) : (A2.twa < 0 ? -1 : 1), twa: Math.abs(A1.twa) > 90 ? 150 : 40, zig: true }; } }
+    }
+    if (!best) return { dt: d / 0.3, side: side0 };   /* nothing makes way: as slow as the old replay's floor */
+    var lost = 0; if ((side0 && best.side !== side0) || best.zig) lost = (Math.abs(best.twa) > 90 ? (o.gybeS || 0) : (o.tackS || 0)) / 3600;
+    if (lost > 0 && !best.zig) {   /* during the tack the tide carries the boat (both ways, as in route()); the rest of the piece is sailed from there */
+      var k = Math.cos(a.la * R), a2 = { la: a.la + C[1] * lost / 60, lo: a.lo + C[0] * lost / (60 * k) }, r2 = sailPiece(a2, b, t + lost, o, best.side);
+      return { dt: lost + r2.dt, side: r2.side };
+    }
+    return { dt: lost + Math.max(0, d - Ct * lost) / best.g, side: best.side };
+  }
+  function sailTrack(path, o) {
+    var t = path[0].t, side = path[0].side || 0;
+    for (var i = 1; i < path.length; i++) { var r = sailPiece(path[i - 1], path[i], t, o, side); t += r.dt; side = r.side; }
     return t;
   }
-
   function sailFor(row, crossover) {
     if (!crossover || row.twa == null) return '';
     var a = Math.abs(row.twa), w = row.tws;

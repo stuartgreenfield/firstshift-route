@@ -15,11 +15,11 @@ const cases = [
 let worst = 0;
 for (const c of cases) {
   const s = [50, -2], to = nmTo(50, -2, c.brg, c.nm);
-  const o = { wind: () => [12, 0], tide: () => c.tide, speed: sp, wave: null, sea: null };
+  const o = { wind: () => [12, 0], tide: () => c.tide, speed: sp, wave: null, sea: null, tackS: c.tackS, gybeS: 0 };
   const r = R.route({ start: { lat: s[0], lon: s[1], t: 0 }, legs: [{ name: 'F', point: to, r: 0.05 }], wind: o.wind, tide: o.tide, speed: sp, depth: null, tackS: c.tackS, gybeS: 0, dt: 300, hstep: 5, sectors: 360, maxHours: 20 });
   const rep = R.sailTrack(r.path, o);
   const turns = r.path.reduce((n, p, i, a) => n + (i > 1 && Math.sign(((a[i].hdg || 0) - 0)) !== Math.sign(((a[i - 1].hdg || 0) - 0)) ? 0 : 0), 0);
   const d = (rep - r.finish) * 60, pct = 100 * (rep - r.finish) / r.finish; worst = Math.max(worst, Math.abs(pct));
-  console.log((Math.abs(pct) < 1 ? 'PASS ' : 'FAIL ') + c.name + ' | optimised ' + r.finish.toFixed(3) + ' h, replayed ' + rep.toFixed(3) + ' h, ' + (d >= 0 ? '+' : '') + d.toFixed(1) + ' min (' + pct.toFixed(1) + '%)');
+  console.log((Math.abs(pct) < 0.5 ? 'PASS ' : 'FAIL ') + c.name + ' | optimised ' + r.finish.toFixed(3) + ' h, replayed ' + rep.toFixed(3) + ' h, ' + (d >= 0 ? '+' : '') + d.toFixed(1) + ' min (' + pct.toFixed(1) + '%)');
 }
 console.log('worst gap ' + worst.toFixed(1) + '%');
