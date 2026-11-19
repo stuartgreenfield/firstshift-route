@@ -544,7 +544,13 @@
     var w = windRef(); if (w && w.twd != null) { var ux = Math.sin(w.twd * R), uy = Math.cos(w.twd * R), up = (dx * ux + dy * uy) * 1852; t += Math.abs(up) < 2 ? ', square to the wind' : ', ' + (up > 0 ? 'pin' : 'committee boat') + ' end favoured by ' + Math.round(Math.abs(up)) + ' m'; } return t + '.'; }
   function ping(fn) { var f = null; try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} if (!f || f.dr || Date.now() - f.at > 30000) { if (window.__fsLiveOpen) window.__fsLiveOpen(); WZ.msg = 'No GPS fix yet: the GPS is starting. Tap Ping again in a moment.'; wzRender(); return; } if (window.__fsOnLand && window.__fsOnLand(f.la, f.lo)) { WZ.msg = 'The GPS puts you on land, so nothing was pinged. Ping from the boat, or tap the point on the chart.'; wzRender(); return; } fn(f.la, f.lo); }
   /* the race's wind: typed, head to wind, or the boat's instruments (Route+); used for the leg list, line bias and header or lift */
-  function windRef() { if (B.wind && B.wind.twd != null) return B.wind; var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} if (nw && nw[1] != null) { B.wind = { twd: Math.round(nw[1]), src: 'boat', at: Date.now() }; saveB(); return B.wind; }
+  /* One live wind for the race (Mark review K1, 19 Nov 2026). In order: (1) a wind the crew set by hand (typed, head to wind), kept with its age;
+     (2) the boat's instruments, read live every time, never stored (before, Mark+ copied the first instrument wind into the race and kept
+     it, so the bias and favoured end froze on it); (3) the practice boat's wind in test mode; (4) the forecast (Route). A stored 'boat'
+     wind from before this change means "use the instruments", so it is read live too. */
+  function windRef() { if (B.wind && B.wind.twd != null && B.wind.src !== 'boat') return B.wind; var nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {}
+    if (nw && nw[1] != null) return { twd: Math.round(nw[1]), tws: nw[0] > 0 ? Math.round(nw[0]) : undefined, src: SIM && SIM.on ? 'simulated' : 'boat', at: Date.now() };
+    if (SIM && SIM.on && EM && EM.base) { var ew = emWind(); return { twd: Math.round(ew.twd), tws: Math.round(ew.tws), src: 'simulated', at: Date.now() }; }
     if (ROUTE && window.__fsWindAt) { var p0 = kitPos(), fw = p0 ? window.__fsWindAt(p0[0], p0[1], B.startAt || null) : null; if (fw && fw.twd != null && fw.tws > 0) return { twd: Math.round(fw.twd), tws: Math.round(fw.tws), src: 'forecast' }; }   /* F44: Route has the forecast */
     return null; }
   function kitPos() { var l = lineNow(); if (l) return [(l.boat[0] + l.pin[0]) / 2, (l.boat[1] + l.pin[1]) / 2]; var f = null; try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} return f ? [f.la, f.lo] : null; }
@@ -770,12 +776,12 @@
     SIM.saved = { B: JSON.parse(JSON.stringify(B)), line: JSON.parse(JSON.stringify(lq)) }; sv('fs-solent-testsave', SIM.saved); SIM.push = window.__fsBcPush; window.__fsBcPush = function () {};
     QUIET = true; try {
       var c = build(); if (!c || c.err) { B.type = 'marks'; B.marks = parseBoard('3F P, 2C S').marks; B.fin = 'start'; B.finish = null; }
-      if (!windRef()) B.wind = { twd: 230, src: 'typed', at: Date.now() };
+      var mw = B.wind && B.wind.twd != null && B.wind.src !== 'boat' ? B.wind : null; SIM.base = { twd: mw ? +mw.twd : 230, tws: mw && mw.tws > 0 ? +mw.tws : 12 }; B.wind = null;   /* K1: the practice wind is the race's wind source in test mode (a typed wind would hide the shifts); the race's own wind comes back at Stop */
       var l = window.__fsLine(); if (!(l.boat && l.pin)) { window.__fsSetLine('boat', 50.7700, -1.2950); window.__fsSetLine('pin', 50.7700, -1.2895); }
       B.sk = 'line'; B.start = lineStart(); B.plan = 'list'; B.startAt = Math.round(Date.now() / 1000 + 150); saveB(); go(true); B.shown = Date.now(); B.raced = null; saveB();
     } finally { QUIET = false; }
     try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {}
-    var lg = $('solLegs'); if (lg) lg.hidden = true; EM = { t: 0, x: 1, shift: 0, log: [], i: 0 }; try { if (window.__navPracticeOn && window.__navPracticeOn()) window.__navPractice(false); } catch (e) {} window.__fsSim(true); SIM.on = true; SIM.i = 0; SIM.pos = null; testBar(true); SIM.t = setInterval(simStep, 1000); simStep(); toast('Test mode: the gun is in two and a half minutes.');
+    var lg = $('solLegs'); if (lg) lg.hidden = true; EM = { t: 0, x: 1, shift: 0, log: [], i: 0, base: SIM.base || { twd: 230, tws: 12 } }; try { if (window.__navPracticeOn && window.__navPracticeOn()) window.__navPractice(false); } catch (e) {} window.__fsSim(true); SIM.on = true; SIM.i = 0; SIM.pos = null; testBar(true); SIM.t = setInterval(simStep, 1000); simStep(); toast('Test mode: the gun is in two and a half minutes.');
   }
   /* ---- The race emulator (Stuart 17 Nov 13:31, Mark+ photo: "why is boat sailing away from mark. Can we build a tool to test mark and
      mark+ in test mode please"). The old test boat went straight at each mark, even dead upwind, and on Mark+ Route+'s own practice boat
@@ -788,7 +794,7 @@
   var EM = { t: 0, x: 1, shift: 0, log: [] };
   function n180(a) { return ((a % 360) + 540) % 360 - 180; }
   function n360(a) { return ((a % 360) + 360) % 360; }
-  function emWind() { var w = windRef() || {}, base = w.twd != null ? +w.twd : 230, tws = w.tws > 0 ? +w.tws : 12; return { twd: n360(base + EM.shift + 4 * Math.sin(EM.t / 240)), tws: tws * (1 + 0.08 * Math.sin(EM.t / 97)) }; }
+  function emWind() { var w = EM.base || {}, base = w.twd != null ? +w.twd : 230, tws = w.tws > 0 ? +w.tws : 12;   /* the practice wind starts from EM.base (K1), not from windRef(), which now reads it */ return { twd: n360(base + EM.shift + 4 * Math.sin(EM.t / 240)), tws: tws * (1 + 0.08 * Math.sin(EM.t / 97)) }; }
   function emPolar(twa, tws) { var a = Math.abs(twa), k = Math.min(1, tws / 12), pts = [[0, 0], [38, 4.2], [42, 5.6], [60, 6.4], [90, 6.9], [120, 7.0], [150, 6.4], [180, 5.4]]; for (var i = 1; i < pts.length; i++) if (a <= pts[i][0]) { var f = (a - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return (pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1])) * (0.55 + 0.45 * k); } return 5.4 * k; }   /* a test polar for a 30-foot cruiser-racer, not a real boat's */
   function emTide() { var z = tideRef(); return z && !z.need ? [z.spd * Math.sin(z.dir * R), z.spd * Math.cos(z.dir * R)] : [0, 0]; }
   function emCog(hdg, bsp) { var T = emTide(), gx = bsp * Math.sin(hdg * R) + T[0], gy = bsp * Math.cos(hdg * R) + T[1]; return { cog: n360(Math.atan2(gx, gy) / R), sog: Math.hypot(gx, gy) }; }
@@ -1032,10 +1038,13 @@
       cell('Time to burn', burn != null ? (burn > 0 ? '+' : '') + burn + ' s' : '--', burn == null ? '' : burn > 8 ? 'early: burn it' : burn < -3 ? 'late: go' : 'on time', burn == null ? '' : burn > 8 ? 'warn' : burn < -3 ? 'bad' : 'good') +
       cell('Bias', bi ? (bi.m < 2 ? 'Square' : (/Pin|Outer/.test(bi.end) ? 'Pin' : 'Boat') + ' +' + bi.m + ' m') : '--', bi ? (bi.m >= 2 && B.loa > 3 ? (bi.m / B.loa).toFixed(1) + ' lengths · ' : '') + bi.deg + '° off square' + (tr && Math.abs(tr.d) >= 3 ? ' · wind ' + (tr.d > 0 ? 'veered ' : 'backed ') + Math.abs(tr.d) + '° in ' + tr.m + ' min' : '') : 'give the wind') +
       (fl1 ? cell('First mark', esc(fl1.name) + ' ' + ('00' + Math.round(fl1.br)).slice(-3) + '°', (fl1.lt ? esc(fl1.lt) : 'give the wind for the leg') + (fl1.lt && !fl1.up && fl1.gain >= 5 ? ' · ' + fl1.near + ' end ' + fl1.gain + ' m nearer' : '')) : '') +
-      cell('SOG · COG', f && f.sog != null ? f.sog.toFixed(1) + ' · ' + (f.cog != null ? ('00' + Math.round(f.cog)).slice(-3) + '°' : '--') : '--', f ? 'phone GPS' : 'GPS starting') +
+      cell('SOG · COG', f && f.sog != null ? f.sog.toFixed(1) + ' · ' + (f.cog != null ? ('00' + Math.round(f.cog)).slice(-3) + '°' : '--') : '--', !f ? 'GPS starting' : SIM.on ? 'simulated' : (function () { var nb0 = null; try { nb0 = window.__navBoat ? window.__navBoat() : null; } catch (e) {} return nb0 && nb0.state === 'connected' && nb0.age && nb0.age.lat != null && nb0.age.lat < 8000 ? 'boat GPS' : 'phone GPS'; })()) +   /* K2, audit C4: say where the fix comes from */
       (function () { var nb = null; try { nb = window.__navBoat ? window.__navBoat() : null; } catch (e) {} var fr = function (k) { return nb && nb.age && nb.age[k] != null && nb.age[k] < 8000 && nb[k] != null; }, h = '';   /* M56 (Stuart 13:46): Mark+ shows what the boat sends; Mark the typed wind */
-        if (nb && (fr('twa') || fr('awa') || fr('bsp'))) { h += cell('BSP', fr('bsp') ? (+nb.bsp).toFixed(1) + ' kn' : '--', 'log') + cell('TWA', fr('twa') ? Math.abs(Math.round(nb.twa)) + '° ' + (nb.twa < 0 ? 'port' : 'stbd') : '--', fr('tws') ? (+nb.tws).toFixed(1) + ' kn true' : '') + cell('AWA', fr('awa') ? Math.abs(Math.round(nb.awa)) + '° ' + (nb.awa < 0 ? 'port' : 'stbd') : '--', fr('aws') ? (+nb.aws).toFixed(1) + ' kn apparent' : ''); if (fr('heel')) h += cell('Heel', Math.abs(Math.round(nb.heel)) + '°', nb.heel < 0 ? 'to port' : 'to starboard'); }
-        else { var wq = windRef(); h += cell('Wind', wq && wq.twd != null ? ('00' + Math.round(wq.twd)).slice(-3) + '°' : '--', wq ? (wq.tws > 0 ? wq.tws + ' kn · ' : '') + (wq.src === 'typed' || !wq.src ? 'typed' : esc(wq.src)) : 'give the wind'); }
+        /* K1, K2, audit C2 (19 Nov 2026): the race wind is always shown, with where it comes from and, typed by hand, how old it is; with the
+           instruments, the boat speed and true wind angle are added (apparent wind is for the trimmer, not the start) */
+        var wq = windRef(), age = wq && wq.at && wq.src === 'typed' ? Math.round((Date.now() - wq.at) / 60000) : null;
+        h += cell('Wind', wq && wq.twd != null ? ('00' + Math.round(wq.twd)).slice(-3) + '°' : '--', wq ? (wq.tws > 0 ? wq.tws + ' kn · ' : '') + (wq.src === 'typed' || !wq.src ? 'typed' + (age != null && age >= 1 ? ', ' + (age < 60 ? age + ' min' : Math.round(age / 60) + ' h') + ' ago' : '') : esc(wq.src)) : 'give the wind');
+        if (nb && (fr('twa') || fr('bsp'))) { h += cell('BSP', fr('bsp') ? (+nb.bsp).toFixed(1) + ' kn' : '--', SIM.on ? 'simulated' : 'log') + cell('TWA', fr('twa') ? Math.abs(Math.round(nb.twa)) + '° ' + (nb.twa < 0 ? 'port' : 'stbd') : '--', fr('tws') ? (+nb.tws).toFixed(1) + ' kn true' : ''); if (fr('heel')) h += cell('Heel', Math.abs(Math.round(nb.heel)) + '°', nb.heel < 0 ? 'to port' : 'to starboard'); }
         return h; })() +
       (function () { var tz = tideRef(); return cell('Tide', tz && !tz.need ? tz.spd.toFixed(1) + ' kn' : '--', tz && !tz.need ? 'to ' + ('00' + Math.round(tz.dir)).slice(-3) + '° · ' + tz.src : ROUTE ? 'no forecast tide here' : 'set it: Next, Tide'); })();
     var ov = e.querySelector('.ssov'), ot = ''; if (lc && lc.over && rem <= 60 && rem > -5) ot = B.flag && B.flag !== 'P' ? FLAGS[B.flag].replace(/^[^:]*: /, '') : 'On the course side: go back before the gun.'; else if (seriesTxt() && rem > 60) ot = seriesTxt(); else if (chk.length && rem > 120) ot = chk[0]; ov.hidden = !ot; ov.textContent = ot; ov.classList.toggle('ssinfo', !(lc && lc.over && rem <= 60));
