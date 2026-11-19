@@ -739,7 +739,7 @@
      screen shows the chart through it, north up, fitted to the line in the gap between the header and the figures; Picture swaps back */
   function ssFit() { var e = $('solStartScr'); if (!e || e.hidden || !e.classList.contains('ssthru')) return; var t = 0, b = innerHeight;
     [].forEach.call(e.querySelectorAll('.sshd,.soltest.intb'), function (x) { t = Math.max(t, x.getBoundingClientRect().bottom); }); var nm = e.querySelector('.ssnum'); if (nm) b = nm.getBoundingClientRect().top;
-    document.body.style.setProperty('--ssb', Math.round(b) + 'px'); document.body.style.setProperty('--sst', Math.round(t) + 'px'); biasView(true, { t: t, b: b }); }   /* --sst: the bottom of the header and test bar (audit A1) */   /* --ssb: the top of the boxes, so man overboard sits just above them on the chart (M80) */
+    document.body.style.setProperty('--ssb', Math.round(b) + 'px'); document.body.style.setProperty('--sst', Math.round(t) + 'px'); biasView(true, { t: t + 8, b: b - 28 }); }   /* --sst: the bottom of the header and test bar (audit A1) */   /* --ssb: the top of the boxes, so man overboard sits just above them on the chart (M80) */
   function biasDraw(ctx, X, Y) {
     var l = lineNow(), bi = biasNow(); if (!l || !bi) return; var tw = bi.twd;
     var A = [X(l.boat[1]), Y(l.boat[0])], P = [X(l.pin[1]), Y(l.pin[0])], mla = (l.boat[0] + l.pin[0]) / 2, mlo = (l.boat[1] + l.pin[1]) / 2, ula = mla + 0.2 / 60 * Math.cos(tw * R), ulo = mlo + 0.2 / 60 * Math.sin(tw * R) / Math.cos(mla * R);
