@@ -2224,11 +2224,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var c = meta.course, nx = realMarks(c)[0] || c.finish; if (nx) { var N = xy(nx.lat, nx.lon); fwd = (ux * N[1] - uy * N[0]) >= 0 ? 1 : -1; }   /* the course side: where the first mark is */
     var over = fwd != null && cr * fwd > 0, d = along < 0 && !l.transit ? Math.hypot(F[0], F[1]) : along > L ? Math.hypot(F[0] - P[0], F[1] - P[1]) : Math.abs(cr);
     var nrm = [-uy * (fwd || 1), ux * (fwd || 1)], perpBrg = (Math.atan2(nrm[0], nrm[1]) / R + 360) % 360;
-    var vmg = f.sog != null && f.cog != null ? f.sog * Math.cos((f.cog - perpBrg) * R) * (over ? -1 : 1) : null, ttl = vmg && vmg > 0.2 ? d / vmg * 3600 : null, ttlBy = 'now';
+    var vmg = f.sog != null && f.cog != null ? f.sog * Math.cos((f.cog - perpBrg) * R) * (over ? -1 : 1) : null, ttlBy = 'now', miss = false, stale = f.at != null && Date.now() - f.at > 5000;
+    /* K4 (Mark review, 19 Nov 2026): outside the ends the distance is to the nearer end, so the speed is the speed towards that end; inside, the
+       track must cross the line between the ends, or there is no exact countdown ("misses the line"); and no countdown on a fix older than 5 s */
+    if (f.sog != null && f.cog != null && !l.transit && (along < 0 || along > L)) { var Ex = along < 0 ? [0, 0] : P, ex = Ex[0] - F[0], ey = Ex[1] - F[1], en = Math.hypot(ex, ey) || 1e-9; vmg = f.sog * (Math.sin(f.cog * R) * ex + Math.cos(f.cog * R) * ey) / en; }
+    else if (f.sog != null && f.cog != null && vmg > 0.2 && !over) { var vx = f.sog * Math.sin(f.cog * R), vy = f.sog * Math.cos(f.cog * R), crd = ux * vy - uy * vx; if (crd * cr < 0) { var tl = -cr / crd, ac = along + (ux * vx + uy * vy) * tl; if (ac < -0.005 || ac > L + 0.005) miss = true; } }
+    var ttl = !stale && !miss && vmg && vmg > 0.2 ? d / vmg * 3600 : null;
     /* F44 cure (Stuart 18 Nov, iPhone): stopped or slow near the line, time to burn was blank. Now it uses the good speed the boat has shown in the
        last 10 minutes (its 80th percentile, at least 2 kn), straight at the line: what the boat will do once it goes. */
-    if (ttl == null && !over) { var sv = (LIVE.spdH || []).map(function (q) { return q[1]; }).sort(function (a, b) { return a - b; }), g = sv.length >= 5 ? sv[Math.floor(sv.length * 0.8)] : null; if (g && g >= 2) { ttl = d / g * 3600; ttlBy = 'good'; vmg = g; } }
-    var o = { boat: l.boat, pin: l.pin, len: L, d: d, over: over, ttl: ttl, ttlBy: ttlBy, ttlV: vmg, burn: ttl != null ? gun - Date.now() / 1000 - ttl : null, brg: (Math.atan2(ux, uy) / R + 360) % 360 };
+    if (ttl == null && !over && !miss && !stale) { var sv = (LIVE.spdH || []).map(function (q) { return q[1]; }).sort(function (a, b) { return a - b; }), g = sv.length >= 5 ? sv[Math.floor(sv.length * 0.8)] : null; if (g && g >= 2) { ttl = d / g * 3600; ttlBy = 'good'; vmg = g; } }
+    var o = { boat: l.boat, pin: l.pin, len: L, d: d, over: over, ttl: ttl, ttlBy: ttlBy, ttlV: vmg, miss: miss, stale: stale, burn: ttl != null ? gun - Date.now() / 1000 - ttl : null, brg: (Math.atan2(ux, uy) / R + 360) % 360 };
     try { var tH = (gun - T0) / 3600, ms = S.sel ? S.sel.models : cardModels(), wr = S.inshore && window.FSSolent && FSSolent.windRef ? FSSolent.windRef() : null, W = wr && wr.twd != null ? [10, wr.twd] : FSRouter.windSampler(P0(), ms)((l.boat[0] + l.pin[0]) / 2, (l.boat[1] + l.pin[1]) / 2, tH); if (wr && wr.twd != null) o.windSrc = 'race';   /* Mark (21:37 photo): the line bias uses the wind set for the race, not the forecast */
       if (W && W[0] > 0.5) { var wx = Math.sin(W[1] * R), wy = Math.cos(W[1] * R), ub = 0, up = P[0] * wx + P[1] * wy; o.wind = W; o.fav = up > ub ? 'pin' : 'boat'; o.favM = Math.abs(up - ub) * 1852; o.favDeg = Math.abs(((Math.atan2(ux, uy) / R - W[1] + 540) % 360) - 180) ; o.favDeg = Math.abs(90 - o.favDeg); } } catch (e) {}
     return o;
