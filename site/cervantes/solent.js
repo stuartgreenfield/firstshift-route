@@ -848,9 +848,13 @@
     if (!EM.p) EM.p = { lat: mid.lat, lon: mid.lon }; var x = now >= g ? EM.x : 1, dt = x;   /* one step a second, x times the time after the gun */
     if (x > 1) { B.startAt -= (x - 1); try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {} }   /* audit A17: the race clock runs at the boat's speed-up, so every time on screen matches the sailing */
     var tgt = pts[EM.i]; if (!tgt) return; EM.t += dt;
-    var st = emSteer(tgt), bsp = emPolar(st.twa, W.tws), gr = emCog(st.hdg, bsp), d = gr.sog * 0.514 * dt, r = rh(EM.p, tgt);
+    var st = emSteer(tgt), bsp = emPolar(st.twa, W.tws), gr = emCog(st.hdg, bsp), r = rh(EM.p, tgt);
+    /* E3 (Stuart 19 Nov 17:35): the test boat loses the same boat lengths in a tack or gybe as the start plan counts (turnSecs): for that
+       time it makes no way through the water and only the tide carries it */
+    var side = st.twa < 0 ? -1 : 1; if (EM.side && side !== EM.side) { var kd = Math.abs(st.twa) > 90 ? 'gybe' : 'tack', ts = turnSecs(kd, bsp); EM.lose = (EM.lose || 0) + (ts ? ts.s : 0); EM.log.push([kd, Math.round(EM.t), ts ? ts.s : 0]); } EM.side = side;
+    var lose = Math.min(dt, EM.lose || 0); EM.lose = (EM.lose || 0) - lose; var Tt = emTide(), d = gr.sog * 0.514 * (dt - lose);
     if (r.nm * 1852 <= Math.max(25, d)) { EM.p = { lat: tgt.lat, lon: tgt.lon }; EM.i++; SIM.i = EM.i; EM.log.push(['round', EM.i, Math.round(EM.t)]); try { var PL2 = window.__fsPlot || window.__navPlot; if (PL2 && PL2.setMark) PL2.setMark(Math.min(EM.i, pts.length - 1)); } catch (e) {} if (EM.i >= pts.length) { clearInterval(SIM.t); toast('Test mode: finished. Stop test mode puts your own race back.'); } }
-    else EM.p = at(EM.p, gr.cog, d);
+    else { EM.p = at(EM.p, gr.cog, d); if (lose > 0 && (Tt[0] || Tt[1])) EM.p = at(EM.p, n360(Math.atan2(Tt[0], Tt[1]) / R), Math.hypot(Tt[0], Tt[1]) * 0.514 * lose); }
     EM.log.push(['p', Math.round(EM.t), EM.i, Math.round(r.nm * 1852), Math.round(st.hdg), Math.round(gr.cog), +bsp.toFixed(1)]); if (EM.log.length > 4000) EM.log.splice(0, 1000);
     emFeed(EM.p.lat, EM.p.lon, st.hdg, bsp, gr.sog, gr.cog, st.twa); testBar(true);
   }
@@ -952,10 +956,14 @@
   function beatAt(sp, tws, s0, V) { var bv = window.FSRouter && sp ? FSRouter.bestVmg(sp, tws, true) : null, a = bv && bv[0] ? bv[0] : 42, slow = false;
     if (sp && s0 != null && V && s0 < V * 0.8 && bv && bv[1] > 0) { for (var w = tws; w > 2; w -= 0.5) { var b2 = FSRouter.bestVmg(sp, w, true); if (b2[1] <= s0 || w <= 2.5) { if (b2[0]) { a = Math.max(a, b2[0]); slow = true; } break; } } }
     return { a: a, slow: slow }; }
-  /* Stuart 18 Nov 16:55: "the min you loose is one boat length ... Gybing you loose 0.25 boat length": with no learnt or typed time, a tack
-     costs the time to sail one boat length at the good speed, a gybe a quarter of a length */
-  function lenSecs(kind, V) { var L = B.loa > 3 ? +B.loa : null; if (!L || !(V > 0.5)) return null; return Math.round((kind === 'tack' ? 1 : 0.25) * L / (V * 1852 / 3600) * 10) / 10; }
-  function turnSecs(kind, V) { var ls = lenSecs(kind, V); return kind === 'tack' ? (B.tackLearn > 0 ? { s: B.tackLearn, src: 'learnt' } : B.tackS > 0 ? { s: +B.tackS, src: 'typed' } : ls ? { s: ls, src: 'one boat length' } : null) : (B.gybeLearn > 0 ? { s: B.gybeLearn, src: 'learnt' } : B.gybeS > 0 ? { s: +B.gybeS, src: 'typed' } : ls ? { s: ls, src: 'a quarter of a boat length' } : null); }
+  /* Stuart 18 Nov 16:55: "the min you loose is one boat length ... Gybing you loose 0.25 boat length". E3, decided 19 Nov 17:35 (Stuart):
+     Mark keeps the loss in boat lengths (Route keeps seconds stopped); a good tack on a boat like Morning After costs "4 / 2 / 3" boat
+     lengths in light / medium / strong (light under 8 kn true, strong over 16 kn: the bands to confirm), a gybe a quarter of a tack. With
+     no learnt or typed time, the turn costs the time to sail those lengths at the good speed. */
+  function tackLens(tws) { return !(tws > 0) ? 2 : tws < 8 ? 4 : tws > 16 ? 3 : 2; }
+  function lenSecs(kind, V, tws) { var L0 = null; try { L0 = window.__fsLoa ? window.__fsLoa() : null; } catch (e) {} var L = B.loa > 3 ? +B.loa : L0 > 3 ? +L0 : null; if (!L || !(V > 0.5)) return null; var n = tackLens(tws) * (kind === 'tack' ? 1 : 0.25); return { s: Math.round(n * L / (V * 1852 / 3600) * 10) / 10, n: n }; }
+  function lensTxt(n, tws) { return (n === 1 ? 'one boat length' : n + ' boat lengths') + (tws > 0 ? (tws < 8 ? ', light air' : tws > 16 ? ', strong wind' : ', medium wind') : ''); }
+  function turnSecs(kind, V) { var w = windRef(), tws = w && w.tws > 0 ? +w.tws : null, ls = lenSecs(kind, V, tws); return kind === 'tack' ? (B.tackLearn > 0 ? { s: B.tackLearn, src: 'learnt' } : B.tackS > 0 ? { s: +B.tackS, src: 'typed' } : ls ? { s: ls.s, src: lensTxt(ls.n, tws) } : null) : (B.gybeLearn > 0 ? { s: B.gybeLearn, src: 'learnt' } : B.gybeS > 0 ? { s: +B.gybeS, src: 'typed' } : ls ? { s: ls.s, src: lensTxt(ls.n, tws) } : null); }
   function approach(f, V) { var w = windRef(), brg = lineBrg(f); if (!w || w.twd == null || brg == null) return null; var sp = null; try { sp = window.__fsSpeed ? window.__fsSpeed() : null; } catch (e) {}
     var tws = w.tws > 0 ? +w.tws : 12, s0 = f && f.sog != null ? f.sog : null, bt = beatAt(sp, tws, s0, V), th = Math.abs(n180(brg - w.twd)), k = 1, o = { beat: bt.a, slow: bt.slow, up: th < bt.a };
     if (o.up) k = Math.cos(bt.a * R) / Math.max(0.2, Math.cos(th * R));   /* tacking up to a point inside the no-go zone */
