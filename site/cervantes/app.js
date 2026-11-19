@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.65';
+  var VERSION = 'FirstShift Route v0.12.66';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -319,7 +319,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.65 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.66 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1216,9 +1216,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var hdg = (twd + sd[0] * (up ? a : a) + 360) % 360, back = (hdg + 180) % 360;   // the boat's heading on this tack, and the line back from the mark
       var ex = at[1] + Math.sin(back * R) * L / 60 / k, ey = at[0] + Math.cos(back * R) * L / 60;
       ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(X(ex), Y(ey)); ctx.stroke();
-      var lx = at[1] + Math.sin(back * R) * 14 / 60 / k, ly = at[0] + Math.cos(back * R) * 14 / 60; ctx.fillText((sd[1] === 'starboard' ? 'Stbd' : 'Port') + ' layline ' + pad(hdg) + '°', X(lx) + 6, Y(ly) - 4);
+      var lx = at[1] + Math.sin(back * R) * 14 / 60 / k, ly = at[0] + Math.cos(back * R) * 14 / 60, lt = (sd[1] === 'starboard' ? 'Stbd' : 'Port') + ' layline ' + pad(hdg) + '°', dl = lbFit(X(lx) + 6, Y(ly) - 16, ctx.measureText(lt).width, 14, 2); if (dl != null) ctx.fillText(lt, X(lx) + 6, Y(ly) - 4 + dl);
     });
-    ctx.setLineDash([]); ctx.fillText((up ? "Upwind" : "Downwind") + " TWA " + a + "°, wind " + pad(twd) + "° " + Math.round(tws) + " kn", mx + 10, my + 30);
+    ctx.setLineDash([]); var ut = (up ? "Upwind" : "Downwind") + " TWA " + a + "°, wind " + pad(twd) + "° " + Math.round(tws) + " kn", du = lbFit(mx + 10, my + 18, ctx.measureText(ut).width, 14, 2); if (du != null) ctx.fillText(ut, mx + 10, my + 30 + du);
     ctx.restore();
   }
   /* ---------- races: the race menu (tap the race name), My races kept on this device, and the course editor ---------- */
@@ -1669,7 +1669,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function viaMark(x, y, must) { ctx.save(); ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fillStyle = must ? (css['--brand'] || '#6FA9E0') : css['--panel']; ctx.fill(); ctx.strokeStyle = css['--brand'] || '#6FA9E0'; ctx.lineWidth = 1.6; ctx.stroke(); ctx.restore(); }
   function legsDraw(pts, strong, part) {   /* part: 'line' draws only the course lines (under the routes), 'label' only the labels (over them) */   /* course and distance at the middle of each leg */
-    if (pts.length < 2) return; ctx.save(); ctx.font = '600 10.5px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle'; var placed = [];
+    if (pts.length < 2) return; ctx.save(); ctx.font = '600 10.5px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle';
     for (var i = 1; i < pts.length; i++) {
       var a = pts[i - 1], b = pts[i], x1 = X(a.lon), y1 = Y(a.lat), x2 = X(b.lon), y2 = Y(b.lat);
       var t0 = 0, t1 = 1, dx = x2 - x1, dy = y2 - y1, m0 = 50, ok = [[-dx, x1 - m0], [dx, W - m0 - x1], [-dy, y1 - 70], [dy, H - 40 - y1]].every(function (q) {   /* clip to the visible chart, so the label sits on the part you can see */
@@ -1677,8 +1677,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (!strong && part !== 'label') { ctx.save(); var alone = !S.routes.some(function (r) { return !r.hidden; }); ctx.setLineDash(alone ? [] : [7, 6]); ctx.lineWidth = alone ? 2.2 : 1.4; ctx.globalAlpha = alone ? 0.95 : 0.75; ctx.strokeStyle = alone ? (css['--brand'] || '#6FA9E0') : (css['--muted'] || '#8EA3BF');   /* with every route hidden the course itself is the picture: solid and clear */ ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore(); }   /* the course line itself, so the label never floats on its own (Stuart 12 Nov) */
       if (part === 'line' || !ok || Math.hypot(dx, dy) * (t1 - t0) < (strong ? 70 : 90)) continue;
       var t = legTxt(a, b), w = ctx.measureText(t).width + 10, mx = x1 + dx * (t0 + t1) / 2, my = y1 + dy * (t0 + t1) / 2;
-      for (var k = 0; k < 6 && placed.some(function (q) { return Math.abs(q[0] - mx) < (q[2] + w) / 2 + 4 && Math.abs(q[1] - my) < 22; }); k++) my += 24;   /* an out-and-back course puts two legs on one line: stack the labels instead of overlapping them */
-      placed.push([mx, my, w]);
+      var dyL = lbFit(mx - w / 2, my - 9, w, 18, 4); if (dyL == null) continue; my += dyL;   /* an out-and-back course puts two legs on one line: the labels stack instead of overlapping (A14: and give way to every other label) */
       if (ORI.turned) { upright(mx, my, function (ux, uy) { ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(ux - w / 2, uy - 9, w, 18, 9); else ctx.rect(ux - w / 2, uy - 9, w, 18); ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, ux - w / 2 + 5, uy + 0.5); }); continue; }
       ctx.globalAlpha = 0.92; ctx.fillStyle = css['--panel']; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(mx - w / 2, my - 9, w, 18, 9); else ctx.rect(mx - w / 2, my - 9, w, 18); ctx.fill();
       ctx.globalAlpha = 1; ctx.strokeStyle = strong ? css['--route'] : css['--line']; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = css['--ink']; ctx.fillText(t, mx - w / 2 + 5, my + 0.5);
@@ -2504,7 +2503,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var rpx = Math.max(10, f.rad / 60 * view.s); ctx.save(); ctx.beginPath(); ctx.arc(X(f.lo), Y(f.la), rpx, 0, 2 * Math.PI); ctx.fillStyle = nNight ? 'rgba(138,42,32,.12)' : 'rgba(242,178,51,.14)'; ctx.fill(); ctx.setLineDash([4, 4]); ctx.strokeStyle = nNight ? '#8A2A20' : '#F2B233'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
     }
     var x = X(f.lo), y = Y(f.la);
-    var shc = c.shift; if (shc && !shc.off && shc.kind !== 'steady') { ctx.save(); var col = shc.kind === 'lift' ? '#3DDC84' : '#E5484D', tx = x + 18, ty = y - 26, lab = (shc.kind === 'lift' ? '▲ LIFT ' : '▼ HEADER ') + shc.deg + '°'; ctx.font = '700 13px Inter, sans-serif'; var tw = ctx.measureText(lab).width; ctx.fillStyle = 'rgba(10,20,30,.8)'; ctx.fillRect(tx - 4, ty - 13, tw + 8, 19); ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(lab, tx, ty + 1); ctx.restore(); }   /* header or lift beside the boat (18:40) */
+    var shc = c.shift; if (shc && !shc.off && shc.kind !== 'steady') { ctx.save(); var col = shc.kind === 'lift' ? '#3DDC84' : '#E5484D', tx = x + 18, ty = y - 26, lab = (shc.kind === 'lift' ? '▲ LIFT ' : '▼ HEADER ') + shc.deg + '°'; ctx.font = '700 13px Inter, sans-serif'; var tw = ctx.measureText(lab).width, dyh = lbFit(tx - 4, ty - 13, tw + 8, 19, 2); ty += dyh || 0; ctx.fillStyle = 'rgba(10,20,30,.8)'; ctx.fillRect(tx - 4, ty - 13, tw + 8, 19); ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(lab, tx, ty + 1); ctx.restore(); }   /* header or lift beside the boat (18:40) */
     var lnd = lineGet(); if (!window.FS_MARK && (lnd.boat || lnd.pin)) { ctx.save(); ctx.font = '700 10px Inter, sans-serif'; ctx.fillStyle = '#4CC38A'; ['boat', 'pin'].forEach(function (k) { var q = lnd[k]; if (!q) return; ctx.beginPath(); ctx.arc(X(q[1]), Y(q[0]), 5, 0, 7); ctx.fill(); ctx.fillText(k === 'boat' ? 'BOAT' : 'PIN', X(q[1]) + 8, Y(q[0]) - 6); });
       if (lnd.boat && lnd.pin) { ctx.strokeStyle = '#4CC38A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(X(lnd.boat[1]), Y(lnd.boat[0])); ctx.lineTo(X(lnd.pin[1]), Y(lnd.pin[0])); ctx.stroke(); var lf = c.pre && c.pre.line && c.pre.line.fav; if (lf) { var q2 = lnd[lf]; ctx.fillText('FAVOURED', X(q2[1]) + 8, Y(q2[0]) + 8); } } ctx.restore(); }
     if (c.pre && !(lnd.boat && lnd.pin) && meta.course && meta.course.start) { var sx = X(meta.course.start.lon), sy = Y(meta.course.start.lat); ctx.strokeStyle = '#4CC38A'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx, sy); ctx.stroke(); ctx.setLineDash([]); }   /* before the gun: the way to the start */
@@ -3071,8 +3070,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!SV.t) SV.t = setTimeout(function () { SV.t = 0; SV.last = Date.now(); drawNow(); }, wait);
   }
   function settle() { clearTimeout(settle.t); settle.t = setTimeout(function () { settle.t = 0; draw(); }, 350); }   /* 18 Nov: one full-quality redraw once a finger stops */
+  /* A14 (screen audit, 19 Nov): one list of the labels drawn in each frame, so labels give way to each other. The first drawn keeps its place; a later one moves a step down or up, or is left out. Every chart label uses it: course marks, legs, the shift, the line's bias and wind, laylines, buoy codes and the plotter. */
+  var LB = [];
+  function lbFit(x, y, w, h, steps) { var st = h + 3, n = steps == null ? 3 : steps; for (var k = 0; k <= 2 * n; k++) { var dy = k === 0 ? 0 : (k % 2 ? 1 : -1) * Math.ceil(k / 2) * st, yy = y + dy; if (!LB.some(function (t) { return x < t[0] + t[2] && x + w > t[0] && yy < t[1] + t[3] && yy + h > t[1]; })) { LB.push([x, yy, w, h]); return dy; } } return null; }
+  window.__fsLabelFit = lbFit; window.__fsLabelTake = function (x, y, w, h) { LB.push([x, y, w, h]); };
   function drawNow() {
     if (!W || !meta) return;
+    LB.length = 0;
     if ((ptrs && ptrs.size > 0) || (SV && Date.now() - SV.touch < 300)) settle();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (S.big) { drawBig(); return; }
@@ -3263,7 +3267,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function marks() {
     var c = meta.course; ctx.font = '600 11px Inter, sans-serif';
     var full = courseFull(c); if (S.show.legs) full.forEach(function (m) { if (m.via) viaMark(X(m.lon), Y(m.lat), m.must); });
-    [c.start].concat(realMarks(c)).concat([c.finish]).forEach(function (m, i, a) { var mx = X(m.lon), my = Y(m.lat); ctx.beginPath(); ctx.arc(mx, my, 7.5, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--ink']; ctx.lineWidth = 1.5; ctx.stroke(); triMark(mx, my + 0.8, 0, 4.6, css['--ink']); ctx.fillStyle = css['--ink']; ctx.font = '600 11px Inter, sans-serif'; ctx.fillText(m.name, mx + 11, my - 8); if (i > 0 && i < a.length - 1) sideTag(m, mx + 11, my - 2); });
+    var pm = [c.start].concat(realMarks(c)).concat([c.finish]), same = function (p, q) { return p && q && Math.abs(p.lat - q.lat) < 1e-5 && Math.abs(p.lon - q.lon) < 1e-5; };
+    pm.forEach(function (m) { var mx = X(m.lon), my = Y(m.lat); ctx.beginPath(); ctx.arc(mx, my, 7.5, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = css['--ink']; ctx.lineWidth = 1.5; ctx.stroke(); triMark(mx, my + 0.8, 0, 4.6, css['--ink']); lbFit(mx - 8, my - 8, 16, 16, 0); });
+    pm.forEach(function (m, i, a) { var last = i === a.length - 1; if (last && i > 0 && same(m, a[0])) return;   /* A14: a start and finish on one line get one name, not two on top of each other */
+      var nm = i === 0 && a.length > 1 && same(m, a[a.length - 1]) ? (/^Start, /.test(m.name) ? m.name.replace(/^Start, /, 'Start and finish, ') : 'Start and finish, ' + m.name) : m.name, mx = X(m.lon), my = Y(m.lat), tag = i > 0 && !last && !!m.side;
+      ctx.font = '600 11px Inter, sans-serif'; var dy = lbFit(mx + 11, my - 19, Math.max(ctx.measureText(nm).width, tag ? 64 : 0), tag ? 32 : 14); if (dy == null) return; ctx.fillStyle = css['--ink']; ctx.fillText(nm, mx + 11, my - 8 + dy); if (tag) sideTag(m, mx + 11, my - 2 + dy); });
     if (S.show.legs) legsDraw(full, false, 'line');
     if (S.legs && S.legs[0].gate) { var g = S.legs[0].gate; ctx.strokeStyle = css['--ink']; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(g.a[1]), Y(g.a[0])); ctx.lineTo(X(g.b[1]), Y(g.b[0])); ctx.stroke(); ctx.setLineDash([]); }
   }

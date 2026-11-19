@@ -122,7 +122,8 @@
   }
 
   /* ---- on the chart ---- */
-  function label(ctx, x, y, txt, col) { var fn = function (x0, y0) { ctx.font = '700 11px Inter, sans-serif'; var w = ctx.measureText(txt).width; ctx.fillStyle = 'rgba(8,20,36,.72)'; ctx.fillRect(x0 + 6, y0 - 13, w + 8, 16); ctx.fillStyle = col; ctx.fillText(txt, x0 + 10, y0); }; if (window.__navUp) window.__navUp(x, y, fn); else fn(x, y); }
+  function label(ctx, x, y, txt, col) { ctx.font = '700 11px Inter, sans-serif'; var dy = window.__fsLabelFit ? window.__fsLabelFit(x + 6, y - 13, ctx.measureText(txt).width + 8, 16, 2) : 0; if (dy == null) return; y += dy;   /* A14: labels give way to each other */
+    var fn = function (x0, y0) { ctx.font = '700 11px Inter, sans-serif'; var w = ctx.measureText(txt).width; ctx.fillStyle = 'rgba(8,20,36,.72)'; ctx.fillRect(x0 + 6, y0 - 13, w + 8, 16); ctx.fillStyle = col; ctx.fillText(txt, x0 + 10, y0); }; if (window.__navUp) window.__navUp(x, y, fn); else fn(x, y); }
   function night() { return document.documentElement.hasAttribute('data-night'); }
   window.__fsOverlay = function (ctx, X, Y) {
     if (!C.on) return; var o = last; if (!o || !o.ok) return;
