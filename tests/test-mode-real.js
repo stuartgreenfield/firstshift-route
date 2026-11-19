@@ -23,6 +23,8 @@ const page = async (b, type) => { const c = await b.newContext({ ...devices['iPh
     const den = dv[0] * P[1] - dv[1] * P[0], u = den ? (dv[0] * B[1] - dv[1] * B[0]) / den : null;   /* where along the line (0 the committee boat end, 1 the pin) the track crosses */
     return { end: m && m[1], cross: u == null ? null : +u.toFixed(2), nearer: u == null ? null : u > 0.5 ? 'pin' : 'boat' }; }, p1);
   ok(fav.end && fav.cross != null && fav.cross >= -0.02 && fav.cross <= 1.02 && ((/pin/i.test(fav.end) && fav.cross > 0.8) || (!/pin/i.test(fav.end) && fav.cross < 0.2)), 'Before the gun the test boat\'s course crosses the line at the favoured end the screen shows', fav);
+  const cov = await p.evaluate(() => [...document.querySelectorAll('#solTestBar button, .soltest button')].filter(x => x.getClientRects().length).map(x => { const r = x.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return x.contains(t) ? null : x.textContent.trim(); }).filter(Boolean));
+  ok(cov.length === 0, 'No test bar button is covered (man overboard sits clear of it, audit A1)', cov);
   /* x20: the race clock keeps up with the boat */
   await p.evaluate(() => { const g = Math.round(Date.now() / 1000 + 3); window.__fsGun(g); FSSolent.set({ startAt: g }); }); await p.waitForTimeout(5000);
   await p.evaluate(() => { FSSolent.em().x = 20; }); await p.waitForTimeout(30000);
