@@ -2339,9 +2339,15 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (gun && Date.now() / 1000 < gun && meta && meta.course && meta.course.start) { o.pre = { to: rhumb({ lat: f.la, lon: f.lo }, meta.course.start), secs: gun - Date.now() / 1000, name: meta.course.start.name || 'the start' }; o.pre.line = lineCalc(f, gun); return o; }
     try { o.mark = markTrack(f); } catch (e) { o.mark = null; }
     if (!s || !s.r || !s.r.path) return o;
-    var p = s.r.path, ts = tsOf(p), kx = Math.cos(f.la * R) * 60, best = null;
+    var p = s.r.path, ts = tsOf(p), kx = Math.cos(f.la * R) * 60, best = null, segs = [];
     for (var i = 0; i < p.length - 1; i++) { var ax = (p[i].lo - f.lo) * kx, ay = (p[i].la - f.la) * 60, bx = (p[i + 1].lo - f.lo) * kx, by = (p[i + 1].la - f.la) * 60, dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)), qx = ax + u * dx, qy = ay + u * dy, d = Math.hypot(qx, qy);
-      if (!best || d < best.d) best = { d: d, i: i, u: u, side: (dx * (-ay - u * dy) - dy * (-ax - u * dx)) > 0 ? 'L' : 'R', t: ts[i] + u * (ts[i + 1] - ts[i]), la: f.la + qy / 60, lo: f.lo + qx / kx }; }
+      segs.push({ d: d, i: i, u: u, side: (dx * (-ay - u * dy) - dy * (-ax - u * dx)) > 0 ? 'L' : 'R', t: ts[i] + u * (ts[i + 1] - ts[i]), la: f.la + qy / 60, lo: f.lo + qx / kx }); }
+    /* F59 (19 Nov 2026): a plan that passes the same water twice (out and back past the Scillies, laps of a course) has one nearest
+       point per pass. Take each pass's nearest point, then the pass nearest in time as well as distance: each hour away from now
+       counts as 0.25 nm. Within the chosen pass the point is still the plain nearest, so ahead, behind and off track stay exact. */
+    for (var q = 0; q < segs.length; q++) { var g = segs[q]; if ((q > 0 && segs[q - 1].d < g.d) || (q < segs.length - 1 && segs[q + 1].d < g.d)) continue;
+      var sc = g.d + 0.25 * Math.abs(g.t - nowH); if (!best || sc < best.sc) { best = g; best.sc = sc; } }
+    if (!best) return o;
     o.xte = best; o.ahead = (best.t - nowH) * 60;   /* minutes: the plan reaches the boat's nearest point at best.t */
     var pn = posAt(ts, p, nowH); if (pn) { o.plan = pn; o.toPlan = rhumb({ lat: f.la, lon: f.lo }, { lat: pn.la, lon: pn.lo }); }
     /* fastest rejoin: the point ahead on the plan that the boat reaches for the least time lost, sailing straight there now */
