@@ -1,11 +1,11 @@
-"""Builds the Route and Navigate marks (Stuart 14 Nov 2026, DISCUSSION 114).
+"""Builds the Route, Route+, Mark and Mark+ marks (Stuart 14 Nov 2026, DISCUSSION 114).
 
 The three FirstShift sails redrawn as clean strokes over the traced master, and the tool's name as outlined
 Inter 700 (Stuart 14 Nov, option D) with the landing page's tracking and blue full stop, so the mark is crisp and identical with or without web fonts. Two layouts in each file:
 'stack' (sails over the name, for the phone's small square) and 'row' (sails beside the name, wider screens).
 Colours come from CSS variables with light-theme fallbacks, so the inlined copy follows light, dark and night.
 
-Writes site/brand/route-mark.svg, navigate-mark.svg (the masters) and site/brand/<tool>-mark.inc.html (the
+Writes site/brand/<tool>-mark.svg (the masters) and site/brand/<tool>-mark.inc.html (the
 two inline svgs the page carries). Run: python3 tools/make_marks.py inter-latin-700-normal.woff (needs fonttools and uharfbuzz)
 """
 import sys, os, re
@@ -47,7 +47,7 @@ def sails(x, y, h):
         fb = '#042D5E' if c == 'navy' else '#3574BA'
         out.append(f'<path d="M{" L".join("%g %g" % q for q in p)} Z" style="stroke:var(--mk-{c},{fb})"/>')
     out.append('</g>'); return ''.join(out), (SX1 - SX0) * s
-TOOLS = {'route': ('Route', '.'), 'navigate': ('Navigate', '.'), 'routeplus': ('Route', '+'), 'mark': ('Mark', '.'), 'markplus': ('Mark', '+')}
+TOOLS = {'route': ('Route', '.'), 'routeplus': ('Route', '+'), 'mark': ('Mark', '.'), 'markplus': ('Mark', '+')}
 # 16 Nov 2026 19:52 (Stuart): the range is Route, Route+ (was Navigate), Mark and Mark+. The + takes the full stop's place, in the same blue.
 for key, (name, end) in TOOLS.items():
     draw, wid, cap = outline(name, end)
