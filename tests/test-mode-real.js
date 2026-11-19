@@ -13,6 +13,7 @@ const page = async (b, type) => { const c = await b.newContext({ ...devices['iPh
   let p = await page(b, null);
   const r = await p.evaluate(() => { const s = FSSolent.state(), c = window.__navCourse(), pts = [c.start].concat(c.marks || [], c.finish ? [c.finish] : []); let nm = 0; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], q = pts[i], k = Math.cos(a.lat * Math.PI / 180); nm += Math.hypot((q.lat - a.lat) * 60, (q.lon - a.lon) * 60 * k); }
     const t = document.getElementById('solStartScr'), bias = t && t.innerText.replace(/\s+/g, ' ').match(/(\d+)° off square/); return { type: s.type, marks: (c.marks || []).length, nm: +nm.toFixed(2), off: bias ? +bias[1] : (t && /0° off square|square/i.test(t.innerText) ? 0 : null) }; });
+  const lc = await p.evaluate(() => !/pin is to starboard of the committee boat/i.test(document.getElementById('solStartScr').innerText)); ok(lc, 'The practice line has the committee boat at the starboard end looking upwind (no line-check warning)');
   ok(r.off != null && r.off <= 8, 'The practice line is laid nearly square to the wind (a few degrees of bias)', r.off);
   ok(r.type === 'marks' && r.marks >= 2 && r.nm > 2 && r.nm < 5, 'Round the cans practice course: short (2 to 5 nm), at least two marks', r);
   const legs = await p.evaluate(() => { const s = document.body.innerText; return /beat/i.test(s); }); ok(legs, 'The first leg is a beat');
