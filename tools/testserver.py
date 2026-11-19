@@ -38,6 +38,7 @@ class H(http.server.SimpleHTTPRequestHandler):
         if len(parts) <= 2 and parts[0] in AREAS:
             f = (parts[1] if len(parts) == 2 else '') or 'index.html'
             if os.path.isfile(os.path.join(WEB, f)): return os.path.join(WEB, f)
+        if len(parts) > 2 and parts[0] in AREAS and parts[1] in ('helpmedia', 'brand'): parts = parts[1:]   # Route+ asks for helpmedia/ beside its page (the app's own folder layout)
         if parts[0] in ('helpmedia', 'brand') and os.path.exists(os.path.join(MEDIA, *parts)): return os.path.join(MEDIA, *parts)
         return os.path.join(SITE, posixpath.normpath(p).lstrip('/'))
     def end_headers(self): self.send_header('Cache-Control', 'no-store'); super().end_headers()

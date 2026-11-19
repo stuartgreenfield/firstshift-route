@@ -21,6 +21,7 @@ const adiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
     for (let k = 0; k < 80; k++) { await p.clock.runFor(5000); await p.waitForTimeout(500); const st = await p.evaluate(() => ({ prog: document.getElementById('prog').hidden, note: document.getElementById('runNote').textContent })); if (st.prog && !/Quick route|Refining|Routing/.test(st.note)) break; }
     const name = race.split('=')[1] || race; let P, TS, T0, k, A, Bp, trk, mid, tMid;
     /* the measuring point: a third of the way in, on a straight piece; recomputed whenever Route replaces the plan */
+    if (!(await p.evaluate(() => !!window.__fsPlan()))) { const nt = await p.evaluate(() => document.getElementById('runNote').textContent); if (/set on the day/i.test(nt)) { out.push('SKIP | ' + race + ' | course set on the day: nothing to route'); await ctx.close(); continue; } }   /* a race whose course is given on the day has no route to measure */
     const setup = async () => { const plan = await p.evaluate(() => window.__fsPlan()); P = plan.path; TS = plan.ts; T0 = plan.T0;
       k = Math.floor(P.length / 3);
       for (; k < P.length - 3; k++) { const s1 = rhumb(P[k - 1], P[k]), s2 = rhumb(P[k], P[k + 1]), s3 = rhumb(P[k + 1], P[k + 2]); if (s2.nm > 0.4 && adiff(s1.brg, s2.brg) < 8 && adiff(s2.brg, s3.brg) < 8 && P[k][2] === P[k + 1][2]) break; }
