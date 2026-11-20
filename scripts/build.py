@@ -34,10 +34,11 @@ for race in RACES:
             try:
                 r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=dict(env, FS_RUN=c), capture_output=True, text=True, timeout=1500)
             except subprocess.TimeoutExpired:
-                log[f'{race}:{src}'] = f'{c} timed out'; continue
+                log[f'{race}:{src}'] = f'{c} timed out'; print(src, 'try', log[f'{race}:{src}'], flush=True); continue   # every failed try in the job log, not only the last (19 Nov 2026)
             if r.returncode == 0 and good(out, (12 if src == 'mars' else 30) + 6 * i):
                 log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time()), latest=(c == first), newest=first); break
-            log[f'{race}:{src}'] = f'{c} failed: {(r.stderr or r.stdout)[-200:]}'
+            why = 'exit ' + str(r.returncode) if r.returncode else 'too few hours'
+            log[f'{race}:{src}'] = f'{c} failed ({why}): {(r.stderr or r.stdout)[-200:]}'; print(src, 'try', log[f'{race}:{src}'].replace(chr(10), ' '), flush=True)
         else:   # no cycle worked: leave nothing behind, so the router simply goes without this source this time
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)
