@@ -3,7 +3,7 @@
    (off track 0.77 nm on the wrong side, rejoin 3907 min ahead). This test takes the matching code out of app.js as it stands
    and runs it on a made-up out-and-back plan whose two passes are 1.8 nm apart. node tests/f59-twopass.js [path/to/app.js] */
 const fs = require('fs');
-const src = fs.readFileSync(process.argv[2] || __dirname + '/../site/cervantes/app.js', 'utf8');
+const src = fs.readFileSync((process.argv[2] && !/^https?:/.test(process.argv[2]) ? process.argv[2] : __dirname + '/../site/cervantes/app.js'), 'utf8');
 const a = src.indexOf('var p = s.r.path, ts = tsOf(p)', src.indexOf('function liveCalc(f)')), b = src.indexOf('o.xte = best;', a);
 if (a < 0 || b < 0) { console.log('FAIL | could not find the matching code in app.js'); process.exit(1); }
 const body = src.slice(a, b) + 'return best;';
