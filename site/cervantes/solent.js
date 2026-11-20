@@ -52,9 +52,13 @@
     for (var i = 0; i < n; i++) { ctx.beginPath(); ctx.fillStyle = c[i]; ctx.rect(x - r, y - r + 2 * r * i / n, 2 * r, 2 * r / n + 0.5); ctx.save(); ctx.clip(); ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill(); ctx.restore(); }
     ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.stroke();
   }
+  /* Stuart 20 Nov 05:14 and 05:30: on Route and Route+, in an offshore race, the Solent buoys show while the boat is between Poole Harbour
+     and the Nab ("Poole harbour to nab"; all the marks, codes as you zoom in). The boat is the GPS fix, at most two minutes old. */
+  var AREA = { s: 50.55, n: 50.92, w: -2.05, e: -0.90 };
+  function areaOn() { if (!ROUTE) return false; try { var f = window.__fsLiveFix && window.__fsLiveFix(); return !!(f && f.la != null && Date.now() - (f.at || 0) < 120000 && f.la > AREA.s && f.la < AREA.n && f.lo > AREA.w && f.lo < AREA.e); } catch (e) { return false; } }
   function overlay(ctx, X, Y, editing) {
     last = { X: X, Y: Y };
-    if (!C.on && !pick && !builderOpen()) return; if (!MK) { load(); return; }
+    if (!C.on && !pick && !builderOpen() && !areaOn()) return; if (!MK) { load(); return; }
     var pxnm = Math.abs(Y(50.8) - Y(50.8 + 1 / 60)); if (pxnm < 1.2) return;
     var r = pxnm > 40 ? 6 : pxnm > 12 ? 5 : 3.5, code = pxnm > 9, name = pxnm > 45, used = usedCodes();
     ctx.font = '400 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';   /* Stuart 16 Nov 07:47: "Very faded buoy number and name very faint as you touch them": faint, small; the buoy touched, and the course's own, in full */
@@ -1201,7 +1205,7 @@
   (function () { var st = document.createElement('style'); st.textContent = 'body.fsdeck #solSeq{display:none}' /* F44: the deck screen has its own GUN box; the bar covered its MENU button */ + '.solrb{position:fixed;z-index:56;left:50%;translate:-50% 0;display:flex;gap:8px;pointer-events:none}.solrb .btn{pointer-events:auto;font:800 13px/1 var(--f-body,system-ui);letter-spacing:.06em;padding:11px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}.solrb .solrbseq{background:#6FA9E0;color:#042D5E;border:1px solid #042D5E}.solrb .solrbstop{background:#C8372D;color:#fff;border:1px solid #7a1c16}.solrb .solrbstop.armed{background:#fff;color:#C8372D;border:2px solid #C8372D}'; document.head.appendChild(st); })();
   window.FSSolent = { ss: function () { return SS; }, ssHold: function (on) { if (on) { SQ.small = B.startAt; SQ.force = 0; var s0 = $('solStartScr'); if (s0) s0.hidden = true; } else SQ.small = 0; sqRender(); }, em: function () { return EM; }, tideReset: function () { B.tide = { mode: 'model' }; saveB(); try { wzRender(); } catch (e) {} var lg = $('solLegs'); if (lg && !lg.hidden) showList(); }, test: function (on) { if (on === false) testStop(); else testStart(); }, testing: function () { return SIM.on; }, share: share, applyRemote: applyRemote, showList: showList, newCourse: newCourse, windRef: windRef, legType: legType, start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, startNow: function () { if (!B.startAt || B.pp) return null; var rem = B.startAt - Date.now() / 1000, lc = null, f = null, sm = null; try { lc = window.__fsLineCalc ? window.__fsLineCalc(B.startAt) : null; } catch (e) {} try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} try { sm = startMaths(lc, f, rem); } catch (e) {} return { rem: rem, burn: sm && sm.burn != null ? sm.burn : lc && lc.burn != null ? lc.burn : null, d: lc && lc.d != null ? lc.d * 1852 : null, over: !!(lc && lc.over), sog: f && f.sog != null ? f.sog : null }; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
   if (ROUTE) {   /* F44: Route and Route+ keep only the start kit's face; the gun is Route's class start, both ways */
-    var full = window.FSSolent; window.FSSolent = { kit: true, isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; }, ss: full.ss, state: full.state, startNow: full.startNow };
+    var full = window.FSSolent; window.FSSolent = { kit: true, isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; }, ss: full.ss, state: full.state, startNow: full.startNow, area: function () { return areaOn() && !!MK; } };   /* area: the Solent buoys on the chart (20 Nov) */
     B.shown = B.shown || 1; B.type = 'route'; C.on = false;
     var gunSync = function () { var g = null; try { g = window.__fsGunAt ? window.__fsGunAt() : null; } catch (e) {} if (!g) { if (B.startAt && !(SQ.setAt && Date.now() - SQ.setAt < 3000)) { B.startAt = null; saveB(); } return; } if (Math.abs(g - (B.startAt || 0)) > 1 && !(SQ.setAt && Date.now() - SQ.setAt < 3000)) { B.startAt = g; B.ended = null; SQ.hide = 0; saveB(); } };
     gunSync(); setInterval(gunSync, 1000);
@@ -1210,21 +1214,50 @@
     var RYS = { boat: [50.766733, -1.300917], brg: 346, m: 2290 };   /* Rolex Fastnet Race 2025 SIs 14.1 to 14.2; RYS SIs give the transit as about 346 T */
     var LP = 0;   /* taps still wanted on the chart: 2 boat then pin, 1 pin */
     var putLine = function (bq, pq, why) { window.__fsSetLine('boat', bq[0], bq[1]); window.__fsSetLine('pin', pq[0], pq[1]); if (window.__fsLineKind) window.__fsLineKind(false); toast('Start line set: ' + why + '. Check it against the sailing instructions for this race.'); redraw(); };
+    var ED = null;   /* the end being edited from the list: 'boat' or 'pin' */
+    var editHtml = function () {
+      var l = lineNow() || {}, nm = function (end) { var q = l[end]; if (!q) return 'not set'; var mk = (MK || []).filter(function (m) { return Math.abs(m.lat - q[0]) < 1e-5 && Math.abs(m.lon - q[1]) < 1e-5; })[0]; return mk ? mk.id + ' ' + mk.name : llTxt(q); };
+      var dir = ''; try { dir = localStorage.getItem('fs-rys-dir') || ''; } catch (e) {}
+      var row = function (end, lab) { return '<div class="solcl kled"><span class="solk">' + lab + '</span><span class="soln">' + esc(nm(end)) + '</span><button class="btn" data-ke="list" data-end="' + end + '">Buoy from list</button><button class="btn" data-ke="ping" data-end="' + end + '">Ping</button><button class="btn" data-ke="tap" data-end="' + end + '">Tap chart</button></div>'; };
+      var h = '<h3 style="margin:8px 0 2px;font-size:14px">Edit the line</h3>' + row('boat', 'Boat end (starboard)') + row('pin', 'Pin end (port)');
+      if (ED) h += '<div class="solcl"><input id="klFind" type="search" autocapitalize="characters" placeholder="Search buoys by number or name" aria-label="Search the buoys by number or name" style="flex:1 1 12em"></div><div id="klList" class="kllist" style="max-height:40vh;overflow:auto">' + listRows('') + '</div>';
+      return h;
+    };
+    var listRows = function (q) { if (!MK) { load().then(function () { var e = $('klList'); if (e) e.innerHTML = listRows(($('klFind') || {}).value); }); return '<p class="note">Loading the Solent buoys.</p>'; }
+      var Q = String(q || '').trim().toUpperCase(), rows = MK.filter(function (m) { return !Q || String(m.id).toUpperCase().indexOf(Q) === 0 || String(m.name || '').toUpperCase().indexOf(Q) >= 0; }).sort(function (a, b) { return String(a.id).localeCompare(String(b.id), 'en', { numeric: true }); }).slice(0, 250);
+      if (!rows.length) return '<p class="note">No buoy with that number or name.</p>';
+      return rows.map(function (m) { return '<div class="solcl"><b>' + esc(m.id) + '</b><span class="soln">' + esc(m.name || '') + '</span><button class="btn" data-ke="pick" data-id="' + esc(m.id) + '">Choose</button></div>'; }).join(''); };
+    var bindEdit = function (c) {
+      var f = $('klFind'); if (f) { f.oninput = function () { $('klList').innerHTML = listRows(f.value); }; }
+      c.onclick = function (e) { var b = e.target.closest && e.target.closest('[data-ke]'); if (!b) return; var k = b.dataset.ke, end = b.dataset.end;
+        if (k === 'list') { ED = ED === end ? null : end; window.__fsLineSet(); var f2 = $('klFind'); if (f2) f2.focus(); return; }
+        if (k === 'pick') { var m = BY[b.dataset.id]; if (!m || !ED) return; window.__fsSetLine(ED, m.lat, m.lon); toast((ED === 'boat' ? 'Boat end' : 'Pin end') + ': ' + m.id + ' ' + m.name + '.'); ED = null; redraw(); window.__fsLineSet(); return; }
+        if (k === 'ping') { ED = null; if (window.__fsPing) window.__fsPing(end); setTimeout(function () { if (!c.hidden) window.__fsLineSet(); }, 600); return; }
+        if (k === 'tap') { ED = null; LP = end === 'pin' ? 'pin1' : 'boat1'; c.hidden = true; SQ.small = B.startAt; SQ.force = 0; var ssh = $('solStartScr'); if (ssh) ssh.hidden = true; sqRender(); toast('Tap the chart at the ' + (end === 'pin' ? 'pin' : 'boat') + ' end.'); } };
+    };
     window.__fsLineSet = function () {
       var c = $('kitLine'); if (!c) { css(); c = document.createElement('div'); c.id = 'kitLine'; c.className = 'solpop sollegs kitline'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', 'Set the start line'); document.body.appendChild(c); }
       var l = lineNow(), v = function (q) { return q ? llTxt(q) : ''; };
       c.innerHTML = '<div class="shead"><h2>Start line</h2><button class="close" id="klX" aria-label="Close">×</button></div>' +
-        '<p class="note">Ping each end in the GPS window, or set the line here. Boat end is the committee boat (or the shore end of a transit).</p>' +
-        '<div class="solcl"><button class="btn" id="klRYS">RYS line, Cowes</button><span class="soln">Flagstaff on 346°T to abeam the Williams Shipping Buoy</span></div>' +
+        '<p class="note">Ping each end in the GPS window, or set the line here. The boat end is the starboard end as you start, the pin end the port end.</p>' +
+        '<div class="solcl"><button class="btn" id="klRYSW">RYS line, start to the West</button><button class="btn" id="klRYSE">RYS line, start to the East</button><span class="soln">The RYS flagstaff on 346°T to abeam the Williams Shipping Buoy. West: the outer end is the starboard (boat) end. East: the Squadron end is.</span></div>' +
+        (l && l.boat && l.pin ? editHtml() : '') +
         '<div class="solcl"><label class="solk" for="klB">Boat end</label><input id="klB" placeholder="50 46.004N 001 18.055W" value="' + v(l && l.boat) + '"></div>' +
         '<div class="solcl"><label class="solk" for="klP">Pin end</label><input id="klP" placeholder="lat, long" value="' + v(l && l.pin) + '"></div>' +
         '<div class="solcl"><span class="solk">or</span><input id="klBr" type="number" inputmode="decimal" placeholder="bearing °T" style="width:7em"><input id="klLen" type="number" inputmode="decimal" placeholder="length m" style="width:7em"><span class="soln">from the boat end</span></div>' +
         '<div class="solcl"><button class="btn" id="klSet">Set the line</button><button class="btn" id="klTap">Touch the chart</button></div><p class="solmsg" id="klMsg" hidden></p>' +
         '<h3 style="margin:8px 0 2px;font-size:14px">Your boat at the start</h3>' + timingHtml();
       c.hidden = false;
-      var msg = function (m) { var e = $('klMsg'); e.textContent = m; e.hidden = !m; }; bindTiming(c);
+      var msg = function (m) { var e = $('klMsg'); e.textContent = m; e.hidden = !m; }; bindTiming(c); bindEdit(c);
       $('klX').onclick = function () { c.hidden = true; LP = 0; };
-      $('klRYS').onclick = function () { var q = offset({ lat: RYS.boat[0], lon: RYS.boat[1] }, RYS.brg, RYS.m / 1852); putLine(RYS.boat, [q.lat, q.lon], 'the RYS line'); c.hidden = true; };
+      /* Stuart 20 Nov 05:14 and 05:37: two RYS buttons, East and West, and then Edit, where either end can be a buoy from the list, a ping or
+         a tap on the chart. The sailing instructions (Rolex Fastnet Race 2025 SI 14; RYS 2022 SI 12.6) use the one transit both ways; the
+         direction swaps which end is the starboard end. West: the outer end (towards the Williams Shipping Buoy) is starboard. */
+      var rys = function (dir) { var q = offset({ lat: RYS.boat[0], lon: RYS.boat[1] }, RYS.brg, RYS.m / 1852), out = [q.lat, q.lon], sq = RYS.boat;
+        if (dir === 'W') putLine(out, sq, 'the RYS line, start to the West (boat end: the outer end; pin end: the Squadron)'); else putLine(sq, out, 'the RYS line, start to the East (boat end: the Squadron; pin end: the outer end)');
+        try { localStorage.setItem('fs-rys-dir', dir); } catch (e) {} window.__fsLineSet(); };
+      $('klRYSW').onclick = function () { rys('W'); }; $('klRYSE').onclick = function () { rys('E'); };
+      bindEdit(c);
       $('klTap').onclick = function () { LP = 2; c.hidden = true; SQ.small = B.startAt; SQ.force = 0; var ssh = $('solStartScr'); if (ssh) ssh.hidden = true; sqRender(); toast('Tap the chart at the boat end, then at the pin end.'); };
       $('klSet').onclick = function () { var bq = llParse($('klB').value), pq = llParse($('klP').value), br = $('klBr').value, ln = +$('klLen').value;
         if (!bq) return msg('Give the boat end, for example 50 46.004N 001 18.055W.');
@@ -1233,7 +1266,7 @@
         var dm = Math.hypot((pq[1] - bq[1]) * Math.cos(bq[0] * R) * 60, (pq[0] - bq[0]) * 60) * 1852; if (dm < 20) return msg('The ends are only ' + Math.round(dm) + ' m apart.');
         putLine(bq, pq, 'typed'); c.hidden = true; };
     };
-    window.__fsKitTap = function (la, lo) { if (!LP) return false; if (LP === 2) { window.__fsSetLine('boat', la, lo); LP = 1; toast('Boat end set. Now tap the pin end.'); redraw(); return true; } LP = 0; var l = lineNow() || {}, b0 = (window.__fsLine() || {}).boat; if (b0) { var dm = Math.hypot((lo - b0[1]) * Math.cos(la * R) * 60, (la - b0[0]) * 60) * 1852; if (dm < 20) { LP = 1; toast('Only ' + Math.round(dm) + ' m from the boat end: tap the pin end.'); return true; } } window.__fsSetLine('pin', la, lo); toast('Start line set from the chart. Check it against the sailing instructions.'); redraw(); return true; };
+    window.__fsKitTap = function (la, lo) { if (!LP) return false; if (LP === 'boat1' || LP === 'pin1') { var e1 = LP === 'pin1' ? 'pin' : 'boat'; LP = 0; window.__fsSetLine(e1, la, lo); toast((e1 === 'pin' ? 'Pin end' : 'Boat end') + ' set from the chart. Check it against the sailing instructions.'); redraw(); window.__fsLineSet(); return true; } if (LP === 2) { window.__fsSetLine('boat', la, lo); LP = 1; toast('Boat end set. Now tap the pin end.'); redraw(); return true; } LP = 0; var l = lineNow() || {}, b0 = (window.__fsLine() || {}).boat; if (b0) { var dm = Math.hypot((lo - b0[1]) * Math.cos(la * R) * 60, (la - b0[0]) * 60) * 1852; if (dm < 20) { LP = 1; toast('Only ' + Math.round(dm) + ' m from the boat end: tap the pin end.'); return true; } } window.__fsSetLine('pin', la, lo); toast('Start line set from the chart. Check it against the sailing instructions.'); redraw(); return true; };
     window.__fsStartScreen = function () { gunSync(); if (!B.startAt) { toast('Choose your class start first: Routes, Start.'); return; } SQ.hide = 0; SQ.small = 0; SQ.force = B.startAt; sqRender(); rbRender(); };
     return;
   }
