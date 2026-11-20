@@ -24,6 +24,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   s = await at(9 * 60 + 30); ok(s.screen, 'T-9.5 min: the start screen opens by itself (default 10 min)', JSON.stringify(s));
   s = await at(30); ok(s.screen, 'T-30 s: still on the start screen', JSON.stringify(s));
   s = await at(-120); ok(!s.screen, 'Gun +2 min: the start screen has gone, racing', JSON.stringify(s));
+  const fabs = await p.evaluate(() => ({ fsss: document.body.classList.contains('fsss'), shown: ['helpBtn', 'oriBtn', 'editFab', 'navClearBtn', 'fsRulerBtn'].filter(id => { const e = document.getElementById(id); if (!e) return false; const cs = getComputedStyle(e); return cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().width > 0; }) }));
+  ok(!fabs.fsss && fabs.shown.length >= 4, 'Gun +2 min: the chart buttons are back (Stuart 20 Nov 16:22: they had gone)', JSON.stringify(fabs));
   /* 4. opened by hand early: the Start screen button in the line window, 2 hours before a new start */
   const gun2 = Math.round((await p.evaluate(() => Date.now())) / 1000) + 7200; await p.evaluate((g) => window.__fsGun(g), gun2); await p.clock.runFor(2000);
   await p.evaluate(() => window.__fsLineSet()); await p.clock.runFor(300); await p.click('#klSS'); await p.clock.runFor(1500); s = await state();

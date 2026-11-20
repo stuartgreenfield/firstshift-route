@@ -914,9 +914,10 @@
   function sqOn() { var now = Date.now() / 1000; if (SQ.hide && SQ.hide === B.startAt) return false; if (B.pp) return true; if (SQ.force && SQ.force === B.startAt && now < B.startAt + 60) return true; var q0 = series(); return !!(B.startAt && now > B.startAt - barMin() * 60 - (q0.pos - 1) * q0.iv * 60 && now < B.startAt + 60); }   /* C (Stuart 20 Nov 13:58): the countdown bar from 1 hour before the gun offshore; Mark and Mark+ 15 minutes by default, 15, 30 or 60 on the start screen (14:02) */
   function barMin() { return B.barMin === 15 || B.barMin === 30 || B.barMin === 60 ? B.barMin : window.FS_MARK ? 15 : 60; }
   function sqRender() {
+    if (SQ.wasBig && B.startAt && Date.now() / 1000 > B.startAt + 5) { SQ.wasBig = 0; if (SQ.gps === 2) { SQ.gps = 0; try { if (window.__fsLiveFold) window.__fsLiveFold(); } catch (x) {} } }   /* Stuart 20 Nov 16:22: after the gun the GPS window the start screen opened folds to its pill, so the chart buttons come back */
     var b = $('solSeq'), on = KIT && sqOn() && !($('solCard') && !$('solCard').hidden), ss = $('solStartScr');   /* the race menu sheet comes first */ if (!on) { if (b) b.hidden = true; if (ss) ss.hidden = true; return; } css();
     var rem0 = B.startAt ? B.startAt - Date.now() / 1000 : null, mins = B.ssMin == null ? 10 : B.ssMin, big = !B.pp && rem0 != null && rem0 > -5 && (SQ.force === B.startAt || (mins > 0 && rem0 <= mins * 60 && !(SQ.small && Math.abs(SQ.small - B.startAt) < 900) && !document.body.classList.contains('fsdeck')));   /* F44: the start screen does not open by itself over the deck screen the crew chose */
-    if (big) { if (b) b.hidden = true; if (!SQ.gps) { SQ.gps = 1; try { if (window.__fsLiveOpen && !(window.__fsLiveFix && window.__fsLiveFix())) window.__fsLiveOpen(); } catch (x) {} } ssRender(rem0); return; }   /* M28: the start screen */
+    if (big) { SQ.wasBig = 1; if (b) b.hidden = true; if (!SQ.gps) { SQ.gps = 1; try { if (window.__fsLiveOpen && !(window.__fsLiveFix && window.__fsLiveFix())) { window.__fsLiveOpen(); SQ.gps = 2; } } catch (x) {} } ssRender(rem0); return; }   /* M28: the start screen */
     if (ss) ss.hidden = true;
     if (!b) { b = document.createElement('div'); b.id = 'solSeq'; b.className = 'solseq'; b.setAttribute('role', 'timer'); document.body.appendChild(b);
       b.addEventListener('click', sqClick); }

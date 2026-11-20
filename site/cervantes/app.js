@@ -2231,6 +2231,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     else run();
     return true;
   };
+  window.__fsLiveFold = function () { if (LIVE.mini) return; LIVE.mini = true; LIVE.big = false; var lb = $('liveBox'); if (lb) lb.classList.add('mini'); try { if (LIVE.on) liveShow(); } catch (e) {} };   /* after the gun (Stuart 20 Nov 16:22): the GPS window folds to its pill */
   window.__fsLiveOpen = function () { if (!LIVE.on) liveStart(); else { LIVE.mini = false; try { liveShow(); } catch (e) {} } };
   window.__fsStartNow = function () { var v = +$('startSel').value; return { chosen: !!S.startChosen, ep: v > 0 ? v : null, range: startRange() }; };
   window.__fsPanelClose = function () { try { closePanel(); } catch (e) {} };
@@ -3769,7 +3770,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      until the window closes (Layers, the GPS window, a card) */
   var COVER = ['#layers', '.livebox:not(.mini)', '#liveBig', '.sheet', '#tip', '#sessBox', '#errBox', '#solCard', '#trkCard', '#solLegs', '#solStep', '#fsPlot', '#astroLine', '.livebox.mini', '#navStrip'];
   function vis(e) { if (e.hidden || !e.getClientRects().length) return false; var c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }
-  function covers() { var wins = []; COVER.forEach(function (q) { [].forEach.call(document.querySelectorAll(q), function (e) { if (vis(e)) wins.push(e.getBoundingClientRect()); }); });
+  function winRects() { var wins = []; COVER.forEach(function (q) { [].forEach.call(document.querySelectorAll(q), function (e) { if (vis(e)) wins.push(e.getBoundingClientRect()); }); }); return wins; }
+  function covers() { var wins = winRects();
     [].forEach.call(document.querySelectorAll('.fabhelp'), function (f) { var was = f.classList.contains('fabcov'); if (was) f.classList.remove('fabcov'); var r = f.getBoundingClientRect(), hit = r.width > 0 && wins.some(function (w) { return Math.min(r.right, w.right) - Math.max(r.left, w.left) > 2 && Math.min(r.bottom, w.bottom) - Math.max(r.top, w.top) > 2; }); if (hit) f.classList.add('fabcov'); }); }
   /* Screen rules (UI review step 1): on a phone held sideways the chart is about 220 points high, too short for the column of round
      buttons (one sat above the screen, one under the top bar), so they line up along the foot of the chart, right to left, in a second
@@ -3784,8 +3786,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var vf = fabs.filter(function (f) { return f.offsetParent; }), host = vf[0] && vf[0].offsetParent;
     if (!host) return;   /* F77: no button showing (a window over them all): keep the last decision, so the hold below is not restarted */
     var room = host ? host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) : 999;
-    if (!ROWM && host) { var hb0 = host.getBoundingClientRect().bottom, mt = 1e9; vf.forEach(function (f) { if (f.dataset.fr) return; var r0 = f.getBoundingClientRect(); if (r0.height) mt = Math.min(mt, r0.top); }); if (mt < 1e9) FROW.need = Math.round(hb0 - mt + 8); }   /* F77: the height the column needs (Route+ has more buttons than Route) */
-    var low0 = !!host && room < Math.max(ROWM ? 340 : 300, (FROW.need || 0) + (ROWM ? 40 : 0));   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
+    if (!ROWM && host) { var hb0 = host.getBoundingClientRect().bottom, mt = 1e9; vf.forEach(function (f) { if (f.dataset.fr) return; var r0 = f.getBoundingClientRect(); if (r0.height) mt = Math.min(mt, r0.top); }); if (mt < 1e9) { FROW.need = Math.round(hb0 - mt + 8); FROW.over = mt < underTop() + 4; } }   /* Stuart 20 Nov 16:22: with the plotter bar open the column ran up under it and its buttons were hidden: the column must start below everything under the top bar */   /* F77: the height the column needs (Route+ has more buttons than Route) */
+    var low0 = !!host && (room < Math.max(ROWM ? 340 : 300, (FROW.need || 0) + (ROWM ? 40 : 0)) || (!ROWM && !!FROW.over) || colCovered(host));   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
     /* Stuart 17 Nov 12:31 (iPhone, Fastnet, panel open): "The gps orange pill is jumping around". The chart's height changes as the panel
        and the strips under the top bar come and go, and the pill flipped between the foot and the top each time. Now the change needs a
        margin (in below 300 px, out above 340) and has to hold for a second and a half before anything moves */
@@ -3797,6 +3799,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!base && host) { var hb = innerHeight - host.getBoundingClientRect().bottom; base = Math.max(0, Math.round(insets().b - hb)); }   /* a chart that runs to the foot of the screen (Mark held sideways): keep clear of the home bar */   /* Clear screen: the play bar floats at the foot, so the row sits above it */
     fabs.forEach(function (f) { if (getComputedStyle(f).display === 'none') return; var row = Math.floor(n / perRow), col = n % perRow; n++;
       f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); }); }
+  /* Stuart 20 Nov 16:22: after the start the GPS window opened over the column of round buttons and they all vanished. A window over the column
+     now sends the buttons to the row along the foot of the chart, where they stay usable; only if the row is covered too do they hide */
+  function colCovered(host) { if (!host) return false; var hr = host.getBoundingClientRect(), x0 = hr.right - 72; return winRects().some(function (w) { return w.right > x0 && w.left < hr.right && w.bottom > hr.top && w.top < hr.bottom - 120; }); }
   function underTop() { var y = insets().t; ['.top', '#mkTop', '#fsBadge', '#editBar', '#navStrip', '#fsPlot', '#solSeq', '#fsDemo', '#astroLine', '#errBox'].forEach(function (q) { var e = document.querySelector(q); if (e && vis(e)) y = Math.max(y, e.getBoundingClientRect().bottom); }); return y; }
   /* screen rules F77 (19 Nov full check): on a phone held sideways the chart is about 250 px high. With the plotter bar open, the GPS pill
      (whose figures the plotter shows) and the sun line step aside, and come back when the plotter closes */
