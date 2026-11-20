@@ -11,6 +11,6 @@ one() { U=$1; T=$2; [ -n "$DONE" ] && grep -q "^$U|$T|" "$DONE" 2>/dev/null && r
   sum=$(echo "$out" | grep -E "[0-9]+ passed|all passed" | tail -1); f=$(echo "$out" | grep -E "^FAIL" | head -3 | cut -c1-160 | tr '\n' '~'); [ -z "$sum" ] && sum=$(echo "$out" | grep -E "Error" | head -1 | cut -c1-160)
   echo "$U|$T|rc=$rc|${d}s|$sum|$f"; }
 export -f one; export N OUT DONE   # DONE=<earlier results file>: tests already there are not run again (a restart carries on)
-PLUS="l-starlink.js tact.js deck.js help-find.js mark-crew2.js k1-wind.js k4-line.js a14-labels.js e3-turn.js tide-timing.js startup-one.js test-mode-real.js m80-startscreen.js windows-slideoff.js move-windows.js screen-rules.js mark-test-mode.js mark-startscr.js mark-wl.js"
+PLUS="l-starlink.js tact.js deck.js help-find.js mark-crew2.js k1-wind.js k4-line.js a14-labels.js e3-turn.js tide-timing.js startup-one.js test-mode-real.js m80-startscreen.js windows-slideoff.js move-windows.js screen-rules.js mark-test-mode.js mark-startscr.js mark-wl.js rys-line.js follow.js first-routes.js card-settle.js"
 ( cd $N/tests && ls *.js | grep -vE '^(_|retired-|film-app|help-shots|evidence|l-starlink|tact)' | sed 's#^#http://localhost:8779 #'; for t in $PLUS; do echo "http://localhost:8778 $t"; done ) | xargs -P 2 -L1 bash -c 'one $0 $1'
 kill $S1 $S2
