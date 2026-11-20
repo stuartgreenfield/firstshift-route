@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.80';
+  var VERSION = 'FirstShift Route v0.12.81';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -326,7 +326,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.80 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.81 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -551,10 +551,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      and a rough time left (Katie Sherwin, "Progress Indicators Make a Slow System Less Insufferable", 2014). */
   var PG = { t0: 0, est: 0 };
   function raceKey() { return (meta && meta.course && (meta.course.raceId || meta.course.name)) || 'x'; }
+  function ckSet(k, st, pct, secs) { if (!S.ck) return; S.ck.forEach(function (i) { if (i.k === k) { i.s = st; if (pct != null) i.p = pct; if (secs != null) i.sec = secs; } }); ckRender(); }
+  function ckRender() { var p = $('prog'); if (!p) return; var L = $('pgCk'); if (!L) { L = document.createElement('ul'); L.id = 'pgCk'; L.className = 'pgck'; p.appendChild(L); }
+    if (!S.ck || p.hidden) { L.innerHTML = ''; return; }
+    L.innerHTML = S.ck.map(function (i) { return '<li class="' + i.s + '"><span>' + (i.s === 'done' ? '✓' : i.s === 'run' ? '◐' : '○') + '</span>' + i.t + (i.s === 'run' && i.p ? ' · ' + Math.round(i.p * 100) + '%' : '') + (i.s === 'done' && i.sec ? ' · ' + i.sec + ' s' : '') + '</li>'; }).join(''); }
   function prog(title, frac, detail, est) { if (frac != null && frac !== S.progF) { S.progF = frac; S.progAt = Date.now(); }
     if (!title) { $('prog').hidden = true; PG.title = ''; return; }
     if (title !== PG.title) { PG.title = title; PG.t0 = Date.now(); PG.est = est || 0; }
-    $('prog').hidden = false; $('pgT').textContent = title; $('prog').classList.toggle('mini', /^Step 2/.test(title));   /* first routes are on screen: the refining card steps aside */
+    $('prog').hidden = false; $('pgT').textContent = title; $('prog').classList.toggle('mini', /^Step [23]/.test(title)); ckRender();   /* first routes are on screen: the refining card steps aside */
     $('prog').classList.toggle('ind', frac == null);
     $('pgBar').style.width = frac == null ? '' : Math.round(Math.max(0.03, Math.min(1, frac)) * 100) + '%';
     $('pgP').textContent = frac == null ? '' : Math.round(Math.min(1, frac) * 100) + '%';
@@ -2610,9 +2614,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     S.running = true; S.runSince = Date.now(); S.progAt = 0; S.progF = null; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
     var RD = rdSec();   /* Routing detail (Stuart 20 Nov 12:44, 12:50): 0 for Quick, else the finer pass's sectors */
+    /* the routing checklist (Stuart 20 Nov 15:18, "a tick box list as routing works"): each stage ticks as it finishes, with its time */
+    S.ck = [{ k: 'fc', t: ms.length + ' forecast' + (ms.length > 1 ? 's' : '') + ' in', s: 'done' }, { k: 'q', t: 'First routes', s: 'wait' }, { k: 'std', t: 'Standard (360)', s: 'wait' }].concat(RD ? [{ k: 'fin', t: 'Finer (' + RD + ')', s: 'wait' }] : []).concat([{ k: 'chk', t: 'Checked in every forecast', s: 'wait' }]);
     S.cur = null; S.stdS = S.finS = null; pass(0).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(1); })   /* keep the quick routes too, in case Route is closed while it refines */
       .then(function () { if (gen !== S.gen) throw { abandoned: true }; S.stdS = ((Date.now() - tq) / 1000).toFixed(1); if (!RD) return; S.cur = S.routes.slice(); return pass(2, RD); })   /* the finer pass: the standard routes stay on the chart meanwhile, then faint under the finer ones */
-      .then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); var tot = ((Date.now() - tq) / 1000).toFixed(1); if (RD) S.finS = tot; store(rdKey(rdGet()), String(Math.round(+tot))); rdNote();
+      .then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); var tot = ((Date.now() - tq) / 1000).toFixed(1); if (RD) S.finS = tot; store(rdKey(rdGet()), String(Math.round(+tot))); rdNote(); ckSet('chk', 'done');
         $('runNote').textContent += (RD ? ' Times: first routes ' + S.quickS + ' s, standard ' + S.stdS + ' s, finer ' + S.finS + ' s. The faint line is the standard route.' : '') + ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); draw(); })
     .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
     function pass(mode, rsec) { var quick = mode === 0, finer = mode === 2;
@@ -2627,7 +2633,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       if (fixOn() && !S.to) sets.push({ id: 'fixed', name: 'Fixed wind ' + FIX.tws + ' kn from ' + ('00' + Math.round(FIX.twd)).slice(-3) + '°', models: [ms[0]], fixed: true, adj: fixAdj(base.adj) });
       var jobs = sets.length + ms.length, done = 0, title = quick ? 'Step 1 of ' + (RD ? 3 : 2) + ': first routes' : finer ? 'Step 3 of 3: finer routes' : 'Step 2 of ' + (RD ? 3 : 2) + ': refining the routes';
-      var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? (quick ? Math.min(done, sets.length) + ' of ' + sets.length + ' first routes on the chart, more coming' : 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models') : 'Checking each route in every model', quick ? estQ : estF); };
+      var ckK = quick ? 'q' : finer ? 'fin' : 'std', ck0 = Date.now(); ckSet(ckK, 'run', 0);
+      var tick = function () { if (gen !== S.gen) return; done++; ckSet(ckK, 'run', done / jobs); prog(title, done / jobs, done <= sets.length ? (quick ? Math.min(done, sets.length) + ' of ' + sets.length + ' first routes on the chart, more coming' : 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models') : 'Checking each route in every model', quick ? estQ : estF); };
       if (quick) S.prov = [];   /* speed plan 2 (Stuart 20 Nov 06:45): each first route goes on the chart as it is found, while the others are worked out */
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
       return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }, s.adj ? { adj: s.adj } : {}) }).then(function (r) { tick(); s.r = r; if (quick && gen === S.gen && S.prov && r && r.path) { S.prov.push(s); draw(); } return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
@@ -2655,7 +2662,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           return ghosts();
         });
       }).then(function () {
-        show(); if (!quick && !S.from) S.key = fullKey(Object.assign({}, base, { models: ms }), start);
+        show(); ckSet(ckK, 'done', null, ((Date.now() - ck0) / 1000).toFixed(1)); if (!quick && !S.from) S.key = fullKey(Object.assign({}, base, { models: ms }), start);
       }).then(function () { if (quick) { S.quickS = ((Date.now() - tq) / 1000).toFixed(1); store('fs-estQ-' + raceKey(), String(Math.round(+S.quickS))); } });
     }
   }
