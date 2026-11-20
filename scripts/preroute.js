@@ -23,7 +23,7 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
     const meta = JSON.parse(fs.readFileSync(path.join(site, race, 'pack', 'pack.json')));
     const out = OUTS[race] || (OUTS[race] = { built: meta.built || meta.t0, at: Math.round(Date.now() / 1000), r: {}, log: [] }), log = out.log, t0 = Date.now();
     const p = await b.newPage(); p.on('pageerror', (e) => console.log(race, 'page error', e.message));
-    await p.addInitScript(() => { try { localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} });
+    await p.addInitScript((FS) => { try { if (FS) localStorage.setItem('fs-finesec', FS); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} }, process.env.PRE_FINESEC || '');   /* the server's finer pass (Stuart 20 Nov 12:42: 2000 sectors) */
     await p.goto(`http://localhost:${port}/${race}/` + (rid ? '?race=' + rid : ''));
     const note = () => p.evaluate(() => document.getElementById('runNote').textContent);
     const waitDone = () => p.waitForFunction(() => { const t = document.getElementById('runNote').textContent; return /First answer|Routed on the server/.test(t) || (!/Quick route|Refining/.test(t) && /No route|Cannot|outside|No way|forecasts end/.test(t)); }, null, { timeout: +(process.env.PRE_WAIT_MS || 1500000) });
@@ -37,15 +37,17 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
         }
         const d = await p.evaluate(() => window.__fsDump());
         const nt = (await note()).slice(0, 120); console.log(race, 'start', h, nt); log.push({ race: rid || race, h, s: Math.round((Date.now() - t0) / 1000), note: nt });
-        if (d) out.r[d.key] = round({ routes: d.routes, matrix: d.matrix });
+        if (d) out.r[d.key] = round({ routes: d.routes, matrix: d.matrix, cur: d.cur });
       }
     } catch (e) { console.log(race, 'pre-routing stopped:', e.message); log.push({ race: rid || race, stopped: e.message.slice(0, 200), s: Math.round((Date.now() - t0) / 1000) }); }
     await p.close();
     if (Object.keys(out.r).length) {
       fs.mkdirSync(path.join(site, race, 'pre'), { recursive: true });
-      fs.writeFileSync(path.join(site, race, 'pre', 'routes.json'), JSON.stringify({ built: out.built, at: out.at, r: out.r }));
+      /* one file per start time (Stuart 20 Nov 12:49): a phone downloads only the start it routes, not all of them (the Fastnet's six were 6.8 MB) */
+      const files = {}; Object.keys(out.r).forEach((k, i) => { const f = 'r' + i + '.json'; files[k] = f; fs.writeFileSync(path.join(site, race, 'pre', f), JSON.stringify(out.r[k])); });
+      fs.writeFileSync(path.join(site, race, 'pre', 'routes.json'), JSON.stringify({ built: out.built, at: out.at, files }));
       fs.writeFileSync(path.join(site, race, 'pre', 'log.json'), JSON.stringify({ at: new Date().toISOString(), log }, null, 1));   // readable on the live site, as GitHub's log download is not always reachable
-      console.log(race, 'wrote', Object.keys(out.r).length, 'start times', (fs.statSync(path.join(site, race, 'pre', 'routes.json')).size / 1e6).toFixed(2), 'MB');
+      console.log(race, 'wrote', Object.keys(out.r).length, 'start times', (Object.values(files).reduce((t, f) => t + fs.statSync(path.join(site, race, 'pre', f)).size, 0) / 1e6).toFixed(2), 'MB in all, one file each');
     }
   }
   await b.close(); srv.close();

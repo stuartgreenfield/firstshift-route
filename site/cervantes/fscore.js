@@ -54,6 +54,9 @@
     var u = new URL('../status.json?nav=' + Date.now(), location.href).href;
     var x = new XMLHttpRequest(); x.open('GET', u, true); x.timeout = 10000;
     x.onload = function () { if (x.status !== 200 || OFF.reloading) return; var mob = document.getElementById('mob'); if (mob && !mob.hidden) return;
+      /* never reload by itself around the start (Stuart 20 Nov 12:37): from 15 minutes before the gun to 10 minutes after, offer it instead */
+      var gun = null; try { gun = window.__fsGunAt ? window.__fsGunAt() : null; } catch (e) {} var nowS = Date.now() / 1000;
+      if (gun && nowS > gun - 900 && nowS < gun + 600) { if (!OFF.offered || Date.now() - OFF.offered > 300000) { OFF.offered = Date.now();   /* offered again every 5 minutes */ var tb = document.getElementById('navToast'); clearToast('Signal back: tap here to fetch the latest forecasts.'); tb = document.getElementById('navToast'); if (tb) { tb.style.pointerEvents = 'auto'; tb.onclick = function () { tb.onclick = null; OFF.reloading = true; try { if (window.__navResume) window.__navResume.save(); } catch (e) {} location.reload(); }; } } return; }
       OFF.reloading = true; try { if (window.__navResume) window.__navResume.save(); } catch (e) {} clearToast('Signal back: fetching the latest forecasts…'); setTimeout(function () { location.reload(); }, 2500); };
     x.send();
   }

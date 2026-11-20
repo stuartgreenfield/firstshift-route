@@ -275,12 +275,14 @@
     /* the true wind angles tried at each point: the grid every hstep, and the best VMG angle up and down on each side for this wind
        speed (cached by half knot) */
     var vmgC = {}, gridA = []; for (var ga0 = -180 + hstep; ga0 <= 180; ga0 += hstep) gridA.push(ga0);
+    var NHmax = gridA.length + 4, bHH = new Float64Array(NHmax), bSN = new Float64Array(NHmax), bCS = new Float64Array(NHmax), bTW = new Float64Array(NHmax), gCa = gridA.map(function (a) { return Math.cos(a * R); }), gSa = gridA.map(function (a) { return Math.sin(a * R); }), outH = [bHH, bSN, bCS, bTW, 0];
     function headsFor(tws, twd) {
       var key = Math.round(tws * 2), extra = vmgC[key];
       if (!extra) { var up = bestVmg(o.speed, key / 2, true)[0], dn = bestVmg(o.speed, key / 2, false)[0]; extra = vmgC[key] = [up, -up, dn, -dn].filter(function (x) { return x && Math.abs(x) % hstep; }); }
-      var A = gridA.concat(extra), hh = [], sn = [], cs = [], tw = [];
-      for (var j = 0; j < A.length; j++) { var h = (twd + A[j] + 720) % 360; hh.push(h); sn.push(Math.sin(h * R)); cs.push(Math.cos(h * R)); tw.push(A[j] > 180 ? A[j] - 360 : A[j]); }
-      return [hh, sn, cs, tw];
+      var ct = Math.cos(twd * R), st = Math.sin(twd * R), n = 0;
+      for (var j = 0; j < gridA.length; j++, n++) { var a = gridA[j]; bHH[n] = (twd + a + 720) % 360; bSN[n] = st * gCa[j] + ct * gSa[j]; bCS[n] = ct * gCa[j] - st * gSa[j]; bTW[n] = a > 180 ? a - 360 : a; }
+      for (var e = 0; e < extra.length; e++, n++) { var a2 = extra[e], h2 = (twd + a2 + 720) % 360; bHH[n] = h2; bSN[n] = Math.sin(h2 * R); bCS[n] = Math.cos(h2 * R); bTW[n] = a2 > 180 ? a2 - 360 : a2; }
+      outH[4] = n; return outH;
     }
     /* no-go zones: traffic separation schemes and the sailing instructions' keep-out areas, each a ring of [lat, lon] */
     var nogo = (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; });
@@ -347,7 +349,7 @@
              (14 Nov 2026, review finding 15): with headings fixed to north the angles on offer, and so the time, depended on the
              wind direction against the heading grid */
           var hl = headsFor(tws, twd), HH = hl[0], SN = hl[1], CS = hl[2], TW = hl[3];
-          for (var hi = 0; hi < HH.length; hi++) {
+          for (var hi = 0, NH = hl[4]; hi < NH; hi++) {
             var twa = TW[hi], s = o.speed(tws, twa);
             if (s <= 0.05) continue;
             s *= seaFactor(V[0], V[1], HH[hi], o.sea);

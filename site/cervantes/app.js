@@ -830,23 +830,6 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function mobInit() {
     hold($('mobBtn'), 1000, mobStart);
     /* MOB can be moved about (Stuart 14 Nov): drag it anywhere and it stays there on this device; a press and hold still sets it off */
-    (function () { var bt = $('mobBtn'), d = null, KEY = 'fs-mobpos';
-      function put(x, y) { var w = bt.offsetWidth || 34, h = bt.offsetHeight || 34; x = Math.max(4, Math.min(innerWidth - w - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y)); bt.style.left = x + 'px'; bt.style.top = y + 'px'; bt.style.bottom = 'auto'; bt.classList.add('mobmoved'); return [x, y]; }
-      function load() { try { var v = JSON.parse(localStorage.getItem(KEY) || 'null'); if (v) put(v[0] * innerWidth, v[1] * innerHeight); } catch (e) {} }
-      bt.addEventListener('pointerdown', function (e) { var r = bt.getBoundingClientRect(); d = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, moved: false, id: e.pointerId }; });
-      window.addEventListener('pointermove', function (e) { if (!d || e.pointerId !== d.id) return; var dx = e.clientX - d.x, dy = e.clientY - d.y; if (!d.moved && Math.hypot(dx, dy) < 10) return; if (!d.moved) { d.moved = true; bt.dispatchEvent(new Event('pointercancel')); bt.classList.add('mobdrag'); } put(d.l + dx, d.t + dy); });
-      window.addEventListener('pointerup', function () { if (!d) return; if (d.moved) { var r = bt.getBoundingClientRect(); try { localStorage.setItem(KEY, JSON.stringify([r.left / innerWidth, r.top / innerHeight])); } catch (e) {} bt.classList.remove('mobdrag'); } d = null; });
-      window.addEventListener('resize', load); load(); })();
-    /* MOB floats just above whatever sits at the bottom: the bar, or on a phone the panel sheet when it is open */
-    (function () { var bar = $('bar'), pn = $('panel'); if (!bar) return;
-      function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; }   /* the GPS window keeps clear of man overboard's column now (screen rules, 16 Nov), so MOB no longer has to jump above it */ document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
-      /* 20 Nov: on a phone the open plotter bar lay under man overboard, which hid the start of its left column (VMC); MOB steps just below the
-         plotter bar when there is room (otherwise it stays, rather than cover another window or button), unless the crew have moved MOB themselves */
-      function aside() { var bt = $('mobBtn'); if (!bt || bt.classList.contains('mobmoved')) return; var pl = [$('fsPlot'), $('navPlot')].filter(function (e) { return e && !e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none'; })[0];
-        if (bt.dataset.aside) { bt.style.removeProperty('top'); bt.style.removeProperty('bottom'); delete bt.dataset.aside; }
-        if (!pl) return; var a = bt.getBoundingClientRect(), r = pl.getBoundingClientRect(); if (!(a.left < r.right && a.right > r.left && a.top < r.bottom && a.bottom > r.top)) return;
-        var ss = $('solStartScr'), low = bar.getBoundingClientRect().top; if (ss && !ss.hidden && ss.getClientRects().length) { var sr = ss.getBoundingClientRect(); if (sr.top > r.bottom) low = Math.min(low, sr.top); } var lim = low - a.height - 6, y = r.bottom + 6 <= lim ? r.bottom + 6 : null; if (y == null) return; bt.style.setProperty('top', Math.round(y) + 'px', 'important'); bt.style.setProperty('bottom', 'auto', 'important'); bt.dataset.aside = '1'; }   /* important: the start screen pins MOB under the header with !important */
-      bh(); aside(); window.addEventListener('resize', function () { bh(); aside(); }); if (window.ResizeObserver) { var ro = new ResizeObserver(function () { bh(); aside(); }); ro.observe(bar); if (pn) ro.observe(pn); } setInterval(function () { bh(); aside(); }, 700); })();
     hold($('mobEnd'), 1500, mobEnd);
     $('mobCentre').onclick = function (e) { e.stopPropagation(); var m = mobGet(); if (!m) return; var small = $('mob').classList.toggle('small'); this.textContent = small ? 'Full panel' : 'Show on chart'; if (small) { view.la = m.lat; view.lo = m.lon; view.s = Math.max(view.s, 4000); } closePanel(); draw(); };
     if (mobGet()) mobShow();
@@ -2563,17 +2546,19 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function preEntry(full) {
     if (!S.pre || S.from) return null;
     var base = opts(full ? selectedModels() : []), st = startPt(), e = null;
-    if (full) e = S.pre.r[fullKey(base, st)];
-    else { var lk = liteKey(base, st); Object.keys(S.pre.r).some(function (k) { if (JSON.parse(k)[0] === lk) { e = S.pre.r[k]; return true; } return false; }); }
+    var R = S.pre.r || S.pre.files || {}, get = function (k) { return S.pre.r ? S.pre.r[k] : S.pre.files[k] ? { file: S.pre.files[k] } : null; };   /* one file per start time (20 Nov), or the older single file */
+    if (full) e = R[fullKey(base, st)] ? get(fullKey(base, st)) : null;
+    else { var lk = liteKey(base, st); Object.keys(R).some(function (k) { if (JSON.parse(k)[0] === lk) { e = get(k); return true; } return false; }); }
     return e ? { e: e, base: base, st: st } : null;
   }
   function usePre(h, early) {
-    S.routes = h.e.routes; S.matrix = h.e.matrix; S.sel = S.routes.filter(function (s) { return s.best; })[0] || S.routes[0];
+    if (h.e.file) { var f = h.e.file; return fetch('pre/' + f + '?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { if (!r.ok) throw new Error('pre-route file ' + f); return r.json(); }).then(function (j) { h.e = j; return usePre(h, early); }); }
+    S.routes = h.e.routes; S.matrix = h.e.matrix; S.cur = h.e.cur && h.e.cur.length ? h.e.cur : null; S.sel = S.routes.filter(function (s) { return s.best; })[0] || S.routes[0];
     S.base = Object.assign({}, h.base, { models: S.sel.models }); S.legs = legsFor(null); S.start = h.st; S.ghosts = [];
-    $('runNote').textContent = 'Routed on the server ' + clockAbs(S.pre.at) + (early ? '; forecasts still loading for the replay.' : '. Change any setting and Route works it out on your device.');
+    $('runNote').textContent = 'Routed on the server ' + clockAbs(S.pre.at) + (early ? '; forecasts still loading for the replay.' : '. Change any setting and Route works it out on your device.') + (S.cur ? ' The faint line is the standard route.' : '');
     return (early ? Promise.resolve() : ghosts()).then(show);
   }
-  function earlyPre() { if (startGate() || S.wizHold || courseIssue(meta.course)) return; var h = preEntry(false); if (h && !S.routes.length) { try { usePre(h, true); } catch (e) {} } }
+  function earlyPre() { if (startGate() || S.wizHold || courseIssue(meta.course)) return; var h = preEntry(false); if (h && !S.routes.length) { try { usePre(h, true).catch(function () {}); } catch (e) {} } }
   function show() {
     setTimeout(function () { if (window.__navAfterRoutes) try { window.__navAfterRoutes(); } catch (e) {} }, 0);   /* Deck view keeps only the chosen route after new routes */
     busy(''); matrix(); plan(); fleetTable(); if (!$('layers').hidden) layersPop();
@@ -2581,7 +2566,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     S.tmin = Math.min(S.start.t, (starts[0] - T0) / 3600); S.tmax = Math.min(HMAX(), maxT + 1);
     try { setTime(S.from ? S.from.t : S.start.t); } catch (e) { draw(); }
   }
-  window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix } : null; };
+  window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix, cur: (S.cur || []).map(function (s) { return { id: s.id, r: { finish: s.r.finish, path: s.r.path.map(function (q) { return { t: q.t, la: q.la, lo: q.lo }; }) } }; }) } : null; };
   function run() {
     if (S.cleared) return;   /* inshore with no Solent race yet (Stuart 16 Nov 08:00): nothing routes until one is chosen */
     try { adjPill(); } catch (e) {}   /* the chart note follows the race's own tide by leg too */
@@ -2607,19 +2592,24 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; S.runSince = Date.now(); S.progAt = 0; S.progF = null; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
-    pass(true).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(false); })   /* keep the quick routes too, in case Route is closed while it refines */.then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); $('runNote').textContent += ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); })
+    var RD = rdSec();   /* Routing detail (Stuart 20 Nov 12:44, 12:50): 0 for Quick, else the finer pass's sectors */
+    S.cur = null; S.stdS = S.finS = null; pass(0).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(1); })   /* keep the quick routes too, in case Route is closed while it refines */
+      .then(function () { if (gen !== S.gen) throw { abandoned: true }; S.stdS = ((Date.now() - tq) / 1000).toFixed(1); if (!RD) return; S.cur = S.routes.slice(); return pass(2, RD); })   /* the finer pass: the standard routes stay on the chart meanwhile, then faint under the finer ones */
+      .then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); var tot = ((Date.now() - tq) / 1000).toFixed(1); if (RD) S.finS = tot; store(rdKey(rdGet()), String(Math.round(+tot))); rdNote();
+        $('runNote').textContent += (RD ? ' Times: first routes ' + S.quickS + ' s, standard ' + S.stdS + ' s, finer ' + S.finS + ' s. The faint line is the standard route.' : '') + ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); draw(); })
     .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
-    function pass(quick) {
+    function pass(mode, rsec) { var quick = mode === 0, finer = mode === 2;
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
       if (!quick) { try { var e7 = JSON.parse(store('fs-e7full') || 'null'); if (e7 && typeof e7 === 'object') Object.assign(base, e7); } catch (e) {} }   /* E7 full-search check: finer steps for the refined pass, set only by the automatic tests */
+      if (finer) Object.assign(base, { sectors: rsec, secCap: 2 * rsec });   /* the finer pass (Routing detail) */
       if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180, fine: false });   /* quick first pass: about a sixth of the work; the sectors stay coarse near marks too (fine: false, speed plan 1, Stuart 20 Nov 06:45): the first route is always replaced by the refined one, which keeps E2's full search */
       var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
       var FINE = ['ukv', 'arome', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends */
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       if (fixOn() && !S.to) sets.push({ id: 'fixed', name: 'Fixed wind ' + FIX.tws + ' kn from ' + ('00' + Math.round(FIX.twd)).slice(-3) + '°', models: [ms[0]], fixed: true, adj: fixAdj(base.adj) });
-      var jobs = sets.length + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
+      var jobs = sets.length + ms.length, done = 0, title = quick ? 'Step 1 of ' + (RD ? 3 : 2) + ': first routes' : finer ? 'Step 3 of 3: finer routes' : 'Step 2 of ' + (RD ? 3 : 2) + ': refining the routes';
       var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? (quick ? Math.min(done, sets.length) + ' of ' + sets.length + ' first routes on the chart, more coming' : 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models') : 'Checking each route in every model', quick ? estQ : estF); };
       if (quick) S.prov = [];   /* speed plan 2 (Stuart 20 Nov 06:45): each first route goes on the chart as it is found, while the others are worked out */
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
@@ -2639,7 +2629,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           S.routes.forEach(function (s) { s.best = s === best; });
           S.sel = best; S.base = base; S.legs = legs; S.start = start;
           var part = S.routes.filter(function (x) { return x.r.partial; });
-          $('runNote').textContent = (quick ? 'Quick route in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Choose an earlier start for a full route.' : '') + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
+          $('runNote').textContent = (quick ? 'Quick route in ' : finer ? 'Finer routes in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : !finer && RD ? '. Finer routes coming…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Choose an earlier start for a full route.' : '') + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
           /* E7 / F75 (20 Nov): the optimiser can be beaten. Each route is sailed in every forecast (the matrix); where another route's track is
              quicker in a model's own forecast than that model's own route, say so: the best known route in that forecast is that track */
           S.beaten = []; ms.forEach(function (m, j) { var i = -1; S.routes.forEach(function (x, k) { if (x.id === m) i = k; }); if (i < 0) return; var c = cols[j], bi = i; c.forEach(function (v, k) { if (v < c[bi]) bi = k; }); var d = (c[i] - c[bi]) * 60; if (bi !== i && d >= 0.5) S.beaten.push({ model: m, name: S.routes[i].name, by: S.routes[bi].name, min: d }); });
@@ -3086,6 +3076,18 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     el.hidden = !on.length; if (on.length) el.textContent = on.map(function (k) { return CHARTS[k].credit; }).join(' · ') + ' · Not for navigation';
   }
   chartCredit();
+  window.__fsTimes = function () { return { quick: +S.quickS || null, std: +S.stdS || null, fin: +S.finS || null, cur: S.cur ? S.cur.length : 0, detail: rdGet(), sec: rdSec() }; };
+  /* Routing detail (Stuart 20 Nov 12:44, 12:50): Auto (default: 2000 sectors on a computer, 1000 on a phone or tablet), Quick (no finer pass), Fine (2000), Finest (4000).
+     Each choice shows the wait it took for this race on this device last time. The server's ready-made routes use 2000 (PRE_FINESEC). */
+  var RDS = { auto: null, quick: 0, fine: 2000, finest: 4000 };
+  function rdGet() { var v = store('fs-rdetail'); return RDS.hasOwnProperty(v) ? v : 'auto'; }
+  function rdSec(k) { k = k || rdGet(); var o = +(store('fs-finesec') || 0); if (o > 0 && k === 'auto') return o; return k === 'auto' ? (MOBILE ? 1000 : 2000) : RDS[k]; }
+  function rdKey(k) { return 'fs-rdwait-' + (meta && meta.course ? raceKey() : HERE) + '-' + k + (MOBILE ? '-m' : '-d'); }
+  function rdNote() { var sel = $('rDetail'), n = $('rDetailNote'); if (!sel || !n) return; sel.value = rdGet();
+    var w = function (k) { var v = +(store(rdKey(k)) || 0); return v ? (v >= 90 ? 'about ' + Math.floor(v / 60) + ' min ' + ('0' + (v % 60)).slice(-2) + ' s' : 'about ' + v + ' s') : 'not timed yet'; };
+    [].forEach.call(sel.options, function (o) { o.textContent = { auto: 'Auto: ' + (MOBILE ? '1000' : '2000') + ' sectors', quick: 'Quick: 360 sectors only', fine: 'Fine: 2000 sectors', finest: 'Finest: 4000 sectors' }[o.value] + ' (' + w(o.value) + ')'; });
+    n.textContent = 'The wait is for this race on this ' + (MOBILE ? 'phone or tablet' : 'computer') + ', from its last run. First routes still come in seconds; the finer routes replace them when ready.'; }
+  (function () { var sel = $('rDetail'); if (!sel) return; sel.onchange = function () { store('fs-rdetail', sel.value); rdNote(); }; rdNote(); })();
   window.__fsProvN = function () { return S.prov ? S.prov.length : -1; };   /* first routes drawn so far (speed plan 2), for the automatic tests */
   window.__fsView = function () { return { s: view.s, lo: view.lo, la: view.la, fingers: ptrs.size }; };   /* for the automatic tests */
   window.__fsCharts = function () { return { log: chartLog, tiles: Object.keys(TILES).length, z: Object.keys(CHARTS).map(function (k) { return k + ':' + tileZoom(CHARTS[k]); }) }; };
@@ -3146,7 +3148,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!S.edit && !S.cleared && !building) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
     var selOn = S.sel && !S.sel.hidden;
-    if (S.prov && S.prov.length && !S.routes.length) S.prov.forEach(function (s) { line(s, 2.2, 0.75); });   /* first routes as they arrive (speed plan 2) */
+    if (S.prov && S.prov.length && !S.routes.length) S.prov.forEach(function (s) { line(s, 2.2, 0.75); });
+    if (S.cur && S.sel && S.routes.length && S.cur.indexOf(S.sel) < 0) S.cur.forEach(function (s) { if (s.id === S.sel.id) line({ id: S.sel.id, combined: S.sel.combined, r: s.r }, 1.6, 0.35); });   /* drawn in the chosen route's own colour */   /* the standard route, faint, under the finer one (Stuart 20 Nov 11:22) */   /* first routes as they arrive (speed plan 2) */
     if (selOn) line(S.sel, 9, 0.35);
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
     if (selOn) line(S.sel, 2.2, 1);
