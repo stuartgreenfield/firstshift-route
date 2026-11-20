@@ -29,10 +29,13 @@ const vis = (p, id) => p.evaluate(i => { const e = document.getElementById(i); r
   await p.evaluate(() => { const s = document.getElementById('solStartScr'); if (s) s.hidden = true; window.__fsLineSet(); }); await p.waitForTimeout(400);
   ok(await vis(p, 'kitLine'), 'Set line dialog opens');
   if (SHOT) await p.screenshot({ path: SHOT.replace('.png', '-line.png') });
-  await p.click('#klRYS'); await p.waitForTimeout(300);
+  /* 20 Nov: the RYS line is two buttons, East and West (Stuart 05:14, 05:37); East keeps the flagstaff as the boat end, West swaps the ends */
+  await p.click('#klRYSE'); await p.waitForTimeout(300);
   let L = await p.evaluate(() => window.__fsLine());
   const brg = Math.atan2((L.pin[1] - L.boat[1]) * Math.cos(L.boat[0] * Math.PI / 180), L.pin[0] - L.boat[0]) * 180 / Math.PI;
-  ok(Math.abs(L.boat[0] - 50.766733) < 1e-5 && Math.abs(((brg + 360) % 360) - 346) < 0.5, 'RYS preset: flagstaff, 346 degrees', { boat: L.boat, brg: brg.toFixed(1) });
+  ok(Math.abs(L.boat[0] - 50.766733) < 1e-5 && Math.abs(((brg + 360) % 360) - 346) < 0.5, 'RYS line, start to the East: flagstaff boat end, 346 degrees', { boat: L.boat, brg: brg.toFixed(1) });
+  await p.click('#klRYSW'); await p.waitForTimeout(300); L = await p.evaluate(() => window.__fsLine());
+  ok(Math.abs(L.pin[0] - 50.766733) < 1e-5 && L.boat[0] > L.pin[0], 'RYS line, start to the West: flagstaff pin end, outer end the boat end', { boat: L.boat, pin: L.pin });
   await p.evaluate(() => window.__fsLineSet()); await p.fill('#klB', '50 46.00N 001 18.00W'); await p.fill('#klP', ''); await p.fill('#klBr', '0'); await p.fill('#klLen', '500'); await p.click('#klSet'); await p.waitForTimeout(300);
   L = await p.evaluate(() => window.__fsLine());
   ok(Math.abs(L.boat[0] - (50 + 46 / 60)) < 1e-5 && Math.abs((L.pin[0] - L.boat[0]) * 60 * 1852 - 500) < 2, 'typed boat end with bearing and length', L);

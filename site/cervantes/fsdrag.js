@@ -102,7 +102,7 @@
   function covered(x, y, self, g) {
     if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return false;
     var l = document.elementsFromPoint(x, y);
-    for (var i = 0; i < l.length; i++) { var e = l[i]; if (e === g || (g && g.contains(e)) || e.classList.contains('navgrip2') || e.classList.contains('fswtab')) continue;
+    for (var i = 0; i < l.length; i++) { var e = l[i]; if (e === g || (g && g.contains(e)) || (e.closest && e.closest('.navgrip2,.fswtab'))) continue;   /* 20 Nov: also the dots' own drawing inside another window's grip (it hid the plotter's dots on Mark+) */
       if (self && self.contains(e)) return false; if (e.id === 'map' || e === document.body || e === document.documentElement) return false;
       for (var f = e; f && f !== document.body; f = f.parentElement) { if (f === self) return false; if (getComputedStyle(f).position === 'fixed') return true; }
       return false; }

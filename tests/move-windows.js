@@ -36,6 +36,7 @@ async function hold(p, x, y, ms) { await p.mouse.move(x, y); await p.mouse.down(
     m = await box(p, '#oriBtn'); const over = m.l < tb.r && m.r > tb.l && m.t < tb.b && m.b > tb.t;
     ok(!over && m.t >= 0, name + ': dropped on the Settings button, it slides to the nearest gap', JSON.stringify({ btn: [m.l, m.t, m.r, m.b].map(Math.round), set: [tb.l, tb.t, tb.r, tb.b].map(Math.round) }));
     /* Save new position (Stuart 19 Nov 14:43): the box says it, and it locks the move without a second long press */
+    await p.evaluate(() => { if (window.NavDrag && NavDrag.on && NavDrag.on() && NavDrag.lock) NavDrag.lock(); }); await p.waitForTimeout(1600);   /* 20 Nov: start this step with nothing being moved (the drop before may leave the button in its move, waiting for Save; a long press would then lock it) */
     a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.move(a.x - 120, a.y + 40, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(300);
     const sv1 = await p.evaluate(() => { const u = document.getElementById('navUndo'); return u && !u.hidden && /Save new position/.test(u.textContent) && /Undo/.test(u.textContent); });
     await p.waitForTimeout(800); await p.click('#navSaveB'); await p.waitForTimeout(400); m = await box(p, '#oriBtn');

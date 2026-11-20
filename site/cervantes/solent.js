@@ -375,7 +375,8 @@
     /* Stuart 20 Nov 05:14: "on start up the course card moves across screen before then stopping" (Mark and Route on iPhone). Cause: the
        GPS window opens a moment after the card, and the card steps up out of its way, sometimes twice. In the first seconds the card now waits,
        unseen, until the GPS window has kept still for about a second, and then appears once, in its place. */
-    if (performance.now() < 8000 && !c.dataset.settling) { c.dataset.settling = '1'; c.style.visibility = 'hidden'; var sig = null, same = 0, tk = setInterval(function () { var lb = $('liveBox'), g = lb && !lb.hidden && lb.getClientRects().length ? Math.round(lb.getBoundingClientRect().top) + ' ' + lb.className : 'off'; if (g === sig) same++; else { sig = g; same = 0; } legsPlace();
+    var byHand = !!(navigator.userActivation && navigator.userActivation.isActive);   /* opened by a tap: shown at once (only the card opening by itself at start-up waits) */
+    if (!byHand && performance.now() < 8000 && !c.dataset.settling) { c.dataset.settling = '1'; c.style.visibility = 'hidden'; var sig = null, same = 0, tk = setInterval(function () { var lb = $('liveBox'), g = lb && !lb.hidden && lb.getClientRects().length ? Math.round(lb.getBoundingClientRect().top) + ' ' + lb.className : 'off'; if (g === sig) same++; else { sig = g; same = 0; } legsPlace();
       if (same >= 3 || performance.now() > 9000 || c.hidden) { clearInterval(tk); legsPlace(); c.style.visibility = ''; delete c.dataset.settling; } }, 300); }
     /* 13:12: the card never runs off the screen: it starts on the screen and scrolls inside when long (a phone, with the Next part) */
 
