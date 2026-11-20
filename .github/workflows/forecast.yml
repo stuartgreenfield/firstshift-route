@@ -138,3 +138,9 @@ jobs:
           git add -A
           git commit -q -m "Forecasts and pre-routes $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
+      - name: Check the live site matches main (Route, Mark, and the Route+ and Mark+ downloads)
+        if: always()
+        # 20 Nov: a release that reached the live site but not main was undone by the next run, unnoticed. This fails the job, and GitHub emails, if they differ.
+        run: |
+          git fetch -q origin main && git checkout -q origin/main -- tools/live_check.js site/cervantes/app.js site/android
+          node tools/live_check.js https://firstshift-route.pages.dev --wait 10
