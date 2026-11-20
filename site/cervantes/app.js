@@ -1555,7 +1555,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); else if (window.__fsMarkLine) { wizClose(false); window.__fsMarkLine(); } };
       if ($('wzSS')) $('wzSS').onclick = function () { if ($('wizNext').disabled) return; $('wizNext').click(); setTimeout(function () { if (window.__fsStartScreen) window.__fsStartScreen(); }, 700); };   /* sets the start as Done does, then opens the start screen */   /* A (Stuart 20 Nov 13:58): tapping START offers the start screen once a start is set */   /* Stuart 20 Nov 11:58: the start step offers the line first */
       var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
-      $('wzDay').onchange = fit; $('wzTime').oninput = fit; fit();
+      var dayMine = false;   /* F91 (21 Nov 00:10): until the crew picks a day, a typed time goes to its next coming occurrence, so 23:47 typed at 23:07 is today, not tomorrow */
+      var nextDay = function () { if (dayMine) return; var dd = $('wzDay'), tt = $('wzTime'); if (!dd || !tt || !/^\d{1,2}:\d{2}/.test(tt.value)) return; var now = Date.now() / 1000, best = null;
+        [].forEach.call(dd.options, function (o) { var ep = exactEpoch(o.value, tt.value); if (ep === ep && ep > now && (best === null || ep < best.ep)) best = { v: o.value, ep: ep }; }); if (best && dd.value !== best.v) dd.value = best.v; };
+      $('wzDay').onchange = function () { dayMine = true; fit(); }; $('wzTime').oninput = function () { nextDay(); fit(); }; fit();
       var order = startDayList();
       if (!order.length) { $('wizHint').textContent = 'No start times: the forecast has not loaded yet.'; }
     } else if (n === 4) {
