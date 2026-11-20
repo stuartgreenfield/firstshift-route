@@ -164,7 +164,7 @@
     if (!on) { if (mobCss != null) { m.style.cssText = mobCss; mobCss = null; } return; }
     if (mobCss == null) mobCss = m.style.cssText;
     var v = document.body.classList.contains('fsdeckv') ? $('panel') : document.querySelector('.app>.chart'); if (!v) return; var r = v.getBoundingClientRect();
-    m.style.position = 'fixed'; m.style.zIndex = '12'; m.style.left = (r.left + 10) + 'px'; m.style.top = 'auto';   /* MOB lives in the time bar (20 Nov); on the deck screen it floats at the view's bottom left */ m.style.right = 'auto'; m.style.bottom = Math.max(8, innerHeight - r.bottom + 10) + 'px';
+    m.style.position = 'fixed'; m.style.zIndex = '12'; m.style.left = (r.left + 10) + 'px'; m.style.top = 'auto'; m.style.right = 'auto'; m.style.bottom = Math.max(8, innerHeight - r.bottom + 10) + 'px';   /* MOB lives in the time bar (20 Nov); on the deck screen it floats at the view's bottom left */
   }
   function set(v) {
     on = !!v; C.on = on; save(); build(); document.body.classList.toggle('fsdeck', on); document.body.classList.remove('fsdeckmenu'); if ($('dkMenu')) $('dkMenu').setAttribute('aria-pressed', 'false');
