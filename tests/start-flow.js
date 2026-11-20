@@ -31,7 +31,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   /* B: Start screen with no start time opens the Start step; once the time is set the start screen opens */
   await p.evaluate(() => { localStorage.removeItem('fs-solent-b'); }); 
   /* A: the Start step offers Start screen once a start is set */
-  await p.evaluate(() => { const ss = document.getElementById('solStartScr'); const x = ss && ss.querySelector('[data-sq="small"]'); if (x) x.click(); window.__fsStartStep(); }); await p.clock.runFor(800);
+  await p.evaluate(() => { const sm = document.querySelector('#solStartScr [data-q="small"]'); if (sm) sm.click(); window.__fsStartStep(); }); await p.clock.runFor(800);
   ok(await p.evaluate(() => !!document.getElementById('wzSS')), 'A: the Start step (the START chip) offers "Start screen" once a start is set');
   await p.click('#wzSS'); await p.clock.runFor(1500); s = await state(); ok(s.screen, 'A: it opens the start screen', JSON.stringify(s));
   ok(!errs.length, 'no script errors', JSON.stringify(errs).slice(0, 200));

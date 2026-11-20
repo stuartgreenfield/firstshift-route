@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.79';
+  var VERSION = 'FirstShift Route v0.12.80';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -326,7 +326,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.79 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.80 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1494,11 +1494,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       $('wizNext').textContent = 'Next: the start';
     } else if (n === 3) {
       var cur = +$('startSel').value;
-      h += (window.__fsLineSet ? '<p class="wzss"><button class="btn" id="wzLine">Set start line</button>' + (window.__fsStartScreen && window.__fsGunAt && window.__fsGunAt() ? ' <button class="btn" id="wzSS">Start screen: countdown</button>' : '') + '</p>' : '') + '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
-        '<div id="wzFit"></div><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
+      /* The start in three steps, in the order a crew does them (Stuart 20 Nov 15:11: "make this more intuitive", it was very confusing):
+         1 the line (optional), 2 the class start time, 3 the countdown, with when it appears and a button to open it now */
+      var ln0 = lineGet(), lnSet = !!(ln0 && ln0.boat && ln0.pin), barTxt = window.FS_MARK ? '15 minutes' : '1 hour';
+      h += '<h3>' + wizEsc(meta.course.name) + '</h3><ol class="wzsteps">' +
+        (window.__fsLineSet ? '<li><b>Start line</b> <span class="wzst ' + (lnSet ? 'ok' : '') + '">' + (lnSet ? '✓ set' : 'optional') + '</span><p class="note" id="wzLnNote">' + (lnSet ? 'Both ends are set. Change it here.' : 'The RYS or JOG line, or your own. Without it, Route starts from the course start and the start screen has no time to burn.') + '</p><button class="btn" id="wzLine">' + (lnSet ? 'Change start line' : 'Set start line') + '</button></li>' : '') +
+        '<li><b>Your class start</b><p class="note">The exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) + '<div id="wzFit"></div></li>' +
+        (window.__fsStartScreen ? '<li><b>Countdown</b><p class="note">With your start time set, the countdown bar appears by itself ' + barTxt + ' before the gun and the start screen 10 minutes before (change both on the start screen). Or open it now.</p><button class="btn primary" id="wzSS">Done, open the start screen</button></li>' : '') +
+        '</ol><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
       B.innerHTML = h + '</div>';
       if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); };
-      if ($('wzSS')) $('wzSS').onclick = function () { wizClose(false); window.__fsStartScreen(); };   /* A (Stuart 20 Nov 13:58): tapping START offers the start screen once a start is set */   /* Stuart 20 Nov 11:58: the start step offers the line first */
+      if ($('wzSS')) $('wzSS').onclick = function () { if ($('wizNext').disabled) return; $('wizNext').click(); setTimeout(function () { if (window.__fsStartScreen) window.__fsStartScreen(); }, 700); };   /* sets the start as Done does, then opens the start screen */   /* A (Stuart 20 Nov 13:58): tapping START offers the start screen once a start is set */   /* Stuart 20 Nov 11:58: the start step offers the line first */
       var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
       $('wzDay').onchange = fit; $('wzTime').oninput = fit; fit();
       var order = startDayList();
@@ -2219,7 +2225,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* start-line tools (Stuart 12 Nov): ping each end with the phone's GPS; distance to the line, time to it, time to burn, favoured end */
   function lineKey() { return 'fs-line-' + raceKey(); }
   function lineGet() { try { var l = JSON.parse(store(lineKey()) || 'null'); if ((!l || (!l.boat && !l.pin)) && S.inshore) l = JSON.parse(store('fs-line-solent') || 'null'); return l || {}; } catch (e) { return {}; } }   /* Solent (18:40): the start line is kept from one course to the next */
-  window.__fsSetLine = function (end, la, lo) { var l = lineGet(); if (la == null) delete l[end]; else l[end] = [+la.toFixed(6), +lo.toFixed(6), Date.now(), 0]; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); try { if (LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {} draw(); };
+  window.__fsSetLine = function (end, la, lo) { setTimeout(wzLineMark, 0); var l = lineGet(); if (la == null) delete l[end]; else l[end] = [+la.toFixed(6), +lo.toFixed(6), Date.now(), 0]; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); try { if (LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {} draw(); };
   window.__fsLine = function () { return lineGet(); };
   window.__fsPing = function (end) { linePing(end === 'pin' ? 'pin' : 'boat'); };   /* for the start screen's own ping buttons */
   window.__fsLineKind = function (transit) { var l = lineGet(); if (transit) l.transit = true; else delete l.transit; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); draw(); };   /* Stuart 21:50: a shore transit line (ping on the transit close inshore, then at the outer distance mark), as the Startline tool */
@@ -2514,6 +2520,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   (function () { var mq = window.matchMedia ? matchMedia('(max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px)') : null;   /* man overboard: the left end of the button row on a wide screen, the left of the time slider on a phone */
     function mobPlace() { var m = $('mobBtn'), t = $('trow'), g = document.querySelector('#bar .pgrp'); if (!m || !t || !g) return; if (mq && mq.matches) { if (m.parentNode !== t) t.insertBefore(m, t.firstChild); } else if (m.parentNode !== g) g.insertBefore(m, g.firstChild); }
     mobPlace(); if (mq) { if (mq.addEventListener) mq.addEventListener('change', mobPlace); else if (mq.addListener) mq.addListener(mobPlace); } })();
+  function wzLineMark() { var st = document.querySelector('#wiz .wzst'), b = $('wzLine'); if (!st || !b) return; var l = lineGet(), on = !!(l && l.boat && l.pin); st.textContent = on ? '✓ set' : 'optional'; st.classList.toggle('ok', on); b.textContent = on ? 'Change start line' : 'Set start line'; var nt = $('wzLnNote'); if (nt) nt.textContent = on ? 'Both ends are set. Change it here.' : 'The RYS or JOG line, or your own. Without it, Route starts from the course start and the start screen has no time to burn.'; }   /* the Start step shows the line as soon as it is set */
   window.__fsStartStep = function () { cardStep(3); };   /* B (Stuart 20 Nov 13:58): Start screen with no start time opens the Start step */
   window.__fsGun = function (ep) { if (!(ep > 0)) return; try { setStart(ep, true); startChosen(true); } catch (e) {} };
   (function () { var o = window.__fsFix, f = function (x) { if (x) { Object.assign(FIX, x); store('fs-fix', JSON.stringify(FIX)); } return Object.assign({}, FIX); }; if (o) Object.keys(o).forEach(function (k) { f[k] = o[k]; }); window.__fsFix = f; })();   /* callable, and keeps html, bind, set and state for the Solent step box (17 Nov: the second definition had dropped them) */
@@ -2796,7 +2803,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ['Ask Route', 'In the Plan tab, Ask Route answers set questions from the chosen route at the replay time: the next mark, the next tack or gybe, the next sail change, the biggest wind shift in the next 12 hours, and what the tide is doing. Read it out speaks the answer.'],
     ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],
     ['AIS', 'Settings, Display, AIS (in Route+ and Mark+: Settings, Instruments, beside the alarms). Test fleet shows emulated race boats and ships to try the screens; Live online shows real AIS from shore stations when you have signal. The Fleet tab lists every target with range, bearing, CPA and time to CPA; a target inside the CPA alarm flashes red and beeps.'],
-    ['Man overboard', 'Press and hold the red MOB button for one second. Route marks the position from the phone GPS, starts the clock and shows the bearing and distance back to where they went in, and to where the tide has probably carried them. Show on chart shrinks the panel so you can see both. Hold End MOB to finish. Route is no substitute for the boat\'s own MOB drill, the VHF DSC button and the Coastguard.'],
+    ['Man overboard', 'The red man overboard button (a stick man with his arms up) sits at the left end of the time bar at the bottom: on a phone, at the left of the time slider. It stays on the start screen and the deck screen. Press and hold it for one second. Route marks the position from the phone GPS, starts the clock and shows the bearing and distance back to where they went in, and to where the tide has probably carried them. Show on chart shrinks the panel so you can see both. Hold End MOB to finish. Route is no substitute for the boat\'s own MOB drill, the VHF DSC button and the Coastguard.'],
     ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you.']
   ];
   var speaking = -1;
