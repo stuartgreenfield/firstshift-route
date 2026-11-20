@@ -1204,11 +1204,12 @@
     var bar = document.querySelector('.bar'), br = bar && bar.getClientRects().length ? bar.getBoundingClientRect() : null, h = RB.el.offsetHeight || 40, top;
     var ins = { t: 0, b: 0 }; try { ins = (window.__fsInsets && window.__fsInsets()) || ins; } catch (e) {}
     var chv = document.querySelector('.chart'), cr = chv && chv.getClientRects().length ? chv.getBoundingClientRect() : null;
-    var pnl = $('panel'), pr = pnl && !pnl.hidden && pnl.getClientRects().length ? pnl.getBoundingClientRect() : null; if (cr && pr && pr.top > innerHeight * 0.3 && pr.left < 80 && pr.top < cr.bottom) cr = { top: cr.top, bottom: pr.top };   /* D (Stuart 20 Nov 13:58): on a phone the panel sheet covers the chart's lower part; the buttons sit above it, never over the set-up list */
+    var pnl = $('panel'), pr = pnl && !pnl.hidden && pnl.getClientRects().length ? pnl.getBoundingClientRect() : null; if (cr && pr && pr.top > innerHeight * 0.2 && pr.left < 80 && pr.top < innerHeight - 40) cr = { top: Math.min(cr.top, pr.top - 260), bottom: pr.top };   /* D (Stuart 20 Nov 13:58): on a phone the panel sheet covers the chart's lower part; the buttons sit above it, never over the set-up list */
     if (cr && cr.bottom - cr.top > 200) top = Math.min(cr.bottom, br && br.top > innerHeight / 2 ? br.top : innerHeight) - h - 14;   /* the bottom edge of the chart, in the middle: above the race panel or the menu bar, wherever the chart ends (18 Nov 06:15) */
     else if (br && br.top > innerHeight / 2) top = br.top - h - 10;   /* the bar along the bottom: just above it */
     else { top = Math.max(br ? br.bottom + 8 : 8, (ins.t || 0) + 8); var sq = $('solSeq'); if (sq && !sq.hidden && sq.getClientRects().length) top = Math.max(top, sq.getBoundingClientRect().bottom + 8); var tb = $('solTestBar'); if (tb && !tb.classList.contains('intb') && tb.getClientRects().length) top = Math.max(top, tb.getBoundingClientRect().bottom + 8); }   /* the bar along the top: below it, and below the small start box */
     top = Math.max(8, Math.min(innerHeight - (ins.b || 0) - h - 8, top));
+    var sqb = $('solSeq'); if (pr && sqb && !sqb.hidden && sqb.getClientRects().length && sqb.getBoundingClientRect().bottom > top - 4) { RB.el.hidden = true; return; }   /* D: a phone with the panel open and the countdown bar showing: no room for them, and the bar has its own Start screen button */
     RB.el.style.top = Math.round(top) + 'px';
   }
   setInterval(rbRender, 1000);
