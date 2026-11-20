@@ -1,59 +1,41 @@
 {
- "at": "2026-11-20T10:30:44.054Z",
+ "at": "2026-11-20T14:48:47.886Z",
  "log": [
   {
    "race": "northsea-area",
    "h": 0,
-   "s": 10,
-   "note": "Routed in 6.3 s. First answer in 2.5 s."
+   "s": 17,
+   "note": "Routed in 11.1 s. First answer in 4.0 s."
   },
   {
    "race": "northsea-area",
    "h": 1,
-   "s": 17,
-   "note": "Routed in 6.3 s. First answer in 1.0 s."
+   "s": 29,
+   "note": "Routed in 10.7 s. First answer in 1.8 s."
   },
   {
    "race": "northsea-area",
    "h": 2,
-   "s": 25,
-   "note": "Routed in 6.3 s. First answer in 1.1 s."
+   "s": 42,
+   "note": "Routed in 10.7 s. First answer in 1.9 s."
   },
   {
    "race": "northsea-area",
    "h": 3,
-   "s": 33,
-   "note": "Routed in 7.1 s. First answer in 1.0 s."
+   "s": 56,
+   "note": "Routed in 11.9 s. First answer in 1.9 s."
   },
   {
    "race": "northsea-area",
    "h": 4,
-   "s": 42,
-   "note": "Routed in 6.8 s. First answer in 1.1 s."
+   "s": 71,
+   "note": "Routed in 12.0 s. First answer in 1.8 s."
   },
   {
    "race": "northsea-area",
    "h": 5,
-   "s": 50,
-   "note": "Routed in 6.7 s. First answer in 1.1 s."
-  },
-  {
-   "race": "northsea",
-   "h": 0,
-   "s": 11,
-   "note": "Routed in 7.0 s. First answer in 2.6 s."
-  },
-  {
-   "race": "northsea",
-   "h": 1,
-   "s": 19,
-   "note": "Routed in 6.4 s. First answer in 1.1 s."
-  },
-  {
-   "race": "northsea",
-   "h": 2,
-   "s": 27,
-   "note": "Routed in 7.1 s. First answer in 1.1 s."
+   "s": 85,
+   "note": "Routed in 11.8 s. First answer in 2.0 s."
   }
  ]
 }
