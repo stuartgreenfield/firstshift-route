@@ -1218,7 +1218,7 @@
        longitude from the sailing instructions, bearing and length from one end, or two taps on the chart; and the RYS line preset. */
     var RYS = { boat: [50.766733, -1.300917], brg: 346, m: 2290 };   /* Rolex Fastnet Race 2025 SIs 14.1 to 14.2; RYS SIs give the transit as about 346 T */
     var LP = 0;   /* taps still wanted on the chart: 2 boat then pin, 1 pin */
-    var putLine = function (bq, pq, why) { window.__fsSetLine('boat', bq[0], bq[1]); window.__fsSetLine('pin', pq[0], pq[1]); if (window.__fsLineKind) window.__fsLineKind(false); toast('Start line set: ' + why + '. Check it against the sailing instructions for this race.'); redraw(); };
+    var putLine = function (bq, pq, why) { window.__fsSetLine('boat', bq[0], bq[1]); window.__fsSetLine('pin', pq[0], pq[1]); if (window.__fsLineKind) window.__fsLineKind(false); toast(/^RYS/.test(why) ? why + ': set. Check the sailing instructions.' : 'Start line set: ' + why + '. Check it against the sailing instructions for this race.'); redraw(); };
     var ED = null;   /* the end being edited from the list: 'boat' or 'pin' */
     var editHtml = function () {
       var l = lineNow() || {}, nm = function (end) { var q = l[end]; if (!q) return 'not set'; var mk = (MK || []).filter(function (m) { return Math.abs(m.lat - q[0]) < 1e-5 && Math.abs(m.lon - q[1]) < 1e-5; })[0]; return mk ? mk.id + ' ' + mk.name : llTxt(q); };
@@ -1259,7 +1259,7 @@
          a tap on the chart. The sailing instructions (Rolex Fastnet Race 2025 SI 14; RYS 2022 SI 12.6) use the one transit both ways; the
          direction swaps which end is the starboard end. West: the outer end (towards the Williams Shipping Buoy) is starboard. */
       var rys = function (dir) { var q = offset({ lat: RYS.boat[0], lon: RYS.boat[1] }, RYS.brg, RYS.m / 1852), out = [q.lat, q.lon], sq = RYS.boat;
-        if (dir === 'W') putLine(out, sq, 'the RYS line, start to the West (boat end: the outer end; pin end: the Squadron)'); else putLine(sq, out, 'the RYS line, start to the East (boat end: the Squadron; pin end: the outer end)');
+        if (dir === 'W') putLine(out, sq, 'RYS line, start to the West'); else putLine(sq, out, 'RYS line, start to the East');   /* short: the box beside it says which end is which (the long toast covered Edit, preview 20 Nov) */
         try { localStorage.setItem('fs-rys-dir', dir); } catch (e) {} window.__fsLineSet(); };
       $('klRYSW').onclick = function () { rys('W'); }; $('klRYSE').onclick = function () { rys('E'); };
       bindEdit(c);
