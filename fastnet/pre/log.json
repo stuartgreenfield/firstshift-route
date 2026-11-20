@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-20T02:56:52.266Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 54,
+   "note": "Routed in 42.0 s. First answer in 10.1 s. Leaving the start the route crosses water about 2.4 m deep on the chart, less "
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 103,
+   "note": "Routed in 40.3 s. First answer in 7.6 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 149,
+   "note": "Routed in 37.9 s. First answer in 7.4 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 195,
+   "note": "Routed in 38.0 s. First answer in 7.3 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 4,
+   "s": 243,
+   "note": "Routed in 39.8 s. First answer in 6.9 s."
+  },
+  {
+   "race": "fastnet",
+   "h": 5,
+   "s": 291,
+   "note": "Routed in 39.8 s. First answer in 7.3 s."
+  }
+ ]
+}
