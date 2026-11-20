@@ -281,7 +281,7 @@
       var t = window.__fsStartAt ? window.__fsStartAt() : null, w = window.__fsWindAt ? window.__fsWindAt(B.start.lat, B.start.lon, t) : null;
       if (!w) { n.textContent = 'No forecast wind here at the start time: type the heading.'; return; }
       B.wl.brg = Math.round(w.twd) % 360; saveB(); render(); redraw();
-      $('solFcNote').textContent = 'Forecast at the start' + (t ? ' (' + new Date(t * 1000).toUTCString().slice(17, 22) + ' UTC)' : '') + ': ' + w.tws.toFixed(0) + ' kn from ' + ('00' + Math.round(w.twd)).slice(-3) + '°T. Check the wind on the line before the start.';
+      $('solFcNote').textContent = 'Forecast at the start' + (t ? ' (' + new Date((t + (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }).sh) * 1000).toUTCString().slice(17, 22) + ' ' + (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }).label + ')' : '') + ': ' + w.tws.toFixed(0) + ' kn from ' + ('00' + Math.round(w.twd)).slice(-3) + '°T. Check the wind on the line before the start.';
     });
     on('solChainGo', 'onclick', function () { chain(true); });
     on('solListGo', 'onclick', function () { list(true); });
@@ -604,6 +604,8 @@
   function wzOk(k) { var w = B.wl;
     if (k === 'start') return B.sk === 'line' ? !!lineNow() : !!B.start; if (k === 'wind') return w.wkind === 'brg' || !w.wkind ? (w.brg >= 0 && w.brg <= 360 && w.dist > 0) : !!windward(); if (k === 'lee') return w.lkind === 'start' || !w.lkind || !!leeward(); if (k === 'marks') return (B.marks || []).length > 0;
     if (k === 'fin') return B.fin !== 'mark' || !!B.finish; return true; }
+  /* Mark and Mark+ (Stuart 20 Nov, found on the real site): "Set start line" in the race menu opens the race set-up at its start line step; with no race yet, the race card */
+  window.__fsMarkLine = function () { if (!window.FS_MARK) return false; var c = $('solCard'); if (c) c.hidden = true; if (!(B.marks || []).length && B.type !== 'wl') { if (window.FSSolent && FSSolent.start) FSSolent.start(); toast('Choose your race first: its set-up has the start line.'); return true; } WZ.on = true; wzOpen(wzSteps().indexOf('start') + 1); return true; };
   function wzOpen(n) {
     css(); if (!n) { if (WZ.on && WZ.follow) { try { window.__navFollow(true); } catch (e) {} WZ.follow = null; } WZ.on = false; WZ.fitK = null; var b0 = $('solStep'); if (b0) b0.hidden = true; pick = null; redraw(); return; }
     if (!WZ.on) { try { WZ.follow = window.__navFollow ? window.__navFollow() : null; if (WZ.follow) window.__navFollow(false); } catch (e) {} }   /* speed (Stuart 18 Nov 21:37): the chart holds still while the course is built, and follows the boat again after */
@@ -1119,7 +1121,7 @@
     var ov = e.querySelector('.ssov'), ot = ''; if (lc && lc.over && rem <= 60 && rem > -5) ot = B.flag && B.flag !== 'P' ? FLAGS[B.flag].replace(/^[^:]*: /, '') : 'On the course side: go back before the gun.'; else if (seriesTxt() && rem > 60) ot = seriesTxt(); else if (chk.length && rem > 120) ot = chk[0]; ov.hidden = !ot; ov.textContent = ot; ov.classList.toggle('ssinfo', !(lc && lc.over && rem <= 60));
     e.hidden = false; e.classList.toggle('sqlast', rem <= 60 && rem > 0); ssDraw(e.querySelector('.sscv'), lc, rem);
   }
-  function clk(t) { var d = new Date(t * 1000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + (d.getSeconds() ? ':' + ('0' + d.getSeconds()).slice(-2) : ''); }
+  function clk(t) { var z = (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }), d = new Date((t + z.sh) * 1000); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2) + (d.getUTCSeconds() ? ':' + ('0' + d.getUTCSeconds()).slice(-2) : '') + ' ' + z.label; }   /* the gun in the chosen time, Local or UTC (Stuart 20 Nov 16:03); it was the device's own clock */
   if (KIT) setInterval(function () { try { var sl = window.__fsLoa && window.__fsLoa(); if (sl > 3 && sl !== B.loa) { B.loa = sl; saveB(); } } catch (e) {} }, 2000);   /* F55: the boat length from Settings */
   if (KIT) setInterval(function () { var tn = Date.now(); if (!SS.lastNote || tn - SS.lastNote > 1000) { SS.lastNote = tn; try { var fq = window.__fsLiveFix && window.__fsLiveFix(); if (fq && (!SS.sp.length || SS.sp[SS.sp.length - 1][0] < tn - 900)) spdNote(fq); learnTick(fq); } catch (e) {} }   /* M36: speeds kept all the time, not only while the start screen shows */
     sqRender(); var ssv = $('solStartScr'); var ssOn = !!(ssv && !ssv.hidden); if (ssOn && !document.body.classList.contains('fsss')) { if (window.__fsPanelClose && innerWidth < 900) window.__fsPanelClose(); setTimeout(ssFit, 1500); }   /* and the chart is fitted again once the boxes have filled (the real site showed the line slipping under them) */ document.body.classList.toggle('fsss', ssOn); tbPlace();   /* M80 (Stuart 18 Nov 22:25, 22:27): Route's panel folds away as the start screen opens, as it does for the course builder */

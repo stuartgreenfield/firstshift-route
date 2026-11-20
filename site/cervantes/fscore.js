@@ -37,7 +37,8 @@
       var url; try { url = new URL(typeof input === 'string' ? input : input.url, location.href); } catch (e) { return real(input, init); }
       if (url.origin !== location.origin || (init && init.method && init.method !== 'GET') || !offKeep(url)) return real(input, init);
       var key = offKey(url), big = /\/pack\/(?!pack\.json)/.test(url.pathname);
-      var fromStore = function (why) { OFF.failed = true; return STORE.get(key).then(function (r) { if (!r) throw why || new Error('offline and not downloaded yet'); OFF.used[url.pathname] = true; offNote(); return r; }); };
+      var fromStore = function (why) { if (!(why && why.message === 'slow')) OFF.failed = true;   /* A (Stuart 20 Nov 16:18): slow is not lost: the request carries on, the newer copy is kept when it lands, and the New forecast bar offers it; only a real failure waits for the signal and reloads */
+      return STORE.get(key).then(function (r) { if (!r) throw why || new Error('offline and not downloaded yet'); OFF.used[url.pathname] = true; offNote(); return r; }); };
       if (navigator.onLine === false) return fromStore();
       var net = real(input, init).then(function (r) { if (!r.ok && r.status >= 400 && r.status < 500) return r; if (!r.ok) throw new Error('server ' + r.status);   /* a missing file is an answer, not lost signal: before, a 404 counted as offline and the page reloaded every 30 s (14 Nov 2026) */ var cp = r.clone(); STORE.put(key, cp).catch(function () {}); if (/pack\/pack\.json$/.test(url.pathname)) { try { localStorage.setItem('fs-offline-at', String(Date.now())); } catch (e) {} } return r; });
       if (big) return net.catch(function (e) { return fromStore(e); });

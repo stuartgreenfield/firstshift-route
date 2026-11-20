@@ -49,7 +49,7 @@
     dtw: { l: 'TO MARK', u: 'nm', g: 'Mark', f: function () { var p = plot(); return p ? p.dtw : null; }, d: 2, need: 'plot' },
     btw: { l: 'BEARING', u: '°T', g: 'Mark', f: function () { var p = plot(); return p ? p.btw : null; }, ang: 1, show: deg, need: 'plot' },
     vmc: { l: 'VMC', u: 'kn', g: 'Mark', f: function () { var p = plot(); return p ? p.vmc : null; }, d: 1, need: 'plot' },
-    eta: { l: 'ETA MARK', u: 'UTC', g: 'Mark', f: function () { var p = plot(); return p && p.eta ? p.eta : null; }, show: function (v) { var d = new Date(v); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }, noavg: 1, need: 'plot' },
+    eta: { l: 'ETA MARK', get u() { return (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }).label; }, g: 'Mark', f: function () { var p = plot(); return p && p.eta ? p.eta : null; }, show: function (v) { var d = new Date(v + (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }).sh * 1000); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }, noavg: 1, need: 'plot' },
     xte: { l: 'XTE', u: 'nm', g: 'Mark', f: function () { var p = plot(); return p && p.xte ? (p.xte.side === 'L' ? -p.xte.d : p.xte.d) : null; }, show: function (v) { return Math.abs(v).toFixed(2) + (v < 0 ? ' L' : ' R'); }, need: 'plot' },
     lay: { l: 'TO LAYLINE', u: 'min:s', g: 'Mark', f: function () { var p = plot(); return p && p.lay && p.lay.tA != null ? p.lay.tA * 3600 : null; }, show: dur, noavg: 1, need: 'plot' },
     gate: { l: 'TIDE GATE', u: '', g: 'Mark', f: function () { try { return window.__fsTideGate ? window.__fsTideGate() : null; } catch (e) { return null; } }, show: dur, noavg: 1, soon: 'Comes with the tide gate tool' },

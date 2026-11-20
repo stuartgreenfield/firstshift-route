@@ -80,7 +80,7 @@
   function n1(x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }
   function dist(d) { return d < 0.1 ? Math.round(d * 1852) + ' m' : n1(d) + ' nm'; }
   function dur(h) { var m = Math.round(h * 60); return m >= 60 ? Math.floor(m / 60) + 'h ' + ('0' + m % 60).slice(-2) : m + ' min'; }
-  function clk(ms) { var d = new Date(ms); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
+  function clk(ms) { var d = new Date(ms + (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }).sh * 1000); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
   /* CPA to the next mark (Stuart 20 Nov 09:15: "both would be good but needs to be explained"): the closest the boat will pass the mark if it
      holds its present course and speed over the ground, and when. Near zero: the boat is laying the mark (a layline check). Opening: the
      closest point is already behind. CPA to other boats is in the AIS window. */
@@ -125,7 +125,7 @@
       h += '<div class="rpgrid">' +
         cell('BTW', brg(o.btw), 'true bearing') +
         cell('DTW', dist(o.dtw), '') +
-        cell('ETA', o.eta ? clk(o.eta) : '--', o.eta ? 'UTC, in ' + dur((o.eta - Date.now()) / 3600e3) : 'not closing') +
+        cell('ETA', o.eta ? clk(o.eta) : '--', o.eta ? (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }).label + ', in ' + dur((o.eta - Date.now()) / 3600e3) : 'not closing') +
         cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn to the mark' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
         cpaCell(o) +
         vmgCell(o, (function () { try { return window.FSSolent && FSSolent.windRef ? FSSolent.windRef() : null; } catch (e) { return null; } })()) +

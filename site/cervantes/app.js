@@ -209,7 +209,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         if ((m.built || m.t0) === (meta.built || meta.t0) || (nextMeta && (nextMeta.built || nextMeta.t0) === (m.built || m.t0))) return;
         nextMeta = m;
         $('newData').hidden = false;
-        $('newDataTxt').textContent = 'New forecast: ' + clockAbs(m.t0).replace(/ (\d\d):00$/, ' $1Z') + ' run';
+        $('newDataTxt').textContent = 'New forecast: ' + clockAbs(m.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + ' run';
       }).catch(function () {});
     }, 5 * 60 * 1000);
     $('newDataBtn').onclick = function () {
@@ -237,8 +237,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function mb(b) { return b < 1e5 ? (b / 1e3).toFixed(0) + ' kB' : (b / 1e6).toFixed(1) + ' MB'; }
   function res(v) { var a = v.res_km[0], b = v.res_km[1]; return a < 1 ? Math.round((a + b) / 2 * 1000) + ' m' : (Math.abs(a - b) / a < 0.25 ? ((a + b) / 2).toFixed(1) + ' km' : a.toFixed(0) + '×' + b.toFixed(0) + ' km'); }
   /* forecast age: the model run, when it reached the FirstShift server, when it reached this device */
-  function hhmm(ms) { var d = new Date(ms); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
-  function dayhm(ms) { var d = new Date(ms), today = new Date(); return (d.toDateString() === today.toDateString() ? '' : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ') + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }   /* ms; the later hhmm() takes seconds */
+  /* Local or UTC (Stuart 20 Nov 16:01, 16:03): one setting for every time Route shows and every start time typed. Local is this device's offset, or the one set in the time bar */
+  function tzOff() { var v = store('fs-tz'); return v != null && v !== '' && !isNaN(+v) ? +v : -new Date().getTimezoneOffset() / 60; }
+  function tzLocal() { return store('fs-timemode') === 'local'; }
+  function tzSh() { return tzLocal() ? Math.round(tzOff() * 3600) : 0; }   /* seconds to add to a UTC time */
+  function tzMs(ms) { return ms + tzSh() * 1000; }
+  function tzS1() { if (!tzLocal()) return 'UTC'; var o = tzOff(); return 'UTC' + (o >= 0 ? '+' : '−') + Math.abs(o); }
+  function tzSet(v) { store('fs-timemode', v === 'local' ? 'local' : 'utc'); var sel = $('timeMode'); if (sel) sel.value = tzLocal() ? 'local' : 'utc'; try { chipStart(); } catch (e) {} try { if (S.routes && S.routes.length) show(); else draw(); } catch (e) {} try { if (!$('wiz').hidden && WIZ.step === 3) { if (S.card) cardStep(3); else wizShow(3); } } catch (e) {} }
+  window.__fsTzSet = function (v) { tzSet(v); };
+  window.__fsTZ = function () { return { local: tzLocal(), sh: tzSh(), label: tzS1() }; };
+  function hhmm(ms) { var d = new Date(tzMs(ms)); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
+  function dayhm(ms) { var d = new Date(tzMs(ms)), today = new Date(tzMs(Date.now())); return (d.toUTCString().slice(0, 16) === today.toUTCString().slice(0, 16) ? '' : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ') + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }   /* ms; the later hhmm() takes seconds */
   function ageTxt(h) { return h < 1 ? Math.round(h * 60) + ' min' : Math.floor(h) + ' h ' + String(Math.round((h % 1) * 60)).padStart(2, '0'); }
   function runTxt(t0) { var d = new Date(t0 * 1000); return String(d.getUTCHours()).padStart(2, '0') + 'Z ' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()]; }
   function ageCls(h) { return h > 18 ? ' style="color:var(--shoaledge);font-weight:700"' : h > 12 ? ' style="color:var(--warn);font-weight:700"' : ''; }
@@ -255,14 +264,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var ovRow = $('ovChk').closest('label'); if (ovRow) ovRow.hidden = !meta.overview;
     if (meta.overview) { if ($('ovChk').checked && !S.ov) tot += meta.overview.gz; $('ovSize').textContent = mb(meta.overview.gz) + (S.ov ? ' · on device' : ''); }
     var w = meta.course.window, RG = (meta.course0 || meta.course).region;
-    if (RG) $('bandNote').textContent = 'Whole area: forecasts for every point from ' + RG.s + '° to ' + RG.n + '°N and ' + Math.abs(RG.w) + '°W to ' + Math.abs(RG.e) + '°' + (RG.e >= 0 ? 'E' : 'W') + ', from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' UTC. Any course inside the box routes. Shown as a dashed line on the chart.';
+    if (RG) $('bandNote').textContent = 'Whole area: forecasts for every point from ' + RG.s + '° to ' + RG.n + '°N and ' + Math.abs(RG.w) + '°W to ' + Math.abs(RG.e) + '°' + (RG.e >= 0 ? 'E' : 'W') + ', from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' ' + tzS1() + '. Any course inside the box routes. Shown as a dashed line on the chart.';
     else {
     var bw = meta.course.band.map(function (b) { return b[4]; });
-    $('bandNote').textContent = 'Cut to the race: forecasts only within ' + Math.round(Math.min.apply(null, bw)) + ' nm of the course in the Solent and ' + Math.round(Math.max.apply(null, bw)) + ' nm offshore (30% of each leg), from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' UTC: an hour before the first start to 1.4 times the slowest routed finish. Shown as a dashed line on the chart.';
+    $('bandNote').textContent = 'Cut to the race: forecasts only within ' + Math.round(Math.min.apply(null, bw)) + ' nm of the course in the Solent and ' + Math.round(Math.max.apply(null, bw)) + ' nm offshore (30% of each leg), from ' + clockH(w[0]).slice(4) + ' to ' + clockH(w[1]).slice(4) + ' ' + tzS1() + ': an hour before the first start to 1.4 times the slowest routed finish. Shown as a dashed line on the chart.';
     }
     $('dataTable').innerHTML = h; $('dlTotal').textContent = tot ? mb(tot) + ' to fetch' : 'nothing new to fetch';
     [].forEach.call($('dataTable').querySelectorAll('select'), function (s) { s.onchange = function () { S.choice[s.dataset.dl] = s.value; S.plan = 'custom'; [].forEach.call($('plans').children, function (b) { b.setAttribute('aria-pressed', 'false'); }); dataTable(); }; });
-    $('dataNote').textContent = 'Forecast run ' + meta.run + (meta.built ? '; published on the FirstShift server at ' + dayhm(meta.built * 1000) + ' UTC' : '') + '. Age is the time since each model run; amber over 12 hours, red over 18. Times in UTC. Choose what this device downloads: full detail on Starlink, less on a phone signal.';
+    $('dataNote').textContent = 'Forecast run ' + meta.run + (meta.built ? '; published on the FirstShift server at ' + dayhm(meta.built * 1000) + ' ' + tzS1() : '') + '. Age is the time since each model run; amber over 12 hours, red over 18. Times in UTC. Choose what this device downloads: full detail on Starlink, less on a phone signal.';
   }
   function download() {
     var todo = meta.layers.filter(function (L) { if (L.device) return false; var c = S.choice[L.id] || 'off'; return c !== S.loaded[L.id] && !(c === 'off' && !S.loaded[L.id]); });
@@ -297,8 +306,38 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }).catch(function (e) { busy(''); prog(''); $('dlNote').textContent = e.message; });
   }
   /* ---------- fallback: when the server's forecasts are missing or old, fetch wind for the area straight from Open-Meteo on this device ---------- */
+  /* B (Stuart 20 Nov 16:05, 16:18: "download locally the gribs that are out of date"): each wind model whose newest run on the server is more than
+     18 hours old is fetched by name from Open-Meteo straight to this device (names checked against Open-Meteo on 20 Nov), and replaces the stale one;
+     with no forecast pack at all, the one blended Open-Meteo wind as before */
+  var OMN = { ukv: 'ukmo_uk_deterministic_2km', arome: 'meteofrance_arome_france_hd', icon: 'icon_eu', ecmwf: 'ecmwf_ifs025', aifs: 'ecmwf_aifs025_single', gfs: 'gfs_global', arpege: 'meteofrance_arpege_europe' };
+  function omGrid() { var c = meta.course, la = [c.start.lat, c.finish.lat], lo = [c.start.lon, c.finish.lon]; c.marks.forEach(function (m) { la.push(m.lat); lo.push(m.lon); });
+    var b = dataBox || { s: Math.min.apply(0, la) - 0.7, n: Math.max.apply(0, la) + 0.7, w: Math.min.apply(0, lo) - 1, e: Math.max.apply(0, lo) + 1 };
+    var step = 0.25; while (((b.n - b.s) / step + 1) * ((b.e - b.w) / step + 1) > 300) step += 0.25;
+    var ny = Math.floor((b.n - b.s) / step) + 1, nx = Math.floor((b.e - b.w) / step) + 1, lats = [], lons = [];
+    for (var y = 0; y < ny; y++) for (var x = 0; x < nx; x++) { lats.push((b.s + y * step).toFixed(2)); lons.push((b.w + x * step).toFixed(2)); }
+    return { b: b, step: step, ny: ny, nx: nx, lats: lats, lons: lons }; }
+  function omLayer(G, j, id, name) {   /* Open-Meteo's answer for the grid points as a wind layer; hours past the model's last one are left out */
+    if (!Array.isArray(j)) j = [j]; var times = j[0].hourly.time, plane = G.ny * G.nx, last = -1;
+    j.forEach(function (pt) { var ws = pt.hourly.wind_speed_10m; for (var ti = ws.length - 1; ti > last; ti--) if (ws[ti] != null) { last = ti; break; } });
+    var nt = last + 1; if (nt < 2) throw new Error('no wind in the answer');
+    var buf = new ArrayBuffer(plane * nt * 4), u = new Int16Array(buf, 0, plane * nt), v = new Int16Array(buf, plane * nt * 2, plane * nt);
+    j.forEach(function (pt, k) { var ws = pt.hourly.wind_speed_10m, wd = pt.hourly.wind_direction_10m; for (var ti = 0; ti < nt; ti++) { var sp = ws[ti], d = wd[ti], i = ti * plane + k; if (sp == null || d == null) { u[i] = v[i] = -32768; continue; } u[i] = Math.round(-sp * Math.sin(d * R) * 100); v[i] = Math.round(-sp * Math.cos(d * R) * 100); } });
+    var hours = times.slice(0, nt).map(function (t) { return (t - T0) / 3600; }), b = G.b;
+    return { buf: buf, spec: { kind: 'wind', id: id, name: name, ny: G.ny, nx: G.nx, lat0: b.s, lon0: b.w, dlat: G.step, dlon: G.step, hours: hours, u: { off: 0, n: plane * nt, scale: 0.01 }, v: { off: plane * nt * 2, n: plane * nt, scale: 0.01 } },
+      full: { ny: G.ny, nx: G.nx, lat0: b.s, lon0: b.w, dlat: G.step, dlon: G.step, hours: hours, bytes: buf.byteLength, gz: buf.byteLength, size: buf.byteLength, step_h: 1, res_km: [G.step * 111, G.step * 111 * Math.cos(b.s * R)] } }; }
+  function omFetch(G, model) { var ctl = typeof AbortController === 'function' ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 25000);
+    return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + G.lats.join(',') + '&longitude=' + G.lons.join(',') + '&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timeformat=unixtime&forecast_days=7' + (model ? '&models=' + model : ''), ctl ? { signal: ctl.signal } : {})
+      .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Open-Meteo answered ' + r.status); return r.json(); }, function (e) { clearTimeout(tm); throw e; }); }
   function omFallback() {
     var age = (Date.now() / 1000 - meta.t0) / 3600, none = !Object.keys(P.wind).length;
+    if (navigator.onLine && !none) { var nowS = Date.now() / 1000, stale = meta.layers.filter(function (L) { return L.kind === 'wind' && OMN[L.id] && P.wind[L.id] && !L.device && L.run_t0 && (nowS - L.run_t0) / 3600 > 18; });
+      if (stale.length) { var G = omGrid(), got = [];
+        prog('Fresh forecasts on this device', null, stale.map(function (L) { return short(L.id); }).join(', ') + (stale.length > 1 ? ' are' : ' is') + ' more than 18 h old on the server, so Route is fetching ' + (stale.length > 1 ? 'them' : 'it') + ' from Open-Meteo straight to this device.');
+        return Promise.all(stale.map(function (L) { return omFetch(G, OMN[L.id]).then(function (j) { var o = omLayer(G, j, L.id, L.name + ' (this device)'); L.dev = o.full; L.name = L.name + ' (this device)'; L.device = true; L.devAt = Date.now(); FSRouter.addLayer(P, o.spec, o.buf); S.loaded[L.id] = 'dev'; got.push({ L: L, o: o }); }, function (e) { L.devErr = e.message; }); }))
+          .then(function () { S.omNote = got.length ? 'Fetched on this device from Open-Meteo, as the server’s runs were more than 18 h old: ' + got.map(function (g) { return short(g.L.id); }).join(', ') + '.' + (got.length < stale.length ? ' Could not fetch: ' + stale.filter(function (L) { return L.devErr; }).map(function (L) { return short(L.id) + ' (' + L.devErr + ')'; }).join(', ') + '; the server’s run is used.' : '') : 'Could not fetch fresh forecasts from Open-Meteo; the server’s runs are used.';
+            return Promise.all(got.map(function (g) { var copy = g.o.buf.slice(0); return all(function () { return { msg: { type: 'layer', L: g.o.spec, buf: copy }, tr: [copy] }; }); })); })
+          .then(function () { prog(''); modelsList(); selects(); dataTable(); chip(); }, function () { prog(''); }); }
+      return Promise.resolve(); }
     if (!navigator.onLine || !(none || (meta.live && age > 18)) || P.wind.om) return Promise.resolve();   /* F1 (17 Nov): the server's runs come every six hours and arrive some eight hours after their time, so 12 hours old is normal each morning; only past 18 hours is the phone sent to Open-Meteo */
     var c = meta.course, la = [c.start.lat, c.finish.lat], lo = [c.start.lon, c.finish.lon]; c.marks.forEach(function (m) { la.push(m.lat); lo.push(m.lon); });
     var b = dataBox || { s: Math.min.apply(0, la) - 0.7, n: Math.max.apply(0, la) + 0.7, w: Math.min.apply(0, lo) - 1, e: Math.max.apply(0, lo) + 1 };
@@ -326,7 +365,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.81 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.81 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -339,7 +378,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (meta.live) {
       // live forecasts: start any hour from the next one to six hours before the longest forecast ends (it was 36 h when forecasts ran 2 days; now up to 10)
       var first = Math.max(meta.course.window[0] + 1, Math.ceil((Date.now() / 1000 - T0) / 3600));
-      for (var hh = first; hh <= HMAX() - 6; hh++) { var ep = T0 + hh * 3600; starts.push(ep); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + ep + '">' + clockAbs(ep) + ' UTC</option>'); }
+      for (var hh = first; hh <= HMAX() - 6; hh++) { var ep = T0 + hh * 3600; starts.push(ep); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + ep + '">' + clockAbs(ep) + ' ' + tzS1() + '</option>'); }
     } else Object.keys(bySt).sort().forEach(function (s) { starts.push(+s); $('startSel').insertAdjacentHTML('beforeend', '<option value="' + s + '">' + clockAbs(+s).slice(4) + ' · ' + Object.keys(bySt[s]).sort().join(', ') + '</option>'); });
     $('startSel').value = String(starts[0]);
     S.tmin = (starts[0] - T0) / 3600; S.tmax = Math.min(HMAX(), S.tmin + 26);
@@ -543,7 +582,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('lTide').onchange = function () { $('tideSym').value = $('lTide').value; $('tideSym').onchange(); };
   }
 
-  function clockAbs(epoch) { var d = new Date(epoch * 1000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
+  function clockAbs(epoch) { var d = new Date((epoch + tzSh()) * 1000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
   function clockH(h) { return clockAbs(T0 + h * 3600); }
   function fmtH(h) { var m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0'); }
   function short(id) { return { ecmwf: 'ECMWF', ukv: 'UKV', gfs: 'GFS', aifs: 'AIFS', mog: 'MO Global', icon: 'ICON-EU', arome: 'AROME', arpege: 'ARPEGE', om: 'Open-Meteo', chain: 'Finest first', fixed: 'Fixed wind' }[id] || id; }
@@ -555,6 +594,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function ckRender() { var p = $('prog'); if (!p) return; var L = $('pgCk'); if (!L) { L = document.createElement('ul'); L.id = 'pgCk'; L.className = 'pgck'; p.appendChild(L); }
     if (!S.ck || p.hidden) { L.innerHTML = ''; return; }
     L.innerHTML = S.ck.map(function (i) { return '<li class="' + i.s + '"><span>' + (i.s === 'done' ? '✓' : i.s === 'run' ? '◐' : '○') + '</span>' + i.t + (i.s === 'run' && i.p ? ' · ' + Math.round(i.p * 100) + '%' : '') + (i.s === 'done' && i.sec ? ' · ' + i.sec + ' s' : '') + '</li>'; }).join(''); }
+  /* the routing card can be minimised to one line (Stuart 20 Nov 16:18: "needs a minimise button to clear it"); tap the line or + to open it again; remembered */
+  (function () { var b = $('pgMin'), p = $('prog'); if (!b || !p) return; var set = function (on) { p.classList.toggle('small', on); b.textContent = on ? '+' : '–'; b.setAttribute('aria-label', on ? 'Show the routing progress' : 'Minimise the routing progress'); try { localStorage.setItem('fs-pgsmall', on ? '1' : ''); } catch (e) {} };
+    var on0 = false; try { on0 = localStorage.getItem('fs-pgsmall') === '1'; } catch (e) {} set(on0); b.onclick = function (e) { e.stopPropagation(); set(!p.classList.contains('small')); }; p.addEventListener('click', function () { if (p.classList.contains('small')) set(false); }); })();
   function prog(title, frac, detail, est) { if (frac != null && frac !== S.progF) { S.progF = frac; S.progAt = Date.now(); }
     if (!title) { $('prog').hidden = true; PG.title = ''; return; }
     if (title !== PG.title) { PG.title = title; PG.t0 = Date.now(); PG.est = est || 0; }
@@ -812,7 +854,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function mobTick() {
     var m = mobGet(); if (!m) return;
     var sec = Math.floor((Date.now() - m.t) / 1000), dr = mobDrift(m);
-    var h = '<div class="mobtime">' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') + '<small>since ' + new Date(m.t).toUTCString().slice(17, 22) + ' UTC · ' + m.lat.toFixed(4) + ' ' + m.lon.toFixed(4) + '</small></div>';
+    var h = '<div class="mobtime">' + Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0') + '<small>since ' + new Date(tzMs(m.t)).toUTCString().slice(17, 22) + ' ' + tzS1() + ' · ' + m.lat.toFixed(4) + ' ' + m.lon.toFixed(4) + '</small></div>';
     if (me && Date.now() - me.at < 20000) { h += mobLine('To where they went in', me, m); if (dr) h += mobLine('To tide drift estimate', me, dr); if (me.sog != null) h += '<div><span>Your SOG, COG</span><b>' + (me.sog / KN).toFixed(1) + ' kn</b><b>' + (me.cog != null && !isNaN(me.cog) ? pad(me.cog) + '° T' : '-') + '</b></div>'; }
     else h += '<p class="note">Waiting for your GPS position for bearing and distance.</p>';
     if (dr) { var dd = FSRouter.dist(m.lat, m.lon, dr.lat, dr.lon); h += '<p class="note">Tide has probably carried them ' + (dd < 0.5 ? Math.round(dd * 1852) + ' m' : dd.toFixed(2) + ' nm') + ' towards ' + pad(FSRouter.brg(m.lat, m.lon, dr.lat, dr.lon)) + '° T (tide model, not wind drift).</p>'; }
@@ -1011,7 +1053,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function openShare() {
     var url = shareUrl();
-    $('shareWhat').textContent = meta.course.name + ' · start ' + clockAbs(+$('startSel').value) + ' UTC' + (BC.code ? ' · boat code ' + BC.code : '');
+    $('shareWhat').textContent = meta.course.name + ' · start ' + clockAbs(+$('startSel').value) + ' ' + tzS1() + (BC.code ? ' · boat code ' + BC.code : '');
     $('shareUrl').value = url; if (!drawQr($('shareQr'), url)) $('shareWhat').textContent += ' (the code could not be drawn: use Share or Copy link)';
     $('shareBox').hidden = false;
   }
@@ -1037,7 +1079,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }).catch(function () {});
   }
   function crewText() {
-    var c = meta.course, s = S.sel, lines = ['FirstShift Route: ' + c.name, 'Start ' + clockAbs(+$('startSel').value) + ' UTC'];
+    var c = meta.course, s = S.sel, lines = ['FirstShift Route: ' + c.name, 'Start ' + clockAbs(+$('startSel').value) + ' ' + tzS1()];
     if (S.routes && S.routes.length) {
       lines.push('Finish times:'); S.routes.forEach(function (r) { lines.push('  ' + (r.combined ? 'Combined' : short(r.id)) + ': ' + clockH(r.r.finish).slice(4) + ' (' + fmtH(r.r.finish - S.start.t) + ')' + (r === s ? ' <- chosen' : '')); });
       var p = s.r.path, cr = sailsList(), mr = mainsList(), out = [], cur = null;
@@ -1065,8 +1107,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (q === 'brief') return briefing();
     var s = S.sel; if (!s) return 'Route first: there is no route to answer from yet.';
     var p = s.r.path, ts = tsOf(p), t = S.t, pos = posAt(ts, p, t); if (!pos) return 'The replay time is before the start. Move the slider to the race.';
-    if (pos.done) return 'At this time the boat has finished, at ' + clockH(s.r.finish).slice(4) + ' UTC.';
-    var i0 = Math.max(1, (pos.i || 0) + 1), nm = function (a, b) { return FSRouter.dist(a.la, a.lo, b.la, b.lo); }, when = function (tt) { var m = Math.round((tt - t) * 60); return clockH(tt).slice(4) + ' UTC, ' + (m < 90 ? m + ' minutes' : (m / 60).toFixed(1) + ' hours') + ' from now'; };
+    if (pos.done) return 'At this time the boat has finished, at ' + clockH(s.r.finish).slice(4) + ' ' + tzS1() + '.';
+    var i0 = Math.max(1, (pos.i || 0) + 1), nm = function (a, b) { return FSRouter.dist(a.la, a.lo, b.la, b.lo); }, when = function (tt) { var m = Math.round((tt - t) * 60); return clockH(tt).slice(4) + ' ' + tzS1() + ', ' + (m < 90 ? m + ' minutes' : (m / 60).toFixed(1) + ' hours') + ' from now'; };
     var cur = p[i0], name = s.combined ? 'the combined route' : 'the ' + short(s.id) + ' route';
     if (q === 'tack') { var side = cur.twa < 0 ? -1 : 1; for (var i = i0 + 1; i < p.length; i++) { var sd = p[i].twa < 0 ? -1 : 1; if (sd !== side) return 'On ' + name + ', the next ' + (Math.abs(p[i].twa) > 90 ? 'gybe' : 'tack') + ' is at ' + when(p[i - 1].t) + ', onto ' + (sd < 0 ? 'starboard' : 'port') + ' heading ' + pad(p[i].hdg) + '°, true wind angle ' + Math.abs(Math.round(p[i].twa)) + '°.'; } return 'No more tacks or gybes on ' + name + ' before the finish.'; }
     if (q === 'sail') { var cr = sailsList(), mr = mainsList(), now = rig(cur, cr, mr); for (var j = i0 + 1; j < p.length; j++) { var sl = rig(p[j], cr, mr); if (sl && sl !== now) { var k = j; while (k < p.length && rig(p[k], cr, mr) === sl && p[k].t - p[j].t < 0.5) k++; if (k >= p.length || p[k].t - p[j].t >= 0.5) return 'Sail now: ' + (now || 'none set') + '. Next change to ' + sl + ' at ' + when(p[j].t) + ', true wind ' + Math.round(p[j].tws) + ' knots at ' + Math.abs(Math.round(p[j].twa)) + '°.'; } } return 'Stay with ' + (now || 'the same sail') + ' to the finish on ' + name + '.'; }
@@ -1081,7 +1123,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var p = s.r.path, st = routeStats(s), cr = sailsList(), mr = mainsList(), name = s.combined ? 'The combined route' : 'The ' + short(s.id) + ' route', out = [];
     var fins = S.routes.filter(function (r) { return r.r && r.r.finish && !r.r.partial; }).map(function (r) { return r.r.finish; }), spread = fins.length > 1 ? Math.max.apply(0, fins) - Math.min.apply(0, fins) : 0;
     var pc = function (x) { return Math.round(x * 100) + ' percent'; }, comp = function (d) { return ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(((d % 360) + 360) % 360 / 45) % 8]; };
-    out.push(name + (s.r.partial ? ' runs out of forecast at ' + clockH(s.r.finish).slice(4) + ' UTC, ' + s.r.partial.togo + ' nm short of the finish' + (fins.length ? '; the other models carry on from there.' : '.') : ' finishes ' + clockH(s.r.finish).slice(4) + ' UTC, ' + fmtH(s.r.finish - S.start.t) + ' after the start') + ', sailing ' + Math.round(st.nm) + ' nm.' +
+    out.push(name + (s.r.partial ? ' runs out of forecast at ' + clockH(s.r.finish).slice(4) + ' ' + tzS1() + ', ' + s.r.partial.togo + ' nm short of the finish' + (fins.length ? '; the other models carry on from there.' : '.') : ' finishes ' + clockH(s.r.finish).slice(4) + ' ' + tzS1() + ', ' + fmtH(s.r.finish - S.start.t) + ' after the start') + ', sailing ' + Math.round(st.nm) + ' nm.' +
       ' About ' + pc(st.upP) + ' upwind, ' + pc(st.reachP) + ' reaching and ' + pc(st.downP) + ' downwind.' +
       (spread ? (spread < 2 ? ' The models agree well: their finish times sit within ' + fmtH(spread) + '.' : spread < 6 ? ' The models differ by ' + fmtH(spread) + ' on the finish, so keep an eye on which one is matching the sky.' : ' The models disagree by ' + fmtH(spread) + ' on the finish: treat the plan as a starting point and watch for the real wind.') : ''));
     var legs = [], cur = null; p.forEach(function (q, i) { if (!i) return; var L = q.leg || 0; if (!cur || cur.leg !== L) { cur = { leg: L, pts: [] }; legs.push(cur); } cur.pts.push(q); });
@@ -1093,7 +1135,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         var c = (x.cu || 0) * Math.sin((x.hdg || 0) * R) + (x.cv || 0) * Math.cos((x.hdg || 0) * R); if (c < -1) { against += dt; if (tideT == null) tideT = x.t; } });
       var kind = up / (tot || 1) > 0.6 ? 'a beat' : down / (tot || 1) > 0.6 ? 'a run' : 'mostly a reach';
       var shift = ((z.twd - a.twd + 540) % 360) - 180;
-      var t = 'To ' + nmL + ': ' + kind + ', ' + fmtH(z.t - (q[0].t)) + ', arriving ' + clockH(z.t).slice(4) + ' UTC. Wind ' + Math.round(wmin) + ' to ' + Math.round(wmax) + ' knots from the ' + comp(a.twd) + (Math.abs(shift) >= 20 ? ', ' + (shift > 0 ? 'veering' : 'backing') + ' ' + Math.abs(Math.round(shift)) + ' degrees by the mark' : '') + '.';
+      var t = 'To ' + nmL + ': ' + kind + ', ' + fmtH(z.t - (q[0].t)) + ', arriving ' + clockH(z.t).slice(4) + ' ' + tzS1() + '. Wind ' + Math.round(wmin) + ' to ' + Math.round(wmax) + ' knots from the ' + comp(a.twd) + (Math.abs(shift) >= 20 ? ', ' + (shift > 0 ? 'veering' : 'backing') + ' ' + Math.abs(Math.round(shift)) + ' degrees by the mark' : '') + '.';
       if (man) t += ' ' + man + ' ' + (up > down ? 'tack' : 'gybe') + (man > 1 ? 's' : '') + '.';
       if (sails.length) t += ' Sails: ' + sails.slice(0, 4).join(', then ') + (sails.length > 4 ? ' and more' : '') + '.';
       if (against >= 1) t += ' Foul tide for about ' + fmtH(against) + ' from ' + clockH(tideT).slice(4) + ': that is where the inshore or offshore choice matters.';
@@ -1101,8 +1143,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     });
     var risks = [];
     if (metField()) { var gMax = 0, gT = 0, sq = null; p.forEach(function (q) { var g = metAt('gust', q.la, q.lo, q.t) / KN, c = metAt('cape', q.la, q.lo, q.t), rn = metAt('rain', q.la, q.lo, q.t); if (g > gMax) { gMax = g; gT = q.t; } if (!sq && c >= 500 && rn >= 0.5) sq = q; });
-      if (gMax >= 25) risks.push('gusts to ' + Math.round(gMax) + ' knots around ' + clockH(gT).slice(4) + ' UTC'); if (sq) risks.push('squalls possible from ' + clockH(sq.t).slice(4) + ' UTC, with rain and thunderstorm energy on the route'); }
-    if (st.maxW >= 25) risks.push('wind up to ' + Math.round(st.maxW) + ' knots around ' + clockH(st.maxWt).slice(4) + ' UTC'); if (st.maxS >= 2.5) risks.push('sea up to ' + st.maxS.toFixed(1) + ' m');
+      if (gMax >= 25) risks.push('gusts to ' + Math.round(gMax) + ' knots around ' + clockH(gT).slice(4) + ' ' + tzS1()); if (sq) risks.push('squalls possible from ' + clockH(sq.t).slice(4) + ' ' + tzS1() + ', with rain and thunderstorm energy on the route'); }
+    if (st.maxW >= 25) risks.push('wind up to ' + Math.round(st.maxW) + ' knots around ' + clockH(st.maxWt).slice(4) + ' ' + tzS1()); if (st.maxS >= 2.5) risks.push('sea up to ' + st.maxS.toFixed(1) + ' m');
     out.push((risks.length ? 'Watch for ' + risks.join(' and ') + '. ' : '') + (st.sails ? st.sails + ' sail changes' : 'No sail changes') + (st.reefs ? ' and ' + st.reefs + ' reef changes' : '') + ' in all. Planning aid, not for navigation.');
     return out.join('\n\n');
   }
@@ -1122,7 +1164,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var fin = S.ens.filter(function (x) { return !x.r.partial; }).map(function (x) { return x.r.finish; }).sort(function (a, b) { return a - b; }), part = S.ens.length - fin.length;
       if (!fin.length) { $('ensOut').innerHTML = '<p class="note">The ensemble forecasts end before any member finishes' + (part ? ' (' + part + ' routes shown as far as they reach)' : '') + '.</p>'; draw(); return; }
       var med = fin[Math.floor(fin.length / 2)], spread = fin[fin.length - 1] - fin[0];
-      $('ensOut').innerHTML = '<div class="fit ' + (spread < 3 ? 'ok' : spread < 8 ? 'tight' : 'no') + '"><b>' + (spread < 3 ? 'The members agree.' : spread < 8 ? 'Some spread between the members.' : 'The members disagree.') + '</b> Fastest finish ' + clockH(fin[0]).slice(4) + ', middle ' + clockH(med).slice(4) + ', slowest ' + clockH(fin[fin.length - 1]).slice(4) + ' UTC: a spread of ' + fmtH(spread) + '.' + (part ? ' ' + part + ' of the members run out of forecast before the finish.' : '') + ' The thin grey lines on the chart are the ' + S.ens.length + ' ensemble routes.</div>';
+      $('ensOut').innerHTML = '<div class="fit ' + (spread < 3 ? 'ok' : spread < 8 ? 'tight' : 'no') + '"><b>' + (spread < 3 ? 'The members agree.' : spread < 8 ? 'Some spread between the members.' : 'The members disagree.') + '</b> Fastest finish ' + clockH(fin[0]).slice(4) + ', middle ' + clockH(med).slice(4) + ', slowest ' + clockH(fin[fin.length - 1]).slice(4) + ' ' + tzS1() + ': a spread of ' + fmtH(spread) + '.' + (part ? ' ' + part + ' of the members run out of forecast before the finish.' : '') + ' The thin grey lines on the chart are the ' + S.ens.length + ' ensemble routes.</div>';
       draw();
     }).catch(function (e) { S.ensBusy = false; $('ensRun').textContent = 'Route the ensemble'; $('ensOut').innerHTML = '<p class="note">' + e.message + '</p>'; });
   }
@@ -1164,7 +1206,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function bcPush() {
     if (!BC.code || !navigator.onLine) return Promise.resolve();
     return fetch('/api/boat/' + BC.code, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: bcData() }) }).then(function (r) { return r.json(); }).then(function (j) {
-      if (j.error) { BC.msg = j.error; return; } BC.at = j.at; store('fs-boatcode-at', String(j.at)); BC.msg = 'Shared ' + new Date(j.at).toUTCString().slice(17, 22) + ' UTC';
+      if (j.error) { BC.msg = j.error; return; } BC.at = j.at; store('fs-boatcode-at', String(j.at)); BC.msg = 'Shared ' + new Date(tzMs(j.at)).toUTCString().slice(17, 22) + ' ' + tzS1();
     }).catch(function () { BC.msg = 'Not shared: no connection. It will share next time.'; });
   }
   function bcPull(force) {
@@ -1177,7 +1219,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var mine = myRaces(), byId = {}; mine.concat(j.data.myraces || []).forEach(function (r) { if (!byId[r.id] || byId[r.id].savedAt < r.savedAt) byId[r.id] = r; });
       setMyRaces(Object.keys(byId).map(function (k) { return byId[k]; }).sort(function (a, b) { return b.savedAt - a.savedAt; }));
       if (j.data.settings) putSettings(j.data.settings);
-      BC.at = j.at; store('fs-boatcode-at', String(j.at)); BC.msg = 'Updated from the boat ' + new Date(j.at).toUTCString().slice(17, 22) + ' UTC'; return true;
+      BC.at = j.at; store('fs-boatcode-at', String(j.at)); BC.msg = 'Updated from the boat ' + new Date(tzMs(j.at)).toUTCString().slice(17, 22) + ' ' + tzS1(); return true;
     }).catch(function () { BC.msg = 'Could not reach the boat code server.'; return false; });
   }
   function bcBox() {
@@ -1205,7 +1247,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var dev = store('fs-dev'); if (!dev) { dev = bcNew() + bcNew(); store('fs-dev', dev); } BC.dev = dev;
     var seen = +(store('fs-moment-seen') || 0);
     function showMoment(m) {
-      $('momentTxt').textContent = 'From the boat, ' + new Date(m.at).toUTCString().slice(17, 22) + ' UTC:\n' + m.text.split('\n').slice(0, 4).join('\n'); $('momentBox').hidden = false;
+      $('momentTxt').textContent = 'From the boat, ' + new Date(tzMs(m.at)).toUTCString().slice(17, 22) + ' ' + tzS1() + ':\n' + m.text.split('\n').slice(0, 4).join('\n'); $('momentBox').hidden = false;
       $('momentOpen').onclick = function () { $('momentBox').hidden = true; seen = m.at; store('fs-moment-seen', String(m.at)); if (m.link) location.href = m.link; };
       $('momentX').onclick = function () { $('momentBox').hidden = true; seen = m.at; store('fs-moment-seen', String(m.at)); };
     }
@@ -1294,7 +1336,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var all = mine.map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || (r.course ? courseNm(r.course) + ' nm' : ''), on: r.id === S.myId }; })
         .concat(oldRoutes().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary }; }))
         .sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
-      h = all.length ? all.map(function (x) { return '<div class="ritem' + (x.on ? ' on' : '') + '"><div><b>' + wizEsc(x.name) + '</b><span class="note">' + (x.at ? new Date(x.at).toUTCString().slice(5, 22) : '') + (x.sum ? ' · ' + wizEsc(x.sum) : '') + (x.kind === 'old' ? ' · routes kept' : ' · your course') + '</span></div><div class="xrow"><button class="btn" data-sv="' + x.kind + ':' + x.id + '">Open</button><button class="btn" data-svdel="' + x.kind + ':' + x.id + '">Delete</button></div></div>'; }).join('')
+      h = all.length ? all.map(function (x) { return '<div class="ritem' + (x.on ? ' on' : '') + '"><div><b>' + wizEsc(x.name) + '</b><span class="note">' + (x.at ? new Date(tzMs(x.at)).toUTCString().slice(5, 22) : '') + (x.sum ? ' · ' + wizEsc(x.sum) : '') + (x.kind === 'old' ? ' · routes kept' : ' · your course') + '</span></div><div class="xrow"><button class="btn" data-sv="' + x.kind + ':' + x.id + '">Open</button><button class="btn" data-svdel="' + x.kind + ':' + x.id + '">Delete</button></div></div>'; }).join('')
         : '<p class="note">Nothing saved yet. Routes are kept here when you start a new course, and courses you draw are saved here too.</p>';
       $('raceList').innerHTML = h;
       [].forEach.call($('raceList').querySelectorAll('[data-sv]'), function (b) { b.onclick = function () { var k = b.dataset.sv.split(':'); if (k[0] === 'old') openOld(k[1]); else { archiveRoutes(); openMy(k[1]); } }; });
@@ -1308,8 +1350,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : orgOf(c.race) + ' course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
-    h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(r.savedAt).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
-    var olds = oldRoutes(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(o.savedAt).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
+    h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(tzMs(r.savedAt)).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
+    var olds = oldRoutes(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(tzMs(o.savedAt)).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
     var orgs = mode === 'rorc' ? ['RORC'] : mode === 'jog' ? ['JOG'] : ['RORC', 'JOG'];
     orgs.forEach(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); if (!rs.length) return;
     h += '<h3>' + o + ' races</h3>' + (o === 'JOG' ? '<p class="note">2027 dates from the JOG programme. JOG has not published its 2027 courses: coastal races are set on the day, and most passage races show the start and finish only.</p>' : '') + rs.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (r.series ? r.series + ' · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join(''); });
@@ -1334,36 +1376,36 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 
   /* exact class start: a day from the forecast window and a time to the minute (UTC); routes from that minute */
   function startRange() { var o = [].map.call($('startSel').options, function (x) { return +x.value; }).filter(function (x) { return x > 0; }); return o.length ? [Math.min.apply(null, o), Math.max.apply(null, o)] : null; }
-  function startDayList() { var r = startRange(), out = []; if (!r) return out; for (var t = Math.floor(r[0] / 86400) * 86400; t <= r[1]; t += 86400) out.push({ v: t, k: new Date(t * 1000).toUTCString().slice(0, 11) }); return out; }
-  function hhmm(ep) { return new Date(ep * 1000).toUTCString().slice(17, 22); }
-  function exactEpoch(dayV, tm) { var m = /^(\d{1,2}):(\d{2})/.exec(tm || ''); if (!m) return NaN; return +dayV + (+m[1]) * 3600 + (+m[2]) * 60; }
+  function startDayList() { var r = startRange(), out = [], sh = tzSh(); if (!r) return out; for (var t = Math.floor((r[0] + sh) / 86400) * 86400; t <= r[1] + sh; t += 86400) out.push({ v: t, k: new Date(t * 1000).toUTCString().slice(0, 11) }); return out; }
+  function hhmm(ep) { return new Date((ep + tzSh()) * 1000).toUTCString().slice(17, 22); }
+  function exactEpoch(dayV, tm) { var m = /^(\d{1,2}):(\d{2})/.exec(tm || ''); if (!m) return NaN; return +dayV + (+m[1]) * 3600 + (+m[2]) * 60 - tzSh(); }   /* the day and time are in the chosen zone */
   function futureKey() { return 'fs-future-' + HERE; }
   function futureGet() { try { var o = JSON.parse(store(futureKey()) || 'null'); return o && o.rk === raceKey() ? o : null; } catch (e) { return null; } }
   function futureSet(ep) { store(futureKey(), JSON.stringify({ rk: raceKey(), ep: ep })); }
   function futureDrop() { try { localStorage.removeItem(futureKey()); } catch (e) {} }
   function beyond(ep) { var r = startRange(); return !!(r && ep > r[1]); }
-  function startCheck(ep) { var r = startRange(); if (!r || !(ep === ep)) return 'Enter a time, for example 10:20.'; if (ep > r[1]) return ''; if (ep < r[0] - 3600) return 'Starts can be from ' + clockAbs(r[0]) + ' to ' + clockAbs(r[1]) + ' UTC with these forecasts.'; return ''; }
+  function startCheck(ep) { var r = startRange(); if (!r || !(ep === ep)) return 'Enter a time, for example 10:20.'; if (ep > r[1]) return ''; if (ep < r[0] - 3600) return 'Starts can be from ' + clockAbs(r[0]) + ' to ' + clockAbs(r[1]) + ' ' + tzS1() + ' with these forecasts.'; return ''; }
   function setStart(ep, quiet) {
     var v = String(Math.round(ep)), sel = $('startSel');
     if (![].some.call(sel.options, function (o) { return o.value === v; })) { var o = document.createElement('option'); o.value = v; o.textContent = clockAbs(+v) + ' (exact)'; var after = [].filter.call(sel.options, function (x) { return +x.value < +v; }).pop(); if (after) after.after(o); else sel.prepend(o); }
     sel.value = v; if (!quiet) sel.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  function laterDays(r) { var out = [], t0 = Math.floor(r[1] / 86400) * 86400 + 86400; for (var t = t0; t < t0 + 90 * 86400; t += 86400) { var dd = new Date(t * 1000); out.push({ v: t, k: dd.toUTCString().slice(0, 11) + (dd.getUTCFullYear() !== new Date().getUTCFullYear() ? ' ' + dd.getUTCFullYear() : '') }); } return out; }
-  function startPickerHtml(id, cur) { var days = startDayList(), r = startRange(), fu = futureGet(); if (fu) cur = fu.ep; var cd = Math.floor(cur / 86400) * 86400, opt = function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; };
-    return '<div class="row"><label for="' + id + 'Day">Day</label><select id="' + id + 'Day"><optgroup label="Forecasts ready">' + days.map(opt).join('') + '</optgroup>' + (r ? '<optgroup label="Later: no forecast yet">' + laterDays(r).map(opt).join('') + '</optgroup>' : '') + '</select></div><div class="row"><label for="' + id + 'Time">Time (UTC)</label><input type="time" id="' + id + 'Time" step="60" value="' + hhmm(cur) + '" required></div><p class="note" id="' + id + 'Err" style="color:var(--warn)"></p>'; }
+  function laterDays(r) { var out = [], t0 = Math.floor((r[1] + tzSh()) / 86400) * 86400 + 86400; for (var t = t0; t < t0 + 90 * 86400; t += 86400) { var dd = new Date(t * 1000); out.push({ v: t, k: dd.toUTCString().slice(0, 11) + (dd.getUTCFullYear() !== new Date().getUTCFullYear() ? ' ' + dd.getUTCFullYear() : '') }); } return out; }
+  function startPickerHtml(id, cur) { var days = startDayList(), r = startRange(), fu = futureGet(); if (fu) cur = fu.ep; var cd = Math.floor((cur + tzSh()) / 86400) * 86400, opt = function (d) { return '<option value="' + d.v + '"' + (d.v === cd ? ' selected' : '') + '>' + d.k + '</option>'; };
+    return '<div class="row"><label for="' + id + 'Day">Day</label><select id="' + id + 'Day"><optgroup label="Forecasts ready">' + days.map(opt).join('') + '</optgroup>' + (r ? '<optgroup label="Later: no forecast yet">' + laterDays(r).map(opt).join('') + '</optgroup>' : '') + '</select></div><div class="row"><label for="' + id + 'Time">Time (' + (tzLocal() ? 'local, ' + tzS1() : 'UTC') + ')</label><input type="time" id="' + id + 'Time" step="60" value="' + hhmm(cur) + '" required></div><p class="note" id="' + id + 'Err" style="color:var(--warn)"></p>'; }
   function startPickerRead(id) { var ep = exactEpoch($(id + 'Day').value, $(id + 'Time').value), e = startCheck(ep); $(id + 'Err').textContent = e; return e ? NaN : ep; }
   /* Will the forecasts last the race? Each wind model's last hour against a rough finish time (course length at about
      5.5 knots times the TCC). A model that ends early hands over to the longer ones; only when every model has ended
      can Route not finish the race. */
-  function beyondHtml(ep) { var r = startRange(); return '<div class="fitbox later"><b>Beyond the forecasts.</b> The forecasts reach ' + clockAbs(r[1]) + ' UTC; this start is ' + clockAbs(ep) + ' UTC. Route keeps the start and works out the routes once the forecasts reach it, about ten days before. Until then there is nothing to route.</div>'; }
+  function beyondHtml(ep) { var r = startRange(); return '<div class="fitbox later"><b>Beyond the forecasts.</b> The forecasts reach ' + clockAbs(r[1]) + ' ' + tzS1() + '; this start is ' + clockAbs(ep) + ' ' + tzS1() + '. Route keeps the start and works out the routes once the forecasts reach it, about ten days before. Until then there is nothing to route.</div>'; }
   function fitHtml(startEp, c) { if (beyond(+startEp)) return beyondHtml(+startEp);
     c = c || meta.course; var st = (+startEp - T0) / 3600, nm = courseNm(c), tcc = +$('tcc').value || 1, est = nm / (5.5 * tcc), fin = st + est;
     var ms = selectedModels(); if (!ms.length) ms = meta.layers.filter(function (L) { return L.kind === 'wind'; }).map(function (L) { return L.id; });
     var ends = ms.map(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return { id: id, end: h && h.length ? h[h.length - 1] : 0 }; }).sort(function (a, b) { return b.end - a.end; });
     if (!ends.length) return '';
     var last = ends[0].end, ok = last >= fin, tight = ok && last < fin + est * 0.25;
-    var rows = ends.map(function (e) { var cov = e.end - st, all = e.end >= fin; return '<li>' + short(e.id) + ': to ' + clockAbs(T0 + e.end * 3600) + ' UTC' + (all ? ', covers the race' : cov > 0 ? ', about the first ' + Math.round(cov) + ' h, then the longer forecasts take over' : ', ends before this start') + '</li>'; }).join('');
-    return '<div class="fit ' + (ok ? (tight ? 'tight' : 'ok') : 'no') + '"><b>' + (ok ? (tight ? 'Close: the race should just fit the forecasts.' : 'The forecasts cover the race.') : 'The race may not finish before the forecasts end.') + '</b> ' + nm + ' nm, roughly ' + Math.round(est) + ' h at your rating (a rough guide: upwind in a blow takes much longer), so a finish around ' + clockAbs(T0 + fin * 3600) + ' UTC. The longest forecast runs to ' + clockAbs(T0 + last * 3600) + ' UTC.' + (ok ? ' Route confirms it when it routes.' : ' Choose an earlier start, or wait for a later forecast run: Route will say if it cannot finish.') + '<details><summary>Each forecast</summary><ul>' + rows + '</ul><p class="note">Forecasts are published for 2 to 5 days ahead here; the global models go further and longer runs are coming.</p></details></div>';
+    var rows = ends.map(function (e) { var cov = e.end - st, all = e.end >= fin; return '<li>' + short(e.id) + ': to ' + clockAbs(T0 + e.end * 3600) + ' ' + tzS1() + (all ? ', covers the race' : cov > 0 ? ', about the first ' + Math.round(cov) + ' h, then the longer forecasts take over' : ', ends before this start') + '</li>'; }).join('');
+    return '<div class="fit ' + (ok ? (tight ? 'tight' : 'ok') : 'no') + '"><b>' + (ok ? (tight ? 'Close: the race should just fit the forecasts.' : 'The forecasts cover the race.') : 'The race may not finish before the forecasts end.') + '</b> ' + nm + ' nm, roughly ' + Math.round(est) + ' h at your rating (a rough guide: upwind in a blow takes much longer), so a finish around ' + clockAbs(T0 + fin * 3600) + ' ' + tzS1() + '. The longest forecast runs to ' + clockAbs(T0 + last * 3600) + ' ' + tzS1() + '.' + (ok ? ' Route confirms it when it routes.' : ' Choose an earlier start, or wait for a later forecast run: Route will say if it cannot finish.') + '<details><summary>Each forecast</summary><ul>' + rows + '</ul><p class="note">Forecasts are published for 2 to 5 days ahead here; the global models go further and longer runs are coming.</p></details></div>';
   }
   /* ---------- guided set-up: boat, race, start, fleet, check, route; in the order a navigator prepares a race ---------- */
   var WIZ = { on: false, step: 0 }, WIZN = ['Race and boat', 'Choose the race', 'The start', 'Boats you are racing', 'Check and route'], WIZD = [0, 1, 1, 2, 3, 4];   /* five screens, four steps: the race list is part of step 1 (Stuart 12 Nov: race and boat first, then the start) */
@@ -1452,7 +1494,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (o.matrix) { o.matrix.start = sh(o.matrix.start); o.matrix.cols = o.matrix.cols.map(function (c) { return c.map(sh); }); }
     S.matrix = o.matrix; S.sel = S.routes[o.sel] || S.routes.filter(function (s) { return s.best; })[0] || S.routes[0];
     S.base = o.base; S.legs = o.legs; S.start = Object.assign({}, o.start, { t: sh(o.start.t) }); S.from = o.from ? Object.assign({}, o.from, { t: sh(o.from.t) }) : null; S.to = o.to; S.ghosts = []; S.key = null;
-    $('runNote').textContent = 'Routes kept from ' + dayhm(o.at) + ' UTC, as you left them.' + ((o.built !== (meta.built || meta.t0)) ? ' A newer forecast has arrived since: tap Route again to use it.' : ' Change any setting, or tap Route again, to work them out afresh.');
+    $('runNote').textContent = 'Routes kept from ' + dayhm(o.at) + ' ' + tzS1() + ', as you left them.' + ((o.built !== (meta.built || meta.t0)) ? ' A newer forecast has arrived since: tap Route again to use it.' : ' Change any setting, or tap Route again, to work them out afresh.');
     if (o.built !== (meta.built || meta.t0)) { $('newData').hidden = false; $('newDataTxt').textContent = 'Newer forecast since these routes'; $('newDataBtn').textContent = 'Route again'; S.sessStale = true; }
     return ghosts().then(function () { show(); if (o.t != null) try { setTime(Math.max(S.tmin, Math.min(S.tmax, sh(o.t)))); } catch (e) {} });
   }
@@ -1462,9 +1504,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('sessYes').onclick = function () { b.hidden = true; S.resume = null; sessDrop(); startChosen(false); S.routes = []; S.sel = null; run(); };
   }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
-  function chipStart() { setTimeout(function () { try { setupRender(); } catch (e) {} }, 0); var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date(v * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
-    c.innerHTML = '<span class="stl">Start' + (ok ? '<i class="utc"> UTC</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
-    c.title = ok ? 'Class start ' + clockAbs(v) + ' UTC: tap to change' : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
+  function chipStart() { setTimeout(function () { try { setupRender(); } catch (e) {} }, 0); var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date((v + tzSh()) * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+    c.innerHTML = '<span class="stl">Start' + (ok ? '<i class="utc"> ' + (tzLocal() ? 'LOCAL' : 'UTC') + '</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
+    c.title = ok ? 'Class start ' + clockAbs(v) + ' ' + tzS1() + ': tap to change' : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
   function wizCourseChosen(fromEditor) { S.drawnNew = false; showCard(); afterCard(); return true; }   /* a chosen race or drawn course comes back to the set-up card */   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
@@ -1502,12 +1544,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
          1 the line (optional), 2 the class start time, 3 the countdown, with when it appears and a button to open it now */
       var ln0 = lineGet(), lnSet = !!(ln0 && ln0.boat && ln0.pin), barTxt = window.FS_MARK ? '15 minutes' : '1 hour';
       h += '<h3>' + wizEsc(meta.course.name) + '</h3><ol class="wzsteps">' +
-        (window.__fsLineSet ? '<li><b>Start line</b> <span class="wzst ' + (lnSet ? 'ok' : '') + '">' + (lnSet ? '✓ set' : 'optional') + '</span><p class="note" id="wzLnNote">' + (lnSet ? 'Both ends are set. Change it here.' : 'The RYS or JOG line, or your own. Without it, Route starts from the course start and the start screen has no time to burn.') + '</p><button class="btn" id="wzLine">' + (lnSet ? 'Change start line' : 'Set start line') + '</button></li>' : '') +
-        '<li><b>Your class start</b><p class="note">The exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) + '<div id="wzFit"></div></li>' +
+        (window.__fsLineSet || window.__fsMarkLine ? '<li><b>Start line</b> <span class="wzst ' + (lnSet ? 'ok' : '') + '">' + (lnSet ? '✓ set' : 'optional') + '</span><p class="note" id="wzLnNote">' + (lnSet ? 'Both ends are set. Change it here.' : 'The RYS or JOG line, or your own. Without it, Route starts from the course start and the start screen has no time to burn.') + '</p><button class="btn" id="wzLine">' + (lnSet ? 'Change start line' : 'Set start line') + '</button></li>' : '') +
+        '<li><b>Your class start</b> <span class="wztz"><button class="btn' + (tzLocal() ? '' : ' on') + '" data-tz="utc">UTC</button><button class="btn' + (tzLocal() ? ' on' : '') + '" data-tz="local">Local</button></span><p class="note">The exact time from the sailing instructions, in the time they use: UTC, or local time (' + tzS1() + ' on this device).</p>' + startPickerHtml('wz', cur) + '<div id="wzFit"></div></li>' +
         (window.__fsStartScreen ? '<li><b>Countdown</b><p class="note">With your start time set, the countdown bar appears by itself ' + barTxt + ' before the gun and the start screen 10 minutes before (change both on the start screen). Or open it now.</p><button class="btn primary" id="wzSS">Done, open the start screen</button></li>' : '') +
         '</ol><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
       B.innerHTML = h + '</div>';
-      if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); };
+      [].forEach.call(B.querySelectorAll('[data-tz]'), function (b) { b.onclick = function () { var keep = startPickerRead('wz'); tzSet(b.dataset.tz); if (keep === keep) { /* keep the same moment, shown in the other zone */ var d = Math.floor((keep + tzSh()) / 86400) * 86400, dd = $('wzDay'), tt = $('wzTime'); if (dd) dd.value = String(d); if (tt) tt.value = hhmm(keep); } }; });   /* Local / UTC in the Start window: the same setting as Settings, Display (Stuart 20 Nov 16:03) */
+      if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); else if (window.__fsMarkLine) { wizClose(false); window.__fsMarkLine(); } };
       if ($('wzSS')) $('wzSS').onclick = function () { if ($('wizNext').disabled) return; $('wizNext').click(); setTimeout(function () { if (window.__fsStartScreen) window.__fsStartScreen(); }, 700); };   /* sets the start as Done does, then opens the start screen */   /* A (Stuart 20 Nov 13:58): tapping START offers the start screen once a start is set */   /* Stuart 20 Nov 11:58: the start step offers the line first */
       var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
       $('wzDay').onchange = fit; $('wzTime').oninput = fit; fit();
@@ -1532,7 +1575,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         row('Boat', (function () { var d = boatDesc(); return wizEsc(d.name || (bs ? 'Your boat' : 'Boat not named')) + ', TCC ' + d.tcc + ', polar: ' + wizEsc(d.polar) + ', ' + pct + '% of the polar' + (bs ? '' : '. Set up your boat for a true answer.'); })(), 1, !bs) +
         row('Sails', sl.sails + ' sails' + (sl.reef ? ', reef points on' : ''), 1) +
         row('Race', wizEsc(c.name) + ', ' + courseNm(c) + ' nm' + (issue ? '. ' + wizEsc(issue) : ''), 2, !!issue) +
-        row('Start', clockAbs(+$('startSel').value) + ' UTC' + (/class="fit no/.test(fitHtml($('startSel').value)) ? '. The race may outlast the forecasts.' : ''), 3, /class="fit no/.test(fitHtml($('startSel').value))) +
+        row('Start', clockAbs(+$('startSel').value) + ' ' + tzS1() + (/class="fit no/.test(fitHtml($('startSel').value)) ? '. The race may outlast the forecasts.' : ''), 3, /class="fit no/.test(fitHtml($('startSel').value))) +
         row('Fleet', fl ? fl + ' boats' : 'None: optional', 4) +
         '<div><b>Forecasts</b><span>' + (ms.length ? ms.length + ' wind models (' + ms.join(', ') + '), tide: ' + (tide ? tide.textContent : 'none') : 'No wind model ticked') + '</span><button class="btn" id="wzFc">Change</button></div></div>';
       B.innerHTML = h + '</div>';
@@ -1596,7 +1639,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     document.addEventListener('click', function (e) { var m = $('raceMenu'); if (!m.hidden && !m.contains(e.target) && !$('raceBtn').contains(e.target)) m.hidden = true; });
     $('rmNew').onclick = function () { $('raceMenu').hidden = true; racesSheet('new'); $('races').hidden = false; };
     $('rmSaved').onclick = function () { $('raceMenu').hidden = true; racesSheet('saved'); $('races').hidden = false; };
-    if ($('rmLine')) $('rmLine').onclick = function () { $('raceMenu').hidden = true; if (window.__fsLineSet) window.__fsLineSet(); };   /* Stuart 20 Nov 11:58: Set start line first in the race menu */
+    if ($('rmLine')) $('rmLine').onclick = function () { $('raceMenu').hidden = true; if (window.__fsLineSet) window.__fsLineSet(); else if (window.__fsMarkLine) window.__fsMarkLine(); };   /* Stuart 20 Nov 11:58: Set start line first in the race menu */
     $('rmRorc').onclick = function () { $('raceMenu').hidden = true; racesSheet('rorc'); $('races').hidden = false; };
     if ($('rmJog')) $('rmJog').onclick = function () { $('raceMenu').hidden = true; racesSheet('jog'); $('races').hidden = false; };
     if ($('rmSolent')) $('rmSolent').onclick = function () { $('raceMenu').hidden = true; window.__fsInshore(true); if (window.FSSolent) { FSSolent.on(true); FSSolent.start(); } };
@@ -1921,7 +1964,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var when = '<div class="edwhen"><b>When is the start?</b>' + startPickerHtml('ed', +cur) + '<p class="note" style="margin:6px 0 0">The exact class start, in UTC: UK time in winter, one hour behind UK summer time. Then Save and route.</p><div id="edFit"></div><input type="hidden" id="edStart" value="' + cur + '"></div>';
     h = when + h;
     var opts = '';
-    h += '<p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' UTC' : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
+    h += '<p class="note">Starts run to ' + ($('startSel').options.length ? clockAbs(+$('startSel').options[$('startSel').options.length - 1].value) + ' ' + tzS1() : 'the end of the forecast') + ', as far as the forecasts allow the whole race to be routed. For a later race, save the course now and choose the start nearer the day.</p>';
     var mk = myMarks(); if (mk.length) h += '<details class="edmy"><summary>My marks (' + mk.length + ')</summary>' + mk.map(function (m, k) { return '<div class="edmyr"><span><b>' + m.name.replace(/</g, '&lt;') + '</b> ' + fmtPos(m.lat, 'NS') + ' ' + fmtPos(m.lon, 'EW') + '</span><button class="btn" data-mdel="' + k + '" aria-label="Delete ' + m.name.replace(/"/g, '') + ' from My marks">Delete</button></div>'; }).join('') + '<p class="note">Kept on this device. Tap ☆ by any point to add it here.</p></details>';
     h += '<p class="note" id="edNm">' + courseNm({ start: p[0], marks: p.slice(1, -1), finish: p[p.length - 1] }) + ' nm along the course. Saved on this device under My races.</p><div class="xrow"><button class="btn primary" id="edSave">Save and route</button><button class="btn" id="edMap">Edit on the chart</button><button class="btn" id="edCancel2">Cancel</button></div>';
     $('raceList').innerHTML = '<h3>Course</h3>' + h; $('races').hidden = false; $('editBar').hidden = true;
@@ -1977,7 +2020,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     rows.push({ k: 'course', t: 'Course', ok: !iss, s: iss ? iss : c.name + ' · ' + courseNm(c) + ' nm · ' + realMarks(c).length + ' mark' + (realMarks(c).length === 1 ? '' : 's') });
     var bs = boatIsSet(); rows.push({ k: 'boat', t: 'Boat', ok: bs, s: bs ? ($('boatName').value || 'My boat') + ' · TCC ' + (+$('tcc').value || 1).toFixed(3) + ' · ' + ($('boatType').selectedOptions[0] ? $('boatType').selectedOptions[0].textContent.split(',')[0] : '') + (function () { var n = ($('sails').value || '').split('\n').filter(function (l) { return l.trim() && !/^\s*#/.test(l); }).length; return n ? ' · ' + n + ' sail' + (n === 1 ? '' : 's') + ($('mains') && !/no reefs/.test($('mains').value) ? ', reefs set' : '') : ''; })() : 'Set up your boat: name, type and TCC' });
     var fu = futureGet(), st = +$('startSel').value, chosen = S.startChosen || store('fs-autostart') === '1';
-    rows.push({ k: 'start', t: 'Start', ok: chosen && !fu, s: fu ? clockAbs(fu.ep) + ' UTC: beyond the forecasts' : chosen && st ? clockAbs(st) + ' UTC' : 'Choose your class start (UTC)' });
+    rows.push({ k: 'start', t: 'Start', ok: chosen && !fu, s: fu ? clockAbs(fu.ep) + ' ' + tzS1() + ': beyond the forecasts' : chosen && st ? clockAbs(st) + ' ' + tzS1() : 'Choose your class start (UTC)' });
     var ms = cardModels(), est = (st ? (st - T0) / 3600 : 0) + courseNm(c) / (5.5 * (+$('tcc').value || 1)), cover = ms.filter(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return h && h.length && h[h.length - 1] >= est; }).length;
     rows.push({ k: 'fc', t: 'Forecasts', ok: ms.length > 0 && cover > 0, s: !ms.length ? 'Tick at least one forecast model' : ms.length + ' model' + (ms.length === 1 ? '' : 's') + ' · ' + (cover === ms.length ? 'all reach the finish' : cover ? cover + ' reach the finish, the rest hand over' : 'none reaches the finish') + (olderModels().length ? ' · ' + olderModels().length + ' on an older run' : '') });
     return rows;
@@ -2028,7 +2071,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       return '<div class="cvr' + (on ? '' : ' off') + '"><span class="cvn">' + wizEsc(short(x.l.id)) + (x.l.latest === false ? ' <b class="cvold" title="Older run: the newest was not ready">!</b>' : x.l.latest === true ? ' <span class="cvnew" title="Newest run">' + THUMB + '</span>' : '') + '</span>' +
         '<span class="cvb"><span class="cvf ' + (all ? 'all' : have > 0 ? 'part' : 'none') + '" style="width:' + pc(have).toFixed(1) + '%"></span><span class="cvt" style="left:' + tick.toFixed(1) + '%"></span></span><span class="cvh">' + Math.round(have) + ' h</span></div>';
     }).join('');
-    el.innerHTML = '<h3>How far each forecast reaches</h3><p class="note">From your start, ' + clockAbs(st) + ' UTC. The white tick is the estimated finish, about ' + Math.round(est) + ' h at TCC ' + (+$('tcc').value || 1).toFixed(3) + '. Green covers the race; amber stops short, and the longer forecasts take over. Faint: not ticked below.</p>' + rows;
+    el.innerHTML = '<h3>How far each forecast reaches</h3><p class="note">From your start, ' + clockAbs(st) + ' ' + tzS1() + '. The white tick is the estimated finish, about ' + Math.round(est) + ' h at TCC ' + (+$('tcc').value || 1).toFixed(3) + '. Green covers the race; amber stops short, and the longer forecasts take over. Faint: not ticked below.</p>' + rows;
   }
   document.addEventListener('change', function (e) { if (e.target && (e.target.matches('[data-m]') || e.target.id === 'startSel' || e.target.id === 'tcc')) coverRender(); });
   /* after routing: can you trust it? (Stuart 12 Nov) */
@@ -2466,7 +2509,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       $('lnBoat').onclick = function () { linePing('boat'); }; if ($('lnSet')) $('lnSet').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); }; if ($('lnSS')) $('lnSS').onclick = function () { if (window.__fsStartScreen) window.__fsStartScreen(); }; $('lnPin').onclick = function () { linePing('pin'); }; if ($('lnClr')) $('lnClr').onclick = function () { store(lineKey(), ''); if (S.inshore) store('fs-line-solent', ''); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }; if ($('lnUse')) $('lnUse').onclick = function () { var l = lineGet(); if (!l.boat || !l.pin || !meta.course || !meta.course.start) return; meta.course.start = Object.assign({}, meta.course.start, { lat: +((l.boat[0] + l.pin[0]) / 2).toFixed(6), lon: +((l.boat[1] + l.pin[1]) / 2).toFixed(6), fromLine: true }); busy('Start moved to the middle of the pinged line: routing again…'); S.from = null; run(); };   /* J3: pinging each end updates the start position */
       $('liveBig').hidden = !LIVE.big; $('liveBig').classList.remove('alarm');
       if (LIVE.big) { var cl = function (k, v, sub) { return '<div><small>' + k + '</small><b>' + v + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>'; };
-        $('liveBig').innerHTML = '<div class="lbg">' + cl('SOG', sog) + cl('COG', cog) + (ln.d != null ? cl(ln.over ? 'Over: course side' : 'To the line', ln.d < 0.1 ? Math.round(ln.d * 1852) + ' m' : n1(ln.d) + ' nm', ln.fav ? (ln.fav === 'pin' ? 'Pin' : 'Boat') + ' end favoured by ' + Math.round(ln.favM) + ' m' : '') + cl('Time to burn', ln.burn != null ? mmss(ln.burn) : '--', ln.ttl != null ? mmss(ln.ttl) + ' to the line at this speed' : 'not closing the line') : cl('To the start', p3(pr.to.brg), n1(pr.to.nm) + ' nm to ' + wizEsc(pr.name))) + cl('Gun in', gun, 'class start ' + clockAbs(+$('startSel').value).slice(-5) + ' UTC') + '</div><div class="lvx"><button class="btn primary" id="lbChart">Chart</button><button class="btn" id="lbStop">Stop GPS</button></div>';
+        $('liveBig').innerHTML = '<div class="lbg">' + cl('SOG', sog) + cl('COG', cog) + (ln.d != null ? cl(ln.over ? 'Over: course side' : 'To the line', ln.d < 0.1 ? Math.round(ln.d * 1852) + ' m' : n1(ln.d) + ' nm', ln.fav ? (ln.fav === 'pin' ? 'Pin' : 'Boat') + ' end favoured by ' + Math.round(ln.favM) + ' m' : '') + cl('Time to burn', ln.burn != null ? mmss(ln.burn) : '--', ln.ttl != null ? mmss(ln.ttl) + ' to the line at this speed' : 'not closing the line') : cl('To the start', p3(pr.to.brg), n1(pr.to.nm) + ' nm to ' + wizEsc(pr.name))) + cl('Gun in', gun, 'class start ' + clockAbs(+$('startSel').value).slice(-5) + ' ' + tzS1()) + '</div><div class="lvx"><button class="btn primary" id="lbChart">Chart</button><button class="btn" id="lbStop">Stop GPS</button></div>';
         $('lbChart').onclick = function () { LIVE.big = false; liveShow(); }; $('lbStop').onclick = function () { liveStop(); }; }
       return;
     }
@@ -2474,7 +2517,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (alarm && !LIVE.alarm) liveBeep(); LIVE.alarm = alarm;
     var xt = xte ? n1(xte.d) + ' nm ' + (xte.d < 0.02 ? '' : xte.side === 'L' ? 'left' : 'right') : '--', ab = xte ? (Math.abs(c.ahead) < 1 ? 'On plan' : mm(c.ahead) + (c.ahead > 0 ? ' ahead' : ' behind')) : '--';
     var tp = c.toPlan ? p3(c.toPlan.brg) + ' ' + n1(c.toPlan.nm) + ' nm' : (S.sel && c.nowH < tsOf(S.sel.r.path)[0] ? 'before the start' : '--');
-    var rj = c.rejoin, rjt = rj ? 'Steer ' + p3(rj.steer) + (rj.tack ? ' (best VMG, beat or run)' : '') + ' to make good ' + p3(rj.brg) + ' at ' + n1(rj.sog) + ' kn: ' + n1(rj.nm) + ' nm, ' + mm(rj.nm / rj.sog * 60) + (rj.kind === 'catch' ? ', level with the plan by ' + clockAbs(T0 + rj.ta * 3600).slice(-5) + ' UTC' : ', back on the planned track ' + clockAbs(T0 + rj.ta * 3600).slice(-5) + ' UTC, ' + mm(rj.lost * 60) + ' behind the plan') : (S.sel ? (c.xte && c.xte.d <= 0.1 && c.ahead >= -1 ? 'On plan.' : 'No straight way back found: re-route from here.') : '');
+    var rj = c.rejoin, rjt = rj ? 'Steer ' + p3(rj.steer) + (rj.tack ? ' (best VMG, beat or run)' : '') + ' to make good ' + p3(rj.brg) + ' at ' + n1(rj.sog) + ' kn: ' + n1(rj.nm) + ' nm, ' + mm(rj.nm / rj.sog * 60) + (rj.kind === 'catch' ? ', level with the plan by ' + clockAbs(T0 + rj.ta * 3600).slice(-5) + ' ' + tzS1() : ', back on the planned track ' + clockAbs(T0 + rj.ta * 3600).slice(-5) + ' ' + tzS1() + ', ' + mm(rj.lost * 60) + ' behind the plan') : (S.sel ? (c.xte && c.xte.d <= 0.1 && c.ahead >= -1 ? 'On plan.' : 'No straight way back found: re-route from here.') : '');
     var nor = !S.sel ? '<div class="lvl">No route chosen yet: route the race to compare the boat with the plan.</div>' : '';
     $('liveBox').classList.toggle('alarm', alarm);
     var xs0 = xte ? (xte.d < 0.05 ? '0.0' : n1(xte.d) + ' ' + xte.side) : '--', as0 = xte ? (Math.abs(c.ahead) < 1 ? '0 min' : (c.ahead > 0 ? '+' : '−') + mm(c.ahead)) : '--';
@@ -2506,7 +2549,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function liveAfterRoute() {   /* a fresh route from the boat: its finish against the plan it replaces */
     if (LIVE.queue && !S.running) { LIVE.queue = false; setTimeout(liveReroute, 50); return; }
     if (!LIVE.on || LIVE.planFin == null || !S.sel || !S.sel.r) return; var d = (S.sel.r.finish - LIVE.planFin) * 60;
-    LIVE.cmp = 'Fresh route from the boat: finish ' + clockAbs(T0 + S.sel.r.finish * 3600) + ' UTC, ' + (Math.abs(d) < 1 ? 'the same as the plan' : Math.abs(Math.round(d)) + ' min ' + (d < 0 ? 'earlier' : 'later') + ' than the plan') + '. It is now the plan.';
+    LIVE.cmp = 'Fresh route from the boat: finish ' + clockAbs(T0 + S.sel.r.finish * 3600) + ' ' + tzS1() + ', ' + (Math.abs(d) < 1 ? 'the same as the plan' : Math.abs(Math.round(d)) + ' min ' + (d < 0 ? 'earlier' : 'later') + ' than the plan') + '. It is now the plan.';
     LIVE.planFin = null; if (LIVE.fix) { try { LIVE.calc = liveCalc(LIVE.fix); } catch (e) {} liveShow(); }
   }
   window.__fsTrail = function () { return LIVE.trail; };
@@ -2595,7 +2638,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
     if (startGate()) { busy(''); if (S.card || ($('sheet') && !$('sheet').hidden) || !$('wiz').hidden) return; showCard(); return; }   /* never jump to the card while the boat, forecasts or start are being edited */   /* start not chosen: the set-up card says so */
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
-    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' UTC is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' UTC. Route will work out the routes once the forecasts reach the start, about ten days before. Choose an earlier start to route now.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
+    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' ' + tzS1() + ' is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' ' + tzS1() + '. Route will work out the routes once the forecasts reach the start, about ten days before. Choose an earlier start to route now.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
     S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var sp = S.inshore && meta.course && meta.course.race && meta.course.race.solPlan;
@@ -3111,6 +3154,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var w = function (k) { var v = +(store(rdKey(k)) || 0); return v ? (v >= 90 ? 'about ' + Math.floor(v / 60) + ' min ' + ('0' + (v % 60)).slice(-2) + ' s' : 'about ' + v + ' s') : 'not timed yet'; };
     [].forEach.call(sel.options, function (o) { o.textContent = { auto: 'Auto: ' + (MOBILE ? '1000' : '2000') + ' sectors', quick: 'Quick: 360 sectors only', fine: 'Fine: 2000 sectors', finest: 'Finest: 4000 sectors' }[o.value] + ' (' + w(o.value) + ')'; });
     n.textContent = 'The wait is for this race on this ' + (MOBILE ? 'phone or tablet' : 'computer') + ', from its last run. First routes still come in seconds; the finer routes replace them when ready.'; }
+  (function () { var t = $('timeMode'); if (t) { t.value = tzLocal() ? 'local' : 'utc'; t.onchange = function () { tzSet(t.value); }; } })();
   (function () { var sel = $('rDetail'); if (!sel) return; sel.onchange = function () { store('fs-rdetail', sel.value); rdNote(); }; rdNote(); })();
   window.__fsProvN = function () { return S.prov ? S.prov.length : -1; };   /* first routes drawn so far (speed plan 2), for the automatic tests */
   window.__fsView = function () { return { s: view.s, lo: view.lo, la: view.la, fingers: ptrs.size }; };   /* for the automatic tests */
@@ -3595,7 +3639,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!meta) return;
     if (S.edit) { $('tip').hidden = true; return; }   /* editing a course: no info boxes over the marks */
     if (LIVE.trail.length) { var bt = null, bd = 12; LIVE.trail.forEach(function (q) { var d = Math.hypot(X(q[1]) - x, Y(q[0]) - y); if (d < bd) { bd = d; bt = q; } });   /* the boat's own track: time, SOG, COG at that point (Stuart 12 Nov) */
-      if (bt) { var tq = new Date(bt[2]); $('tipBody').innerHTML = '<b>Your boat, ' + ('0' + tq.getUTCHours()).slice(-2) + ':' + ('0' + tq.getUTCMinutes()).slice(-2) + ':' + ('0' + tq.getUTCSeconds()).slice(-2) + ' UTC</b>' + r2('Position', dm(bt[0], 'NS') + ' ' + dm(bt[1], 'EW')) + r2('SOG', bt[3] != null ? bt[3].toFixed(1) + ' kn' : '--') + r2('COG', bt[4] != null && bt[3] > 0.5 ? ('00' + bt[4]).slice(-3) + '°T' : '--') + r2('Heading', 'GPS gives course over the ground, not heading');
+      if (bt) { var tq = new Date(tzMs(bt[2])); $('tipBody').innerHTML = '<b>Your boat, ' + ('0' + tq.getUTCHours()).slice(-2) + ':' + ('0' + tq.getUTCMinutes()).slice(-2) + ':' + ('0' + tq.getUTCSeconds()).slice(-2) + ' ' + tzS1() + '</b>' + r2('Position', dm(bt[0], 'NS') + ' ' + dm(bt[1], 'EW')) + r2('SOG', bt[3] != null ? bt[3].toFixed(1) + ' kn' : '--') + r2('COG', bt[4] != null && bt[3] > 0.5 ? ('00' + bt[4]).slice(-3) + '°T' : '--') + r2('Heading', 'GPS gives course over the ground, not heading');
         $('tip').hidden = false; $('tip').classList.toggle('docked', !!docked); if (!docked) { $('tip').style.left = Math.min(W - 230, x + 14) + 'px'; $('tip').style.top = Math.max(64, y + 14) + 'px'; } return; } }
     if (S.big) { var O = meta.overview, gy = Math.round((LA(y) - O.lat0) / O.dlat), gx = Math.round((LO(x) - O.lon0) / O.dlon); if (gy < 0 || gx < 0 || gy >= O.ny || gx >= O.nx) return;
       var pu = ovField('u')(gy, gx), pv = ovField('v')(gy, gx); $('tipBody').innerHTML = '<b>' + dm(LA(y), 'NS') + ' ' + dm(LO(x), 'EW') + '</b>' + r2('Pressure', ovField('msl')(gy, gx).toFixed(0) + ' hPa') + r2('Wind', (Math.hypot(pu, pv) / KN).toFixed(0) + ' kn from ' + pad(Math.atan2(-pu, -pv) / R) + '°');
@@ -3619,7 +3663,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var lg = S.legs[Math.min(best.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a, o = opts(bs.models), spd = speedFn(o);
       var tgt = spd(best.tws, best.twa), sf = FSRouter.seaFactor(best.hs, best.wd, best.hdg, o.sea);
       var bu = FSRouter.bestVmg(spd, best.tws, true), bdn = FSRouter.bestVmg(spd, best.tws, false);
-      var rStart = rows.length; rows.push('<b style="color:' + col(bs) + '">' + clockH(best.t).slice(4) + ' UTC · ' + (bs.combined ? 'Combined' : bs.name || short(bs.id)) + '</b>');   /* on a route the box starts with the time and the model */
+      var rStart = rows.length; rows.push('<b style="color:' + col(bs) + '">' + clockH(best.t).slice(4) + ' ' + tzS1() + ' · ' + (bs.combined ? 'Combined' : bs.name || short(bs.id)) + '</b>');   /* on a route the box starts with the time and the model */
       rows.push(r2('Heading', pad(best.hdg) + '\u00b0 · TWA ' + Math.abs(Math.round(best.twa)) + '\u00b0 ' + (best.twa < 0 ? 'stbd' : 'port')));
       var lw = steerOff(best); if (lw) rows.push(r2('Steer', pad((best.hdg + lw + 360) % 360) + '\u00b0 (leeway ' + Math.abs(lw).toFixed(1) + '\u00b0)'));
       rows.push(r2('Boat speed', best.bsp.toFixed(1) + ' kn' + (sf < 0.995 || sf > 1.005 ? ' (sea ' + (sf >= 1 ? '+' : '') + Math.round((sf - 1) * 100) + '%)' : '')));
