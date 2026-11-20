@@ -81,6 +81,18 @@
   function dist(d) { return d < 0.1 ? Math.round(d * 1852) + ' m' : n1(d) + ' nm'; }
   function dur(h) { var m = Math.round(h * 60); return m >= 60 ? Math.floor(m / 60) + 'h ' + ('0' + m % 60).slice(-2) : m + ' min'; }
   function clk(ms) { var d = new Date(ms); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
+  /* CPA to the next mark (Stuart 20 Nov 09:15: "both would be good but needs to be explained"): the closest the boat will pass the mark if it
+     holds its present course and speed over the ground, and when. Near zero: the boat is laying the mark (a layline check). Opening: the
+     closest point is already behind. CPA to other boats is in the AIS window. */
+  function cpaCell(o) {
+    if (o.dtw == null || o.btw == null || o.sog == null || o.cog == null || o.sog < 0.3) return cell('CPA mark', '--', 'needs the boat moving', '', 'Closest point of approach to the next mark on your present course and speed over the ground');
+    var dx = o.dtw * Math.sin(o.btw * R), dy = o.dtw * Math.cos(o.btw * R), vx = o.sog * Math.sin(o.cog * R), vy = o.sog * Math.cos(o.cog * R), t = (dx * vx + dy * vy) / (o.sog * o.sog);
+    var tip = 'Closest point of approach to the next mark if you hold this course and speed over the ground. Near zero: you are laying the mark. CPA to other boats is in the AIS window.';
+    if (t <= 0) return cell('CPA mark', fmtD(o.dtw), 'opening: past it', 'bad', tip);
+    var cx = dx - vx * t, cy = dy - vy * t, c = Math.hypot(cx, cy), side = (vx * dy - vy * dx) > 0 ? 'to port' : 'to stbd', min = t * 60;
+    return cell('CPA mark', fmtD(c), (c < 0.02 ? 'laying it' : 'mark ' + side) + ', ' + (min < 1 ? 'under 1 min' : Math.round(min) + ' min'), '', tip);
+  }
+  function fmtD(nm) { return nm < 0.54 ? Math.round(nm * 1852) + ' m' : nm.toFixed(2) + ' nm'; }
   /* VMG (Stuart 20 Nov 09:25, docs/VMG-VMC-REVIEW.md): speed towards the wind on a beat, away from it on a run, said in words; from the
      boat's instruments through the water when there are any, else over the ground (tide included) along the wind in use, and it says which.
      On a reach it gives way to VMC. The polar's target VMG beside it. */
@@ -115,6 +127,7 @@
         cell('DTW', dist(o.dtw), '') +
         cell('ETA', o.eta ? clk(o.eta) : '--', o.eta ? 'UTC, in ' + dur((o.eta - Date.now()) / 3600e3) : 'not closing') +
         cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn to the mark' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
+        cpaCell(o) +
         vmgCell(o, (function () { try { return window.FSSolent && FSSolent.windRef ? FSSolent.windRef() : null; } catch (e) { return null; } })()) +
         cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? (o.m.route ? 'on the route' : 'on the leg') : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the ' + (o.m.route ? 'route' : 'leg')) : '') +
         (o.back && !o.m.route ? cell('BACK ON', brg(o.back.brg), o.back.min != null ? dist(o.back.d) + ', ' + (o.back.min < 1 ? 'under a minute' : Math.round(o.back.min) + ' min') + ' at this speed' : dist(o.back.d) + ' to the line') : '') +
