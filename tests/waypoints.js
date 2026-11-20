@@ -63,15 +63,19 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(r && /^(beat|run|fetch|reach)$/.test(r.kind) && (r.tack ? /Includes \d+ (tack|gybe)/.test(st.box) && r.other != null : true), 'says fetch, reach, beat or run; on a beat or run, both headings and the time with tacks or gybes', r && r.kind + (r.tack ? ' ' + Math.round(r.hdg) + '/' + Math.round(r.other) : ''));
   ok(r && r.tide != null && /Tide .* kn to/.test(st.box), 'the tide along the line', (st.box.match(/Tide[^]*?(?=Crosses|Save|$)/) || [''])[0].slice(0, 80));
   // a beat: measure straight into the wind
-  const beat = await p.evaluate(() => { const m = window.__fsMeasure(50.70, -1.45, 50.70, -1.45 + 0.001); const w = m.twd; const la1 = 50.70 + 2 * Math.cos(w * Math.PI / 180) / 60, lo1 = -1.45 + 2 * Math.sin(w * Math.PI / 180) / 60 / Math.cos(50.7 * Math.PI / 180); return window.__fsMeasure(50.70, -1.45, la1, lo1); });
+  /* 20 Nov: the line is laid into the wind at its own middle (the ruler reads the wind there), with the tide chart off for these two checks,
+     so a strong cross tide on the day of the test cannot make the leg fetchable on one tack */
+  await p.evaluate(() => { window.__tideWas = document.getElementById('tideSel').value; document.getElementById('tideSel').value = '';
+    window.__upLine = () => { let w = window.__fsMeasure(50.70, -1.45, 50.70, -1.4499).twd, la1, lo1; for (let i = 0; i < 4; i++) { la1 = 50.70 + 2 * Math.cos(w * Math.PI / 180) / 60; lo1 = -1.45 + 2 * Math.sin(w * Math.PI / 180) / 60 / Math.cos(50.7 * Math.PI / 180); w = window.__fsMeasure(50.70, -1.45, la1, lo1).twd; } return { la: la1, lo: lo1 }; }; });
+  const beat = await p.evaluate(() => { const e = window.__upLine(); return window.__fsMeasure(50.70, -1.45, e.la, e.lo); });
   ok(beat.kind === 'beat' && beat.tack && Math.abs(Math.abs(((beat.hdg - beat.other + 540) % 360) - 180)) > 40, 'straight upwind it is a beat, with two tacking headings', beat.kind + ' ' + Math.round(beat.hdg) + '/' + Math.round(beat.other) + ' VMG ' + beat.sog.toFixed(1));
   // shallow water: across the Shingles
   const sh = await p.evaluate(() => window.__fsMeasure(50.6950, -1.6100, 50.6700, -1.5700).shallow);
   ok(sh === true, 'a line across the Shingles bank warns of shallow water');
   const lt = await p.evaluate(() => [...document.querySelectorAll('.fsmlater tr')].map(r => r.textContent));
   ok(lt.length === 4 && /\+1 h/.test(lt[1]) && /\+3 h/.test(lt[3]), 'the same leg at +1, +2 and +3 hours, with wind, tide along, VMC and time', lt.slice(1).join(' | '));
-  const bt = await p.evaluate(() => { const m = window.__fsMeasure(50.70, -1.45, 50.70, -1.4499); const w = m.twd; return window.FSWpt.measure({ la: 50.70, lo: -1.45 }, { la: 50.70 + 2 * Math.cos(w * Math.PI / 180) / 60, lo: -1.45 + 2 * Math.sin(w * Math.PI / 180) / 60 / Math.cos(50.7 * Math.PI / 180) }); });
-  const btxt = await p.evaluate(() => document.getElementById('fsMeas').textContent);
+  const bt = await p.evaluate(() => { const e = window.__upLine(); return window.FSWpt.measure({ la: 50.70, lo: -1.45 }, e); });
+  const btxt = await p.evaluate(() => document.getElementById('fsMeas').textContent); await p.evaluate(() => { document.getElementById('tideSel').value = window.__tideWas; });
   ok(bt.nTurns >= 1 && bt.turnS === 60 && Math.abs(bt.hoursAll - bt.hours - bt.nTurns * 60 / 3600) < 1e-9 && /Includes \d+ tacks? at 60 s each/.test(btxt), 'a beat counts its tacks at the Course tab tack loss (60 s each)', bt.nTurns + ' tacks, ' + (bt.hours * 60).toFixed(1) + ' min plus ' + bt.nTurns + ' min');
   await p.screenshot({ path: OUT + '/wpt-measure.png' });
   await p.click('#fsRulerBtn'); await p.waitForTimeout(200);
