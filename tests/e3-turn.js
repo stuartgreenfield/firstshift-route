@@ -11,6 +11,8 @@ const page = async (b) => { const c = await b.newContext({ ...devices['iPhone 13
   await p.evaluate(() => FSSolent.set({ loa: 10 })); await p.click('#solCardT'); await p.waitForTimeout(3000); return p; };
 const race = async (p, tws) => { await p.evaluate((tws) => { const e = FSSolent.em(); e.base = { twd: e.base.twd, tws }; const g = Math.round(Date.now() / 1000 + 2); window.__fsGun(g); FSSolent.set({ startAt: g }); }, tws); await p.waitForTimeout(4000);
   await p.evaluate(() => { FSSolent.em().x = 20; }); await p.waitForTimeout(40000);
+  /* 20 Nov: the first tack can come later than 40 s, depending on the day's wind direction (230° on 20 Nov: a long port tack off the line); wait for it, up to two minutes more */
+  await p.waitForFunction(() => FSSolent.em().log.some(q => (q[0] === 'tack' || q[0] === 'gybe') && FSSolent.em().log.indexOf(q) < FSSolent.em().log.length - 1), null, { timeout: 120000, polling: 1000 }).catch(() => {});
   return p.evaluate(() => { const L = FSSolent.em().log, out = []; L.forEach((q, i) => { if (q[0] !== 'tack' && q[0] !== 'gybe') return; const nx = L.slice(i + 1).find(z => z[0] === 'p'); out.push({ k: q[0], s: q[2], bsp: nx ? nx[6] : null }); }); return out; }); };
 (async () => { const b = await chromium.launch();
   let p = await page(b); let T = await race(p, 12);
