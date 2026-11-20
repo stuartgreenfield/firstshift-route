@@ -1219,7 +1219,8 @@
        longitude from the sailing instructions, bearing and length from one end, or two taps on the chart; and the RYS line preset. */
     var RYS = { boat: [50.766733, -1.300917], brg: 346, m: 2290 };   /* Rolex Fastnet Race 2025 SIs 14.1 to 14.2; RYS SIs give the transit as about 346 T */
     var LP = 0;   /* taps still wanted on the chart: 2 boat then pin, 1 pin */
-    var putLine = function (bq, pq, why) { window.__fsSetLine('boat', bq[0], bq[1]); window.__fsSetLine('pin', pq[0], pq[1]); if (window.__fsLineKind) window.__fsLineKind(false); toast(/^RYS/.test(why) ? why + ': set. Check the sailing instructions.' : 'Start line set: ' + why + '. Check it against the sailing instructions for this race.'); redraw(); };
+    var JOG = null;   /* the JOG line waiting for its shore end (20 Nov) */
+    var putLine = function (bq, pq, why) { window.__fsSetLine('boat', bq[0], bq[1]); window.__fsSetLine('pin', pq[0], pq[1]); if (window.__fsLineKind) window.__fsLineKind(false); toast(/^(RYS|JOG)/.test(why) ? why + ': set. Check the sailing instructions.' : 'Start line set: ' + why + '. Check it against the sailing instructions for this race.'); redraw(); };
     var ED = null;   /* the end being edited from the list: 'boat' or 'pin' */
     var editHtml = function () {
       var l = lineNow() || {}, nm = function (end) { var q = l[end]; if (!q) return 'not set'; var mk = (MK || []).filter(function (m) { return Math.abs(m.lat - q[0]) < 1e-5 && Math.abs(m.lon - q[1]) < 1e-5; })[0]; return mk ? mk.id + ' ' + mk.name : llTxt(q); };
@@ -1246,6 +1247,7 @@
       var l = lineNow(), v = function (q) { return q ? llTxt(q) : ''; };
       c.innerHTML = '<div class="shead"><h2>Start line</h2><button class="close" id="klX" aria-label="Close">×</button></div>' +
         '<p class="note">Ping each end in the GPS window, or set the line here. The boat end is the starboard end as you start, the pin end the port end.</p>' +
+        '<div class="solcl"><button class="btn" id="klJOGW">JOG line, start to the West</button><button class="btn" id="klJOGE">JOG line, start to the East</button><span class="soln">From the Gurnard north cardinal (3U) on 170°T to the shore: tap the shore after choosing. West: the buoy end is the starboard (boat) end. East: the shore end is.</span></div>' +
         '<div class="solcl"><button class="btn" id="klRYSW">RYS line, start to the West</button><button class="btn" id="klRYSE">RYS line, start to the East</button><span class="soln">The RYS flagstaff on 346°T to abeam the Williams Shipping Buoy. West: the outer end is the starboard (boat) end. East: the Squadron end is.</span></div>' +
         (l && l.boat && l.pin ? editHtml() : '') +
         '<div class="solcl"><label class="solk" for="klB">Boat end</label><input id="klB" placeholder="50 46.004N 001 18.055W" value="' + v(l && l.boat) + '"></div>' +
@@ -1263,6 +1265,13 @@
         if (dir === 'W') putLine(out, sq, 'RYS line, start to the West'); else putLine(sq, out, 'RYS line, start to the East');   /* short: the box beside it says which end is which (the long toast covered Edit, preview 20 Nov) */
         try { localStorage.setItem('fs-rys-dir', dir); } catch (e) {} window.__fsLineSet(); };
       $('klRYSW').onclick = function () { rys('W'); }; $('klRYSE').onclick = function () { rys('E'); };
+      /* Stuart 20 Nov 09:08: "Jog end 170 degree from gurnard north cardinal to the shore". The buoy from the Solent marks list (3U Gurnard,
+         black over yellow); the shore end where the line on 170 degrees meets the chart's coastline (0.5 nm if no depth data); East and West as RYS */
+      var jog = function (dir) { var go = function () { var m = BY['3U'], b = m ? [m.lat, m.lon] : null; if (!b) { toast('The Solent buoys are not loaded yet: try again in a moment.'); return; }
+          JOG = { dir: dir, b: b }; LP = 'jog'; c.hidden = true; SQ.small = B.startAt; SQ.force = 0; var ssh = $('solStartScr'); if (ssh) ssh.hidden = true; sqRender();
+          toast('Tap the shore on the chart. The line is laid from the Gurnard buoy on 170°T to where you tap.'); };
+        if (MK) go(); else load().then(go, go); };   /* the chart's coastline and depth squares are too coarse to find the shore here (about 900 m), so the shore end is a tap, snapped onto the 170 degree line */
+      $('klJOGW').onclick = function () { jog('W'); }; $('klJOGE').onclick = function () { jog('E'); };
       bindEdit(c);
       $('klTap').onclick = function () { LP = 2; c.hidden = true; SQ.small = B.startAt; SQ.force = 0; var ssh = $('solStartScr'); if (ssh) ssh.hidden = true; sqRender(); toast('Tap the chart at the boat end, then at the pin end.'); };
       $('klSet').onclick = function () { var bq = llParse($('klB').value), pq = llParse($('klP').value), br = $('klBr').value, ln = +$('klLen').value;
@@ -1272,7 +1281,10 @@
         var dm = Math.hypot((pq[1] - bq[1]) * Math.cos(bq[0] * R) * 60, (pq[0] - bq[0]) * 60) * 1852; if (dm < 20) return msg('The ends are only ' + Math.round(dm) + ' m apart.');
         putLine(bq, pq, 'typed'); c.hidden = true; };
     };
-    window.__fsKitTap = function (la, lo) { if (!LP) return false; if (LP === 'boat1' || LP === 'pin1') { var e1 = LP === 'pin1' ? 'pin' : 'boat'; LP = 0; window.__fsSetLine(e1, la, lo); toast((e1 === 'pin' ? 'Pin end' : 'Boat end') + ' set from the chart. Check it against the sailing instructions.'); redraw(); window.__fsLineSet(); return true; } if (LP === 2) { window.__fsSetLine('boat', la, lo); LP = 1; toast('Boat end set. Now tap the pin end.'); redraw(); return true; } LP = 0; var l = lineNow() || {}, b0 = (window.__fsLine() || {}).boat; if (b0) { var dm = Math.hypot((lo - b0[1]) * Math.cos(la * R) * 60, (la - b0[0]) * 60) * 1852; if (dm < 20) { LP = 1; toast('Only ' + Math.round(dm) + ' m from the boat end: tap the pin end.'); return true; } } window.__fsSetLine('pin', la, lo); toast('Start line set from the chart. Check it against the sailing instructions.'); redraw(); return true; };
+    window.__fsKitTap = function (la, lo) { if (!LP) return false;
+      if (LP === 'jog' && JOG) { LP = 0; var b0 = JOG.b, k0 = Math.cos(b0[0] * R), ux = Math.sin(170 * R), uy = Math.cos(170 * R), dx = (lo - b0[1]) * k0 * 60, dy = (la - b0[0]) * 60, dd = dx * ux + dy * uy;
+        if (dd < 0.03) { LP = 'jog'; toast('Tap the shore south of the buoy, along 170°T.'); return true; }
+        var sh = [b0[0] + dd * uy / 60, b0[1] + dd * ux / (60 * k0)]; if (JOG.dir === 'W') putLine(b0, sh, 'JOG line, start to the West'); else putLine(sh, b0, 'JOG line, start to the East'); JOG = null; redraw(); window.__fsLineSet(); return true; } if (LP === 'boat1' || LP === 'pin1') { var e1 = LP === 'pin1' ? 'pin' : 'boat'; LP = 0; window.__fsSetLine(e1, la, lo); toast((e1 === 'pin' ? 'Pin end' : 'Boat end') + ' set from the chart. Check it against the sailing instructions.'); redraw(); window.__fsLineSet(); return true; } if (LP === 2) { window.__fsSetLine('boat', la, lo); LP = 1; toast('Boat end set. Now tap the pin end.'); redraw(); return true; } LP = 0; var l = lineNow() || {}, b0 = (window.__fsLine() || {}).boat; if (b0) { var dm = Math.hypot((lo - b0[1]) * Math.cos(la * R) * 60, (la - b0[0]) * 60) * 1852; if (dm < 20) { LP = 1; toast('Only ' + Math.round(dm) + ' m from the boat end: tap the pin end.'); return true; } } window.__fsSetLine('pin', la, lo); toast('Start line set from the chart. Check it against the sailing instructions.'); redraw(); return true; };
     window.__fsStartScreen = function () { gunSync(); if (!B.startAt) { toast('Choose your class start first: Routes, Start.'); return; } SQ.hide = 0; SQ.small = 0; SQ.force = B.startAt; sqRender(); rbRender(); };
     return;
   }

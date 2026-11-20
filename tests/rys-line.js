@@ -36,5 +36,13 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(await p.evaluate(() => !!document.querySelector('[data-ke="ping"][data-end="boat"]') && !!document.querySelector('[data-ke="ping"][data-end="pin"]')), 'Ping for each end');
   await p.evaluate(() => { document.getElementById('kitLine').hidden = true; });
   await p.screenshot({ path: (process.env.OUT || '/tmp') + '/rys-line.png' });
+  /* JOG line (Stuart 20 Nov 09:08): Gurnard north cardinal (3U) on 170 degrees to the shore; the shore end is a tap snapped onto that line */
+  const G = [50.770333, -1.314], sh = [50.7640, -1.3115];
+  await p.evaluate(() => window.__fsLineSet()); await p.click('#klJOGW'); await p.waitForTimeout(1200);
+  await p.evaluate((sh) => window.__fsKitTap(sh[0], sh[1]), sh); await p.waitForTimeout(500); let J = await p.evaluate(() => window.__fsLine());
+  const jb = Math.atan2((J.pin[1] - J.boat[1]) * Math.cos(J.boat[0] * Math.PI / 180), J.pin[0] - J.boat[0]) * 180 / Math.PI;
+  ok(near(J.boat, G) && Math.abs(((jb + 360) % 360) - 170) < 0.2, 'JOG line, West: boat end the Gurnard buoy, the tapped shore end snapped onto 170 degrees', { brg: +((jb + 360) % 360).toFixed(2), pin: J.pin.slice(0, 2).map(v => +v.toFixed(5)) });
+  await p.evaluate(() => window.__fsLineSet()); await p.click('#klJOGE'); await p.waitForTimeout(800); await p.evaluate((sh) => window.__fsKitTap(sh[0], sh[1]), sh); await p.waitForTimeout(500); J = await p.evaluate(() => window.__fsLine());
+  ok(near(J.pin, G), 'JOG line, East: the buoy is the pin end');
   ok(!errs.length, 'no script errors', errs.slice(0, 2));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
