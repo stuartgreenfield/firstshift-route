@@ -81,6 +81,20 @@
   function dist(d) { return d < 0.1 ? Math.round(d * 1852) + ' m' : n1(d) + ' nm'; }
   function dur(h) { var m = Math.round(h * 60); return m >= 60 ? Math.floor(m / 60) + 'h ' + ('0' + m % 60).slice(-2) : m + ' min'; }
   function clk(ms) { var d = new Date(ms); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }
+  /* VMG (Stuart 20 Nov 09:25, docs/VMG-VMC-REVIEW.md): speed towards the wind on a beat, away from it on a run, said in words; from the
+     boat's instruments through the water when there are any, else over the ground (tide included) along the wind in use, and it says which.
+     On a reach it gives way to VMC. The polar's target VMG beside it. */
+  function vmgCell(o, W) {
+    var bsp = null, twa = null; try { if (window.__navShown) { bsp = window.__navShown('bsp'); twa = window.__navShown('twa'); } } catch (e) {}
+    var v = null, up = null, how = '', a = null, tws = W && W.tws != null ? +W.tws : null;
+    if (bsp != null && twa != null && bsp === bsp && twa === twa) { a = Math.abs(twa); v = bsp * Math.cos(twa * R); how = 'through the water'; }
+    else if (W && W.twd != null && o.sog != null && o.cog != null) { var d = ((o.cog - W.twd + 540) % 360) - 180; a = Math.abs(d); v = o.sog * Math.cos(d * R); how = 'over the ground, wind ' + ('00' + Math.round(W.twd) % 360).slice(-3) + '°'; }
+    if (v == null) return cell('VMG', '--', 'needs a wind and the boat moving');
+    if (a > 75 && a < 105) return cell('VMG', '--', 'reaching: VMC is what counts');
+    up = a < 90; var tg = null; try { var sp = window.__fsSpeed ? window.__fsSpeed() : null; if (sp && tws > 0 && window.FSRouter && FSRouter.bestVmg) { var b = FSRouter.bestVmg(sp, Math.round(tws * 2) / 2, up); if (b && b[2] > 0) tg = b[2]; } } catch (e) {}
+    var m = Math.abs(v);
+    return cell('VMG', m.toFixed(1), 'kn ' + (up ? 'towards' : 'away from') + ' the wind, ' + how + (tg ? ' · target ' + tg.toFixed(1) + ' (' + Math.round(m / tg * 100) + '%)' : ''));
+  }
   function cell(k, v, sub, cls) { return '<div class="rpl' + (cls ? ' ' + cls : '') + '"><span>' + k + '</span><b>' + v + '</b><i>' + (sub || '&nbsp;') + '</i></div>'; }
   function modeBtn() { return '<button class="rpnav rpmode" data-k="mode" aria-label="Steer to the next mark or along the route" title="Steer to the next mark or along the route">' + (C.mode === 'route' ? 'ROUTE' : 'MARK') + '</button>'; }
   function render(o) {
@@ -100,7 +114,8 @@
         cell('BTW', brg(o.btw), 'true bearing') +
         cell('DTW', dist(o.dtw), '') +
         cell('ETA', o.eta ? clk(o.eta) : '--', o.eta ? 'UTC, in ' + dur((o.eta - Date.now()) / 3600e3) : 'not closing') +
-        cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn towards it' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
+        cell('VMC', o.vmc != null ? o.vmc.toFixed(1) : '--', o.vmc != null ? 'kn towards the mark, over the ground' : 'needs the boat moving', o.vmc != null && o.vmc < 0 ? 'bad' : '') +
+        vmgCell(o, (function () { try { return window.FSSolent && FSSolent.windRef ? FSSolent.windRef() : null; } catch (e) { return null; } })()) +
         cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? (o.m.route ? 'on the route' : 'on the leg') : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the ' + (o.m.route ? 'route' : 'leg')) : '') +
         (o.back && !o.m.route ? cell('BACK ON', brg(o.back.brg), o.back.min != null ? dist(o.back.d) + ', ' + (o.back.min < 1 ? 'under a minute' : Math.round(o.back.min) + ' min') + ' at this speed' : dist(o.back.d) + ' to the line') : '') +
         cell('SOG · COG', o.sog != null ? n1(o.sog) + ' · ' + (o.cog != null ? ('00' + Math.round(o.cog) % 360).slice(-3) + '°' : '--') : '--', 'this phone’s GPS') + '</div>';

@@ -33,7 +33,7 @@
   function ins() { try { return window.__fsInsets ? window.__fsInsets() : { t: 0, r: 0, b: 0, l: 0 }; } catch (e) { return { t: 0, r: 0, b: 0, l: 0 }; } }
 
   /* ---- what a moved window may not cover ---- */
-  var OBST = '#solTestBar,#solSeq,.fswtab,.top .ib,.top .logobox,.top .brand,#mkTop .ib,#mkTop .mklogo,#mkTop .mkbrand,.bar,#panel,#mkPanel,.mobbtn,.fabhelp,.livebox,#fsPlot,#navPlot,#layers,#navStrip,#astroLine,#mkPick,#mkTestBar,.navundo';
+  var OBST = '.top .tools,#solTestBar,#solSeq,.fswtab,.top .ib,.top .logobox,.top .brand,#mkTop .ib,#mkTop .mklogo,#mkTop .mkbrand,.bar,#panel,#mkPanel,.mobbtn,.fabhelp,.livebox,#fsPlot,#navPlot,#layers,#navStrip,#astroLine,#mkPick,#mkTestBar,.navundo';   /* 20 Nov: the header's tool strip as a whole: a button dropped in a gap between its buttons sat under the strip, where a long press could not reach it (Route+ on a computer, after the wider logo box) */
   function obstacles(me) {
     var out = []; [].forEach.call(document.querySelectorAll(OBST), function (e) { if (e === me || me.contains(e) || e.contains(me) || !shown(e)) return; var r = e.getBoundingClientRect(); out.push({ l: r.left, t: r.top, r: r.right, b: r.bottom }); }); return out; }
   function hits(a, list, g) { g = g == null ? 4 : g; for (var i = 0; i < list.length; i++) { var b = list[i]; if (a.l < b.r + g && a.r > b.l - g && a.t < b.b + g && a.b > b.t - g) return true; } return false; }   /* 20 Nov: a moved button keeps 4 px clear of its neighbours, not touching them */

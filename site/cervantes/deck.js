@@ -26,6 +26,7 @@
   function cog() { var v = bv('cog'); if (v != null) return v; var f = fix(); return f && f.cog != null ? f.cog : null; }
   function tws() { var v = bv('tws'); return v != null ? v : null; }
   function twa() { var v = bv('twa'); return v != null ? v : null; }
+  function tvmg() { try { var w = tws(), a = twa(), sp = window.__fsSpeed ? window.__fsSpeed() : null; if (w == null || a == null || !sp || !window.FSRouter) return null; var b = FSRouter.bestVmg(sp, Math.round(w * 2) / 2, Math.abs(a) < 90); return b && b[2] > 0 ? b[2] : null; } catch (e) { return null; } }   /* the polar's best VMG for this wind, upwind or downwind */
   function target() { try { return window.NavPolar && window.NavPolar.target ? window.NavPolar.target(tws(), twa()) : null; } catch (e) { return null; } }
   function dur(s) { if (s == null || s !== s) return null; var neg = s < 0; s = Math.abs(Math.round(s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (neg ? '-' : '') + (h ? h + ':' + ('0' + m).slice(-2) : m) + ':' + ('0' + x).slice(-2); }
   function deg(v) { return v == null ? null : ('00' + Math.round((v % 360 + 360) % 360)).slice(-3) + '°'; }
@@ -38,6 +39,8 @@
     hdg: { l: 'HEADING', u: '°', g: 'Speed and course', f: function () { var v = bv('hdg'); return v != null ? v : cog(); }, ang: 1, show: deg },
     perf: { l: '% OF POLAR', u: '%', g: 'Speed and course', f: function () { var b = bv('bsp'), t = target(); return b != null && t ? 100 * b / t : null; }, d: 0, tgt: function (v) { return v / 100; }, need: 'boat' },
     tgt: { l: 'TARGET SPEED', u: 'kn', g: 'Speed and course', f: target, d: 1, need: 'boat' },
+    vmg: { l: 'VMG TO WIND', u: 'kn', g: 'Speed and course', f: function () { var b = bv('bsp'), a = twa(); return b != null && a != null ? Math.abs(b * Math.cos(a * R)) : null; }, d: 1, tgt: function (v) { var t = tvmg(); return t ? v / t : null; }, need: 'boat' },   /* 20 Nov VMG/VMC review: towards the wind (beat) or away from it (run), through the water; VMC is the speed to the mark */
+    tvmg: { l: 'TARGET VMG', u: 'kn', g: 'Speed and course', f: function () { return tvmg(); }, d: 1, need: 'boat' },
     tws: { l: 'TWS', u: 'kn', g: 'Wind', f: function () { var v = tws(); if (v != null) return v; var w = fcWind(); return w ? w.tws : null; }, d: 1, fc: function () { return tws() == null; } },
     twa: { l: 'TWA', u: '°', g: 'Wind', f: function () { var v = twa(); if (v != null) return v; var w = fcWind(), c = cog(); return w && c != null ? ((w.twd - c + 540) % 360) - 180 : null; }, show: function (v) { return Math.abs(Math.round(v)) + '° ' + (v < 0 ? 'P' : 'S'); }, fc: function () { return twa() == null; } },
     twd: { l: 'TWD', u: '°T', g: 'Wind', f: function () { var v = bv('twd'); if (v != null) return v; var w = fcWind(); return w ? w.twd : null; }, ang: 1, show: deg, fc: function () { return bv('twd') == null; } },
