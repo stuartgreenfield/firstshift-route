@@ -3,7 +3,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.76';
+  var VERSION = 'FirstShift Route v0.12.77';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -326,7 +326,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.76 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.77 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1489,10 +1489,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       $('wizNext').textContent = 'Next: the start';
     } else if (n === 3) {
       var cur = +$('startSel').value;
-      h += (window.__fsLineSet ? '<p><button class="btn" id="wzLine">Set start line</button></p>' : '') + '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
+      h += (window.__fsLineSet ? '<p class="wzss"><button class="btn" id="wzLine">Set start line</button>' + (window.__fsStartScreen && window.__fsGunAt && window.__fsGunAt() ? ' <button class="btn" id="wzSS">Start screen: countdown</button>' : '') + '</p>' : '') + '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
         '<div id="wzFit"></div><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
       B.innerHTML = h + '</div>';
-      if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); };   /* Stuart 20 Nov 11:58: the start step offers the line first */
+      if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); };
+      if ($('wzSS')) $('wzSS').onclick = function () { wizClose(false); window.__fsStartScreen(); };   /* A (Stuart 20 Nov 13:58): tapping START offers the start screen once a start is set */   /* Stuart 20 Nov 11:58: the start step offers the line first */
       var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
       $('wzDay').onchange = fit; $('wzTime').oninput = fit; fit();
       var order = startDayList();
@@ -2505,6 +2506,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsLineCalc = function (gun) { var f = LIVE.fix; return f ? lineCalc(f, gun || (+$('startSel').value || Date.now() / 1000 + 600)) : lineGet(); };
   window.__fsGunAt = function () { var v = +(($('startSel') || {}).value || 0); return v > 0 && S.startChosen ? v : null; };   /* F44: the class gun for the start kit, only once the crew has chosen their class start (the default start is a planning guess) */
   window.__fsSpeed = function () { try { return speedFn(opts(S.sel ? S.sel.models : cardModels())); } catch (e) { return null; } };   /* F45: the boat's polar, for pointing at slow speed on the start screen */
+  (function () { var mq = window.matchMedia ? matchMedia('(max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px)') : null;   /* man overboard: the left end of the button row on a wide screen, the left of the time slider on a phone */
+    function mobPlace() { var m = $('mobBtn'), t = $('trow'), g = document.querySelector('#bar .pgrp'); if (!m || !t || !g) return; if (mq && mq.matches) { if (m.parentNode !== t) t.insertBefore(m, t.firstChild); } else if (m.parentNode !== g) g.insertBefore(m, g.firstChild); }
+    mobPlace(); if (mq) { if (mq.addEventListener) mq.addEventListener('change', mobPlace); else if (mq.addListener) mq.addListener(mobPlace); } })();
+  window.__fsStartStep = function () { cardStep(3); };   /* B (Stuart 20 Nov 13:58): Start screen with no start time opens the Start step */
   window.__fsGun = function (ep) { if (!(ep > 0)) return; try { setStart(ep, true); startChosen(true); } catch (e) {} };
   (function () { var o = window.__fsFix, f = function (x) { if (x) { Object.assign(FIX, x); store('fs-fix', JSON.stringify(FIX)); } return Object.assign({}, FIX); }; if (o) Object.keys(o).forEach(function (k) { f[k] = o[k]; }); window.__fsFix = f; })();   /* callable, and keeps html, bind, set and state for the Solent step box (17 Nov: the second definition had dropped them) */
   window.__fsRouteNow = function () { if (S.running) return false; S.key = null; S.cleared = false; run(); return true; };

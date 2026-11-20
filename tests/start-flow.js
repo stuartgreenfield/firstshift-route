@@ -14,12 +14,13 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   const ln = await p.evaluate(() => window.__fsLine ? window.__fsLine() : null); ok(ln && ln.boat && ln.pin, 'Set start line, RYS West: both ends set', JSON.stringify(ln).slice(0, 120));
   await p.evaluate(() => { const k = document.getElementById('kitLine'); if (k) k.hidden = true; });
   /* 2. the class start, 30 minutes from now, as chosen in the start step */
-  const gun = Math.round(T0 / 1000) + 1800; await p.evaluate((g) => window.__fsGun(g), gun); await p.clock.runFor(2000);
-  let s = await state(); ok(!s.bar && !s.screen, 'T-30 min: nothing opens by itself', JSON.stringify(s));
+  const gun = Math.round(T0 / 1000) + 5400; await p.evaluate((g) => window.__fsGun(g), gun); await p.clock.runFor(2000);
+  let s = await state(); ok(!s.bar && !s.screen, 'T-90 min: nothing opens by itself', JSON.stringify(s));
   /* 3. step the clock: the countdown bar from 15 minutes, the start screen from 10 */
-  const at = async (secLeft) => { const now = await p.evaluate(() => Date.now()); await p.clock.runFor(Math.max(0, (gun - secLeft) * 1000 - now)); await p.clock.runFor(2000); return state(); };
+  const at = async (secLeft) => { const now = await p.evaluate(() => Date.now()); await p.clock.fastForward(Math.max(0, (gun - secLeft) * 1000 - now)); await p.clock.runFor(2000); return state(); };
+  s = await at(30 * 60); ok(s.bar && !s.screen, 'T-30 min: the countdown bar shows (from 1 hour, Stuart 20 Nov 13:58), no start screen yet', JSON.stringify(s));
   s = await at(16 * 60); ok(!s.screen, 'T-16 min: no start screen', JSON.stringify(s));
-  s = await at(14 * 60); ok(s.bar && !s.screen, 'T-14 min: the countdown bar shows by itself', JSON.stringify(s));
+  s = await at(14 * 60); ok(s.bar && !s.screen, 'T-14 min: the countdown bar, no start screen yet', JSON.stringify(s));
   s = await at(9 * 60 + 30); ok(s.screen, 'T-9.5 min: the start screen opens by itself (default 10 min)', JSON.stringify(s));
   s = await at(30); ok(s.screen, 'T-30 s: still on the start screen', JSON.stringify(s));
   s = await at(-120); ok(!s.screen, 'Gun +2 min: the start screen has gone, racing', JSON.stringify(s));
@@ -27,5 +28,11 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   const gun2 = Math.round((await p.evaluate(() => Date.now())) / 1000) + 7200; await p.evaluate((g) => window.__fsGun(g), gun2); await p.clock.runFor(2000);
   await p.evaluate(() => window.__fsLineSet()); await p.clock.runFor(300); await p.click('#klSS'); await p.clock.runFor(1500); s = await state();
   ok(s.screen, 'T-2 h: "Start screen" in the line window opens it by hand', JSON.stringify(s));
+  /* B: Start screen with no start time opens the Start step; once the time is set the start screen opens */
+  await p.evaluate(() => { localStorage.removeItem('fs-solent-b'); }); 
+  /* A: the Start step offers Start screen once a start is set */
+  await p.evaluate(() => { const ss = document.getElementById('solStartScr'); const x = ss && ss.querySelector('[data-sq="small"]'); if (x) x.click(); window.__fsStartStep(); }); await p.clock.runFor(800);
+  ok(await p.evaluate(() => !!document.getElementById('wzSS')), 'A: the Start step (the START chip) offers "Start screen" once a start is set');
+  await p.click('#wzSS'); await p.clock.runFor(1500); s = await state(); ok(s.screen, 'A: it opens the start screen', JSON.stringify(s));
   ok(!errs.length, 'no script errors', JSON.stringify(errs).slice(0, 200));
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); })();
