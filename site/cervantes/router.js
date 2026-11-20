@@ -338,7 +338,7 @@
       for (var step = 0; step < maxSteps; step++) {
         /* the front is thinned to one point per bearing sector; the sectors are as fine as a step is short (E2, 19 Nov 2026): with a fixed 360, a
            3-minute or 1-minute step lost the best points and a veering beat came out up to 5% slow; `sectors` is the count for a 10-minute step (or the caller's own coarser step), and grows as the step shortens, to at most 1000 (within 0.05% of 1200 on the veering beat, for 15% less work) */
-        var SEC = o.fine === false ? sectors : Math.max(90, Math.min(1000, 4 * sectors, Math.round(sectors * Math.max(1, dt0 / dt, 600 / dt)))), hit = [], calm = 0, ncand = 0, best = new Array(SEC + MS), bestS = new Float64Array(SEC + MS).fill(-Infinity), secW = 360 / SEC, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
+        var SEC = o.fine === false ? sectors : Math.max(90, Math.min(o.secCap || 1000, 4 * sectors, Math.round(sectors * Math.max(1, dt0 / dt, 600 / dt)))), hit = [], calm = 0, ncand = 0, best = new Array(SEC + MS), bestS = new Float64Array(SEC + MS).fill(-Infinity), secW = 360 / SEC, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
         var gate = leg.gate, ga = gate && gate.a, gb = gate && gate.b;
         for (var pi = 0; pi < pts.length; pi++) {
           var p = pts[pi], tm = t + dt / 7200, W = o.wind(p.la, p.lo, tm), C = o.tide(p.la, p.lo, tm), V = o.wave ? o.wave(p.la, p.lo, tm) : [0, NaN];   /* read at the middle of the step, not its start (E2, 19 Nov 2026): a veering or building wind and a turning tide are met as the boat meets them */
