@@ -21,7 +21,7 @@ const { chromium, devices } = require('playwright'); const BASE = process.argv[2
   ok('flick right: put away to the right', r && !r.vis && tab2 && / r/.test(tab2), tab2);
   await p.click('.fswtab:not([hidden])'); await p.waitForTimeout(800);
   /* drag the dots directly (no long press), as on the iPhone; the test mode bar is put out of the way so there is room to move */
-  await p.evaluate(() => { const t = document.getElementById('solTestBar'); if (t) t.style.display = 'none'; }); await p.waitForTimeout(600);
+  await p.evaluate(() => { ['solTestBar', 'mkTestBar', 'solSeq'].forEach(id => { const t = document.getElementById(id); if (t) t.style.display = 'none'; }); window.dispatchEvent(new Event('resize')); }); await p.waitForTimeout(1500);   /* 20 Nov: on Mark+ the start sequence box sat right under the plotter bar, the top bar right over it: no free place for the dots (they never sit on a button); put away so there is room, as the test bar is */
   r = await box(); const gp = await p.evaluate((PID) => { const g = document.getElementById('grip-' + PID); if (!g || g.hidden) return null; const q = g.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; }, PID);
   ok('dots showing', !!gp, JSON.stringify(gp) + ' bar ' + JSON.stringify(r) + ' ' + JSON.stringify(await p.evaluate(() => { const t = document.getElementById('solTestBar'); return t && t.getBoundingClientRect(); })));
   if (gp) { await p.mouse.move(gp[0], gp[1]); await p.mouse.down(); await p.mouse.move(gp[0], gp[1] + 250, { steps: 15 }); await p.waitForTimeout(150); await p.mouse.up(); await p.waitForTimeout(800);

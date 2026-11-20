@@ -88,7 +88,7 @@
     var s = ins(); t.hidden = false; t.classList.toggle('r', st[0] === 'r'); t.classList.toggle('l', st[0] !== 'r');
     /* at the height it went, or the nearest height where it covers no bar or button */
     var list = obstacles(t), x0 = st[0] === 'r' ? innerWidth - s.r - 26 : s.l, y0 = Math.max(s.t + 8, Math.min(innerHeight - s.b - 80, st[1])), y = y0;
-    for (var k = 0; k < 120; k++) { var cand = y0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8; if (cand < s.t + 8 || cand > innerHeight - s.b - 80) continue; if (!hits({ l: x0, t: cand, r: x0 + 26, b: cand + 72 }, list)) { y = cand; break; } }
+    for (var k = 0; k < 120; k++) { var cand = y0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 8; if (cand < s.t + 8 || cand > innerHeight - s.b - 80) continue; if (!hits({ l: x0, t: cand, r: x0 + 26, b: cand + 72 }, list, 0) && !covered(x0 + 13, cand + 36, null, t)) { y = cand; break; } }   /* 20 Nov: a tab is an edge handle and may sit against a button (gap 0); with the 4 px gap no place was found on a phone's right edge and the tab hid (Mark+ flick right) */
     t.style.top = Math.round(y) + 'px';
     if (covered(x0 + 13, y + 36, null, t)) t.hidden = true;   /* 18 Nov: no tab on top of another menu */
   }
@@ -154,7 +154,9 @@
     var nt = performance.now(), dtm = Math.max(1, nt - (M.drag.pt || nt - 16)); M.drag.vx = 0.6 * (M.drag.vx || 0) + 0.4 * (e.clientX - (M.drag.px == null ? e.clientX : M.drag.px)) / dtm; M.drag.px = e.clientX; M.drag.pt = nt;
     e.preventDefault(); e.stopPropagation(); set(M.el, M.drag.dx + dx, M.drag.dy + dy); place();
   }, true);
-  var drop = function (e) { clearTimeout(lt); if (!M.el || !M.drag) return; var dg = M.drag; M.drag = null; e.stopPropagation(); swallow = Date.now(); if (slideOff(dg)) return; if (dg.direct) { lock(); return; } var s2 = settle(M.el); if (s2) set(M.el, s2[0], s2[1]); place(); };
+  var dropAt = 0;   /* 20 Nov: the click that ends a drag or a flick never presses the button under the finger (a flick off the edge pressed the plotter's Hide) */
+  window.addEventListener('click', function (e) { if (Date.now() - dropAt < 400) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  var drop = function (e) { clearTimeout(lt); if (!M.el || !M.drag) return; var dg = M.drag; M.drag = null; e.stopPropagation(); swallow = Date.now(); if (dg.moved) dropAt = Date.now(); if (slideOff(dg)) return; if (dg.direct) { lock(); return; } var s2 = settle(M.el); if (s2) set(M.el, s2[0], s2[1]); place(); };
   window.addEventListener('pointerup', drop, true); window.addEventListener('pointercancel', drop, true);
   window.addEventListener('click', function (e) { if (M.el && onIt(e)) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   /* F15: most of the way off the left or right edge, or a quick flick towards one: it slides away to a tab */
