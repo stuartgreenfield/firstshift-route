@@ -47,6 +47,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* ---------- workers ---------- */
   function call(w, msg, tr) { return new Promise(function (ok, no) { msg.id = ++jid; jobs[jid] = { ok: ok, no: no }; w.postMessage(msg, tr || []); }); }
   function pool(msg) { return wReady.then(function () { return call(workers[wq++ % workers.length], msg); }); }
+  /* speed plan 6 (Stuart 20 Nov 06:45): a short job (the fleet's times) does not wait behind routes still refining in the workers; while they are
+     busy it runs on the page, which already holds the forecasts (the same worker code, as the main-thread fallback) */
+  var WSRC = null;
+  function poolShort(msg) { return wReady.then(function () { if (!Object.keys(jobs).length || !WSRC || workMode.mode === 'main') return pool(msg); if (!poolShort.w) { poolShort.w = mainThread(WSRC); poolShort.w.onmessage = onMsg; } return call(poolShort.w, msg); }); }
   function all(msgFn) { return wReady.then(function () { return Promise.all(workers.map(function (w) { var m = msgFn(); return call(w, m.msg, m.tr); })); }); }
   var MOBILE = /iPhone|iPad|iPod|Android|Mobi/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));   /* iPadOS calls itself a Mac */
   var n = Math.max(1, Math.min(MOBILE ? 2 : 4, (navigator.hardwareConcurrency || 2) - 1));   /* each worker holds every forecast: two on a phone or tablet, so iOS does not close Route for memory (Stuart 12 Nov) */
@@ -94,6 +98,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (r.ok.length) return r;
     return startSet(function () { return new Worker('worker.js'); }).then(function (ok) { return { ok: ok, src: r.src, how: 'background (file)' }; });
   }).then(function (r) {
+    WSRC = r.src || null;
     if (r.ok.length) { workers = r.ok; workMode.mode = r.how; return; }
     var src = r.src;
     if (!src) { workMode.mode = 'none'; workMode.why = 'The routing code could not be loaded.'; throw new Error('Routing could not start on this device: ' + workMode.why); }
@@ -2598,11 +2603,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       if (fixOn() && !S.to) sets.push({ id: 'fixed', name: 'Fixed wind ' + FIX.tws + ' kn from ' + ('00' + Math.round(FIX.twd)).slice(-3) + '°', models: [ms[0]], fixed: true, adj: fixAdj(base.adj) });
       var jobs = sets.length + ms.length, done = 0, title = quick ? 'Step 1 of 2: first routes' : 'Step 2 of 2: refining the routes';
-      var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models' : 'Checking each route in every model', quick ? estQ : estF); };
+      var tick = function () { if (gen !== S.gen) return; done++; prog(title, done / jobs, done <= sets.length ? (quick ? Math.min(done, sets.length) + ' of ' + sets.length + ' first routes on the chart, more coming' : 'Routing ' + Math.min(done, sets.length) + ' of ' + sets.length + ' models') : 'Checking each route in every model', quick ? estQ : estF); };
+      if (quick) S.prov = [];   /* speed plan 2 (Stuart 20 Nov 06:45): each first route goes on the chart as it is found, while the others are worked out */
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
-      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }, s.adj ? { adj: s.adj } : {}) }).then(function (r) { tick(); s.r = r; return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
+      return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }, s.adj ? { adj: s.adj } : {}) }).then(function (r) { tick(); s.r = r; if (quick && gen === S.gen && S.prov && r && r.path) { S.prov.push(s); draw(); } return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
         if (gen !== S.gen) throw { abandoned: true };
-        S.routes = res.filter(function (s) { return s.r; });
+        S.routes = res.filter(function (s) { return s.r; }); S.prov = null;
         var errs = res.filter(function (s) { return s.err; });
         if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
         /* E1 (19 Nov 2026): the re-timing now sails by the route's own rules, so a route re-timed in its own forecast takes its own time. The old
@@ -2663,7 +2669,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var boats = meta.fleet.filter(function (f) { return f.irc && f.start; }).map(function (f) { return { name: f.name, tcc: f.tcc, start: meta.live ? S.start.t : Math.max((f.start - T0) / 3600, S.from ? S.start.t : -1), f: f }; });
     var have = {}; boats.forEach(function (b) { have[b.name.toUpperCase()] = 1; });
     myFleet().forEach(function (m) { if (!have[m.name.toUpperCase()]) boats.push({ name: m.name, tcc: m.tcc, start: S.start.t, f: { name: m.name, tcc: m.tcc, mine: true, mmsi: m.mmsi } }); });
-    return pool({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: S.sel.r.path, boats: boats.map(function (b) { return { tcc: b.tcc, start: b.start }; }) }).then(function (ts) {
+    return poolShort({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: S.sel.r.path, boats: boats.map(function (b) { return { tcc: b.tcc, start: b.start }; }) }).then(function (ts) {
       S.ghosts = boats.map(function (b, i) { return { name: b.name, tcc: b.tcc, f: b.f, ts: ts[i] }; });
     });
   }
@@ -3059,6 +3065,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     el.hidden = !on.length; if (on.length) el.textContent = on.map(function (k) { return CHARTS[k].credit; }).join(' · ') + ' · Not for navigation';
   }
   chartCredit();
+  window.__fsProvN = function () { return S.prov ? S.prov.length : -1; };   /* first routes drawn so far (speed plan 2), for the automatic tests */
   window.__fsView = function () { return { s: view.s, lo: view.lo, la: view.la, fingers: ptrs.size }; };   /* for the automatic tests */
   window.__fsCharts = function () { return { log: chartLog, tiles: Object.keys(TILES).length, z: Object.keys(CHARTS).map(function (k) { return k + ':' + tileZoom(CHARTS[k]); }) }; };
   function drawDepthLines() {
@@ -3118,6 +3125,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!S.edit && !S.cleared && !building) marks();   /* editing: the points being edited replace the course marks */   /* drawing a new course: the old course's marks are not shown */
     /* the chosen route is a wide band underneath, so routes that run within a mile of it still show on top */
     var selOn = S.sel && !S.sel.hidden;
+    if (S.prov && S.prov.length && !S.routes.length) S.prov.forEach(function (s) { line(s, 2.2, 0.75); });   /* first routes as they arrive (speed plan 2) */
     if (selOn) line(S.sel, 9, 0.35);
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
     if (selOn) line(S.sel, 2.2, 1);
