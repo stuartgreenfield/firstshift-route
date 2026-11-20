@@ -387,7 +387,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (min-width:900px), (orientation:landscape) and (max-height:500px){.bar{grid-template-columns:auto minmax(160px,1fr) auto}.bar .pgrp,.bar #time,.bar .trow,.bar .clock{grid-row:2}.bar .now{grid-column:1/-1;grid-row:3;max-width:860px;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:0 8px;overflow:hidden}.bar .now div,.bar .now div:first-child{width:auto;min-width:0}.bar .now b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}}
 .hpic{display:block;max-width:min(100%,320px);height:auto;margin:8px 0 4px;border-radius:10px;border:1px solid var(--line,#2a3a4f)}
 .newdata.moment{white-space:normal;max-width:min(92vw,520px);z-index:9;font-size:13px}.newdata.moment #momentTxt{white-space:pre-line}
-.prog.mini{left:auto;right:var(--gut,12px);transform:none;top:calc(env(safe-area-inset-top,0px) + 150px);width:min(230px,48vw);padding:6px 9px;opacity:.92}.prog.mini #pgD{display:none}.prog.mini .pg-t{font-size:12px}
+.prog.mini{left:auto;right:var(--gut,12px);transform:none;top:calc(env(safe-area-inset-top,0px) + 150px);width:min(230px,48vw);padding:6px 9px;opacity:.92}.prog.mini #pgD{display:none}.pgck{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}.pgck li{display:flex;gap:6px;align-items:baseline}.pgck li span{width:12px;flex:none;text-align:center}.pgck li.done{color:var(--ink)}.pgck li.done span{color:#3DDC84}.pgck li.run{color:var(--ink);font-weight:600}.pgck li.run span{color:var(--brand)}.prog.mini .pgck{font-size:11px}.prog.mini .pg-t{font-size:12px}
 #askTxt{white-space:pre-line}
 @media (min-width:900px){.tip.docked{right:auto!important;width:330px;top:116px!important}}
 /* landing page while Route starts: the boat in the brand blues */
@@ -685,7 +685,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.80</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.81</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
