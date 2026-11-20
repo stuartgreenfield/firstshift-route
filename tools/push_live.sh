@@ -4,7 +4,8 @@
 set -e; T=/tmp/claude-0/tabtest; N=/tmp/claude-0/night/site; S=$N/cervantes; MSG="$1"
 cd $T && git fetch -q origin && git checkout -q --detach origin/site
 for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do find $S -maxdepth 1 -type f -exec cp {} $T/$d/ \; ; node /tmp/claude-0/night/tools/compact.js $T/$d >/dev/null; done
-rm -rf helpmedia && cp -r $N/helpmedia helpmedia; cp $N/index.html index.html; cp $N/_routes.json _routes.json; cp $N/functions/_middleware.js functions/; mkdir -p lab && cp $N/lab/* lab/
+rm -rf helpmedia && cp -r $N/helpmedia helpmedia; cp $N/index.html index.html; cp $N/_routes.json _routes.json; cp -r $N/functions/. functions/; mkdir -p follow && cp $N/follow/* follow/;   # 20 Nov: server functions and the follow page
+ mkdir -p lab && cp $N/lab/* lab/
 [ -n "$2" ] && cp "$2" android/navigate.apk; [ -n "$3" ] && cp "$3" android/markplus.apk
 git add -A; git commit -qm "$MSG
 
