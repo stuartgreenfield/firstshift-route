@@ -1,41 +1,41 @@
 {
- "at": "2026-11-18T14:54:40.229Z",
+ "at": "2026-11-20T09:33:17.511Z",
  "log": [
   {
    "race": "celtic-area",
    "h": 0,
-   "s": 45,
-   "note": "Routed in 35.0 s. The forecasts end before the finish on 2 routes: they show as far as the forecasts reach, with the dis"
+   "s": 50,
+   "note": "Routed in 40.9 s. The forecasts end before the finish on 6 routes: they show as far as the forecasts reach, with the dis"
   },
   {
    "race": "celtic-area",
    "h": 1,
-   "s": 101,
-   "note": "Routed in 49.1 s. The forecasts end before the finish on 4 routes: they show as far as the forecasts reach, with the dis"
+   "s": 105,
+   "note": "Routed in 45.5 s. The forecasts end before the finish on 7 routes: they show as far as the forecasts reach, with the dis"
   },
   {
    "race": "celtic-area",
    "h": 2,
-   "s": 150,
-   "note": "Routed in 40.0 s. The forecasts end before the finish on 3 routes: they show as far as the forecasts reach, with the dis"
+   "s": 151,
+   "note": "Routed in 38.8 s. The forecasts end before the finish on 5 routes: they show as far as the forecasts reach, with the dis"
   },
   {
    "race": "celtic-area",
    "h": 3,
-   "s": 197,
-   "note": "Routed in 39.1 s. The forecasts end before the finish on 2 routes: they show as far as the forecasts reach, with the dis"
+   "s": 203,
+   "note": "Routed in 44.8 s. The forecasts end before the finish on 6 routes: they show as far as the forecasts reach, with the dis"
   },
   {
    "race": "celtic-area",
    "h": 4,
-   "s": 257,
-   "note": "Routed in 50.0 s. The forecasts end before the finish on 5 routes: they show as far as the forecasts reach, with the dis"
+   "s": 253,
+   "note": "Routed in 43.0 s. The forecasts end before the finish on 6 routes: they show as far as the forecasts reach, with the dis"
   },
   {
    "race": "celtic-area",
    "h": 5,
-   "s": 309,
-   "note": "Routed in 43.5 s. The forecasts end before the finish on 4 routes: they show as far as the forecasts reach, with the dis"
+   "s": 299,
+   "note": "Routed in 38.3 s. The forecasts end before the finish on 5 routes: they show as far as the forecasts reach, with the dis"
   }
  ]
 }
