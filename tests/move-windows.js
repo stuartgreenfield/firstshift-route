@@ -12,6 +12,8 @@ async function hold(p, x, y, ms) { await p.mouse.move(x, y); await p.mouse.down(
   for (const [name, url, ready] of [['Route', '/channel-area/', () => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running; }], ['Mark', '/mark/', () => window.FSMark && window.__navFc && window.__navFc().P]]) {
     const c = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block', geolocation: { latitude: 50.70, longitude: -1.20, accuracy: 5 }, permissions: ['geolocation'] }); await c.addInitScript(init);
     const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + url); await p.waitForFunction(ready, null, { timeout: 600000 }).catch(() => {}); await p.waitForTimeout(2500);
+    /* Mark opens with the Start new race card (19 Nov, one card at start-up): close it, as a person would, so the chart buttons show */
+    await p.evaluate(() => { const x = document.getElementById('solCardX'); if (x && x.getClientRects().length) x.click(); }); await p.waitForTimeout(600);
     /* a short tap still works the button */
     const o0 = await p.evaluate(() => document.querySelector('#oriBtn .orl') && document.querySelector('#oriBtn .orl').textContent);
     await p.click('#oriBtn'); await p.waitForTimeout(400);

@@ -36,7 +36,7 @@
   var OBST = '#solTestBar,#solSeq,.fswtab,.top .ib,.top .logobox,.top .brand,#mkTop .ib,#mkTop .mklogo,#mkTop .mkbrand,.bar,#panel,#mkPanel,.mobbtn,.fabhelp,.livebox,#fsPlot,#navPlot,#layers,#navStrip,#astroLine,#mkPick,#mkTestBar,.navundo';
   function obstacles(me) {
     var out = []; [].forEach.call(document.querySelectorAll(OBST), function (e) { if (e === me || me.contains(e) || e.contains(me) || !shown(e)) return; var r = e.getBoundingClientRect(); out.push({ l: r.left, t: r.top, r: r.right, b: r.bottom }); }); return out; }
-  function hits(a, list) { for (var i = 0; i < list.length; i++) { var b = list[i]; if (a.l < b.r - 1 && a.r > b.l + 1 && a.t < b.b - 1 && a.b > b.t + 1) return true; } return false; }
+  function hits(a, list, g) { g = g == null ? 4 : g; for (var i = 0; i < list.length; i++) { var b = list[i]; if (a.l < b.r + g && a.r > b.l - g && a.t < b.b + g && a.b > b.t - g) return true; } return false; }   /* 20 Nov: a moved button keeps 4 px clear of its neighbours, not touching them */
   function onScreen(a) { var s = ins(); return a.l >= s.l + 2 && a.t >= s.t + 2 && a.r <= innerWidth - s.r - 2 && a.b <= innerHeight - s.b - 2; }
   /* the nearest place, from where it was dropped, where it covers nothing and is wholly on the screen */
   function settle(el) {
@@ -44,7 +44,7 @@
     function ok(dx, dy) { var a = { l: base.l + dx, t: base.t + dy, r: base.l + dx + base.w, b: base.t + dy + base.h }; return onScreen(a) && !hits(a, list); }
     if (ok(c[0], c[1])) return c;
     for (var rad = 8; rad <= Math.max(innerWidth, innerHeight); rad += 8) { var n = Math.max(16, Math.round(rad / 4));
-      for (var k = 0; k < n; k++) { var an = k / n * 2 * Math.PI, dx = c[0] + rad * Math.cos(an), dy = c[1] + rad * Math.sin(an); if (ok(dx, dy)) return [dx, dy]; } }
+      for (var k = 0; k < n; k++) { var an = k / n * 2 * Math.PI, dx = Math.round(c[0] + rad * Math.cos(an)), dy = Math.round(c[1] + rad * Math.sin(an)); if (ok(dx, dy)) return [dx, dy]; } }
     return null;
   }
 
