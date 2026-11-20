@@ -4,8 +4,8 @@ const NOTOUR = () => document.addEventListener('DOMContentLoaded', () => { const
 const BASE = process.argv[2] || 'http://localhost:8769';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d != null ? ' | ' + d : '')); };
 (async () => {
-  const b = await chromium.launch(), p = await b.newPage({ viewport: { width: 1280, height: 900 } });
-  await p.addInitScript(NOTOUR); await p.addInitScript(() => { try { localStorage.setItem('fs-terms', '9999-12-31'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} });
+  const b = await chromium.launch(), p = await b.newPage({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' }); await p.route(/\/pre\/(routes|r\d+)\.json/, r => r.fulfill({ status: 404, body: '' }));
+  await p.addInitScript(NOTOUR); await p.addInitScript(() => { try { localStorage.setItem('fs-terms', '9999-12-31'); localStorage.setItem('fs-autostart', '1'); localStorage.setItem('fs-rdetail', 'quick'); } catch (e) {} });
   await p.goto(BASE + '/channel-area/');
   const done = () => p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.finish && !f.running && (window.__fsDump && window.__fsDump()); }, null, { timeout: 300000 });
   await done();
