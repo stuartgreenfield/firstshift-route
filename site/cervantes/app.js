@@ -709,6 +709,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function applyRace(id) {
     var r = RACES.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+    try { var rsel = $('raceSel'); if (rsel && rsel.value !== id) rsel.value = id; } catch (e) {}   /* the RORC race box shows the race chosen from the Races list too (Stuart 20 Nov 11:55: the box was blank) */
     applyCourseObj(r);
   }
   function applyCourseObj(r) {
@@ -1505,9 +1506,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       $('wizNext').textContent = 'Next: the start';
     } else if (n === 3) {
       var cur = +$('startSel').value;
-      h += '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
+      h += (window.__fsLineSet ? '<p><button class="btn" id="wzLine">Set start line</button></p>' : '') + '<h3>' + wizEsc(meta.course.name) + '</h3><p class="wlead">When does your class start? Give the exact time from the sailing instructions, in UTC: UK time in winter, one hour behind UK summer time.</p>' + startPickerHtml('wz', cur) +
         '<div id="wzFit"></div><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
       B.innerHTML = h + '</div>';
+      if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); };   /* Stuart 20 Nov 11:58: the start step offers the line first */
       var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
       $('wzDay').onchange = fit; $('wzTime').oninput = fit; fit();
       var order = startDayList();
@@ -1595,6 +1597,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     document.addEventListener('click', function (e) { var m = $('raceMenu'); if (!m.hidden && !m.contains(e.target) && !$('raceBtn').contains(e.target)) m.hidden = true; });
     $('rmNew').onclick = function () { $('raceMenu').hidden = true; racesSheet('new'); $('races').hidden = false; };
     $('rmSaved').onclick = function () { $('raceMenu').hidden = true; racesSheet('saved'); $('races').hidden = false; };
+    if ($('rmLine')) $('rmLine').onclick = function () { $('raceMenu').hidden = true; if (window.__fsLineSet) window.__fsLineSet(); };   /* Stuart 20 Nov 11:58: Set start line first in the race menu */
     $('rmRorc').onclick = function () { $('raceMenu').hidden = true; racesSheet('rorc'); $('races').hidden = false; };
     if ($('rmJog')) $('rmJog').onclick = function () { $('raceMenu').hidden = true; racesSheet('jog'); $('races').hidden = false; };
     if ($('rmSolent')) $('rmSolent').onclick = function () { $('raceMenu').hidden = true; window.__fsInshore(true); if (window.FSSolent) { FSSolent.on(true); FSSolent.start(); } };

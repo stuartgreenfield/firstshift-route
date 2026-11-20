@@ -191,6 +191,7 @@
       '.sheet.solmk{background:transparent;justify-content:flex-start;align-items:flex-start;padding:calc(env(safe-area-inset-top,0px) + 62px) 8px 8px}.sheet.solmk .in{height:auto;max-height:calc(100vh - 80px);width:min(440px,100%);border-radius:14px;border:1px solid var(--line,#334);box-shadow:0 10px 28px rgba(0,0,0,.45);padding-top:0;overflow:auto}' +
       '.solpics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.solpic{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;min-height:0;text-align:center}.solpic svg{width:100%;max-width:150px;height:auto;overflow:visible}.solpic span{font-size:12px;opacity:.8;font-weight:400}' +
       '.solsaved{display:flex;flex-direction:column;gap:4px;margin-top:8px}.solsv{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:var(--glass,rgba(255,255,255,.05));color:inherit;border:1px solid var(--line,#334);border-radius:10px;padding:6px 10px;font:inherit;cursor:pointer}.solsv span{font-size:12px;opacity:.75}' +
+      '.kitline .klh{margin:10px 0 2px;font-size:14px;font-weight:700}' +
       '.solnext{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line,#334);margin-top:6px;padding-top:6px}.solnext .solcl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.solnext input[type=time]{min-height:36px}' +
       'body.sollist-on #solStep,body.sollist-on #solChain{display:none!important}' +
       '.solmenu{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}.solmenu b{flex:1 1 100%;font-size:16px}.solmenu .btn{min-height:40px}' +
@@ -1246,18 +1247,20 @@
       var c = $('kitLine'); if (!c) { css(); c = document.createElement('div'); c.id = 'kitLine'; c.className = 'solpop sollegs kitline'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', 'Set the start line'); document.body.appendChild(c); }
       var l = lineNow(), v = function (q) { return q ? llTxt(q) : ''; };
       c.innerHTML = '<div class="shead"><h2>Start line</h2><button class="close" id="klX" aria-label="Close">×</button></div>' +
-        '<p class="note">Ping each end in the GPS window, or set the line here. The boat end is the starboard end as you start, the pin end the port end.</p>' +
-        '<div class="solcl"><button class="btn" id="klJOGW">JOG line, start to the West</button><button class="btn" id="klJOGE">JOG line, start to the East</button><span class="soln">From the Gurnard north cardinal (3U) on 170°T to the shore: tap the shore after choosing. West: the buoy end is the starboard (boat) end. East: the shore end is.</span></div>' +
-        '<div class="solcl"><button class="btn" id="klRYSW">RYS line, start to the West</button><button class="btn" id="klRYSE">RYS line, start to the East</button><span class="soln">The RYS flagstaff on 346°T to abeam the Williams Shipping Buoy. West: the outer end is the starboard (boat) end. East: the Squadron end is.</span></div>' +
-        (l && l.boat && l.pin ? editHtml() : '') +
+        '<p class="note">Choose the line, or set your own. The boat end is the starboard end as you start, the pin end the port end.</p>' +
+        '<h3 class="klh">RORC: the Royal Yacht Squadron line</h3>' + '<div class="solcl"><button class="btn" id="klRYSW">RYS line, start to the West</button><button class="btn" id="klRYSE">RYS line, start to the East</button><span class="soln">The RYS flagstaff on 346°T to abeam the Williams Shipping Buoy. West: the outer end is the starboard (boat) end. East: the Squadron end is.</span></div>' +
+        '<h3 class="klh">JOG: the Gurnard line</h3>' + '<div class="solcl"><button class="btn" id="klJOGW">JOG line, start to the West</button><button class="btn" id="klJOGE">JOG line, start to the East</button><span class="soln">From the Gurnard north cardinal (3U) on 170°T to the shore: tap the shore after choosing. West: the buoy end is the starboard (boat) end. East: the shore end is.</span></div>' +
+        '<h3 class="klh">Your own line</h3>' + (l && l.boat && l.pin ? editHtml() : '') +
         '<div class="solcl"><label class="solk" for="klB">Boat end</label><input id="klB" placeholder="50 46.004N 001 18.055W" value="' + v(l && l.boat) + '"></div>' +
         '<div class="solcl"><label class="solk" for="klP">Pin end</label><input id="klP" placeholder="lat, long" value="' + v(l && l.pin) + '"></div>' +
         '<div class="solcl"><span class="solk">or</span><input id="klBr" type="number" inputmode="decimal" placeholder="bearing °T" style="width:7em"><input id="klLen" type="number" inputmode="decimal" placeholder="length m" style="width:7em"><span class="soln">from the boat end</span></div>' +
         '<div class="solcl"><button class="btn" id="klSet">Set the line</button><button class="btn" id="klTap">Touch the chart</button></div><p class="solmsg" id="klMsg" hidden></p>' +
-        '<h3 style="margin:8px 0 2px;font-size:14px">Your boat at the start</h3>' + timingHtml();
+        '<h3 class="klh">Your boat at the start</h3>' + timingHtml() +
+        '<div class="solcl"><button class="btn primary" id="klSS">Start screen: countdown and time to burn</button><span class="soln">Once your start time is set.</span></div>';   /* Stuart 20 Nov 11:58: Set start line first, RORC, JOG, your own, then the start screen once the time is set */
       c.hidden = false;
       var msg = function (m) { var e = $('klMsg'); e.textContent = m; e.hidden = !m; }; bindTiming(c); bindEdit(c);
       $('klX').onclick = function () { c.hidden = true; LP = 0; };
+      $('klSS').onclick = function () { c.hidden = true; LP = 0; if (window.__fsStartScreen) window.__fsStartScreen(); };
       /* Stuart 20 Nov 05:14 and 05:37: two RYS buttons, East and West, and then Edit, where either end can be a buoy from the list, a ping or
          a tap on the chart. The sailing instructions (Rolex Fastnet Race 2025 SI 14; RYS 2022 SI 12.6) use the one transit both ways; the
          direction swaps which end is the starboard end. West: the outer end (towards the Williams Shipping Buoy) is starboard. */
