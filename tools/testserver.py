@@ -28,8 +28,40 @@ class H(http.server.SimpleHTTPRequestHandler):
             with LOCK: KV[code] = {'at': at, 'data': d}
             self._json({'code': code, 'at': at}); return True
         return False
+    def _track(self):
+        # stands in for site/functions/api/track/[code].js (friends and family), in memory, with the same answers (20 Nov)
+        m = re.match(r'^/api/track/([^/?#]+)', self.path)
+        if not m: return False
+        code = m.group(1).upper()
+        if not OK.match(code): self._json({'error': 'A boat code is six letters and numbers.'}, 400); return True
+        k = 'track:' + code
+        with LOCK: cur = KV.get(k) or {'track': []}
+        if self.command == 'GET':
+            self._json({'code': code, 'name': cur.get('name', ''), 'at': cur['at'], 'track': cur.get('track', []), 'route': cur.get('route')} if cur.get('at') else {'error': 'Nothing shared under that code yet.'}, 200 if cur.get('at') else 404); return True
+        n = int(self.headers.get('content-length') or 0); body = self.rfile.read(n).decode()
+        if len(body) > 120 * 1024: self._json({'error': 'Too much in one go.'}, 413); return True
+        try: d = json.loads(body)
+        except Exception: self._json({'error': 'Not readable.'}, 400); return True
+        now = int(time.time() * 1000); ok = lambda x, lo, hi: isinstance(x, (int, float)) and not isinstance(x, bool) and lo <= x <= hi
+        if d.get('pos'):
+            t, la, lo, sog = (list(d['pos']) + [None] * 4)[:4]
+            if not (ok(t, now / 1000 - 86400, now / 1000 + 600) and ok(la, -90, 90) and ok(lo, -180, 180)): self._json({'error': 'Not a position.'}, 400); return True
+            tr = cur.get('track', [])
+            if not tr or t - tr[-1][0] >= 60: tr.append([round(t), round(la, 5), round(lo, 5), round(sog, 1) if ok(sog, 0, 60) else None])
+            cur['track'] = tr[-3000:]
+        if isinstance(d.get('route'), dict) and isinstance(d['route'].get('path'), list):
+            path = [[round(q[0], 4), round(q[1], 4)] for q in d['route']['path'] if isinstance(q, list) and len(q) > 1 and ok(q[0], -90, 90) and ok(q[1], -180, 180)][:1500]
+            cur['route'] = {'at': now, 'name': str(d['route'].get('name') or '')[:80], 'path': path, 'finish': d['route'].get('finish') if ok(d['route'].get('finish'), 0, 9e9) else None}
+        if isinstance(d.get('name'), str): cur['name'] = d['name'][:60]
+        cur['at'] = now
+        with LOCK: KV[k] = cur
+        self._json({'code': code, 'at': now, 'points': len(cur.get('track', []))}); return True
+    def do_POST(self):
+        if self.path.startswith('/api/track/') and self._track(): return
+        self._json({'error': 'GET or POST only.'}, 405)
     def do_GET(self):
         if self.path.startswith('/api/boat/') and self._api(): return
+        if self.path.startswith('/api/track/') and self._track(): return
         super().do_GET()
     def do_PUT(self):
         if not self._api(): self._json({'error': 'GET or PUT only.'}, 405)

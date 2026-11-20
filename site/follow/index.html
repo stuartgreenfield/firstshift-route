@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&family=Inter:wght@400;500;600&display=swap">
 <style>
 :root{--bg:#06111A;--panel:#182D40;--ink:#E2EBF0;--muted:#9AAEBB;--brand:#6FA9E0;--route:#FF4FB4;--line:#2E4860}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
+*{box-sizing:border-box}html,body{height:100%;margin:0}[hidden]{display:none!important}   /* 20 Nov: the code box showed above the map on every follow link (form{display:grid} beat hidden) */
 body{background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;display:flex;flex-direction:column}
 header{border-top:3px solid var(--route);display:flex;align-items:center;gap:12px;padding:10px max(14px,env(safe-area-inset-left,0px));background:var(--panel)}
 header img{height:30px}header h1{margin:0;font:600 19px/1.1 "Space Grotesk",system-ui,sans-serif}
