@@ -839,7 +839,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     /* MOB floats just above whatever sits at the bottom: the bar, or on a phone the panel sheet when it is open */
     (function () { var bar = $('bar'), pn = $('panel'); if (!bar) return;
       function bh() { var top = bar.getBoundingClientRect().top; if (pn && !pn.hidden) { var r = pn.getBoundingClientRect(); if (r.height && r.top > innerHeight * 0.3 && r.left < 80 && r.top < top) top = r.top; }   /* the GPS window keeps clear of man overboard's column now (screen rules, 16 Nov), so MOB no longer has to jump above it */ document.documentElement.style.setProperty('--barH', Math.max(0, Math.round(innerHeight - top)) + 'px'); }
-      bh(); window.addEventListener('resize', bh); if (window.ResizeObserver) { var ro = new ResizeObserver(bh); ro.observe(bar); if (pn) ro.observe(pn); } setInterval(bh, 700); })();
+      /* 20 Nov: on a phone the open plotter bar lay under man overboard, which hid the start of its left column (VMC); MOB steps just below the
+         plotter bar when there is room (otherwise it stays, rather than cover another window or button), unless the crew have moved MOB themselves */
+      function aside() { var bt = $('mobBtn'); if (!bt || bt.classList.contains('mobmoved')) return; var pl = [$('fsPlot'), $('navPlot')].filter(function (e) { return e && !e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none'; })[0];
+        if (bt.dataset.aside) { bt.style.removeProperty('top'); bt.style.removeProperty('bottom'); delete bt.dataset.aside; }
+        if (!pl) return; var a = bt.getBoundingClientRect(), r = pl.getBoundingClientRect(); if (!(a.left < r.right && a.right > r.left && a.top < r.bottom && a.bottom > r.top)) return;
+        var ss = $('solStartScr'), low = bar.getBoundingClientRect().top; if (ss && !ss.hidden && ss.getClientRects().length) { var sr = ss.getBoundingClientRect(); if (sr.top > r.bottom) low = Math.min(low, sr.top); } var lim = low - a.height - 6, y = r.bottom + 6 <= lim ? r.bottom + 6 : null; if (y == null) return; bt.style.setProperty('top', Math.round(y) + 'px', 'important'); bt.style.setProperty('bottom', 'auto', 'important'); bt.dataset.aside = '1'; }   /* important: the start screen pins MOB under the header with !important */
+      bh(); aside(); window.addEventListener('resize', function () { bh(); aside(); }); if (window.ResizeObserver) { var ro = new ResizeObserver(function () { bh(); aside(); }); ro.observe(bar); if (pn) ro.observe(pn); } setInterval(function () { bh(); aside(); }, 700); })();
     hold($('mobEnd'), 1500, mobEnd);
     $('mobCentre').onclick = function (e) { e.stopPropagation(); var m = mobGet(); if (!m) return; var small = $('mob').classList.toggle('small'); this.textContent = small ? 'Full panel' : 'Show on chart'; if (small) { view.la = m.lat; view.lo = m.lon; view.s = Math.max(view.s, 4000); } closePanel(); draw(); };
     if (mobGet()) mobShow();
@@ -1835,6 +1841,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var r = $('map').getBoundingClientRect(); b.textContent = '＋ Add a mark here'; b.style.left = (r.left + x) + 'px'; b.style.top = (r.top + y) + 'px'; b.hidden = false;
     b.onclick = function (e) { e.stopPropagation(); b.hidden = true; if (!S.edit) return; editSnap(); S.edit.pts.splice(leg, 0, q); editPrompt(); draw(); };
   }
+  window.__fsMatrix = function () { if (!S.matrix) return null; return { beaten: S.beaten || [], models: S.matrix.models, ids: S.routes.map(function (r) { return r.id; }), own: S.routes.map(function (r) { return r.r.finish; }), cols: S.matrix.cols, start: S.matrix.start }; };   /* E7: every route sailed in every model, for the automatic tests */
   window.__fsRoutes = function () { return (S.routes || []).map(function (r) { var p = r.r.path, w = 180, iw = 0; p.forEach(function (q, i) { if (q.lo < w) { w = q.lo; iw = i; } }); return { id: r.id, name: r.name, n: p.length, end: [p[p.length - 1].la, p[p.length - 1].lo], west: [p[iw].la, w, iw, p[iw].leg], legs: S.legs && S.legs.map(function (l) { return l.name; }) }; }); };
   window.__fsNear = function (la, lo, r) { var s = S.routes && S.routes[0]; if (!s) return null; return s.r.path.map(function (q, i) { return [i, +q.la.toFixed(3), +q.lo.toFixed(3), q.leg, q.t ? new Date(q.t * 1000).toISOString().slice(5, 16) : '']; }).filter(function (q) { return Math.abs(q[1] - la) < r && Math.abs(q[2] - lo) < r * 1.6; }); };
   window.__fsXY = function (la, lo) { var r = $('map').getBoundingClientRect(); return [r.left + X(lo), r.top + Y(la)]; };   /* for the automatic tests */
@@ -2602,6 +2609,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     function pass(quick) {
     var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
+      if (!quick) { try { var e7 = JSON.parse(store('fs-e7full') || 'null'); if (e7 && typeof e7 === 'object') Object.assign(base, e7); } catch (e) {} }   /* E7 full-search check: finer steps for the refined pass, set only by the automatic tests */
       if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180, fine: false });   /* quick first pass: about a sixth of the work; the sectors stay coarse near marks too (fine: false, speed plan 1, Stuart 20 Nov 06:45): the first route is always replaced by the refined one, which keeps E2's full search */
       var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
@@ -2629,6 +2637,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           S.sel = best; S.base = base; S.legs = legs; S.start = start;
           var part = S.routes.filter(function (x) { return x.r.partial; });
           $('runNote').textContent = (quick ? 'Quick route in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Choose an earlier start for a full route.' : '') + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
+          /* E7 / F75 (20 Nov): the optimiser can be beaten. Each route is sailed in every forecast (the matrix); where another route's track is
+             quicker in a model's own forecast than that model's own route, say so: the best known route in that forecast is that track */
+          S.beaten = []; ms.forEach(function (m, j) { var i = -1; S.routes.forEach(function (x, k) { if (x.id === m) i = k; }); if (i < 0) return; var c = cols[j], bi = i; c.forEach(function (v, k) { if (v < c[bi]) bi = k; }); var d = (c[i] - c[bi]) * 60; if (bi !== i && d >= 0.5) S.beaten.push({ model: m, name: S.routes[i].name, by: S.routes[bi].name, min: d }); });
+          if (S.beaten.length) $('runNote').textContent += ' Best known: ' + S.beaten.map(function (q) { return 'in ' + q.name + '\u2019s forecast the ' + q.by + ' track is ' + q.min.toFixed(1) + ' min quicker than its own route'; }).join('; ') + '.';
           var edge = edgeHit(); if (edge) $('runNote').textContent += ' ' + edge;   /* shown in the checks list, not as an error */
           return ghosts();
         });
