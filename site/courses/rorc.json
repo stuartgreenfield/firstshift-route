@@ -1,6 +1,6 @@
 {
  "note": "RORC races in the FirstShift Route area. Until RORC publishes a 2027 course, each race carries its last published course and the app warns that it will change. Positions are approximate charted positions of the named features, for routing only: check the sailing instructions. Rounding sides marked assumed are FirstShift's assumption.",
- "updated": "2026-11-11",
+ "updated": "2026-11-18",
  "races": [
   {
    "id": "cervantes",
@@ -192,7 +192,7 @@
    "id": "fastnet",
    "name": "Rolex Fastnet Race",
    "date2027": "2027-07-24",
-   "dateSource": "charter listing, not yet confirmed by RORC",
+   "dateSource": "RORC: start Saturday 24 July 2027, as the final race of the 2027 Admiral's Cup (https://www.rorc.org/rorc-announces-dates-for-2027-admirals-cup-building-on-spectacular-comeback-08-2025). 2027 sailing instructions not yet published.",
    "courseYear": 2025,
    "courseStatus": "last-edition",
    "start": {
