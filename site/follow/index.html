@@ -28,23 +28,26 @@ button{font:600 15px Inter,system-ui,sans-serif;padding:10px 14px;border-radius:
 </head>
 <body>
 <header><img src="/brand/sails-dark.svg" alt="FirstShift"><div><h1 id="title">Follow the boat</h1><div class="sub" id="sub">FirstShift Route</div></div></header>
-<form id="ask" hidden><label for="code">The boat's six-letter code</label><input id="code" maxlength="6" autocomplete="off" placeholder="ABC234"><button>Follow</button><p class="note">The crew share the code with family and friends. Only people with the code can see the boat.</p><p class="err" id="err"></p></form>
+<form id="ask" hidden><label for="code">The boat's follow code</label><input id="code" maxlength="8" autocomplete="off" placeholder="ABCD2345"><button>Follow</button><p class="note">The crew send family and friends a follow link with an eight-character follow code. Only people with it can see the boat, and they cannot change anything.</p><p class="err" id="err"></p></form>
 <div id="map" hidden></div>
 <div class="info" id="info" hidden><div><span>Last position</span><b id="iAt">-</b></div><div><span>Speed</span><b id="iSog">-</b></div><div><span>Planned finish</span><b id="iFin">-</b></div><div><span>Updated</span><b id="iUp">-</b></div></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (function () {
-  var $ = function (id) { return document.getElementById(id); }, q = new URLSearchParams(location.search), code = (q.get('boat') || '').toUpperCase(), map, track, route, boat, fitted = false;
-  function when(ms) { var d = new Date(ms); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  var $ = function (id) { return document.getElementById(id); }, q = new URLSearchParams(location.search), fcode = (q.get('f') || '').toUpperCase(), code = (q.get('boat') || '').toUpperCase(), map, track, route, boat, fitted = false;
+  /* the viewer's own time, with the zone named (Stuart 20 Nov 06:25), for example "Sat 14:20 BST" */
+  function when(ms) { var d = new Date(ms), z = ''; try { z = new Intl.DateTimeFormat('en-GB', { timeZoneName: 'short' }).formatToParts(d).filter(function (p) { return p.type === 'timeZoneName'; })[0].value; } catch (e) {} return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + (z ? ' ' + z : ''); }
   function ago(ms) { var m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'just now' : m < 90 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; }
-  if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { $('ask').hidden = false; $('ask').onsubmit = function (e) { e.preventDefault(); var c = $('code').value.trim().toUpperCase(); if (/^[A-HJ-NP-Z2-9]{6}$/.test(c)) location.search = '?boat=' + c; else $('err').textContent = 'A code is six letters and numbers.'; }; return; }
+  /* the follow code (?f=, eight characters, view only: 20 Nov); links sent before then carry ?boat= and still open */
+  var api = /^[A-HJ-NP-Z2-9]{8}$/.test(fcode) ? '/api/follow/' + fcode : /^[A-HJ-NP-Z2-9]{6}$/.test(code) ? '/api/track/' + code : null;
+  if (!api) { $('ask').hidden = false; $('ask').onsubmit = function (e) { e.preventDefault(); var c = $('code').value.trim().toUpperCase(); if (/^[A-HJ-NP-Z2-9]{8}$/.test(c)) location.search = '?f=' + c; else if (/^[A-HJ-NP-Z2-9]{6}$/.test(c)) location.search = '?boat=' + c; else $('err').textContent = 'A follow code is eight letters and numbers.'; }; return; }
   $('map').hidden = false; $('info').hidden = false;
   map = L.map('map', { zoomControl: true }).setView([50.6, -2], 7);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 13, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
   function load() {
-    fetch('/api/track/' + code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+    fetch(api, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       if (j.error) { $('sub').textContent = j.error; return; }
-      $('title').textContent = j.name || 'Follow the boat'; $('sub').textContent = 'FirstShift Route · updates every two minutes';
+      $('title').textContent = j.name || 'Follow the boat'; $('sub').textContent = 'FirstShift Route · the boat reports every 15 minutes';
       var pts = (j.track || []).map(function (p) { return [p[1], p[2]]; });
       if (track) track.remove(); if (route) route.remove(); if (boat) boat.remove();
       if (j.route && j.route.path && j.route.path.length) route = L.polyline(j.route.path, { color: '#FF4FB4', weight: 2, dashArray: '6 6', opacity: 0.8 }).addTo(map).bindTooltip('Planned route' + (j.route.name ? ': ' + j.route.name : ''));

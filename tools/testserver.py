@@ -36,32 +36,56 @@ class H(http.server.SimpleHTTPRequestHandler):
         if not OK.match(code): self._json({'error': 'A boat code is six letters and numbers.'}, 400); return True
         k = 'track:' + code
         with LOCK: cur = KV.get(k) or {'track': []}
+        def follow():
+            with LOCK:
+                f = KV.get('followof:' + code)
+                if not f:
+                    import secrets; f = ''.join(secrets.choice('ABCDEFGHJKLMNPQRSTUVWXYZ23456789') for _ in range(8)); KV['followof:' + code] = f; KV['follow:' + f] = code
+            return f
         if self.command == 'GET':
-            self._json({'code': code, 'name': cur.get('name', ''), 'at': cur['at'], 'track': cur.get('track', []), 'route': cur.get('route')} if cur.get('at') else {'error': 'Nothing shared under that code yet.'}, 200 if cur.get('at') else 404); return True
+            self._json({'code': code, 'follow': follow(), 'name': cur.get('name', ''), 'at': cur['at'], 'track': cur.get('track', []), 'route': cur.get('route')} if cur.get('at') else {'error': 'Nothing shared under that code yet.'}, 200 if cur.get('at') else 404); return True
         n = int(self.headers.get('content-length') or 0); body = self.rfile.read(n).decode()
         if len(body) > 120 * 1024: self._json({'error': 'Too much in one go.'}, 413); return True
         try: d = json.loads(body)
         except Exception: self._json({'error': 'Not readable.'}, 400); return True
         now = int(time.time() * 1000); ok = lambda x, lo, hi: isinstance(x, (int, float)) and not isinstance(x, bool) and lo <= x <= hi
-        if d.get('pos'):
-            t, la, lo, sog = (list(d['pos']) + [None] * 4)[:4]
-            if not (ok(t, now / 1000 - 86400, now / 1000 + 600) and ok(la, -90, 90) and ok(lo, -180, 180)): self._json({'error': 'Not a position.'}, 400); return True
-            tr = cur.get('track', [])
+        tr = cur.get('track', [])
+        def add(q):
+            if not isinstance(q, list): return False
+            t, la, lo, sog = (list(q) + [None] * 4)[:4]
+            if not (ok(t, now / 1000 - 7 * 86400, now / 1000 + 600) and ok(la, -90, 90) and ok(lo, -180, 180)): return False
             if not tr or t - tr[-1][0] >= 60: tr.append([round(t), round(la, 5), round(lo, 5), round(sog, 1) if ok(sog, 0, 60) else None])
-            cur['track'] = tr[-3000:]
+            return True
+        if d.get('pos') and not add(d['pos']): self._json({'error': 'Not a position.'}, 400); return True
+        if isinstance(d.get('pts'), list):
+            for q in sorted([q for q in d['pts'][:2000] if isinstance(q, list) and q], key=lambda q: q[0] if isinstance(q[0], (int, float)) else 0): add(q)
+        cur['track'] = tr[-3000:]
         if isinstance(d.get('route'), dict) and isinstance(d['route'].get('path'), list):
             path = [[round(q[0], 4), round(q[1], 4)] for q in d['route']['path'] if isinstance(q, list) and len(q) > 1 and ok(q[0], -90, 90) and ok(q[1], -180, 180)][:1500]
             cur['route'] = {'at': now, 'name': str(d['route'].get('name') or '')[:80], 'path': path, 'finish': d['route'].get('finish') if ok(d['route'].get('finish'), 0, 9e9) else None}
         if isinstance(d.get('name'), str): cur['name'] = d['name'][:60]
         cur['at'] = now
         with LOCK: KV[k] = cur
-        self._json({'code': code, 'at': now, 'points': len(cur.get('track', []))}); return True
+        self._json({'code': code, 'follow': follow(), 'at': now, 'points': len(cur.get('track', []))}); return True
+    def _follow(self):
+        # stands in for site/functions/api/follow/[code].js: the family's view-only follow code (20 Nov)
+        m = re.match(r'^/api/follow/([^/?#]+)', self.path)
+        if not m: return False
+        if self.command != 'GET': self._json({'error': 'GET only.'}, 405); return True
+        f = m.group(1).upper()
+        if not re.match(r'^[A-HJ-NP-Z2-9]{8}$', f): self._json({'error': 'A follow code is eight letters and numbers.'}, 400); return True
+        with LOCK: code = KV.get('follow:' + f); cur = KV.get('track:' + code) if code else None
+        if not code: self._json({'error': 'No boat with that follow code.'}, 404); return True
+        if not cur or not cur.get('at'): self._json({'error': 'Nothing shared yet.'}, 404); return True
+        self._json({'name': cur.get('name', ''), 'at': cur['at'], 'track': cur.get('track', []), 'route': cur.get('route')}); return True
     def do_POST(self):
         if self.path.startswith('/api/track/') and self._track(): return
+        if self.path.startswith('/api/follow/') and self._follow(): return
         self._json({'error': 'GET or POST only.'}, 405)
     def do_GET(self):
         if self.path.startswith('/api/boat/') and self._api(): return
         if self.path.startswith('/api/track/') and self._track(): return
+        if self.path.startswith('/api/follow/') and self._follow(): return
         super().do_GET()
     def do_PUT(self):
         if not self._api(): self._json({'error': 'GET or PUT only.'}, 405)
