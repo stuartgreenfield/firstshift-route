@@ -12,7 +12,7 @@
 
   /* Route, Level 1: get going the basic way (race, forecast, route, plotter) */
   var ROUTE = [
-    { el: '#raceBtn', t: 'Your race', x: 'Tap the race name to choose a RORC, JOG or other race (the Sydney Hobart is under Other races), edit a stored course, open a route you saved, or draw a course of your own on the chart.', help: 'Setting up a race' },
+    { el: '#raceBtn', t: 'Your race', x: 'Tap the race name to choose a RORC, JOG or other race (the Rolex Sydney Hobart Yacht Race has its own menu), edit a stored course, open a route you saved, or draw a course of your own on the chart.', help: 'Setting up a race' },
     { el: '#startChip', t: 'The start', x: 'When your class starts. Every route begins here. Change it and Route works the race out again for every forecast.', help: 'Setting up a race' },
     { el: '#setBtn', t: 'Settings', x: 'Your boat, sails and reefs, the forecast models, the safety depth and your units. Set your boat once and Route remembers it on this device.', help: 'Your boat' },
     { el: function () { var f = $('finBox'), c = f && [].filter.call(f.children, function (x) { return x.getClientRects().length && x.offsetHeight > 20; })[0]; return c && innerWidth < 600 ? c : f; }, before: function () { openSheet('decision'); }, wait: 900, alt: '#panelBtn', t: 'The routes', x: 'One route for each forecast model, each with its finish time. The fastest is marked. Where the models agree, you can trust the route more. Tap one to show it on the chart.', help: 'Routes' },
