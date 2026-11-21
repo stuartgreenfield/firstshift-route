@@ -133,7 +133,7 @@
   function hold(target, elOf, id) {
     var t = null, sx = 0, sy = 0;
     target.addEventListener('pointerdown', function (e) {
-      if (e.button > 0 || M.el || locked()) return; var el = elOf(); if (!el) return; sx = e.clientX; sy = e.clientY; clearTimeout(t);
+      if (e.button > 0 || M.el || locked() || id === 'navClearBtn') return; var el = elOf(); if (!el) return; sx = e.clientX;   /* 21 Nov: CLEAR's long press opens its own choice, which has Move this button (fscore.js) */ sy = e.clientY; clearTimeout(t);
       t = setTimeout(function () { t = null; swallow = Date.now(); begin(el, id); var c = cur(el); M.drag = { x: sx, y: sy, dx: c[0], dy: c[1], moved: false }; if (navigator.vibrate) try { navigator.vibrate(30); } catch (x) {} }, LONG);
     }, true);
     target.addEventListener('pointermove', function (e) { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) { clearTimeout(t); t = null; } }, true);

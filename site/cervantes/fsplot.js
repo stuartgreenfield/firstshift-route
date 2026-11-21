@@ -109,19 +109,31 @@
   }
   function cell(k, v, sub, cls, tip) { return '<div class="rpl' + (cls ? ' ' + cls : '') + '"' + (tip ? ' title="' + String(tip).replace(/"/g, '&quot;') + '"' : '') + '><span>' + k + '</span><b>' + v + '</b><i>' + (sub || '&nbsp;') + '</i></div>'; }
   function modeBtn() { return '<button class="rpnav rpmode" data-k="mode" aria-label="Steer to the next mark or along the route" title="Steer to the next mark or along the route">' + (C.mode === 'route' ? 'ROUTE' : 'MARK') + '</button>'; }
+  /* 21 Nov (Stuart 07:19): the ‹ › arrows run the full height of the panel, about 56 px wide, and a swipe left or right on the panel
+     changes the mark too. The panel is no longer rebuilt every second (a tap landing during a rebuild was lost): its parts are made
+     once and only the figures that changed are written; the buttons stay the same buttons. */
+  var parts = null;
+  function shell() {
+    if (parts) return parts;
+    bar.innerHTML = '<button class="rparrow" data-k="prev" aria-label="Previous mark">‹</button><div class="rpbody"><div class="rphead"></div><div class="rprest"></div></div><button class="rparrow" data-k="next" aria-label="Next mark">›</button>';
+    parts = { head: bar.querySelector('.rphead'), rest: bar.querySelector('.rprest'), key: null, name: null, restH: null };
+    return parts;
+  }
+  function put(e, h, k) { if (parts[k] !== h) { parts[k] = h; e.innerHTML = h; } }
   function render(o) {
     if (!bar) return; bar.hidden = !C.on; document.body.classList.toggle('rplot', !!C.on); if (!C.on) return;
-    var nav = function (k, t, l) { return '<button class="rpnav" data-k="' + k + '" aria-label="' + l + '">' + t + '</button>'; };
+    var P = shell();
     var name = o.ok && o.m.route ? '<b>' + esc(o.m.name) + '</b><small>' + (o.after != null ? 'then ' + brg(o.after) : 'the end of the route') + '</small>' : !o.ok ? '<b>Plotter</b><small>' + esc(o.why) + '</small>' : '<b>' + esc(o.m.name || (o.m.finish ? 'Finish' : 'Mark')) + '</b><small>' + (o.m.finish ? 'Finish' : 'Mark ' + (o.i + 1) + ' of ' + (o.n - 1)) + (o.m.side && !o.m.finish ? ', leave to ' + o.m.side : '') + '</small>';
-    var x = o.xte;
-    if (C.mini && o.ok) {
-      bar.classList.add('mini');
-      bar.innerHTML = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show all the figures"><b>' + esc(o.m.name || 'Mark') + ' <em>▾ more</em></b><span class="rpline">' + brg(o.btw) + ' · ' + dist(o.dtw) + (x ? ' · XTE ' + (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '') + '</span></button>' + nav('next', '›', 'Next mark') + modeBtn() + '</div>';
-      return;
-    }
-    bar.classList.remove('mini');
-    var h = '<div class="rphead">' + nav('prev', '‹', 'Previous mark') + '<button class="rpname" data-k="mini" aria-label="Show one line">' + name + '</button>' + nav('next', '›', 'Next mark') + modeBtn() + '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button></div>';
-    if (o.ok) {
+    var x = o.xte, mini = !!(C.mini && o.ok);
+    bar.classList.toggle('mini', mini);
+    var key = (mini ? 'mini' : 'full') + '|' + C.mode + '|' + (window.FS_HIDE || 'Hide');
+    if (P.key !== key) { P.key = key; P.name = null;
+      P.head.innerHTML = '<button class="rpname" data-k="mini" aria-label="' + (mini ? 'Show all the figures' : 'Show one line') + '"></button>' + modeBtn() + (mini ? '' : '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button>'); }
+    var nb = P.head.querySelector('.rpname');
+    var nm = mini ? '<b>' + esc(o.m.name || 'Mark') + ' <em>▾ more</em></b><span class="rpline">' + brg(o.btw) + ' · ' + dist(o.dtw) + (x ? ' · XTE ' + (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '') + '</span>' : name;
+    if (P.name !== nm) { P.name = nm; nb.innerHTML = nm; }
+    var h = '';
+    if (o.ok && !mini) {
       h += '<div class="rpgrid">' +
         cell('BTW', brg(o.btw), 'true bearing') +
         cell('DTW', dist(o.dtw), '') +
@@ -132,11 +144,13 @@
         cell('XTE', x ? (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '--', x ? (x.d < 0.01 ? (o.m.route ? 'on the route' : 'on the leg') : 'nm ' + (x.side === 'L' ? 'left' : 'right') + ' of the ' + (o.m.route ? 'route' : 'leg')) : '') +
         (o.back && !o.m.route ? cell('BACK ON', brg(o.back.brg), o.back.min != null ? dist(o.back.d) + ', ' + (o.back.min < 1 ? 'under a minute' : Math.round(o.back.min) + ' min') + ' at this speed' : dist(o.back.d) + ' to the line') : '') +
         cell('SOG · COG', o.sog != null ? n1(o.sog) + ' · ' + (o.cog != null ? ('00' + Math.round(o.cog) % 360).slice(-3) + '°' : '--') : '--', 'this phone’s GPS') + '</div>';
-      h += '<p class="rpfoot">' + (o.ok && o.dr ? '<b class="npdr">DEAD RECKONING: no GPS</b> · ' : '') + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + (o.m.route ? 'Steering along the route on the chart' : (o.noRoute ? 'No route on the chart: steering to the mark' : 'Next mark when within ' + C.radius + ' nm')) + ' · bearings true · not for navigation</p>';
+      h += '<p class="rpfoot">' + (o.ok && o.dr ? '<b class="npdr">DEAD RECKONING: no GPS</b> · ' : '') + (msg && msg.until > Date.now() ? '<b>' + esc(msg.t) + '</b> · ' : '') + (o.m.route ? 'Steering along the route on the chart' : (o.noRoute ? 'No route on the chart: steering to the mark' : 'Next mark when within ' + C.radius + ' nm')) + ' · bearings true · not for navigation · swipe for the next mark</p>';
     }
-    bar.innerHTML = h;
+    put(P.rest, h, 'restH');
   }
+  function step(d) { var c = course(); if (!c) return; setMark((MKS[c.key] || 0) + d); }
   function onClick(e) {
+    if (sw && sw.done) { sw = null; return; }
     var t = e.target.closest('button'); if (!t) return;
     if (t.dataset.k === 'prev' || t.dataset.k === 'next') { var c = course(); if (!c) return; setMark((MKS[c.key] || 0) + (t.dataset.k === 'next' ? 1 : -1)); return; }
     if (t.dataset.k === 'mini') { C.mini = !C.mini; saveC(); tick(true); }
@@ -172,7 +186,7 @@
     }
   };
 
-  var lastDraw = 0;
+  var lastDraw = 0, sw = null;
   function tick(force) {
     try { last = calc(); } catch (e) { last = { ok: false, why: 'Plotter error: ' + e.message }; }
     render(last);
@@ -182,6 +196,10 @@
     var chart = document.querySelector('.chart'); if (!chart) return;
     bar = document.createElement('div'); bar.className = 'rplotbar'; bar.id = 'fsPlot'; bar.hidden = true; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Plotter: next mark');
     chart.appendChild(bar); bar.addEventListener('click', onClick);
+    /* swipe left for the next mark, right for the previous one */
+    bar.addEventListener('pointerdown', function (e) { sw = { x: e.clientX, y: e.clientY, id: e.pointerId, done: false }; });
+    bar.addEventListener('pointerup', function (e) { if (!sw || e.pointerId !== sw.id) return; var dx = e.clientX - sw.x, dy = e.clientY - sw.y; if (Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) { sw.done = true; step(dx < 0 ? 1 : -1); try { if (navigator.vibrate) navigator.vibrate(20); } catch (er) {} setTimeout(function () { if (sw && sw.done) sw = null; }, 400); } else sw = null; });
+    bar.addEventListener('pointercancel', function () { sw = null; });
     var grp = document.getElementById('liveBtn'); grp = grp && grp.parentNode;
     if (grp) { var pb = document.createElement('button'); pb.className = 'spd rplotb'; pb.id = 'fsPlotBtn'; pb.type = 'button'; pb.textContent = 'PLOT'; pb.title = 'Plotter: the next mark from this phone’s GPS'; pb.setAttribute('aria-label', 'Plotter'); pb.setAttribute('aria-pressed', String(!!C.on)); pb.onclick = function () { toggle(); }; grp.appendChild(pb); }
     setInterval(tick, 1000); if (C.on) setTimeout(function () { toggle(true); }, 1500); else tick();

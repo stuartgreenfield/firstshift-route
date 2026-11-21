@@ -755,12 +755,27 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var y = r.courseStatus === 'last-edition' ? 'the ' + r.courseYear + ' course (last edition)' : r.courseStatus === 'set-on-day' ? 'a course set on the day' : r.courseStatus === 'not-published' ? 'the start and finish only' : 'the ' + r.courseYear + ' course';
     return r.courseStatus === 'published' ? '' : 'Showing ' + y + '. The 2027 course is not published yet and will change: check the sailing instructions.';
   }
-  function applyRace(id) {
+  /* F101 (Stuart 21 Nov 07:31 and 07:37, "go for your recommendation"): editing a stored RORC or JOG race keeps your edit as your version
+     of that race (one of My races, linked to it by raceId), and choosing the race again opens your version, not the stored course
+     (which looked as if the edit had been lost). "Back to the published course" unlinks it: it stays under My races. If the stored
+     course is corrected later, your version says the published course has changed since your edit. Shared by the boat code. */
+  function courseSig(c) { var q = function (x) { return x ? (+x.lat).toFixed(4) + ',' + (+x.lon).toFixed(4) + (x.side || '') : ''; }; return [q(c.start)].concat((c.marks || []).map(q)).concat([q(c.finish)]).join(';'); }
+  function yourVersion(id) { return myRaces().filter(function (x) { return x.raceId === id && x.course; })[0] || null; }
+  function yourNote() {
+    var y = S.yours, el = $('courseNote'); if (!y || !el) return;
+    var d = new Date(tzMs(y.rec.savedAt)).toUTCString().slice(5, 16), moved = y.rec.baseSig && y.rec.baseSig !== courseSig(y.race);
+    el.insertAdjacentHTML('afterbegin', '<span class="yourc"><b>Your course, edited ' + d + '.</b> ' + (moved ? '<b>The published course has changed since your edit.</b> ' : '') + '<button type="button" class="btn" id="yourPub">Back to the published course</button></span> ');
+    $('yourPub').onclick = function () { var a = myRaces(); a.forEach(function (x) { if (x.id === y.rec.id) { x.raceId = null; if (!/your version/.test(x.name)) x.name += ' (your version)'; } }); setMyRaces(a); if (BC.push) BC.push(); S.myId = null; applyRace(y.race.id, true); S.from = null; run(); busy('Back to the published ' + y.race.name + '. Your version is kept under My races.'); setTimeout(function () { busy(''); }, 4000); };
+  }
+  function applyRace(id, pub) {
     var r = RACES.filter(function (x) { return x.id === id; })[0]; if (!r) return;
     try { var rsel = $('raceSel'); if (rsel && rsel.value !== id) rsel.value = id; } catch (e) {}   /* the RORC race box shows the race chosen from the Races list too (Stuart 20 Nov 11:55: the box was blank) */
-    applyCourseObj(r);
+    var mine = !pub && yourVersion(id);
+    if (mine) { S.myId = mine.id; applyCourseObj(asRace(mine.course, mine.id)); S.yours = { race: r, rec: mine }; yourNote(); return; }
+    S.yours = null; applyCourseObj(r);
   }
   function applyCourseObj(r) {
+    S.yours = null;
     var wasIn = S.inshore; S.cleared = false; S.inshore = !!r.solent;
     if (!r.solent) { S.offPrev = null; if (wasIn) { try { FSSolent.step(0); FSSolent.on(false); } catch (e) {} } }
     document.body.classList.toggle('inshore', S.inshore);
@@ -797,6 +812,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var qr = QS0.get('race'); if (qr && RACES.some(function (r) { return r.id === qr && (r.page || r.id) === HERE; })) want = qr;
       if (want !== home && !QS0.get('my') && hop(want)) return;   /* a saved course in the address opens that course, not the last RORC race (Stuart 14 Nov: an edited course came back with no marks) */
       var lastBoot = LAST0; $('raceSel').value = want; applyRace(want);
+      if (QS0.get('edit') === '1' && qr === want) setTimeout(function () { try { startEdit(courseCopy()); } catch (e) {} }, 1500);   /* F101: Edit from another page's race list */
       if (!RACES.some(function (r) { return r.id === want; })) { var c0 = meta.course; $('raceTitle').textContent = c0.name + ' · ' + c0.start.name.replace(/^Start,\s*/, '') + ' to ' + c0.finish.name.replace(/^Finish,\s*/, ''); setShort(c0.name.replace(/^English /, '').replace(/^Southern /, '')); }
       var qs = QS0, my = qs.get('my'), last = lastBoot;
       if (!my && !qr && !qs.get('course') && !S.pendingCourse && last) {
@@ -1315,7 +1331,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (window.FS_SOLENT) rec.page = HERE;   /* FirstShift Solent keeps its own races on its own page */
     if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
     if (courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
-    S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); putSettings(rec.settings); if (window.__fsPendingStart) { var pse = window.__fsPendingStart; window.__fsPendingStart = null; try { setStart(pse); startChosen(true); } catch (e) {} }   /* F17: the start time chosen in the Solent step box, so Route this race routes at once */ $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
+    S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); var rb = rec.raceId && RACES.filter(function (x) { return x.id === rec.raceId; })[0]; if (rb) { S.yours = { race: rb, rec: rec }; yourNote(); } putSettings(rec.settings); if (window.__fsPendingStart) { var pse = window.__fsPendingStart; window.__fsPendingStart = null; try { setStart(pse); startChosen(true); } catch (e) {} }   /* F17: the start time chosen in the Solent step box, so Route this race routes at once */ $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
   /* Mark's first card lists the latest stored races (Stuart 17 Nov 09:42: "This first pull down window could also show list of previously saved races") */
   window.__fsSavedList = function (n) { try { return myRaces().map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || '' }; }).concat(oldRoutes().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary || '' }; })).sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, n || 4); } catch (e) { return []; } };
@@ -1357,7 +1373,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var olds = oldRoutes(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(tzMs(o.savedAt)).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
     var orgs = mode === 'rorc' ? ['RORC'] : mode === 'jog' ? ['JOG'] : ['RORC', 'JOG'];
     orgs.forEach(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); if (!rs.length) return;
-    h += '<h3>' + o + ' races</h3>' + (o === 'JOG' ? '<p class="note">2027 dates from the JOG programme. JOG has not published its 2027 courses: coastal races are set on the day, and most passage races show the start and finish only.</p>' : '') + rs.map(function (r) { var pg = r.page || r.id, ready = READY[pg]; return '<div class="ritem"><div><b>' + r.name + '</b><span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (r.series ? r.series + ' · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button></div></div>'; }).join(''); });
+    h += '<h3>' + o + ' races</h3>' + (o === 'JOG' ? '<p class="note">2027 dates from the JOG programme. JOG has not published its 2027 courses: coastal races are set on the day, and most passage races show the start and finish only.</p>' : '') + rs.map(function (r) { var pg = r.page || r.id, ready = READY[pg], yv = yourVersion(r.id); return '<div class="ritem"><div><b>' + r.name + '</b>' + (yv ? ' <span class="yourtag">your course</span>' : '') + '<span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' 2027 · ' : '') + (r.series ? r.series + ' · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button><button class="btn" data-redit="' + r.id + '" aria-label="Edit ' + r.name + '">Edit</button></div></div>'; }).join(''); });
     h += bcBox();
     $('raceList').innerHTML = h; bcWire();
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
@@ -1370,6 +1386,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     [].forEach.call($('raceList').querySelectorAll('[data-del]'), function (b) { b.onclick = function () {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tap again to delete'; return; }
       setMyRaces(myRaces().filter(function (x) { return x.id !== b.dataset.del; })); if (S.myId === b.dataset.del) S.myId = null; racesSheet(); }; });
+    [].forEach.call($('raceList').querySelectorAll('[data-redit]'), function (b) { b.onclick = function () {   /* F101: Edit beside every stored race */
+      var id = b.dataset.redit, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (pg !== HERE) { location.href = '../' + pg + '/?race=' + encodeURIComponent(id) + '&edit=1'; return; }
+      S.myId = null; applyRace(id); $('races').hidden = true; startEdit(courseCopy()); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-race]'), function (b) { b.onclick = function () {
       var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + pg + '/?race=' + encodeURIComponent(id); return; }
       S.myId = null; applyRace(id); $('races').hidden = true; if (wizCourseChosen(false)) return; if (!courseIssue(meta.course)) { S.from = null; run(); } };
@@ -1493,7 +1512,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function sessDrop() { try { localStorage.removeItem(sessKey()); } catch (e) {} }
   function sessRestore(o) {
     var d = (o.T0 - T0) / 3600, sh = function (x) { return x == null ? x : x + d; };   /* a newer forecast pack counts its hours from a different moment */
-    S.routes = o.routes.map(function (s) { s.mean = sh(s.mean); s.worst = sh(s.worst); var r = s.r; r.finish = sh(r.finish); r.path.forEach(function (p) { p.t = sh(p.t); }); (r.arrivals || []).forEach(function (a) { a.t = sh(a.t); }); if (r.partial && r.partial.end != null) r.partial.end = sh(r.partial.end); return s; });
+    S.cleared = false; S.routes = o.routes.map(function (s) { s.mean = sh(s.mean); s.worst = sh(s.worst); var r = s.r; r.finish = sh(r.finish); r.path.forEach(function (p) { p.t = sh(p.t); }); (r.arrivals || []).forEach(function (a) { a.t = sh(a.t); }); if (r.partial && r.partial.end != null) r.partial.end = sh(r.partial.end); return s; });
     if (o.matrix) { o.matrix.start = sh(o.matrix.start); o.matrix.cols = o.matrix.cols.map(function (c) { return c.map(sh); }); }
     S.matrix = o.matrix; S.sel = S.routes[o.sel] || S.routes.filter(function (s) { return s.best; })[0] || S.routes[0];
     S.base = o.base; S.legs = o.legs; S.start = Object.assign({}, o.start, { t: sh(o.start.t) }); S.from = o.from ? Object.assign({}, o.from, { t: sh(o.from.t) }) : null; S.to = o.to; S.ghosts = []; S.key = null;
@@ -1908,7 +1927,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__navPick = function (id) { var r = (S.routes || []).filter(function (s) { return s.id === id; })[0]; if (!r) return false; S.sel = r; ghosts().then(function () { matrix(); plan(); fleetTable(); update(); }); return true; };
   window.__navReroute = function (la, lo) { if (S.running) return 'busy'; var t = (Date.now() / 1000 - T0) / 3600; if (t > HMAX() - 1 || !inData({ lat: la, lon: lo })) return 'outside'; S.from = { lat: la, lon: lo, t: t, gps: true }; run(); return 'ok'; };
   window.__navAdjust = function (wdir, wspd) { [['adjWdir', wdir], ['adjWspd', wspd]].forEach(function (x) { var el = $(x[0]); if (!el) return; el.value = x[1]; if (el.oninput) el.oninput(); }); adjPill(); };
-  window.__navCourse = function () { var c = meta && meta.course; if (S.cleared || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
+  window.__navCourse = function () { var c = meta && meta.course; if ((S.cleared && !(S.routes && S.routes.length)) || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
   window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };
   window.__fsAisWarn = function () { return { warned: Object.keys(AIS.warned || {}), own: AIS.own || null }; };   /* F53 test hook */
@@ -2005,7 +2024,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var p = S.edit.pts;
       var pts = p.map(function (q, i) { var mid = i > 0 && i < p.length - 1; if (mid && q.via) return { name: q.name || '', lat: q.lat, lon: q.lon, via: true, must: !!q.must }; return { name: q.name || (i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i), lat: q.lat, lon: q.lon, side: mid ? (q.side || 'port') : undefined }; });
       var c = { name: S.edit.name || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
-      var stv = stv0, keepId = S.myId, later = beyond(+stv); if (later) { stv = String((startRange() || [0, 0])[1]); } S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); startChosen(); S.newDone = true; meta.course.race.id = rec.id; if (later) { futureSet(+stv0); chipStart(); } else futureDrop();
+      var base = S.yours ? S.yours.race : meta.course.race && !meta.course.race.custom ? meta.course.race : null;   /* F101: an edit of a stored race is your version of it */
+      var stv = stv0, keepId = S.myId, later = beyond(+stv); if (later) { stv = String((startRange() || [0, 0])[1]); } S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); if (base) { var ya = myRaces(); ya.forEach(function (x) { if (x.id === rec.id) { x.raceId = base.id; x.baseSig = courseSig(base); } else if (x.raceId === base.id) x.raceId = null; }); setMyRaces(ya); if (BC.push) BC.push(); rec = yourVersion(base.id) || rec; S.yours = { race: base, rec: rec }; } startChosen(); S.newDone = true; meta.course.race.id = rec.id; if (later) { futureSet(+stv0); chipStart(); } else futureDrop();
       $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…');
       var issue = courseIssue(meta.course), reg = issue ? regionFor(c) : null;
       if (reg && reg.id !== HERE) {   /* outside this page's forecasts but inside a whole-area page: keep the course there and open it */
@@ -2703,7 +2723,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       prog(title, 0.02, 'Routing 0 of ' + sets.length + ' models' + (quick ? '' : '. You can use the first routes meanwhile.'), quick ? estQ : estF);
       return Promise.all(sets.map(function (s) { return pool({ type: 'route', o: Object.assign({}, base, { models: s.models, start: start, legs: legs }, s.adj ? { adj: s.adj } : {}) }).then(function (r) { tick(); s.r = r; if (quick && gen === S.gen && S.prov && r && r.path) { S.prov.push(s); draw(); } return s; }, function (e) { tick(); s.err = e.message; return s; }); })).then(function (res) {
         if (gen !== S.gen) throw { abandoned: true };
-        S.routes = res.filter(function (s) { return s.r; }); S.prov = null;
+        S.routes = res.filter(function (s) { return s.r; }); S.prov = null; S.cleared = false;   /* F103 (Stuart 21 Nov 07:35): routes on the chart mean the course is in use; the plotter and tide gate said No course loaded */
         var errs = res.filter(function (s) { return s.err; });
         if (!S.routes.length) throw new Error(errs.length ? errs[0].err : 'No route found.');
         /* E1 (19 Nov 2026): the re-timing now sails by the route's own rules, so a route re-timed in its own forecast takes its own time. The old

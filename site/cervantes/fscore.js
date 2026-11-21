@@ -76,6 +76,8 @@
      again after a minute without a tap on the controls. MOB is never hidden. ---- */
   var CL = { peek: false, timer: null, menu: null };
   function busyUi() { return ['wiz', 'sheet', 'races', 'navPanel', 'navLog', 'layers', 'mob', 'editBar', 'shareSheet'].some(function (id) { var e = document.getElementById(id); return e && !e.hidden; }); }
+  /* 21 Nov (Stuart 07:19): Mark's default is "Off: leave them up"; Route's stays 1 minute */
+  function hideV() { return C.hide == null ? (window.FS_MARK ? 0 : 1) : C.hide; }
   function clearSet(on, why) {
     C.clear = !!on; save(); CL.peek = false; clearTimeout(CL.timer);
     document.body.classList.toggle('navclear', !!on);
@@ -83,18 +85,34 @@
     try { window.dispatchEvent(new Event('resize')); } catch (e) {}
   }
   function clearPeek() { document.body.classList.remove('navclear'); CL.peek = true; C.clear = true; save(); clearArm(); try { window.dispatchEvent(new Event('resize')); } catch (e) {} }
-  function clearArm() { clearTimeout(CL.timer); if (!CL.peek) return; var after = CL.after || (C.hide === 0 ? 0 : (C.hide || 1) * 60000); if (!after) return; CL.timer = setTimeout(function () { if (!CL.peek) return; if (busyUi()) { clearArm(); return; } CL.peek = false; document.body.classList.add('navclear'); try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, after); }
+  function clearArm() { clearTimeout(CL.timer); if (!CL.peek) return; var after = CL.after || hideV() * 60000; if (!after) return; CL.timer = setTimeout(function () { if (!CL.peek) return; if (busyUi()) { clearArm(); return; } CL.peek = false; document.body.classList.add('navclear'); try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, after); }
   function clearToast(t) { var e = document.getElementById('navToast'); if (!e) { e = el('div', 'navtoast'); e.id = 'navToast'; e.setAttribute('role', 'status'); document.body.appendChild(e); } var keep = !e.hidden && e._lines ? e._lines.filter(function (x) { return x !== t && !(/^Up to date|^Carried on/.test(x) && /^Up to date|^Carried on|^Boat link on|^Carried on\. No/.test(t)); }) : []; e._lines = keep.concat([t]).slice(-3); e.textContent = e._lines.join('\n'); e.hidden = false; clearTimeout(e._t); e._t = setTimeout(function () { e.hidden = true; e._lines = []; }, 8000); }   /* notes stack, so a no-signal note is not hidden by the next one */
+  function hideChoice(near) {
+    var o = document.getElementById('navHideCard'); if (o) { o.remove(); return; }
+    o = el('div', 'navhidecard', '<label>Hide the menus again after <select id="navHideSel" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="3">3 minutes</option><option value="5">5 minutes</option></select></label><span class="navhiderow"><button type="button" class="btn" id="navHideMove">Move this button</button><button type="button" class="btn primary" id="navHideOk">Done</button></span>');
+    o.id = 'navHideCard'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Clear screen'); document.body.appendChild(o);
+    var r = near.getBoundingClientRect(); o.style.right = Math.max(8, innerWidth - r.left + 8) + 'px'; o.style.top = Math.max(8, Math.min(innerHeight - o.offsetHeight - 8, r.top - 10)) + 'px';
+    var sel = o.querySelector('select'); sel.value = String(hideV());
+    sel.onchange = function () { window.__navHide(+sel.value); clearToast(+sel.value ? 'Menus hide again after ' + sel.value + ' minute' + (+sel.value > 1 ? 's' : '') + ' without a tap.' : 'Menus stay up until you clear the screen.'); };
+    o.querySelector('#navHideOk').onclick = function () { o.remove(); };
+    o.querySelector('#navHideMove').onclick = function () { o.remove(); if (window.NavDrag) NavDrag.begin(near.id); };   /* a long press on a round button moves it; on CLEAR the long press is this choice, so moving is here */
+  }
   function clearBuild() {
     var bar = document.querySelector('.bar'); if (!bar) return;
     var mb = el('button', 'navmenub', 'MENU'); mb.id = 'navMenuBtn'; mb.type = 'button'; mb.setAttribute('aria-label', 'Show the menus'); bar.appendChild(mb);
     var cb = el('button', 'fabhelp navclearb', '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>CLEAR</span>'); cb.id = 'navClearBtn'; cb.type = 'button'; cb.title = 'Clear screen: just the chart'; cb.setAttribute('aria-label', 'Clear screen: just the chart');
     var chart = document.querySelector('.chart'); if (chart) chart.appendChild(cb);
     mb.onclick = function () { clearPeek(); };
-    cb.onclick = function () { clearSet(true); };
+    /* 21 Nov (Stuart 07:19): a long press on CLEAR opens the same "Hide the menus again after" choice as Settings, Display, Clear screen */
+    var cbl = null;
+    cb.addEventListener('pointerdown', function () { clearTimeout(cbl); cb._lp = false; cbl = setTimeout(function () { cb._lp = true; try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} hideChoice(cb); }, 600); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (k) { cb.addEventListener(k, function () { clearTimeout(cbl); if (cb._lp) { cb._lp = false; cb._skip = Date.now() + 500; } }); });   /* the click that ends a long press is not a tap */
+    cb.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    cb.onclick = function () { if (Date.now() < (cb._skip || 0)) return; clearSet(true); };
     /* × on the phone panel: when it is already folded, clear the screen instead of doing nothing */
     var px = document.getElementById('panelX');
-    if (px) px.addEventListener('click', function (e) { var pn = document.getElementById('panel'); if (innerWidth < 900 && pn && pn.classList.contains('collapsed')) { e.stopImmediatePropagation(); e.preventDefault(); clearSet(true); } }, true);
+    /* 21 Nov (Stuart 07:19): with "Off: leave them up" chosen the × only folds the panel, never clears; only CLEAR clears */
+    if (px) px.addEventListener('click', function (e) { var pn = document.getElementById('panel'); if (hideV() !== 0 && innerWidth < 900 && pn && pn.classList.contains('collapsed')) { e.stopImmediatePropagation(); e.preventDefault(); clearSet(true); } }, true);
     /* any tap on the controls while peeking keeps the menus up a while longer */
     document.addEventListener('pointerdown', function (e) { if (CL.peek && !(e.target && e.target.id === 'map')) clearArm(); }, true);
     /* long press on the chart: clear, or bring the menus back */
@@ -108,7 +126,7 @@
       cv.addEventListener('pointermove', function (e) { if (lp && e.pointerId === lp.id && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) lp.no = true; });
       ['pointerup', 'pointercancel'].forEach(function (k) { cv.addEventListener(k, function (e) { fingers = Math.max(0, fingers - 1); if (!lp || e.pointerId !== lp.id) return; var held = Date.now() - lp.at;
         if (k === 'pointerup' && !lp.no && held >= 700 && held < 4000) { var cl = document.body.classList.contains('navclear');
-          if (cl || C.hide !== 0) { lp.fired = true; if (cl) clearPeek(); else clearSet(true); try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} e.stopImmediatePropagation(); } }
+          if (cl || hideV() !== 0) { lp.fired = true; if (cl) clearPeek(); else clearSet(true); try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} e.stopImmediatePropagation(); } }
         if (!lp.fired) lp = null; }, true); });
       cv.addEventListener('click', function (e) { if (lp && lp.fired) { e.stopImmediatePropagation(); e.preventDefault(); lp = null; } }, true);
       cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -166,7 +184,7 @@
   window.__navResume = { save: resumeSave, load: resumeLoad, state: function () { try { return JSON.parse(localStorage.getItem(RES) || 'null'); } catch (e) { return null; } } };
   /* the instrument strip sits just below the top buttons, however many rows they wrap to, so it never covers Settings (found 13 Nov) */
   window.NavToast = function (t) { clearToast(t); };
-  window.__navHide = function (v) { if (v === undefined) return C.hide == null ? 1 : C.hide; C.hide = v; save(); if (CL.peek) clearArm(); };
+  window.__navHide = function (v) { if (v === undefined) return hideV(); C.hide = v; save(); if (CL.peek) clearArm(); };
   window.NavClear = { set: clearSet, peek: clearPeek, on: function () { return document.body.classList.contains('navclear'); }, _after: function (ms) { CL.after = ms; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { clearBuild(); resumeWhenReady(); }); else { clearBuild(); resumeWhenReady(); }
 

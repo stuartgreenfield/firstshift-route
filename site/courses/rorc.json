@@ -176,6 +176,27 @@
      "lon": -1.64967,
      "side": "port",
      "sideAssumed": true
+    },
+    {
+     "name": "Casquets",
+     "lat": 49.72194,
+     "lon": -2.37694,
+     "side": "port",
+     "src": "Les Casquets 49°43′19″N 2°22′37″W (Wikipedia)"
+    },
+    {
+     "name": "Les Hanois, Guernsey",
+     "lat": 49.43506,
+     "lon": -2.70233,
+     "side": "port",
+     "src": "Les Hanois Lighthouse 49°26′06.2″N 2°42′08.4″W (Wikipedia): the whole of Guernsey to port"
+    },
+    {
+     "name": "W Minquiers buoy",
+     "lat": 48.905,
+     "lon": -2.31833,
+     "side": "port",
+     "src": "Plateau des Minquiers W cardinal Q(9) 48°54′.3N 2°19′.1W (Imray ICC18): the whole of the Minquiers to port"
     }
    ],
    "finish": {
@@ -186,7 +207,8 @@
    },
    "nm": 150,
    "source": "https://rorc.org/2026-rorc-racing-programme-unleashed",
-   "page": "channel-area"
+   "page": "channel-area",
+   "setNote": "Course from Stuart Greenfield, 21 Nov 2026: across the Channel leaving the Casquets to port, the whole of Guernsey to port and the whole of the Minquiers to port, finishing at St Malo. Needles Fairway assumed for leaving the Solent."
   },
   {
    "id": "fastnet",
