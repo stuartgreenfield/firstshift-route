@@ -170,3 +170,4 @@ body.gpsstrip #liveBox{display:none!important}
 @media (max-width:899px){#prog{left:var(--gut,16px);transform:none;width:auto;max-width:calc(100% - var(--gut,16px) - 70px)}}
 /* M93: the strip tagged RHUMB while the slider runs the rhumb-line boat on Mark */
 .now.rhumb::before{content:'RHUMB'}
+.battnote{display:flex;flex-direction:column;gap:8px;text-align:left}.battnote .xrow{display:flex;gap:8px;justify-content:flex-end}
