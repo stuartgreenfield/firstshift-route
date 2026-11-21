@@ -144,6 +144,7 @@ def gfs():
 # ---------- DWD ICON-EU (opendata.dwd.de, free, no login): 7 km Europe, hourly to 78 h then 3-hourly to 120 h ----------
 SHARED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'work', '_shared'); os.makedirs(SHARED, exist_ok=True)
 AREA = dict(s=35.0, n=62.0, w=-15.5, e=12.5)   # the whole FirstShift area: one download serves every race
+if not (BOX['s'] > 30 and BOX['w'] > -40 and BOX['e'] < 45): AREA = dict(BOX)   # outside Europe (21 Nov 2026, Sydney Hobart): the area's own box
 
 def icon_eu():
     import bz2
@@ -416,7 +417,7 @@ if __name__ == '__main__':
                 got = {}
                 for x in idx:
                     if x.get('param') not in ('10u', '10v') or x.get('type') != 'pf' or not (1 <= int(x.get('number', 0)) <= NM): continue
-                    k = (int(x['number']), x['param']); p_ = os.path.join(SHARED, f'ens_{d}{r}_{hh:03d}_{k[0]:02d}_{k[1]}.npz')
+                    k = (int(x['number']), x['param']); p_ = os.path.join(SHARED, f'ens_{d}{r}_{hh:03d}_{k[0]:02d}_{k[1]}' + ('' if AREA['w'] < 0 else f"_{AREA['s']:g}_{AREA['w']:g}") + '.npz')   # an area outside Europe keeps its own pieces
                     if not os.path.exists(p_):
                         buf = get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1))
                         a, la, lo = grib_crop(buf, AREA); np.savez(p_, a=a, la=la, lo=lo)
