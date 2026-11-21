@@ -129,11 +129,6 @@
   "t": "Fleet",
   "sec": 10.3
  },
- "my-tracks-2f7747ba": {
-  "f": "my-tracks-2f7747ba.mp3",
-  "t": "My tracks",
-  "sec": 36.8
- },
  "tide-gate-5cca65c": {
   "f": "tide-gate-5cca65c.mp3",
   "t": "Tide gate",
@@ -143,11 +138,6 @@
   "f": "solent-races-on-the-chart-8ca1d189.mp3",
   "t": "Solent races on the chart",
   "sec": 35.8
- },
- "start-line-and-bow-offset-a164395f": {
-  "f": "start-line-and-bow-offset-a164395f.mp3",
-  "t": "Start line and bow offset",
-  "sec": 24.1
  },
  "astro-69eef602": {
   "f": "astro-69eef602.mp3",
@@ -278,11 +268,6 @@
   "f": "general-recall-dc0961fa.mp3",
   "t": "General recall",
   "sec": 15.4
- },
- "the-next-mark-bc4a1bf8": {
-  "f": "the-next-mark-bc4a1bf8.mp3",
-  "t": "The next mark",
-  "sec": 15.7
  },
  "laylines-and-the-tide-174ba91d": {
   "f": "laylines-and-the-tide-174ba91d.mp3",
@@ -484,11 +469,6 @@
   "t": "VMG and VMC",
   "sec": 71.3
  },
- "move-the-gps-window-2cb9d929": {
-  "f": "move-the-gps-window-2cb9d929.mp3",
-  "t": "Move the GPS window",
-  "sec": 43.3
- },
  "family-and-friends-c89434ca": {
   "f": "family-and-friends-c89434ca.mp3",
   "t": "Family and friends",
@@ -529,11 +509,6 @@
   "t": "Clear screen",
   "sec": 21.2
  },
- "move-the-panels-dd6972ca": {
-  "f": "move-the-panels-dd6972ca.mp3",
-  "t": "Move the panels",
-  "sec": 43.9
- },
  "the-start-line-time-and-countdown-a0b766fd": {
   "f": "the-start-line-time-and-countdown-a0b766fd.mp3",
   "t": "The start: line, time and countdown",
@@ -548,5 +523,30 @@
   "f": "the-start-screen-ce6a5af5.mp3",
   "t": "The start screen",
   "sec": 42.5
+ },
+ "move-a-window-80948e82": {
+  "f": "move-a-window-80948e82.mp3",
+  "t": "Move a window",
+  "sec": 41.1
+ },
+ "my-tracks-24dbf914": {
+  "f": "my-tracks-24dbf914.mp3",
+  "t": "My tracks",
+  "sec": 38.5
+ },
+ "start-line-and-bow-offset-40238e4a": {
+  "f": "start-line-and-bow-offset-40238e4a.mp3",
+  "t": "Start line and bow offset",
+  "sec": 27.3
+ },
+ "the-next-mark-f583cf8e": {
+  "f": "the-next-mark-f583cf8e.mp3",
+  "t": "The next mark",
+  "sec": 15.5
+ },
+ "move-the-panels-49ce4fe9": {
+  "f": "move-the-panels-49ce4fe9.mp3",
+  "t": "Move the panels",
+  "sec": 42.4
  }
 }
