@@ -1,7 +1,9 @@
 """Wide-area overview for situational awareness: ECMWF IFS at 1 degree, every 6 hours, 3 days.
 Mean sea-level pressure plus 10 m wind over north-west Europe, and a land mask for the coastline."""
-import json, numpy as np, fetch
+import os, json, numpy as np, fetch
 fetch.BOX = dict(s=40, n=62, w=-25, e=15)
+if os.environ.get('FS_OVERVIEW_BOX'):   # outside Europe (21 Nov 2026, F114): a box round the area instead
+    _o = [float(x) for x in os.environ['FS_OVERVIEW_BOX'].split(',')]; fetch.BOX = dict(s=_o[0], n=_o[1], w=_o[2], e=_o[3])
 base = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'; d, r = fetch.RUN
 out = {'msl': [], '10u': [], '10v': []}; hrs = []; lsm = None
 lsm_lat = lsm_lon = np.zeros(1)

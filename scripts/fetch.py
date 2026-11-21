@@ -310,7 +310,50 @@ def zarr(url, vars_, step_hours=1):
     return out, (want - T0) / 3600, lat[iy], lon[ix]
 
 
+def zarr_geo(url, vars_, step_hours=1):
+    """The same as zarr() for Copernicus's map-chunked copies (geoChunked: a long run of hours in each small square of the map), for a
+    large area with many hours, where the hour-by-hour copy would fetch the same big map tiles over and over (21 Nov 2026, F114)."""
+    import numcodecs
+    md = json.loads(get(url + '/.zmetadata'))['metadata']
+    dec = lambda b, dt: np.frombuffer(numcodecs.Blosc().decode(b), dtype=dt)
+    def coord(name):
+        z = md[f'{name}/.zarray']; n = z['shape'][0]; c = z['chunks'][0]
+        return np.concatenate([dec(get(f'{url}/{name}/{i}'), z['dtype']) for i in range((n + c - 1) // c)])[:n]
+    lat = coord('latitude'); lon = coord('longitude'); times = coord('time')
+    tu = md['time/.zattrs'].get('units', '')
+    if tu.startswith('hours'): times = times * 3600 + np.datetime64(tu.split('since ')[1][:19]).astype('datetime64[s]').astype(float)
+    want = T0 + np.array(HOURS[::step_hours]) * 3600
+    idx = np.array([int(np.argmin(np.abs(times - w))) for w in want])
+    iy = np.where((lat >= BOX['s']) & (lat <= BOX['n']))[0]; ix = np.where((lon >= BOX['w']) & (lon <= BOX['e']))[0]
+    out = {}
+    for v in vars_:
+        za = md[f'{v}/.zarray']; at = md[f'{v}/.zattrs']; ch = za['chunks']; sh = za['shape']; fill = za.get('fill_value')
+        sc = at.get('scale_factor', 1.0); off = at.get('add_offset', 0.0); ct, cy, cx = ch[0], ch[-2], ch[-1]
+        res = np.full((len(idx), len(iy), len(ix)), np.nan, 'f4')
+        jobs = [(tc, by, bx) for tc in sorted(set(idx // ct)) for by in range(iy.min() // cy, iy.max() // cy + 1) for bx in range(ix.min() // cx, ix.max() // cx + 1)]
+        def one(job):
+            tc, by, bx = job; key = f'{url}/{v}/{tc}.' + ('0.' if len(sh) == 4 else '') + f'{by}.{bx}'
+            raw = cached(url.split('/')[-2] + f'_g_{v}_{tc}_{by}_{bx}', lambda: dec(get(key), za['dtype']).copy())
+            nt = min(ct, sh[0] - tc * ct); blk = raw.reshape((ct, cy, cx) if len(sh) == 3 else (ct, 1, cy, cx))
+            blk = blk if len(sh) == 3 else blk[:, 0]
+            return tc, by, bx, blk[:nt]
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(8) as ex:
+            for tc, by, bx, blk in ex.map(one, jobs):
+                sel = np.where(idx // ct == tc)[0]
+                ys = np.where((iy >= by * cy) & (iy < (by + 1) * cy))[0]; xs = np.where((ix >= bx * cx) & (ix < (bx + 1) * cx))[0]
+                if not len(sel) or not len(ys) or not len(xs): continue
+                b = blk[np.ix_(idx[sel] - tc * ct, iy[ys] - by * cy, ix[xs] - bx * cx)].astype('f4')
+                if fill is not None: b = np.where(b == fill, np.nan, b)
+                res[np.ix_(sel, ys, xs)] = b * sc + off
+        out[v] = res; print(v, 'done', len(jobs), 'map squares', end=' | ', flush=True)
+    return out, (want - T0) / 3600, lat[iy], lon[ix]
+
+
 CM = 'https://s3.waw3-1.cloudferro.com'
+# Copernicus global ocean, 1/12 degree, hourly (21 Nov 2026, Sydney Hobart, F114): the ocean current (uo, vo, the East Australian
+# Current) plus the tidal stream (utide, vtide); the wave drift in the merged total is left out, as a yacht does not ride with it
+GLOCUR = f'{CM}/mdl-arco-geo-015/arco/GLOBAL_ANALYSISFORECAST_PHY_001_024/cmems_mod_glo_phy_anfc_merged-uv_PT1H-i_202211/geoChunked.zarr'
 SOURCES = {
     'nwscur': (f'{CM}/mdl-arco-time-041/arco/NWSHELF_ANALYSISFORECAST_PHY_004_013/cmems_mod_nws_phy-cur_anfc_1.5km-2D_PT1H-i_202511/timeChunked.zarr', ['uo', 'vo']),
     'ibicur': (f'{CM}/mdl-arco-time-032/arco/IBI_ANALYSISFORECAST_PHY_005_001/cmems_mod_ibi_phy_anfc_0.027deg-2D_PT1H-m_202411/timeChunked.zarr', ['uo', 'vo']),
@@ -406,6 +449,9 @@ if __name__ == '__main__':
                 u = ds.variables['U'][k, iy[0]:iy[-1] + 1:2, ix[0]:ix[-1] + 1:2]; v = ds.variables['V'][k, iy[0]:iy[-1] + 1:2, ix[0]:ix[-1] + 1:2]
                 U.append(np.ma.filled(u.astype('f4'), np.nan)); V.append(np.ma.filled(v.astype('f4'), np.nan)); print('mars', k, end=' | ', flush=True)
             save(s, u=np.array(U), v=np.array(V), hours=np.array(hrs), lat=np.asarray(la_all[iy], 'f8'), lon=np.asarray(lo_all[ix], 'f8'))
+        elif s == 'glocur':
+            o, h, la, lo = zarr_geo(GLOCUR, ['uo', 'vo', 'utide', 'vtide'])
+            save(s, u=o['uo'] + o['utide'], v=o['vo'] + o['vtide'], hours=h, lat=la, lon=lo)
         elif s in SOURCES:
             url, vs = SOURCES[s]; o, h, la, lo = zarr(url, vs)
             if s.endswith('cur'): save(s, u=o['uo'], v=o['vo'], hours=h, lat=la, lon=lo)

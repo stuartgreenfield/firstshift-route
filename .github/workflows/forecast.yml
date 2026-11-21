@@ -73,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        area: [cervantes, fastnet, channel-area, northsea-area, irishsea-area, biscay-area, celtic-area, solent-area]   # solent-area: Mark's own small pack (Stuart 18 Nov 19:30)
+        area: [cervantes, fastnet, channel-area, northsea-area, irishsea-area, biscay-area, celtic-area, solent-area, tasman-area]   # solent-area: Mark's own small pack (Stuart 18 Nov 19:30)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -90,7 +90,10 @@ jobs:
         env:
           FS_STATUS_PART: status-${{ matrix.area }}.json
           FS_SHARED: work/_shared
-        run: python3 scripts/build.py ${{ matrix.area }}
+        run: |
+          # the on/off switch (config/areas.json, 21 Nov 2026): an area switched off keeps its last forecasts and costs no server time
+          if [ "$(python3 -c "import json;print(json.load(open('config/areas.json')).get('${{ matrix.area }}','on'))" 2>/dev/null || echo on)" = off ]; then echo "${{ matrix.area }} is switched off"; exit 0; fi
+          python3 scripts/build.py ${{ matrix.area }}
       - uses: actions/upload-artifact@v4
         with:
           name: area-${{ matrix.area }}
@@ -140,9 +143,9 @@ jobs:
         run: |
           git fetch -q origin main
           git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/helpmedia site/brand site/route.webmanifest site/_routes.json site/follow site/zones site/android tools/compact.js _headers | tar -x
-          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/*.css site/cervantes/index.html "site/$d/"; done
+          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area tasman-area mark; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/*.css site/cervantes/index.html "site/$d/"; done
           # Mark (17 Nov 18:40: Mark went missing from the live site at the 15:45 run, as this list left it out); F28 compacted code with FirstShift's notice
-          npm i --no-save terser@5.31.6 >/dev/null 2>&1 && for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do TERSER=$PWD/node_modules/terser node tools/compact.js "site/$d"; done || echo "code not compacted this run"
+          npm i --no-save terser@5.31.6 >/dev/null 2>&1 && for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area tasman-area mark; do TERSER=$PWD/node_modules/terser node tools/compact.js "site/$d"; done || echo "code not compacted this run"
       - name: Publish to the site branch
         run: |
           cp _headers site/_headers
@@ -241,8 +244,8 @@ jobs:
         run: |
           git fetch -q origin main
           git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/helpmedia site/brand site/route.webmanifest site/_routes.json site/follow site/zones site/android tools/compact.js _headers | tar -x
-          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/*.css site/cervantes/index.html "site/$d/"; done
-          npm i --no-save terser@5.31.6 >/dev/null 2>&1 && for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do TERSER=$PWD/node_modules/terser node tools/compact.js "site/$d"; done || echo "code not compacted this run"
+          for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area tasman-area mark; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/*.css site/cervantes/index.html "site/$d/"; done
+          npm i --no-save terser@5.31.6 >/dev/null 2>&1 && for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area tasman-area mark; do TERSER=$PWD/node_modules/terser node tools/compact.js "site/$d"; done || echo "code not compacted this run"
       - name: Publish again with the pre-routes
         if: inputs.dry_run != true
         run: |
