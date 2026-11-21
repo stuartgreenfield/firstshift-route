@@ -2210,7 +2210,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (keep) return; store('fs-livereal', ''); LIVE.on = false; LIVE.fix = null;   /* GPS stopped on purpose: no reckoning from that fix later */ LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; LIVE.err = null; if ($('gpsMenu')) $('gpsMenu').hidden = true; stripShow(); draw();
   }
   function liveFix(g) {
-    var c = g.coords, f = { la: c.latitude, lo: c.longitude, acc: c.accuracy, at: Date.now(), sog: c.speed != null && c.speed >= 0 ? c.speed * 1.94384 : null, cog: c.heading != null && c.heading === c.heading ? c.heading : null }, pv = LIVE.fix;
+    var c = g.coords, f = { la: c.latitude, lo: c.longitude, acc: c.accuracy, at: Date.now(), sog: c.speed != null && c.speed >= 0 ? c.speed * 1.94384 : null, cog: c.heading != null && c.heading === c.heading && c.heading >= 0 ? c.heading : null }, pv = LIVE.fix;
     if (pv && (f.sog == null || f.cog == null)) { var r = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dtH = (f.at - pv.at) / 3600000; if (dtH > 2 / 3600 && r.nm > 0.005 && r.nm / dtH < 40) { if (f.sog == null) f.sog = r.nm / dtH; if (f.cog == null) f.cog = r.brg; } }   /* a GPS jump is not boat speed */
     if (f.sog != null && f.sog > 40) f.sog = null;
     if (pv && pv.dr) { pv = LIVE.real; if (pv && (f.sog == null || f.cog == null)) { var r2 = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dt2 = (f.at - pv.at) / 3600000; if (dt2 > 0 && r2.nm / dt2 < 40) { if (f.sog == null) f.sog = r2.nm / dt2; if (f.cog == null) f.cog = r2.brg; } } if (f.acc <= 150) drEnd(f); }
@@ -2554,6 +2554,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      no button on it can be covered. Rollback without a release (Stuart: "ensure we have a roll back"): localStorage fs-gpswin = 1 brings
      the old window back. */
   var GPSWIN = store('fs-gpswin') === '1';
+  if (!GPSWIN) document.body.classList.add('gpsstrip');   /* F116 (Stuart 21 Nov 17:02, "the old gps pill bounce in and out once"): from the start, not only after the first strip update, so the old pill never shows while the GPS starts */
+  /* F116 (Stuart 21 Nov 17:00-17:02, the plane test): a tap made while the page was frozen is held by the phone and lands when it comes
+     back, on whatever is under the finger by then. A tap the page could not act on within two seconds is dropped (a busy moment on a slow phone takes up to about 1.3 s, 21 Nov replay). */
+  ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend'].forEach(function (ev) { window.addEventListener(ev, function (e) { try { if (e.isTrusted && e.timeStamp > 0 && performance.now() - e.timeStamp > 2000) { e.stopImmediatePropagation(); e.preventDefault(); } } catch (x) {} }, { capture: true, passive: false }); });
   function stripOn() { return !GPSWIN && LIVE.on && !LIVE.sim; }
   function liveStrip() {
     var f = LIVE.fix, c = LIVE.calc, n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return pad((x + 360) % 360) + '°'; },

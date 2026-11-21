@@ -12,15 +12,15 @@
 
   /* Route, Level 1: get going the basic way (race, forecast, route, plotter) */
   var ROUTE = [
-    { el: '#raceBtn', t: 'Your race', x: 'Tap the race name to choose a RORC or JOG race, open a route you saved, or draw a course of your own on the chart.', help: 'Setting up a race' },
+    { el: '#raceBtn', t: 'Your race', x: 'Tap the race name to choose a RORC, JOG or other race (the Sydney Hobart is under Other races), edit a stored course, open a route you saved, or draw a course of your own on the chart.', help: 'Setting up a race' },
     { el: '#startChip', t: 'The start', x: 'When your class starts. Every route begins here. Change it and Route works the race out again for every forecast.', help: 'Setting up a race' },
     { el: '#setBtn', t: 'Settings', x: 'Your boat, sails and reefs, the forecast models, the safety depth and your units. Set your boat once and Route remembers it on this device.', help: 'Your boat' },
-    { el: '#finBox', before: function () { openSheet('decision'); }, alt: '#panelBtn', t: 'The routes', x: 'One route for each forecast model, each with its finish time. The fastest is marked. Where the models agree, you can trust the route more. Tap one to show it on the chart.', help: 'Routes' },
+    { el: function () { var f = $('finBox'), c = f && [].filter.call(f.children, function (x) { return x.getClientRects().length && x.offsetHeight > 20; })[0]; return c && innerWidth < 600 ? c : f; }, before: function () { openSheet('decision'); }, wait: 900, alt: '#panelBtn', t: 'The routes', x: 'One route for each forecast model, each with its finish time. The fastest is marked. Where the models agree, you can trust the route more. Tap one to show it on the chart.', help: 'Routes' },
     { el: '.tab[data-tab="plan"]', before: function () { openSheet(); }, alt: '#panelBtn', t: 'The plan', x: 'The race leg by leg: headings, sails, tacks and gybes, ready to send to the crew.', help: 'Plan' },
     { el: '#play', test: true, t: 'Try it safely first', x: 'Press Play and watch the boat sail the route on the chart, with the wind, the tide and the figures at every moment. Nothing is sent anywhere and nothing can go wrong: it is the best way to get a feel for Route before race day.', help: 'Play the race' },
     { el: '#time', t: 'Any moment of the race', x: 'Drag the slider to any time in the race. The chart, the boat and the bar of figures below follow it.', help: 'Play the race' },
     { el: '#fsPlotBtn', t: 'Plotter', x: 'While racing: the next mark from this phone’s own GPS, with bearing, distance, VMC, ETA and cross-track error. Not for navigation.', help: 'plot' },
-    { el: '#liveBtn', t: 'Live GPS', x: 'While racing: shows the boat from this phone’s GPS against the plan, and routes again from where you really are.', help: 'Live GPS while racing' },
+    { el: '#liveBtn', t: 'Live GPS', x: 'While racing: shows the boat from this phone’s GPS against the plan, in a slim strip at the top, and routes again from where you really are. The screen stays on while the GPS runs and sleeps when it is off; tap GPS again for its menu.', help: 'Live GPS while racing' },
 { el: function () { return [].filter.call(document.querySelectorAll('.navgrip2'), function (g) { return !g.hidden && g.getClientRects().length; })[0] || null; }, alt: '#fsPlotBtn,#navPlotBtn,#liveBtn', t: 'Move or put away any window', x: 'Drag the small dots on any window over the chart, such as the plotter bar or the GPS window, to move it anywhere; let go and it stays. Drag it off the left or right side and it tucks away to a light blue tab on that edge, clearing the screen for the chart; tap the tab to bring it back. Settings, Display, Window positions: Lock layout, and the dots on the left, middle or right.' },
     { el: '#layersBtn', t: 'Layers', x: 'Choose what the chart shows: wind, tide, waves, depth and marks.', help: 'charts' },
     { el: '#helpBtn', t: 'Help', x: 'Everything is explained in Help, with a Listen button on each topic. Try it safely first is at the top, and you can take this tour again from there.' }
@@ -79,7 +79,8 @@
     if (i < 0) { i = 0; dir = 1; }
     if (i >= S.length) { finish(); return; }
     var s = S[i]; try { if (s.before) s.before(); } catch (e) {}
-    setTimeout(function () { if (target(s)) { T.i = i; place(); } else go(i + dir, dir); }, s.wait || (s.before ? 350 : 30));   /* wait: a step whose button takes longer to appear (Mark's practice race) */
+    setTimeout(function () { try { var e0 = typeof s.el === 'function' ? s.el() : q(s.el); if (!e0 && s.alt) e0 = q(s.alt); if (e0 && shown(e0)) e0.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}   /* F106 audit 21 Nov: a button scrolled out of its panel (Log, Pause learning) was skipped */
+      if (target(s)) { T.i = i; place(); } else go(i + dir, dir); }, s.wait || (s.before ? 350 : 30));   /* wait: a step whose button takes longer to appear (Mark's practice race) */
   }
   /* Stuart's iPhone 18 Nov 19:51 ("very difficult to control and the windows jump everywhere"): the highlighted button can now be
      tapped (the dim area round it still blocks), and the highlight and the card follow the button if it moves, instead of
