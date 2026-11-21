@@ -755,7 +755,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function courseIssue(c) {
     /* a course set on the day (Channel Race, De Guingand Bowl): start and finish together and no marks yet, so there is nothing to route (Stuart 12 Nov, found by the live GPS check) */
     if (!(c.marks || []).length && FSRouter.dist(c.start.lat, c.start.lon, c.finish.lat, c.finish.lon) < 2) return 'Course set on the day: add the marks from the sailing instructions before routing. Tap the race name, then Edit this course.';
-    var out = [c.start].concat(c.marks).concat([c.finish]).filter(function (p) { return !inData(p); }); return out.length ? 'Cannot route: ' + out.map(function (p) { return p.name; }).join(', ') + ' outside the forecast area on this server. The wider area comes with the next update.' : ''; }
+    var out = [c.start].concat(c.marks).concat([c.finish]).filter(function (p) { return !inData(p); }); return out.length ? 'Cannot route: ' + out.map(function (p) { return p.name; }).join(', ') + ' outside the forecast areas. Routing needs full forecasts, tides, depth and coastline there, and an area for this course has not been built yet.' : ''; }   /* F112 (21 Nov): the old wording promised a wider area with the next update, which never came */
   function warnText(r) {
     if (!r) return '';
     var y = r.courseStatus === 'last-edition' ? 'the ' + r.courseYear + ' course (last edition)' : r.courseStatus === 'set-on-day' ? 'a course set on the day' : r.courseStatus === 'not-published' ? 'the start and finish only' : 'the ' + r.courseYear + ' course';
@@ -2156,14 +2156,28 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* Keep the screen on (Stuart 21 Nov 00:04: "why can't you stop and change clear screen settings on all tools?"): one setting in Settings,
      Display, for all four tools. Always (the default), While the GPS is on, or Off. The Android apps switch the phone's own screen-on
      (NativeLink.keepOn); a browser holds a screen wake lock while the page is in view. */
-  function keepMode() { var v = store('fs-keepon'); return v === 'gps' || v === 'off' ? v : 'always'; }
+  function keepMode() { var v = store('fs-keepon'); return v === 'always' || v === 'off' ? v : 'gps'; }   /* F102 (Stuart 21 Nov 14:15, A): the default is While the GPS is on, so the screen sleeps when you are not navigating */
   function keepApply() { var m = keepMode(), on = m === 'always' || (m === 'gps' && !!LIVE.on);
     try { if (window.NativeLink && window.NativeLink.keepOn) { window.NativeLink.keepOn(on); return; } } catch (e) {}
-    try { if (on && navigator.wakeLock && !LIVE.wake && document.visibilityState === 'visible') navigator.wakeLock.request('screen').then(function (w) { LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () {}); else if (!on && LIVE.wake) { LIVE.wake.release(); LIVE.wake = null; } } catch (e) {} }
+    try { if (on && navigator.wakeLock && !LIVE.wake && !LIVE.wakeAsk && document.visibilityState === 'visible') { LIVE.wakeAsk = true; navigator.wakeLock.request('screen').then(function (w) { LIVE.wakeAsk = false; if (keepMode() === 'off' || (keepMode() === 'gps' && !LIVE.on)) { w.release(); return; } LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () { LIVE.wakeAsk = false; }); } else if (!on && LIVE.wake) { LIVE.wake.release(); LIVE.wake = null; } } catch (e) {} }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') keepApply(); });
+  /* F102 (Stuart 21 Nov 14:15, A): what keeps a tool working when it is not in front (the Android apps ask this as they go to the
+     background): the GPS on, the boat's instruments arriving, or a gun within 20 minutes. Otherwise the app pauses completely. */
+  window.__fsBusyBg = function () { try { var g = window.__fsGunAt && window.__fsGunAt(), now = Date.now() / 1000; return !!(LIVE.on || (window.__navRx && window.__navRx()) || (g && g > now - 600 && g < now + 1200)); } catch (e) { return true; } };
+  /* Low battery (F102): on the battery, not charging, below 20%, with the GPS on, a note offers Save battery (GPS every 20 seconds, the
+     screen sleeps, the Battery saver's lighter drawing). It is offered, never switched by itself: the GPS accuracy is a safety matter
+     (standing order, 21 Nov 13:11). At most once an hour. Where the phone reports its battery (Android, the Route+ and Mark+ apps). */
+  (function () { if (!navigator.getBattery) return; var told = 0;
+    var offer = function (pc) { var n = $('battNote'); if (!n) { n = document.createElement('div'); n.id = 'battNote'; n.className = 'navtoast battnote'; n.setAttribute('role', 'alert'); document.body.appendChild(n); }
+      n.innerHTML = '<span>Battery ' + pc + '% and not charging. Save battery: GPS every 20 seconds, the screen sleeps, lighter drawing.</span><span class="xrow"><button type="button" class="btn primary" id="battYes">Save battery</button><button type="button" class="btn" id="battNo">Not now</button></span>'; n.hidden = false; n.style.pointerEvents = 'auto';
+      $('battNo').onclick = function () { n.hidden = true; };
+      $('battYes').onclick = function () { n.hidden = true; var gm = $('gpsMode'); if (gm) { gm.value = 'battery'; gm.dispatchEvent(new Event('change', { bubbles: true })); } store('fs-keepon', 'off'); if ($('keepOn')) $('keepOn').value = 'off'; keepApply(); try { if (window.FSSaver) FSSaver.set(true); } catch (e) {} if (LIVE.on) { liveStop(); liveStart(); } try { window.NavToast('Saving battery: GPS every 20 seconds. Change it back in Settings.'); } catch (e) {} };
+      clearTimeout(n._t); n._t = setTimeout(function () { n.hidden = true; }, 60000); };
+    navigator.getBattery().then(function (bt) { var chk = function () { if (bt.charging || !(bt.level <= 0.2) || !LIVE.on || Date.now() - told < 3600000) return; if ($('gpsMode') && $('gpsMode').value === 'battery') return; told = Date.now(); offer(Math.round(bt.level * 100)); };
+      ['levelchange', 'chargingchange'].forEach(function (k) { bt.addEventListener(k, chk); }); setInterval(chk, 60000); chk(); }).catch(function () {}); })();
   ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, function () { if (!LIVE.wake && keepMode() !== 'off') keepApply(); }, { passive: true }); });   /* a browser grants the wake lock after a tap */
   (function () { var k = $('keepOn'); if (k) { k.value = keepMode(); k.onchange = function () { store('fs-keepon', k.value); keepApply(); }; } setTimeout(keepApply, 500); })();
-  function liveWake() { keepApply(); try { if (LIVE.on && $('gpsMode').value === 'screen' && keepMode() !== 'off' && navigator.wakeLock && !LIVE.wake) navigator.wakeLock.request('screen').then(function (w) { LIVE.wake = w; w.addEventListener('release', function () { LIVE.wake = null; }); }).catch(function () {}); } catch (e) {} }
+  function liveWake() { keepApply(); }   /* F102 (21 Nov, found by tests/battery.js): one place holds the screen on; liveWake also asked for its own wake lock, so with the GPS on the screen was held twice and letting it sleep released only one */
   document.addEventListener('visibilitychange', function () { if (!document.hidden) liveWake(); });
   function liveStart() {
     if (LIVE.sim) return;   /* Mark's test mode: the practice boat is the GPS */
@@ -3959,7 +3973,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ['#editBar', '#navStrip', '#fsPlot', '#navPlot', '#solSeq', '#fsDemo', '#astroLine', '#updBar', '#solTestBar', '#errBox']   /* F7 (Stuart's photo 06:16): an error box goes under the strips, not over the plotter */.forEach(function (q) {   /* 17 Nov (Stuart's tablet photo): the Course changed box, the plotter and the GPS pill stack, not overlap */ var e = document.querySelector(q); if (!e || !vis(e) || e.style.translate) return; var par = e.offsetParent, fx = !par && getComputedStyle(e).position === 'fixed'; if (!par && !fx) return; var pt = par ? par.getBoundingClientRect().top : 0, er = e.getBoundingClientRect(), ot = par ? e.offsetTop : er.top; if (bR && er.left < bR.right + 4 && er.top - (ot - (Math.max(y + 6, 8) - pt)) < bR.bottom + 4) y = Math.max(y, bR.bottom); var want = Math.round(Math.max(y + 6, 8) - pt); if (Math.abs(ot - want) > 1) e.style.top = want + 'px';   /* fixed boxes (the start sequence, test mode) stack too */ y = e.getBoundingClientRect().bottom; }); }
   function tick() { try { fabRow(); liveFit(); topStack(); } catch (e) {} var sb = document.getElementById('solStep'), on = (phone.matches && open()) || !!(sb && !sb.hidden);   /* the Solent step box on any screen */ if (document.body && document.body.classList.contains('fabsoff') !== on) document.body.classList.toggle('fabsoff', on); try { covers(); } catch (e) {} }
   function css() { if (document.getElementById('fabsOffCss')) return; var s = document.createElement('style'); s.id = 'fabsOffCss'; s.textContent = 'body.fabsoff .fabhelp,.fabhelp.fabcov{display:none!important}body.gpsbigshort #navStrip{display:none!important}';   /* a phone held sideways has no room for the instrument strip and the GPS window together; the GPS window shows SOG and COG */ document.head.appendChild(s); }
-  var tk = 0; function start() { css(); tick(); setInterval(function () { if (window.__fsSaver && (tk++ % 3)) return; tick(); }, 300); }   /* F31 Battery saver: the layout check every 0.9 s instead of 0.3 s */
+  /* F102 (Stuart 21 Nov 14:15, A): the layout check ran every 0.3 s whether or not anything had changed, most of the work of an idle page.
+     It now runs when something on screen changes (an element shown or hidden, moved, restyled, added or removed, the window resized),
+     once per frame at most, with a check every 3 s as a safety net. Its own changes do not wake it again. */
+  var due = false, mo = null;
+  function soon() { if (due) return; try { if (window.NavDrag && NavDrag.on()) return; } catch (e) {}   /* not while a window is being moved: its own movement would wake the check every frame and pull it back (windows-slideoff, 21 Nov) */
+    due = true; requestAnimationFrame(function () { due = false; tick(); if (mo) mo.takeRecords(); }); }
+  function start() { css(); tick();
+    if (window.MutationObserver) { mo = new MutationObserver(function (rs) { for (var i = 0; i < rs.length; i++) { var t = rs[i].target; if (t && t.nodeType !== 1) t = t.parentNode; if (t && t.closest && t.closest('#now,#clock,#dataChip,#pgP,#pgT,.rpgrid,.rprest,.npbody,.navtoast,#tip,#tzRow')) continue; if (rs[i].type === 'attributes' && rs[i].target.getAttribute && rs[i].target.getAttribute(rs[i].attributeName) === rs[i].oldValue) continue; soon(); return; } });
+      mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['hidden', 'class', 'style'] }); }
+    window.addEventListener('resize', soon); window.addEventListener('orientationchange', soon); document.addEventListener('scroll', soon, true);
+    setInterval(function () { if (!document.hidden) tick(); }, window.__fsSaver ? 6000 : 3000); }
   window.__fsFabsTick = tick;
   /* The phone's own keyboard (Stuart 16 Nov 22:29: the device's menus must not overlay ours): while a field in a window placed over the
      chart has the keyboard, the window lifts so the field and the window's top stay in view above the keyboard and its bar; it goes

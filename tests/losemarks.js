@@ -64,7 +64,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.goto(BASE + '/channel-area/?race=dinard'); console.log('5 at load:', await p.evaluate(() => JSON.stringify({ last: localStorage.getItem('fs-last-channel-area'), wiz: localStorage.getItem('fs-wiz'), ss: sessionStorage.getItem('fs-wiz') }))); await routed(); await p.waitForTimeout(1500);
   console.log('5 opened:', await shown(), await p.evaluate(() => location.href));
   await p.evaluate(() => document.getElementById('editFab').click()); await p.waitForTimeout(800);
-  for (let k = 0; k < 2; k++) { const pp = await pts(); const L = 2;   /* the Casquets to Les Hanois leg, open water (21 Nov: the last leg now runs in among the Minquiers rocks, where a mark is refused) */ const lg = [(pp[L][0] * 0.4 + pp[L + 1][0] * 0.6), (pp[L][1] * 0.4 + pp[L + 1][1] * 0.6)]; await p.mouse.click(lg[0], lg[1]); await p.waitForTimeout(500); await p.click('#addPop'); await p.waitForTimeout(500); }
+  for (let k = 0; k < 2; k++) { const pp = await pts(); const L = k === 0 ? 2 : 1;   /* open-water legs, Casquets to Les Hanois then Needles Fairway to the Casquets (21 Nov: the last leg runs in among the Minquiers rocks; a second tap on the leg just split lands on the new mark) */ const lg = [(pp[L][0] * 0.4 + pp[L + 1][0] * 0.6), (pp[L][1] * 0.4 + pp[L + 1][1] * 0.6)]; await p.mouse.click(lg[0], lg[1]); await p.waitForTimeout(500); await p.click('#addPop'); await p.waitForTimeout(500); }
   console.log('5 editor:', (await pts()).map(q => q[2] || 'new').join(' / '));
   await p.click('#edGo'); await p.waitForTimeout(3000); await routed();
   now = await saved(); const id5 = now[0].split(':')[0]; console.log('saved 5:', now[0]);

@@ -1,0 +1,9 @@
+const { chromium } = require('playwright'); const BASE = process.argv[2];
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); localStorage.setItem('fs-terms', '9999-12-31'); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-rdetail', 'quick'); });
+  const p = await c.newPage(); await p.goto(BASE + '/channel-area/'); await p.waitForFunction(() => window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(2000);
+  await p.click('#startChip'); await p.waitForTimeout(800); const t = new Date(Date.now() + 40 * 60000);
+  console.log('typed', String(t.getUTCHours()).padStart(2, '0') + ':' + String(t.getUTCMinutes()).padStart(2, '0'), 'day list:', await p.evaluate(() => { const d = document.querySelector('#wzDay, [id*="Day"] select, select[id*="day" i]'); return d ? [...d.options].map(o => (o.selected ? '*' : '') + o.textContent).join(' | ') : 'no day select'; }));
+  await p.fill('#wzTime', String(t.getUTCHours()).padStart(2, '0') + ':' + String(t.getUTCMinutes()).padStart(2, '0')); await p.click('#wizNext'); await p.waitForTimeout(2500);
+  console.log(JSON.stringify(await p.evaluate(() => { const s = document.getElementById('solSeq'); return { gun: window.__fsGunAt && window.__fsGunAt(), now: Math.round(Date.now() / 1000), seq: s ? { hidden: s.hidden, disp: getComputedStyle(s).display, w: s.getBoundingClientRect().width } : null, chip: (document.getElementById('startChip') || {}).textContent }; })));
+  await b.close(); })();
