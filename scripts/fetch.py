@@ -326,7 +326,7 @@ if __name__ == '__main__':
     for s in sys.argv[1:]:
         short = RUN[1] in ('06', '18')       # ECMWF 06Z and 18Z runs use the short-cut-off streams
         if s in ('ecmwf', 'aifs'):
-            o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf'))
+            o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf' and os.environ.get('FS_ECMWF_9KM') == '1'))   # 21 Nov: 9 km (A of 20 Nov) only when switched on, for a release of its own on Stuart's go
             save(s, u=o['10u'], v=o['10v'], hours=h, lat=la, lon=lo)
         elif s == 'ecmet':   # ECMWF weather beyond the wind: gusts, pressure, rain, thunderstorm energy, cloud, air temperature, sea temperature
             o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))

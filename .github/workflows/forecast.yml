@@ -187,11 +187,10 @@ jobs:
           - { name: fastnet-2, args: 'fastnet@2-3', limit: 40 }
           - { name: fastnet-3, args: 'fastnet@4-5', limit: 40 }
           - { name: cervantes, args: cervantes, limit: 30 }
+          # the Channel Race and the De Guingand Bowl are set on the day (no marks until the sailing instructions): nothing to pre-route (21 Nov dry run: 25 min for nothing)
           - { name: myth, args: 'channel-area:myth', limit: 30 }
-          - { name: deguingand, args: 'channel-area:deguingand', limit: 30 }
           - { name: morgan, args: 'channel-area:morgan', limit: 30 }
           - { name: dinard, args: 'channel-area:dinard', limit: 30 }
-          - { name: channel, args: 'channel-area:channel', limit: 30 }
           - { name: cherbourg, args: 'channel-area:cherbourg', limit: 30 }
           - { name: northsea, args: 'northsea-area:northsea', limit: 30 }
     steps:
