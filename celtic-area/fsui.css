@@ -137,3 +137,20 @@ body.navclear #fsBadge{display:flex}
 @media (prefers-reduced-motion:reduce){#fsBadge>.mkdisc::before{animation:none}}
 .logobox.mkring{isolation:isolate}.logobox.mkring:not(.rx)>.mkdisc::before{animation:none;background:#64748b}   /* F49: still and grey with no GPS arriving */
 #fsBadge.off>.mkdisc::before{animation:none;background:#64748b}
+.navhidecard{position:fixed;z-index:60;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);font:500 14px var(--f-body);max-width:min(300px,calc(100vw - 16px))}
+.navhidecard label{display:flex;flex-direction:column;gap:6px}
+.navhidecard select{min-height:40px;font-size:15px}
+/* 21 Nov: full-height next-mark arrows either side of the plotter panel; swipe the panel for the next mark */
+.rplotbar{display:flex;align-items:stretch;gap:6px;touch-action:pan-y}
+.rplotbar[hidden]{display:none}
+.rpbody{flex:1;min-width:0}
+.rparrow{flex:none;width:56px;align-self:stretch;min-height:44px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--brand);font:700 28px var(--f-data);cursor:pointer;padding:0}
+.rparrow:active{background:var(--line)}
+.rplotbar button *{pointer-events:none}
+@media (max-width:600px){.rparrow{width:52px;font-size:26px}}
+:root[data-night] .rparrow{color:#E0322A}
+.navclearb *{pointer-events:none}
+.navhiderow{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+/* F101: your version of a stored race */
+.yourtag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;border:1px solid var(--brand);color:var(--brand);font:600 10px var(--f-data);letter-spacing:.05em;text-transform:uppercase;vertical-align:middle}
+.yourc{display:block;margin:0 0 6px}.yourc .btn{margin-left:4px}
