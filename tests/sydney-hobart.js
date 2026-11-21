@@ -11,12 +11,12 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   /* the race list, from another page */
   await p.goto(BASE + '/channel-area/', { timeout: 120000 }); await p.waitForTimeout(8000);
   const opt = await p.evaluate(() => [...document.querySelectorAll('#raceSel optgroup')].map(g => g.label + ': ' + [...g.querySelectorAll('option')].map(o => o.value).join(',')).join(' | '));
-  ok(/CYCA races: sydney-hobart-l1,sydney-hobart,sydney-hobart-l4/.test(opt), 'The race list has a CYCA group with the Sydney Hobart', opt.slice(-80));
+  ok(/Rolex Sydney Hobart Yacht Race: sydney-hobart-l1,sydney-hobart,sydney-hobart-l4/.test(opt), 'The race list has the Rolex Sydney Hobart Yacht Race as its own group', opt.slice(-80));
   await p.evaluate(() => { document.getElementById('raceBtn').click(); }); await p.waitForTimeout(400);
-  ok(await p.evaluate(() => { const b = document.getElementById('rmOther'); return !!(b && b.offsetParent); }), 'The race menu has Other races');
+  ok(await p.evaluate(() => { const b = document.getElementById('rmOther'); return !!(b && b.offsetParent); }), 'The race menu has its own Rolex Sydney Hobart Yacht Race button');
   await p.evaluate(() => { document.getElementById('raceMenu').hidden = true; document.getElementById('rmOther').click(); }); await p.waitForTimeout(800);
   const sheet = await p.evaluate(() => document.getElementById('racesH').textContent + ' | ' + document.getElementById('raceList').textContent.replace(/\s+/g, ' '));
-  ok(/^Other races/.test(sheet) && /CYCA races/i.test(sheet) && /Rolex Sydney Hobart/.test(sheet) && /26\/12 2026/.test(sheet) && /2023 Sailing Instructions/.test(sheet), 'Other races lists the Sydney Hobart with the note on the course', sheet.slice(0, 160));
+  ok(/^Rolex Sydney Hobart Yacht Race \|/.test(sheet) && /Rolex Sydney Hobart Yacht Race · Line 1/.test(sheet) && /26\/12 2026/.test(sheet) && /2023 Sailing Instructions/.test(sheet), 'Its menu lists the three start-line entries with the note on the course', sheet.slice(0, 160));
   /* choosing it opens its own page */
   await p.evaluate(() => { document.getElementById('races').hidden = true; const s = document.getElementById('raceSel'); s.value = 'sydney-hobart'; s.dispatchEvent(new Event('change')); });
   await p.waitForURL(/tasman-area/, { timeout: 30000 }).catch(() => null);
