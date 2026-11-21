@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-21T10:22:28.436Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 272,
+   "note": "Finer routes in 213.2 s. Times: first routes 11.1 s, standard 56.3 s, finer 269.6 s. The faint line is the standard rout"
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 544,
+   "note": "Finer routes in 213.3 s. Times: first routes 8.3 s, standard 57.0 s, finer 270.3 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 832,
+   "note": "Finer routes in 232.3 s. Times: first routes 8.5 s, standard 54.6 s, finer 287.0 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 1103,
+   "note": "Finer routes in 214.3 s. Times: first routes 8.3 s, standard 54.6 s, finer 269.0 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 4,
+   "s": 1400,
+   "note": "Finer routes in 236.5 s. Times: first routes 9.2 s, standard 59.1 s, finer 295.7 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 5,
+   "s": 1700,
+   "note": "Finer routes in 239.8 s. Times: first routes 8.5 s, standard 59.4 s, finer 299.3 s. The faint line is the standard route"
+  }
+ ]
+}

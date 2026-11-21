@@ -1,0 +1,77 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FirstShift Route and Mark</title>
+<meta name="description" content="FirstShift Route for offshore races, FirstShift Mark for Solent inshore racing, and Route+ and Mark+ for Android.">
+<style>
+:root{--bg:#EEF2F4;--card:#fff;--ink:#13202A;--muted:#5A6A75;--line:#D5DDE2;--accent:#B0127A;--btn:#13324F;--btnink:#fff;--warn:#8A4B00}
+@media (prefers-color-scheme:dark){:root{--bg:#0B1620;--card:#132433;--ink:#E6EDF2;--muted:#9AABB8;--line:#24394B;--accent:#F06BC0;--btn:#2E6FA7;--btnink:#fff;--warn:#F2B35B}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
+h1{font-size:30px;line-height:1.15;margin:0 0 6px;text-wrap:balance}
+h2{font-size:22px;margin:0 0 4px}
+.lead{color:var(--muted);margin:0 0 24px}
+.note{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:10px 14px;margin:0 0 20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;margin:0 0 16px}
+.tag{font-style:italic;color:var(--muted);margin:0 0 10px}
+p{margin:0 0 10px}
+ul{margin:4px 0 0;padding-left:20px}
+li{margin:0 0 6px}
+a{color:var(--accent)}
+a.btn{display:inline-block;background:var(--btn);color:var(--btnink);text-decoration:none;font-weight:600;padding:10px 16px;border-radius:8px;margin:4px 8px 0 0}
+.beta{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--warn);border:1px solid var(--warn);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle}
+.warn{font-size:14px;color:var(--muted)}
+footer{color:var(--muted);font-size:14px;margin-top:20px}
+</style></head><body><main>
+<h1>FirstShift Route and Mark</h1>
+<p class="lead">Race routing and racing tools from FirstShift. A planning aid, not for navigation.</p>
+<p class="note" id="lost" hidden>That address is not a FirstShift page. Choose your tool below.</p>
+
+<section>
+<h2>Route</h2>
+<p class="tag">Your race, routed on every forecast</p>
+<p>Free race routing for FirstShift subscribers, built to the RORC rules on routing aids: public forecasts, computer-generated, the same for every competitor. Choose the area your race sails in:</p>
+<ul>
+<li><a href="/channel-area/">English Channel</a>: Myth of Malham, De Guingand Bowl, Morgan Cup, Cowes Dinard St Malo, Channel Race, Cherbourg Race and your own courses in the Channel</li>
+<li><a href="/fastnet/">Rolex Fastnet Race</a></li>
+<li><a href="/northsea-area/">Southern North Sea</a>: North Sea Race and your own courses there</li>
+<li><a href="/irishsea-area/">Irish Sea</a>: St George's Channel to the North Channel, your own courses there</li>
+<li><a href="/cervantes/">Cervantes Trophy</a>: Cowes to Le Havre</li>
+<li><a href="/biscay-area/">Bay of Biscay</a>: Ushant to Cape Finisterre, your own courses there</li>
+<li><a href="/celtic-area/">Celtic Sea and Western Approaches</a>: Ushant and Brittany to the south coast of Ireland, out past Fastnet Rock, your own courses there</li>
+</ul>
+<p style="margin-top:12px">Bespoke routes can be built in every area: draw your own course, and Route routes it and keeps it, all managed in the tool.</p>
+</section>
+
+<section>
+<h2>Mark</h2>
+<p class="tag">Inshore racing in the Solent</p>
+<p>Round the cans or windward-leeward. Choose the course from the Solent racing marks, tap or ping the start line, and Mark shows the favoured end, the countdown, time to the line and time to burn, then the bearing and distance to the next mark.</p>
+<a class="btn" href="/mark/">Open Mark</a>
+</section>
+
+<section>
+<h2>For Android</h2>
+<p class="tag">On board, using your boat's Wi-Fi</p>
+<p><b>Route+</b><span class="beta">BETA</span>: Route with the link to your instruments, helm targets and a plotter with laylines.</p>
+<a class="btn" href="/android/navigate.apk">Download Route+</a>
+<p style="margin-top:14px"><b>Mark+</b><span class="beta">BETA</span>: Mark inside Route+, with boat speed, wind angles and heel from your instruments on the start screen.</p>
+<a class="btn" href="/android/markplus.apk">Download Mark+</a>
+<p class="warn" style="margin-top:12px">Both are still being tested: check them against your own instruments and charts. An Apple version follows in early 2027.</p>
+</section>
+
+<section>
+<h2>Follow a boat</h2>
+<p>For family and friends, with the boat's code.</p>
+<a class="btn" href="/follow/">Follow a boat</a>
+</section>
+
+<footer>
+<p>More FirstShift tools: <a href="https://www.firstshiftsailing.com/tools">firstshiftsailing.com/tools</a></p>
+<p id="st"></p>
+</footer>
+</main>
+<script>
+try { if (location.pathname !== '/' && !/\/index\.html$/.test(location.pathname)) document.getElementById('lost').hidden = false; } catch (e) {}
+fetch('/status.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) { if (s && s.built) document.getElementById('st').textContent = 'Forecasts last built ' + s.built.replace('T', ' ').replace('Z', ' UTC') + '.'; }).catch(function () {});
+</script>
+</body></html>
