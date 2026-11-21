@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-20T23:23:16.671Z",
+ "log": [
+  {
+   "race": "irishsea-area",
+   "h": 0,
+   "s": 13,
+   "note": "Finer routes in 9.1 s. Best known: in ECMWF IFS’s forecast the NOAA GFS track is 1.3 min quicker than its own route; in "
+  },
+  {
+   "race": "irishsea-area",
+   "h": 1,
+   "s": 25,
+   "note": "Finer routes in 9.2 s. Best known: in ECMWF IFS’s forecast the NOAA GFS track is 0.9 min quicker than its own route; in "
+  },
+  {
+   "race": "irishsea-area",
+   "h": 2,
+   "s": 37,
+   "note": "Finer routes in 9.4 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 1.3 min quicker than its own"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 3,
+   "s": 47,
+   "note": "Finer routes in 8.7 s. Times: first routes 0.4 s, standard 2.1 s, finer 10.8 s. The faint line is the standard route. Fi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 4,
+   "s": 58,
+   "note": "Finer routes in 8.6 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 1.8 min quicker than its own"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 5,
+   "s": 69,
+   "note": "Finer routes in 8.8 s. Best known: in ECMWF AIFS’s forecast the Combined (6 models) track is 2.6 min quicker than its ow"
+  }
+ ]
+}

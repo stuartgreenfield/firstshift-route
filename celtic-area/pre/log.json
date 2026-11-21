@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-20T23:35:45.095Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 54,
+   "note": "Routed in 42.8 s. Finer routes coming…. The forecasts end before the finish on 7 routes: they show as far as the forecas"
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 121,
+   "note": "Finer routes in 68.3 s. Best known: in Met Office UKV’s forecast the Combined (6 models) track is 19.0 min quicker than "
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 179,
+   "note": "Routed in 48.2 s. Finer routes coming…. The forecasts end before the finish on every route: they show as far as the fore"
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 245,
+   "note": "Finer routes in 67.5 s. Best known: in Met Office UKV’s forecast the Combined (6 models) track is 35.8 min quicker than "
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 302,
+   "note": "Routed in 47.2 s. Finer routes coming…. The forecasts end before the finish on every route: they show as far as the fore"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 372,
+   "note": "Finer routes in 70.6 s. Best known: in Met Office UKV’s forecast the Finest first (UKV, AROME, ICON-EU, ECMWF, GFS, AIFS"
+  }
+ ]
+}
