@@ -95,7 +95,14 @@ if DEPTH == 'etopo':
                 m = rasterio.features.rasterize([({'type': 'Polygon', 'coordinates': [ring]}, 1)], out_shape=(ny_c, nx_c), transform=tr, fill=0, dtype='uint8')
                 LAND ^= m
         LAND = LAND[::-1].copy(); shapes = range(nsh)   # row 0 = south
-        for nm, la, lo in (('Sydney Harbour, Bradleys Head', -33.853, 151.245), ('Port Jackson entrance', -33.832, 151.29), ('Derwent off Battery Point', -42.887, 147.342)):
+        # OpenStreetMap closes some harbours and estuaries across the mouth (the coastline crosses the entrance and the water inside
+        # is mapped as a lake or river): Sydney Harbour came out as land (21 Nov). Where the seabed survey in ETOPO is clearly below
+        # sea level (deeper than 5 m), the cell is water whatever the land polygons say.
+        cla = s + cst / 2 + np.arange(ny_c) * cst; clo = w + cst / 2 + np.arange(nx_c) * cst
+        gy = np.clip(np.rint((cla - lat0) / st).astype(int), 0, g.shape[0] - 1); gx = np.clip(np.rint((clo - lon0) / st).astype(int), 0, g.shape[1] - 1)
+        deep = g[np.ix_(gy, gx)] < -5; opened = int((LAND.astype(bool) & deep).sum()); LAND[deep] = 0
+        print('coast: water from the depth survey inside closed harbours', opened, 'cells', flush=True)
+        for nm, la, lo in (('Sydney Harbour off Shark Island', -33.852, 151.257), ('Mark X off South Head', -33.82861, 151.28056), ('Port Jackson entrance', -33.832, 151.29), ('Derwent off Battery Point', -42.887, 147.342)):
             y = int((la - s) / cst); x = int((lo - w) / cst); print('coast check', nm, 'land' if LAND[y, x] else 'water', 'land share round it', round(float(LAND[y - 5:y + 6, x - 5:x + 6].mean()), 2), flush=True)
         print('coast (OSM land polygons)', LAND.shape, len(shapes), 'polygons', flush=True)
         # the depth grid takes land from the OSM coast too, so the two always agree
