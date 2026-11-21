@@ -82,12 +82,21 @@ if DEPTH == 'etopo':
         z = zipfile.ZipFile(zf); base = [x for x in z.namelist() if x.endswith('.shp')][0][:-4]
         sf = shapefile.Reader(shp=z.open(base + '.shp'), shx=z.open(base + '.shx'), dbf=z.open(base + '.dbf'))
         cst = 1 / 480; ny_c = int(round((n - s) / cst)); nx_c = int(round((e - w) / cst))
-        tr = rasterio.transform.from_origin(w, n, cst, cst); shapes = []
+        tr = rasterio.transform.from_origin(w, n, cst, cst); LAND = np.zeros((ny_c, nx_c), 'uint8'); nsh = 0
+        # every ring is filled on its own and laid on with exclusive-or (the even-odd rule), so a hole is water whichever way
+        # its ring runs; the first build (21 Nov 15:16) closed Sydney Harbour, read as land through the shapes' own ring order
         for shp in sf.iterShapes():
             b = shp.bbox
             if b[2] < w or b[0] > e or b[3] < s or b[1] > n: continue
-            shapes.append((shp.__geo_interface__, 1))
-        LAND = rasterio.features.rasterize(shapes, out_shape=(ny_c, nx_c), transform=tr, fill=0, dtype='uint8')[::-1].copy()   # row 0 = south
+            nsh += 1; pts = shp.points; parts = list(shp.parts) + [len(pts)]
+            for k in range(len(parts) - 1):
+                ring = pts[parts[k]:parts[k + 1]]
+                if len(ring) < 3: continue
+                m = rasterio.features.rasterize([({'type': 'Polygon', 'coordinates': [ring]}, 1)], out_shape=(ny_c, nx_c), transform=tr, fill=0, dtype='uint8')
+                LAND ^= m
+        LAND = LAND[::-1].copy(); shapes = range(nsh)   # row 0 = south
+        for nm, la, lo in (('Sydney Harbour, Bradleys Head', -33.853, 151.245), ('Port Jackson entrance', -33.832, 151.29), ('Derwent off Battery Point', -42.887, 147.342)):
+            y = int((la - s) / cst); x = int((lo - w) / cst); print('coast check', nm, 'land' if LAND[y, x] else 'water', 'land share round it', round(float(LAND[y - 5:y + 6, x - 5:x + 6].mean()), 2), flush=True)
         print('coast (OSM land polygons)', LAND.shape, len(shapes), 'polygons', flush=True)
         # the depth grid takes land from the OSM coast too, so the two always agree
         fy = (lat0 - (s + cst / 2)) / cst; fx = (lon0 - (w + cst / 2)) / cst
