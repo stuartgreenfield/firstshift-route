@@ -47,7 +47,7 @@
   var armed = null;
   function list() {
     var el = $('trkList'); if (!el) return; var a = load();
-    if (!a.length) { el.innerHTML = '<p class="note">No tracks filed yet. Use File track in the GPS window.</p>'; return; }
+    if (!a.length) { el.innerHTML = '<p class="note">No tracks filed yet. Use File track in the GPS menu (tap GPS while it is on).</p>'; return; }
     el.innerHTML = a.map(function (t) { return '<div class="trkrow" data-id="' + t.id + '"><label><input type="checkbox" data-k="show"' + (SHOWN[t.id] ? ' checked' : '') + '> <b>' + esc(t.name) + '</b></label><span>' + when(t.at) + ' · ' + t.nm.toFixed(1) + ' nm</span><span class="trkb"><button class="btn" type="button" data-k="gpx">GPX</button><button class="btn" type="button" data-k="log">Log</button><button class="btn" type="button" data-k="del">' + (armed === t.id ? 'Tap again to delete' : 'Delete') + '</button></span></div>'; }).join('');
   }
   function onList(e) {

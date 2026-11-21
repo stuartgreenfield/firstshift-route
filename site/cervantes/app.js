@@ -1641,7 +1641,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('racesX').addEventListener('click', function () { if (WIZ.on && WIZ.step === 2) wizClose(false); });
     boatWarn();
     try { if ($('oriBtn')) $('oriBtn').onclick = function () { ORI.mode = ORI.mode === 'north' ? 'course' : ORI.mode === 'course' ? 'route' : 'north'; store('fs-orient', ORI.mode); ORI.sm = null; busy(ORI.mode === 'north' ? 'North up' : ORI.mode === 'course' ? 'Course up: the GPS course over the ground is up (Live GPS on, moving over 1.5 kn); otherwise north up' : 'Route up: the course to the next mark is up'); setTimeout(function () { busy(''); }, 2500); draw(); }; } catch (e) {}
-    try { liveSet(); $('liveBtn').onclick = function () { if (LIVE.on) liveStop(); else liveStart(); }; } catch (e) {}
+    try { liveSet(); $('liveBtn').onclick = function () { if (LIVE.on) { if (GPSWIN || LIVE.sim) liveStop(); else gpsMenu(); } else liveStart(); };   /* F104: with GPS on, a tap opens the GPS menu (Stop GPS is in it) */ } catch (e) {}
   }
   /* after the race list loads: resume a set-up that moved to another forecast page, or start one for a first-time user */
   function wizBoot(qs) {
@@ -2165,7 +2165,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     LIVE.on = true; $('liveBtn').setAttribute('aria-pressed', 'true'); $('liveBox').hidden = false; $('liveBox').innerHTML = '<div class="lvl">Finding the boat by GPS…</div>'; liveWake();
     try { if (!LIVE.ac && (window.AudioContext || window.webkitAudioContext)) LIVE.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}   /* made on the tap, so the alert can sound later */
     var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; if (!(e && e.code === 1) && LIVE.fix && !LIVE.fix.dr && Date.now() - LIVE.fix.at < 30000) return;   /* Stuart 17 Nov 05:20, the green GPS pill flashing: a passing GPS error between good fixes no longer replaces the figures; lost only after 30 s without a fix */ var msg = e && e.code === 1 ? 'Location is not allowed for Route. Allow it for this site in the browser or phone settings, then tap GPS again.' : LIVE.fix ? 'GPS fix lost. Trying again.' : (/Mobi|Android|iPhone|iPad/.test(navigator.userAgent) ? 'No GPS fix yet. Offshore the first fix can take a minute or two. Trying again.' : 'This computer cannot find its position. A computer without GPS works out where it is from nearby Wi-Fi, which is not there at sea. Use Live GPS on a phone or tablet with GPS.');
-      $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; };
+      $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; LIVE.err = msg; stripShow(); };
     if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
     else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
     /* Stuart 17 Nov 14:53, Mark+: "gps lozenge does not appear unless you turn GPS off and on". Turned back on as the app opens, the first
@@ -2186,7 +2186,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function liveStop(keep) { clearTimeout(LIVE.kick);
     if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; clearInterval(LIVE.drTimer); LIVE.drTimer = null; LIVE.real = null; LIVE.drTrack = [];
     if (LIVE.wake) { try { LIVE.wake.release(); } catch (e) {} LIVE.wake = null; }
-    if (keep) return; store('fs-livereal', ''); LIVE.on = false; LIVE.fix = null;   /* GPS stopped on purpose: no reckoning from that fix later */ LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; draw();
+    if (keep) return; store('fs-livereal', ''); LIVE.on = false; LIVE.fix = null;   /* GPS stopped on purpose: no reckoning from that fix later */ LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; LIVE.err = null; if ($('gpsMenu')) $('gpsMenu').hidden = true; stripShow(); draw();
   }
   function liveFix(g) {
     var c = g.coords, f = { la: c.latitude, lo: c.longitude, acc: c.accuracy, at: Date.now(), sog: c.speed != null && c.speed >= 0 ? c.speed * 1.94384 : null, cog: c.heading != null && c.heading === c.heading ? c.heading : null }, pv = LIVE.fix;
@@ -2194,7 +2194,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (f.sog != null && f.sog > 40) f.sog = null;
     if (pv && pv.dr) { pv = LIVE.real; if (pv && (f.sog == null || f.cog == null)) { var r2 = rhumb({ lat: pv.la, lon: pv.lo }, { lat: f.la, lon: f.lo }), dt2 = (f.at - pv.at) / 3600000; if (dt2 > 0 && r2.nm / dt2 < 40) { if (f.sog == null) f.sog = r2.nm / dt2; if (f.cog == null) f.cog = r2.brg; } } if (f.acc <= 150) drEnd(f); }
     if (f.acc <= 150) { LIVE.real = f; if (!LIVE.realSaved || f.at - LIVE.realSaved > 5000) { LIVE.realSaved = f.at; store('fs-livereal', JSON.stringify({ la: f.la, lo: f.lo, at: f.at, acc: f.acc, sog: f.sog, cog: f.cog })); } }
-    LIVE.fix = f; if (f.acc <= 50) { (LIVE.pbuf = (LIVE.pbuf || []).filter(function (q) { return f.at - q[2] < 30000; })).push([f.la, f.lo, f.at]); }   /* the last 30 seconds of good fixes, for the course made good */
+    LIVE.err = null; LIVE.fix = f; if (f.acc <= 50) { (LIVE.pbuf = (LIVE.pbuf || []).filter(function (q) { return f.at - q[2] < 30000; })).push([f.la, f.lo, f.at]); }   /* the last 30 seconds of good fixes, for the course made good */
     if (f.acc > 150) { LIVE.calc = null; liveShow(); draw(); return; }   /* rough network position: no tail, no plan sums */
     /* the long tail: a point every 10 s (or 50 m), about 8 hours, kept on the phone so it survives closing Route */
     var lt = LIVE.trail[LIVE.trail.length - 1];
@@ -2509,7 +2509,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       '<p>Keep Route open with the screen on. Not for navigation.</p><button class="btn" id="lvInfoX">Close</button></div>';
   }
   function liveShow() {
-    liveShow0(); var f = LIVE.fix, b = $('liveBox'); if (!b) return; var old = b.querySelector('.lvdr'); if (old) old.remove();
+    liveShow0(); stripShow();   /* F104: before the window's own early returns */ var f = LIVE.fix, b = $('liveBox'); if (!b) return; var old = b.querySelector('.lvdr'); if (old) old.remove();
     var h = '';
     if (f && f.dr) { var s = Math.round((Date.now() - f.since) / 1000), age = s >= 3600 ? Math.floor(s / 3600) + 'h ' + ('0' + Math.floor(s % 3600 / 60)).slice(-2) : Math.floor(s / 60) + ' min ' + ('0' + s % 60).slice(-2) + ' s';
       h = '<div class="lvl lvdr lvwarn" role="alert"><b>DEAD RECKONING: no GPS for ' + age + '.</b> Carrying on ' + (f.cog != null && f.sog > 0.05 ? ('00' + Math.round(f.cog)).slice(-3) + '°T at ' + f.sog.toFixed(1) + ' kn, from the ' + f.src : f.src) + '. Position good to about ' + (f.rad < 0.1 ? Math.round(f.rad * 1852) + ' m' : f.rad.toFixed(2) + ' nm') + '. <button class="btn" id="drStop">Stop dead reckoning</button></div>'; }
@@ -2527,6 +2527,63 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (h) { b.hidden = false; b.insertAdjacentHTML('afterbegin', h); var sb = $('drStop'); if (sb) sb.onclick = function () { if ($('drOn')) { $('drOn').checked = false; $('drOn').onchange(); } liveShow(); draw(); }; }
     b.classList.toggle('drmode', !!(f && f.dr));
   }
+  /* F104 (Stuart 21 Nov 09:45, "You can go with A, recommended, for no floating window"; 07:41: "Keep losing the on-map controls, which are
+     either hidden behind the GPS pill ..."): with GPS on, the strip at the foot shows the live figures (LIVE) in place of the plan at the
+     slider time (PLAN), and a tap on GPS opens a short menu with everything the GPS window's buttons did. Nothing floats over the chart, so
+     no button on it can be covered. Rollback without a release (Stuart: "ensure we have a roll back"): localStorage fs-gpswin = 1 brings
+     the old window back. */
+  var GPSWIN = store('fs-gpswin') === '1';
+  function stripOn() { return !GPSWIN && LIVE.on && !LIVE.sim; }
+  function liveStrip() {
+    var f = LIVE.fix, c = LIVE.calc, n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return pad((x + 360) % 360) + '°'; },
+      ds = function (nm) { return nm < 0.1 ? Math.round(nm * 1852) + '<i class="unit"> m</i>' : n1(nm) + '<i class="unit"> nm</i>'; }, mmss = function (t) { var a = Math.abs(Math.round(t)); return (t < 0 ? '−' : '') + Math.floor(a / 60) + ':' + ('0' + a % 60).slice(-2); },
+      mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h' + ('0' + a % 60).slice(-2) : a + 'm'; }, warn = function (k, v) { return kv(k, v).replace('<div', '<div class="warnc"'); };
+    if (!f) return kv('GPS', LIVE.err ? 'no fix' : 'finding…') + (LIVE.err ? '<div class="gpserr">' + wizEsc(LIVE.err.replace(/<[^>]+>/g, '')).slice(0, 90) + '</div>' : '');
+    if (f.acc > 150) return warn('GPS', 'rough') + kv('±', ds(f.acc / 1852));
+    var h = (f.dr ? warn('DR', '±' + ds(f.rad || 0)) : '') + kv('SOG', f.sog != null ? n1(f.sog) : '--') + kv('COG', f.cog != null && f.sog > 0.5 ? p3(f.cog) : '--');
+    if (c && c.pre) { var pr = c.pre, ln = pr.line || {}, sc = Math.max(0, Math.round(pr.secs));
+      if (ln.d != null) h += (ln.over ? warn('Over', ds(ln.d)) : kv('Line', ds(ln.d))) + kv('Burn', ln.burn != null ? mmss(ln.burn) : '--');
+      else h += kv('Start', p3(pr.to.brg) + ' ' + ds(pr.to.nm));
+      h += kv('Gun', sc <= 600 ? Math.floor(sc / 60) + ':' + ('0' + sc % 60).slice(-2) : sc < 86400 ? Math.floor(sc / 3600) + 'h' + ('0' + Math.floor(sc % 3600 / 60)).slice(-2) : Math.floor(sc / 86400) + 'd' + Math.floor(sc % 86400 / 3600) + 'h');
+      return h; }
+    if (c) {
+      var mk = c.mark; if (mk) { h += kv(mk.finish ? 'Finish' : 'Mark ' + mk.n, p3(mk.to.brg) + ' ' + ds(mk.to.nm));
+        if (mk.fresh && mk.last && LIVE.toastMk !== mk.last.name + mk.n) { LIVE.toastMk = mk.last.name + mk.n; try { window.NavToast('✓ ' + mk.last.name + ' rounded. Next: ' + mk.name + '.'); } catch (e) {} } }
+      var x = c.xte; if (S.sel && x) { var xl = +$('xteLim').value || 0, bl = +$('behLim').value || 0, xs = x.d < 0.05 ? '0.0' : n1(x.d) + ' ' + x.side, as = Math.abs(c.ahead) < 1 ? '0m' : (c.ahead > 0 ? '+' : '−') + mm(c.ahead);
+        h += (xl > 0 && x.d > xl ? warn('Off', xs) : kv('Off', xs)) + (bl > 0 && c.ahead < -bl ? warn('Plan', as) : kv('Plan', as)); }
+    }
+    return h;
+  }
+  function stripShow() { var n = $('now'); if (!n) return; document.body.classList.toggle('gpsstrip', !GPSWIN); if (!stripOn()) { if (n.classList.contains('live')) { n.classList.remove('live', 'alarm'); update(); } return; }
+    n.innerHTML = liveStrip(); n.classList.add('live'); n.classList.toggle('alarm', !!LIVE.alarm); var m = $('gpsMenu'); if (m && !m.hidden) gpsMenu(true); }
+  function mkRound() { var M = LIVE.mk, mk = LIVE.calc && LIVE.calc.mark; if (!M || !mk) return; M.done.push({ name: mk.name, t: Date.now() }); M.i++; M.near = null; M.just = Date.now(); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }
+  function mkBack() { var M = LIVE.mk; if (!M || !M.i) return; M.i--; M.done.pop(); M.near = null; M.just = null; LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }
+  function gpsMenu(keep) {
+    var m = $('gpsMenu'); if (!keep && m && !m.hidden) { m.hidden = true; return; } if (keep && (!m || m.hidden)) return;
+    if (!m) { m = document.createElement('div'); m.id = 'gpsMenu'; m.className = 'gpsmenu'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'GPS'); document.body.appendChild(m);
+      document.addEventListener('pointerdown', function (e) { if (!m.hidden && !m.contains(e.target) && !$('liveBtn').contains(e.target)) m.hidden = true; }, true); }
+    var f = LIVE.fix, c = LIVE.calc || {}, mk = c.mark, b = function (k, t, cls) { return '<button type="button" class="btn' + (cls ? ' ' + cls : '') + '" data-g="' + k + '">' + t + '</button>'; };
+    var h = '<div class="gmh"><b>GPS ' + (f ? (f.dr ? 'dead reckoning' : '±' + Math.round(f.acc || 0) + ' m') : 'finding the boat') + '</b><button type="button" class="close" data-g="x" aria-label="Close">×</button></div>';
+    if (c.pre) h += b('pingb', lineGet().transit ? 'Ping inshore' : 'Ping boat') + b('pingp', lineGet().transit ? 'Ping outer mark' : 'Ping pin') + (window.__fsStartScreen ? b('ss', 'Start screen') : '') + (window.__fsLineSet ? b('setline', 'Set line') : '');
+    if (mk && !c.pre) h += (mk.finish ? '' : b('round', 'Rounded ' + wizEsc(mk.name))) + (LIVE.mk && LIVE.mk.i > 0 ? b('back', 'Back one mark') : '') + (S.inshore ? b('end', LIVE.endArm && Date.now() - LIVE.endArm < 5000 ? 'Tap again to end' : 'End race') : '');
+    if (S.sel) h += b('re', 'Re-route from here');
+    h += b('big', 'Big numbers') + b('file', 'File track') + b('clr', 'Clear track') + (f && f.dr ? b('drstop', 'Stop dead reckoning') : '') + b('info', 'What these mean') + b('stop', 'Stop GPS', 'primary');
+    if (LIVE.info) h += '<div class="gminfo">' + liveInfo() + '</div>';
+    m.innerHTML = h; m.hidden = false;
+    var r = $('liveBtn').getBoundingClientRect(), w = Math.min(360, innerWidth - 16); m.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px'; m.style.bottom = Math.max(8, innerHeight - r.top + 8) + 'px';
+    m.onclick = function (e) { var t = e.target.closest('[data-g]'); if (!t) return; var k = t.dataset.g;
+      if (k === 'x') { m.hidden = true; return; }
+      if (k === 'pingb') linePing('boat'); else if (k === 'pingp') linePing('pin'); else if (k === 'ss') { m.hidden = true; window.__fsStartScreen(); return; } else if (k === 'setline') { m.hidden = true; window.__fsLineSet(); return; }
+      else if (k === 'round') mkRound(); else if (k === 'back') mkBack(); else if (k === 'end') { if (!(LIVE.endArm && Date.now() - LIVE.endArm < 5000)) { LIVE.endArm = Date.now(); gpsMenu(true); return; } LIVE.endArm = null; m.hidden = true; endRace(); return; }
+      else if (k === 're') { m.hidden = true; liveReroute(); return; } else if (k === 'big') { m.hidden = true; LIVE.big = true; liveShow(); return; }
+      else if (k === 'file') { if (window.FSTracks) { var ok = FSTracks.file(LIVE.trail.slice(), (meta && meta.course && meta.course.name) || ''); if (ok) { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); } } }
+      else if (k === 'clr') { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }
+      else if (k === 'drstop') { if ($('drOn')) { $('drOn').checked = false; $('drOn').onchange(); } liveShow(); draw(); }
+      else if (k === 'info') LIVE.info = !LIVE.info;
+      else if (k === 'stop') { m.hidden = true; liveStop(); return; }
+      gpsMenu(true); };
+  }
+  window.__fsGpsMenu = function () { gpsMenu(); };   /* for the automatic tests */
   function liveShow0() {
     var c = LIVE.calc, f = LIVE.fix; if (!f) return;
     var n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return ('00' + Math.round((x + 360) % 360) % 360).slice(-3) + '°T'; }, mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h ' + ('0' + a % 60).slice(-2) : a + ' min'; };
@@ -2890,7 +2947,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ['Route from where you are', 'The target button reroutes from the boat\'s position now. On a phone or tablet it uses the GPS; otherwise tap the chart where the boat is.'],
     ['New forecasts', 'Route checks for new forecasts every few minutes. When one arrives, a button appears: New data, update routing. The Data tab shows each model\'s run time, when the server got it and how old it is.'],
     ['Forecast models and resolution', 'Resolution is the size of the grid a model works on: the finer it is, the more of the coast it sees. UKV and AROME, at 2 to 2.5 km, see headlands, the Solent and sea breezes, but run only about two days ahead. ICON-EU at 7 km and ARPEGE at 11 km reach three to four days. The global models, ECMWF, AIFS and GFS, come at a quarter of a degree, about 28 km by 18 km here: they cannot see local effects, but they are the best guide to the big picture beyond two days. How often a model gives a value matters too: AIFS gives one only every 6 hours, so it smooths out shifts. When the models disagree, check how old each run is, trust the fine models near the coast and in the first day, and treat light winds with care, because a knot either way changes the time a lot. The list below gives the grid and time step for each source.'],
-    ['Move the GPS window', 'Drag the small dots on any window over the chart (the GPS window, the plotter bar or the Layers box) to move it; let go and it stays. It never covers a button: it slides to the nearest gap. Drag it off the left or right side, or flick it there, and it tucks away to a light blue tab on that edge, clearing the screen for the chart; tap the tab to bring it back. Settings, Display, Window positions: Lock layout, the dots on the left, in the middle or on the right, and Reset to FirstShift layout. Positions are kept for each screen size and orientation.'],
+    ['Move a window', 'Drag the small dots on any window over the chart (the plotter bar or the Layers box) to move it; let go and it stays. It never covers a button: it slides to the nearest gap. Drag it off the left or right side, or flick it there, and it tucks away to a light blue tab on that edge, clearing the screen for the chart; tap the tab to bring it back. Settings, Display, Window positions: Lock layout, the dots on the left, in the middle or on the right, and Reset to FirstShift layout. Positions are kept for each screen size and orientation.'],
     ['How old is each forecast', 'Under each finish time, and beside each model in Settings, Forecasts, is the time of the model run and how old it is. Runs of different ages can disagree for that reason alone. Leave out model runs older than, in Settings, Forecasts, drops stale runs from the routing; the newest runs always stay in, and ticking a model again keeps it. What the age means. Each run is named by its maker after the hour it starts from, in UTC: a 12Z run starts from the weather at 12:00 UTC. The age counts from that run time, set by the maker, not from when the forecast was downloaded. The Data tab shows those separately on the same row: server is when the FirstShift server received it, device is when this phone or computer downloaded it. The makers take several hours to publish each run, so a forecast that has just arrived is already some hours old; 9 to 12 hours is normal. Why the models often show the same age. The makers run on different timetables: UKV and MOGREPS every hour, AROME and ICON-EU every 3 hours, ECMWF, AIFS, GFS and ARPEGE every 6 hours. The server takes each model\u2019s newest 00Z, 06Z, 12Z or 18Z run, the hours every model shares, so the models usually come from the same run and are compared from the same starting weather. If a model\u2019s newest run is not ready, its previous run is kept and marked older run. For long races ECMWF\u2019s 00Z or 12Z run is used, as its 06Z and 18Z runs reach only 90 hours. A model more than 18 hours old on the server is fetched fresh on your device from Open-Meteo.'],
     ['Ask Route', 'In the Plan tab, Ask Route answers set questions from the chosen route at the replay time: the next mark, the next tack or gybe, the next sail change, the biggest wind shift in the next 12 hours, and what the tide is doing. Read it out speaks the answer.'],
     ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],
@@ -3559,7 +3616,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
       else h = ['Hdg', 'BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
     }
-    $('now').innerHTML = h; followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
+    if (stripOn()) stripShow(); else { $('now').classList.remove('live', 'alarm'); $('now').innerHTML = h; } followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
   }
   /* Follow the boat: with it on, moving the time slider or playing keeps the chosen route's boat in the middle of the open chart.
      Dragging the chart turns it off; the button turns it back on. */
