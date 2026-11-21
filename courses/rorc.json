@@ -1,6 +1,6 @@
 {
  "note": "RORC races in the FirstShift Route area. Until RORC publishes a 2027 course, each race carries its last published course and the app warns that it will change. Positions are approximate charted positions of the named features, for routing only: check the sailing instructions. Rounding sides marked assumed are FirstShift's assumption.",
- "updated": "2026-11-11",
+ "updated": "2026-11-18",
  "races": [
   {
    "id": "cervantes",
@@ -176,6 +176,27 @@
      "lon": -1.64967,
      "side": "port",
      "sideAssumed": true
+    },
+    {
+     "name": "Casquets",
+     "lat": 49.72194,
+     "lon": -2.37694,
+     "side": "port",
+     "src": "Les Casquets 49°43′19″N 2°22′37″W (Wikipedia)"
+    },
+    {
+     "name": "Les Hanois, Guernsey",
+     "lat": 49.43506,
+     "lon": -2.70233,
+     "side": "port",
+     "src": "Les Hanois Lighthouse 49°26′06.2″N 2°42′08.4″W (Wikipedia): the whole of Guernsey to port"
+    },
+    {
+     "name": "W Minquiers buoy",
+     "lat": 48.905,
+     "lon": -2.31833,
+     "side": "port",
+     "src": "Plateau des Minquiers W cardinal Q(9) 48°54′.3N 2°19′.1W (Imray ICC18): the whole of the Minquiers to port"
     }
    ],
    "finish": {
@@ -186,13 +207,14 @@
    },
    "nm": 150,
    "source": "https://rorc.org/2026-rorc-racing-programme-unleashed",
-   "page": "channel-area"
+   "page": "channel-area",
+   "setNote": "Course from Stuart Greenfield, 21 Nov 2026: across the Channel leaving the Casquets to port, the whole of Guernsey to port and the whole of the Minquiers to port, finishing at St Malo. Needles Fairway assumed for leaving the Solent."
   },
   {
    "id": "fastnet",
    "name": "Rolex Fastnet Race",
    "date2027": "2027-07-24",
-   "dateSource": "charter listing, not yet confirmed by RORC",
+   "dateSource": "RORC: start Saturday 24 July 2027, as the final race of the 2027 Admiral's Cup (https://www.rorc.org/rorc-announces-dates-for-2027-admirals-cup-building-on-spectacular-comeback-08-2025). 2027 sailing instructions not yet published.",
    "courseYear": 2025,
    "courseStatus": "last-edition",
    "start": {
