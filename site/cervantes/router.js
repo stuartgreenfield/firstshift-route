@@ -255,6 +255,10 @@
     // mark to port: boat keeps the buoy on its left, so the ray (no-go side) points to the boat's right of the mark... the inside of a left turn
     var leftTurn = turn < 0, ray;
     if (side === 'port') ray = leftTurn ? (inside + 180) % 360 : inside; else ray = leftTurn ? inside : (inside + 180) % 360;
+    /* F105 (21 Nov 2026, the Casquets on the Cowes Dinard St Malo): where the course hardly turns (under 20 degrees) the line goes square
+       to the course on the side the boat passes: its right for a mark left to port, its left to starboard. Before, a slight turn the other
+       way (a 5 degree turn to starboard at the Casquets, left to port) put it on the mark's far side, and the route hooked back under the mark. */
+    if (Math.abs(turn) < 20) ray = (bin + (side === 'port' ? 90 : -90) + 360) % 360;
     /* a turn-back mark (out and back, such as Eddystone on the Myth of Malham): the bisector would lie along the course itself,
        so a boat could count as rounding when it reached the far end of the line, miles short of the mark. Put the line
        square across the course instead, on the side the boat must not pass. */
