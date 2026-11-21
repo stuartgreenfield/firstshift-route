@@ -33,7 +33,7 @@ jobs:
       - name: Tell Healthchecks.io a run has started (monitoring plan step 2)
         if: steps.fresh.outputs.skip != '1'
         env:
-          HC: ${{ secrets.HC_PING_URL }}
+          HC: ${{ secrets.HC_PING_URL || 'https://hc-ping.com/e66f00bb-7e1b-4b78-8b83-443aed0262fd' }}   # Stuart 21 Nov 02:55: "Put in public code" (a repository secret HC_PING_URL, if added, takes over)
         run: '[ -z "$HC" ] || curl -fsS -m 10 --retry 3 -o /dev/null "$HC/start" || true'
 
   area:
@@ -152,7 +152,7 @@ jobs:
       - name: Tell Healthchecks.io how the run ended (success, or fail if any area or step failed; a missing or late ping alerts too)
         if: always()
         env:
-          HC: ${{ secrets.HC_PING_URL }}
+          HC: ${{ secrets.HC_PING_URL || 'https://hc-ping.com/e66f00bb-7e1b-4b78-8b83-443aed0262fd' }}   # Stuart 21 Nov 02:55: "Put in public code" (a repository secret HC_PING_URL, if added, takes over)
           AREAS: ${{ needs.area.result }}
           JOB: ${{ job.status }}
         run: |
