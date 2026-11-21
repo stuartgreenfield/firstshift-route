@@ -286,7 +286,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     todo.forEach(function (L) { var c = S.choice[L.id]; if (c && c !== 'off' && L[c]) dlTot += L[c].bytes || L[c].size || 0; });
     var dlShow = function () { prog('Loading forecasts', dlN ? dlDone / dlN : null, dlDone + ' of ' + dlN + ' forecasts' + (dlTot ? ', ' + mb(dlGot) + ' of ' + mb(dlTot) : '')); };
     if (dlN) dlShow();
-    return Promise.all(todo.map(function (L) {
+    /* F111 (Stuart 21 Nov 12:22, "Map is not rendering the depth contour ... connection is slow"): every file downloaded at once, so on a
+       slow line the half-megabyte depth shared it with the wind files and the contours were drawn only once everything had arrived.
+       The depth now comes first and the contours are drawn the moment it is in; the forecasts follow. */
+    var one = function (L) {
       var c = S.choice[L.id] || 'off';
       if (c === 'off') {
         if (L.kind === 'depth') P.depth = null; else delete P[L.kind][L.id];
@@ -298,9 +301,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       return Promise.all([fetch((window.FS_PACK || 'pack/') + '' + v.file).then(function (r) { if (!r.ok) throw new Error(L.name + ' did not download'); return r.arrayBuffer(); }), runs]).then(function (two) {
         var buf = two[0], spec = Object.assign({ kind: L.kind, id: L.id, name: L.name }, v); if (two[1]) spec.druns = two[1];
         FSRouter.addLayer(P, spec, buf); S.loaded[L.id] = c; (S.gotAt = S.gotAt || {})[L.id] = Date.now(); dlDone++; dlGot += buf.byteLength; dlShow();
+        if (L.kind === 'depth') { try { buildDepth(); draw(); } catch (e) {} }
         return all(function () { var copy = buf.slice(0); return { msg: { type: 'layer', L: spec, buf: copy }, tr: [copy] }; });
       });
-    })).then(function () {
+    };
+    var isD = function (L) { return L.kind === 'depth'; };
+    return Promise.all(todo.filter(isD).map(one)).then(function () { return Promise.all(todo.filter(function (L) { return !isD(L); }).map(one)); }).then(function () {
       return ovJob;
     }).then(function () {
       busy(''); prog(''); dataTable(); modelsList(); selects(); chip(); buildDepth(); draw(); try { setupRender(); } catch (e) {}
