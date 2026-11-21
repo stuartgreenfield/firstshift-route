@@ -4,11 +4,6 @@
   "t": "Try it safely first",
   "sec": 17.1
  },
- "basic-plotter-93767226": {
-  "f": "basic-plotter-93767226.mp3",
-  "t": "Basic plotter",
-  "sec": 49.1
- },
  "charts-9ada2d07": {
   "f": "charts-9ada2d07.mp3",
   "t": "Charts",
@@ -19,16 +14,6 @@
   "t": "Route from any point",
   "sec": 24.4
  },
- "clear-screen-e14bdb2f": {
-  "f": "clear-screen-e14bdb2f.mp3",
-  "t": "Clear screen",
-  "sec": 19.8
- },
- "wind-by-hand-b24cbfbb": {
-  "f": "wind-by-hand-b24cbfbb.mp3",
-  "t": "Wind by hand",
-  "sec": 28.5
- },
  "forecast-models-ages-and-blending-aae469c2": {
   "f": "forecast-models-ages-and-blending-aae469c2.mp3",
   "t": "Forecast models: ages and blending",
@@ -38,11 +23,6 @@
   "f": "my-set-up-5d95ce54.mp3",
   "t": "My set-up",
   "sec": 24.6
- },
- "move-the-gps-window-2da7aaf7": {
-  "f": "move-the-gps-window-2da7aaf7.mp3",
-  "t": "Move the GPS window",
-  "sec": 17.8
  },
  "find-a-setting-c22680b8": {
   "f": "find-a-setting-c22680b8.mp3",
@@ -84,11 +64,6 @@
   "t": "Chart orientation",
   "sec": 39.1
  },
- "live-gps-while-racing-7112a39f": {
-  "f": "live-gps-while-racing-7112a39f.mp3",
-  "t": "Live GPS while racing",
-  "sec": 86.8
- },
  "setting-up-a-race-7c221f4a": {
   "f": "setting-up-a-race-7c221f4a.mp3",
   "t": "Setting up a race",
@@ -103,11 +78,6 @@
   "f": "route-to-any-point-fe433306.mp3",
   "t": "Route to any point",
   "sec": 33.2
- },
- "family-and-friends-c39d9bc": {
-  "f": "family-and-friends-c39d9bc.mp3",
-  "t": "Family and friends",
-  "sec": 27.2
  },
  "isochrones-66439efc": {
   "f": "isochrones-66439efc.mp3",
@@ -129,11 +99,6 @@
   "t": "Your boat",
   "sec": 18.6
  },
- "if-you-think-the-forecast-is-wrong-60bb13a6": {
-  "f": "if-you-think-the-forecast-is-wrong-60bb13a6.mp3",
-  "t": "If you think the forecast is wrong",
-  "sec": 36.2
- },
  "route-from-where-you-are-44b7a4b7": {
   "f": "route-from-where-you-are-44b7a4b7.mp3",
   "t": "Route from where you are",
@@ -149,11 +114,6 @@
   "t": "Forecast models and resolution",
   "sec": 212.7
  },
- "how-old-is-each-forecast-db64c923": {
-  "f": "how-old-is-each-forecast-db64c923.mp3",
-  "t": "How old is each forecast",
-  "sec": 26.3
- },
  "ask-route-7842283b": {
   "f": "ask-route-7842283b.mp3",
   "t": "Ask Route",
@@ -163,16 +123,6 @@
   "f": "send-to-the-crew-868531dc.mp3",
   "t": "Send to the crew",
   "sec": 16.3
- },
- "ais-b6e18ae2": {
-  "f": "ais-b6e18ae2.mp3",
-  "t": "AIS",
-  "sec": 25.3
- },
- "man-overboard-df613289": {
-  "f": "man-overboard-df613289.mp3",
-  "t": "Man overboard",
-  "sec": 30.9
  },
  "fleet-e7af0192": {
   "f": "fleet-e7af0192.mp3",
@@ -193,11 +143,6 @@
   "f": "solent-races-on-the-chart-8ca1d189.mp3",
   "t": "Solent races on the chart",
   "sec": 35.8
- },
- "tide-by-hand-a4060a72": {
-  "f": "tide-by-hand-a4060a72.mp3",
-  "t": "Tide by hand",
-  "sec": 25.4
  },
  "start-line-and-bow-offset-a164395f": {
   "f": "start-line-and-bow-offset-a164395f.mp3",
@@ -314,11 +259,6 @@
   "t": "A series of starts",
   "sec": 15.2
  },
- "the-start-screen-d345cfe": {
-  "f": "the-start-screen-d345cfe.mp3",
-  "t": "The start screen",
-  "sec": 25.7
- },
  "time-to-line-and-time-to-burn-1434b423": {
   "f": "time-to-line-and-time-to-burn-1434b423.mp3",
   "t": "Time to line and time to burn",
@@ -389,11 +329,6 @@
   "t": "Helm view",
   "sec": 34.0
  },
- "the-plotter-8527274e": {
-  "f": "the-plotter-8527274e.mp3",
-  "t": "The plotter",
-  "sec": 39.6
- },
  "steer-to-stay-on-the-route-ee16ab3d": {
   "f": "steer-to-stay-on-the-route-ee16ab3d.mp3",
   "t": "Steer to stay on the route",
@@ -403,11 +338,6 @@
   "f": "the-boat-is-here-f3617f54.mp3",
   "t": "The boat is here",
   "sec": 24.1
- },
- "clear-screen-d404941": {
-  "f": "clear-screen-d404941.mp3",
-  "t": "Clear screen",
-  "sec": 20.6
  },
  "settings-instruments-1165520": {
   "f": "settings-instruments-1165520.mp3",
@@ -428,11 +358,6 @@
   "f": "depth-smoothing-c9100b16.mp3",
   "t": "Depth smoothing",
   "sec": 31.9
- },
- "move-the-panels-7199bd7d": {
-  "f": "move-the-panels-7199bd7d.mp3",
-  "t": "Move the panels",
-  "sec": 19.5
  },
  "find-a-setting-728bc9e2": {
   "f": "find-a-setting-728bc9e2.mp3",
@@ -504,11 +429,6 @@
   "t": "Your first race",
   "sec": 26.8
  },
- "the-practice-race-with-emma-83ce7003": {
-  "f": "the-practice-race-with-emma-83ce7003.mp3",
-  "t": "The practice race with Emma",
-  "sec": 25.1
- },
  "basic-plotter-8daec86a": {
   "f": "basic-plotter-8daec86a.mp3",
   "t": "Basic plotter",
@@ -524,11 +444,6 @@
   "t": "Wind by hand",
   "sec": 28.6
  },
- "move-the-gps-window-69516f3f": {
-  "f": "move-the-gps-window-69516f3f.mp3",
-  "t": "Move the GPS window",
-  "sec": 44.5
- },
  "tide-by-hand-9bd6b893": {
   "f": "tide-by-hand-9bd6b893.mp3",
   "t": "Tide by hand",
@@ -539,11 +454,6 @@
   "t": "Live GPS while racing",
   "sec": 86.5
  },
- "family-and-friends-1d25fdf9": {
-  "f": "family-and-friends-1d25fdf9.mp3",
-  "t": "Family and friends",
-  "sec": 28.4
- },
  "if-you-think-the-forecast-is-wrong-5c925a47": {
   "f": "if-you-think-the-forecast-is-wrong-5c925a47.mp3",
   "t": "If you think the forecast is wrong",
@@ -553,5 +463,90 @@
   "f": "ais-d01fcf2b.mp3",
   "t": "AIS",
   "sec": 30.3
+ },
+ "the-start-line-time-and-countdown-721d0ced": {
+  "f": "the-start-line-time-and-countdown-721d0ced.mp3",
+  "t": "The start: line, time and countdown",
+  "sec": 102.8
+ },
+ "routing-detail-d5546d9f": {
+  "f": "routing-detail-d5546d9f.mp3",
+  "t": "Routing detail",
+  "sec": 69.6
+ },
+ "cpa-to-the-mark-and-to-other-boats-568d4bcf": {
+  "f": "cpa-to-the-mark-and-to-other-boats-568d4bcf.mp3",
+  "t": "CPA: to the mark and to other boats",
+  "sec": 44.9
+ },
+ "vmg-and-vmc-8642aa9d": {
+  "f": "vmg-and-vmc-8642aa9d.mp3",
+  "t": "VMG and VMC",
+  "sec": 71.3
+ },
+ "move-the-gps-window-2cb9d929": {
+  "f": "move-the-gps-window-2cb9d929.mp3",
+  "t": "Move the GPS window",
+  "sec": 43.3
+ },
+ "family-and-friends-c89434ca": {
+  "f": "family-and-friends-c89434ca.mp3",
+  "t": "Family and friends",
+  "sec": 39.5
+ },
+ "how-old-is-each-forecast-66a0d8d": {
+  "f": "how-old-is-each-forecast-66a0d8d.mp3",
+  "t": "How old is each forecast",
+  "sec": 122.0
+ },
+ "man-overboard-199d2e8b": {
+  "f": "man-overboard-199d2e8b.mp3",
+  "t": "Man overboard",
+  "sec": 44.1
+ },
+ "the-start-line-time-and-countdown-c3aed1a8": {
+  "f": "the-start-line-time-and-countdown-c3aed1a8.mp3",
+  "t": "The start: line, time and countdown",
+  "sec": 103.7
+ },
+ "routing-detail-33fecad6": {
+  "f": "routing-detail-33fecad6.mp3",
+  "t": "Routing detail",
+  "sec": 69.8
+ },
+ "vmg-and-vmc-719e5bce": {
+  "f": "vmg-and-vmc-719e5bce.mp3",
+  "t": "VMG and VMC",
+  "sec": 58.5
+ },
+ "the-plotter-71c28432": {
+  "f": "the-plotter-71c28432.mp3",
+  "t": "The plotter",
+  "sec": 39.4
+ },
+ "clear-screen-9719e206": {
+  "f": "clear-screen-9719e206.mp3",
+  "t": "Clear screen",
+  "sec": 21.2
+ },
+ "move-the-panels-dd6972ca": {
+  "f": "move-the-panels-dd6972ca.mp3",
+  "t": "Move the panels",
+  "sec": 43.9
+ },
+ "the-start-line-time-and-countdown-a0b766fd": {
+  "f": "the-start-line-time-and-countdown-a0b766fd.mp3",
+  "t": "The start: line, time and countdown",
+  "sec": 83.9
+ },
+ "vmg-and-vmc-72dc6b88": {
+  "f": "vmg-and-vmc-72dc6b88.mp3",
+  "t": "VMG and VMC",
+  "sec": 79.0
+ },
+ "the-start-screen-ce6a5af5": {
+  "f": "the-start-screen-ce6a5af5.mp3",
+  "t": "The start screen",
+  "sec": 42.5
  }
 }
