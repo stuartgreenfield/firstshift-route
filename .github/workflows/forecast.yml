@@ -30,6 +30,11 @@ jobs:
             age=$(( $(date -u +%s) - built ))
             if [ "$age" -lt 18000 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
           fi
+      - name: Tell Healthchecks.io a run has started (monitoring plan step 2)
+        if: steps.fresh.outputs.skip != '1'
+        env:
+          HC: ${{ secrets.HC_PING_URL }}
+        run: '[ -z "$HC" ] || curl -fsS -m 10 --retry 3 -o /dev/null "$HC/start" || true'
 
   area:
     needs: gate
@@ -144,3 +149,13 @@ jobs:
         run: |
           git fetch -q origin main && git checkout -q origin/main -- tools/live_check.js site/cervantes/app.js site/android
           node tools/live_check.js https://firstshift-route.pages.dev --wait 10
+      - name: Tell Healthchecks.io how the run ended (success, or fail if any area or step failed; a missing or late ping alerts too)
+        if: always()
+        env:
+          HC: ${{ secrets.HC_PING_URL }}
+          AREAS: ${{ needs.area.result }}
+          JOB: ${{ job.status }}
+        run: |
+          [ -z "$HC" ] && { echo "HC_PING_URL not set: no ping"; exit 0; }
+          if [ "$JOB" = "success" ] && [ "$AREAS" = "success" ]; then curl -fsS -m 10 --retry 3 -o /dev/null "$HC" || true
+          else curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "publish: $JOB, areas: $AREAS, run ${{ github.run_id }}" "$HC/fail" || true; fi
