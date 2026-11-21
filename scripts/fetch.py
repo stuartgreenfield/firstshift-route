@@ -21,7 +21,7 @@ CACHE = os.path.join(OUT, 'cache'); os.makedirs(CACHE, exist_ok=True)
 ECMWF_S3 = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'
 ECMWF_MIRRORS = [ECMWF_S3, 'https://data.ecmwf.int/forecasts']   # same paths on both; ECMWF's own server takes over when S3 says slow down
 
-STATS = {'n': 0, 'retry': 0, 'slow': 0.0, 'mirror': 0, 't': 0.0}   # 21 Nov 2026: each source's log line says how many requests, retries and the slowest one
+STATS = {'n': 0, 'retry': 0, 'slow': 0.0, 'mirror': 0, 't': 0.0, 'why': {}}   # 21 Nov 2026: each source's log line says how many requests, retries and the slowest one
 def get(u, rng=None, tries=8):
     # 21 Nov 2026 (the 08:19 UTC run waited 50 minutes on ECMWF): a request gives up after 30 s, not 120 s, and alternates between ECMWF's
     # Amazon mirror and its own server from the first retry, so one slow server costs seconds, not minutes
@@ -36,12 +36,12 @@ def get(u, rng=None, tries=8):
             b = urllib.request.urlopen(rq, timeout=30 if u.startswith(ECMWF_S3) else 120).read()
             dt = time.time() - t; STATS['n'] += 1; STATS['t'] += dt; STATS['slow'] = max(STATS['slow'], dt); return b
         except Exception as e:
-            err = e; STATS['retry'] += 1
+            err = e; STATS['retry'] += 1; w = str(getattr(e, 'code', '') or type(e).__name__); STATS['why'][w] = STATS['why'].get(w, 0) + 1
             if getattr(e, 'code', None) == 404: break   # not published (yet): no point retrying
             time.sleep(1 + k + random.random() * 2)
     raise err
 def stats_line(name):
-    s = STATS; return f"{name}: {s['n']} requests, {s['retry']} retries, {s['mirror']} on the second server, average {s['t'] / max(1, s['n']):.2f} s, slowest {s['slow']:.1f} s"
+    s = STATS; return f"{name}: {s['n']} requests, {s['retry']} retries, {s['mirror']} on the second server, average {s['t'] / max(1, s['n']):.2f} s, slowest {s['slow']:.1f} s" + (', retries for ' + ', '.join(f'{k} x{v}' for k, v in sorted(s['why'].items())) if s['why'] else '')
 
 
 def cached(key, fn):
