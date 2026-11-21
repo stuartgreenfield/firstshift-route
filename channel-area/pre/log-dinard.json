@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-21T22:25:42.996Z",
+ "log": [
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 52,
+   "note": "Finer routes in 35.5 s. Best known: in Met Office UKV’s forecast the NOAA GFS track is 3.8 min quicker than its own rout"
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 99,
+   "note": "Finer routes in 36.7 s. Times: first routes 1.6 s, standard 10.5 s, finer 47.3 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 147,
+   "note": "Finer routes in 37.0 s. Best known: in Met Office UKV’s forecast the DWD ICON-EU track is 5.1 min quicker than its own r"
+  }
+ ]
+}
