@@ -1,41 +1,41 @@
 {
- "at": "2026-11-21T14:15:43.764Z",
+ "at": "2026-11-21T20:39:20.909Z",
  "log": [
   {
    "race": "channel-area",
    "h": 0,
-   "s": 42,
-   "note": "Finer routes in 30.6 s. Times: first routes 2.2 s, standard 9.9 s, finer 40.5 s. The faint line is the standard route. F"
+   "s": 41,
+   "note": "Finer routes in 29.3 s. Times: first routes 2.3 s, standard 9.8 s, finer 39.2 s. The faint line is the standard route. F"
   },
   {
    "race": "channel-area",
    "h": 1,
-   "s": 79,
-   "note": "Finer routes in 29.0 s. Times: first routes 1.0 s, standard 8.4 s, finer 37.5 s. The faint line is the standard route. F"
+   "s": 75,
+   "note": "Finer routes in 26.7 s. Times: first routes 1.0 s, standard 7.2 s, finer 34.0 s. The faint line is the standard route. F"
   },
   {
    "race": "channel-area",
    "h": 2,
-   "s": 113,
-   "note": "Finer routes in 26.2 s. Times: first routes 1.0 s, standard 7.2 s, finer 33.5 s. The faint line is the standard route. F"
+   "s": 110,
+   "note": "Finer routes in 27.2 s. Times: first routes 1.1 s, standard 7.2 s, finer 34.4 s. The faint line is the standard route. F"
   },
   {
    "race": "channel-area",
    "h": 3,
-   "s": 143,
-   "note": "Finer routes in 23.4 s. Times: first routes 0.9 s, standard 6.5 s, finer 30.0 s. The faint line is the standard route. F"
+   "s": 146,
+   "note": "Finer routes in 28.4 s. Times: first routes 1.0 s, standard 7.4 s, finer 35.8 s. The faint line is the standard route. F"
   },
   {
    "race": "channel-area",
    "h": 4,
-   "s": 171,
-   "note": "Finer routes in 22.7 s. Times: first routes 0.7 s, standard 5.4 s, finer 28.2 s. The faint line is the standard route. F"
+   "s": 184,
+   "note": "Finer routes in 30.3 s. Times: first routes 1.1 s, standard 7.8 s, finer 38.2 s. The faint line is the standard route. F"
   },
   {
    "race": "channel-area",
    "h": 5,
-   "s": 198,
-   "note": "Finer routes in 20.7 s. Times: first routes 0.8 s, standard 5.8 s, finer 26.5 s. The faint line is the standard route. F"
+   "s": 225,
+   "note": "Finer routes in 32.5 s. Times: first routes 1.1 s, standard 8.1 s, finer 40.6 s. The faint line is the standard route. F"
   }
  ]
 }

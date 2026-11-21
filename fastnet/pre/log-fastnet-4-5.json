@@ -1,17 +1,17 @@
 {
- "at": "2026-11-21T14:21:36.289Z",
+ "at": "2026-11-21T20:45:30.825Z",
  "log": [
   {
    "race": "fastnet",
    "h": 4,
-   "s": 386,
-   "note": "Finer routes in 146.6 s. Best known: in Meteo-France AROME’s forecast the Combined (6 models) track is 24.2 min quicker "
+   "s": 385,
+   "note": "Finer routes in 155.3 s. Times: first routes 5.9 s, standard 38.3 s, finer 193.6 s. The faint line is the standard route"
   },
   {
    "race": "fastnet",
    "h": 5,
-   "s": 572,
-   "note": "Finer routes in 148.1 s. Times: first routes 5.5 s, standard 36.7 s, finer 184.8 s. The faint line is the standard route"
+   "s": 596,
+   "note": "Finer routes in 169.7 s. Times: first routes 5.9 s, standard 39.5 s, finer 209.2 s. The faint line is the standard route"
   }
  ]
 }

@@ -1,23 +1,23 @@
 {
- "at": "2026-11-21T14:15:08.931Z",
+ "at": "2026-11-21T20:37:25.818Z",
  "log": [
   {
    "race": "morgan",
    "h": 0,
-   "s": 62,
-   "note": "Finer routes in 45.0 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 4.6 min quicker than its ow"
+   "s": 44,
+   "note": "Finer routes in 30.2 s. Best known: in Met Office UKV’s forecast the Meteo-France AROME track is 5.0 min quicker than it"
   },
   {
    "race": "morgan",
    "h": 1,
-   "s": 118,
-   "note": "Finer routes in 44.5 s. Times: first routes 1.4 s, standard 11.4 s, finer 55.9 s. The faint line is the standard route. "
+   "s": 84,
+   "note": "Finer routes in 31.4 s. Best known: in ECMWF AIFS’s forecast the Combined (6 models) track is 3.4 min quicker than its o"
   },
   {
    "race": "morgan",
    "h": 2,
-   "s": 170,
-   "note": "Finer routes in 40.6 s. Best known: in ECMWF IFS’s forecast the ECMWF AIFS track is 2.1 min quicker than its own route; "
+   "s": 124,
+   "note": "Finer routes in 31.1 s. Best known: in Meteo-France AROME’s forecast the Met Office UKV track is 1.8 min quicker than it"
   }
  ]
 }
