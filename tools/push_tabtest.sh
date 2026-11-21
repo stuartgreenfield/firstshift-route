@@ -7,7 +7,8 @@ cd $T && git fetch -q origin && git checkout -q --detach origin/tabtest
 # for itself and said Offline). Each area's pack and pre-routes, and status.json, are replaced by the live ones.
 git fetch -q origin site; for d in $(git ls-tree -d --name-only origin/site); do if git cat-file -e origin/site:$d/pack 2>/dev/null; then git rm -rq --ignore-unmatch $d/pack $d/pre; git checkout -q origin/site -- $d/pack; git cat-file -e origin/site:$d/pre 2>/dev/null && git checkout -q origin/site -- $d/pre; fi; done; git checkout -q origin/site -- status.json
 for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area tasman-area mark; do mkdir -p $T/$d; find $S -maxdepth 1 -type f -exec cp {} $T/$d/ \; ; node /tmp/claude-0/night/tools/compact.js $T/$d >/dev/null; done
-rm -rf helpmedia && cp -r $N/helpmedia helpmedia; mkdir -p courses && cp $N/courses/* courses/;   # 21 Nov: the course list too (the corrected St Malo waited for the next forecast run)
+rm -rf helpmedia && cp -r $N/helpmedia helpmedia; mkdir -p courses && cp $N/courses/* courses/; mkdir -p films && cp $N/films/* films/;   # 21 Nov: the how-to films (F106)
+   # 21 Nov: the course list too (the corrected St Malo waited for the next forecast run)
  cp $N/index.html index.html; cp $N/_routes.json _routes.json; cp -r $N/functions/. functions/; mkdir -p follow && cp $N/follow/* follow/;   # 20 Nov: the server functions (boat code, follow) and the follow page go too
  mkdir -p lab && cp $N/lab/* lab/
 [ -n "$2" ] && cp "$2" android/navigate.apk; [ -n "$3" ] && cp "$3" android/markplus.apk

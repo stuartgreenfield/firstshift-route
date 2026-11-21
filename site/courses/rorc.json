@@ -439,15 +439,60 @@
    "page": "channel-area"
   },
   {
-   "id": "sydney-hobart",
-   "name": "Rolex Sydney Hobart Yacht Race",
+   "id": "sydney-hobart-l1",
+   "name": "Rolex Sydney Hobart Yacht Race · Line 1",
    "org": "CYCA",
    "date2027": "2026-12-26",
    "dateSource": "CYCA: start 13:00 AEDT, 26 Dec 2026 (02:00 UTC)",
    "courseYear": 2023,
    "courseStatus": "last-year",
    "start": {
-    "name": "Start: seamark off Sydney Heads (Mark Y)",
+    "name": "Start: seamark Mark Z off Sydney Heads (Line 1)",
+    "lat": -33.83373,
+    "lon": 151.30237
+   },
+   "marks": [
+    {
+     "name": "Tasman Island",
+     "lat": -43.25,
+     "lon": 148.0,
+     "side": "starboard"
+    },
+    {
+     "name": "Iron Pot",
+     "lat": -43.05833,
+     "lon": 147.41667,
+     "side": "starboard"
+    },
+    {
+     "name": "John Garrow Shoal Light",
+     "lat": -42.91333,
+     "lon": 147.36667,
+     "side": "port"
+    }
+   ],
+   "finish": {
+    "name": "Finish, off Battery Point, Hobart",
+    "lat": -42.88667,
+    "lon": 147.34167,
+    "radius_nm": 0.2
+   },
+   "nm": 628,
+   "nmSource": "CYCA",
+   "source": "https://rolexsydneyhobart.com/about-the-race/course/",
+   "page": "tasman-area",
+   "setNote": "Routed from the seamark off Sydney Heads: the start in the harbour and the legs to the seamark (about 2 nm, by the marks the SIs set) are too narrow for a forecast route, so the route begins at your seamark. Course from the 2023 Sailing Instructions (SI 12, 14, 15, 17; https://s3.ap-southeast-2.amazonaws.com/media.prod.cyca/media/3446708/sailing-instructions-2023-rolex-sydney-hobart-yacht-race.pdf): start on Line 3 north of Shark Island, Mark X (s) off South Head, seamark Mark Y (s), Tasman Island (s), Iron Pot (s), John Garrow Shoal Light (p), finish off Battery Point. Choose the entry for your start line (Line 1: Mark Z; Lines 2 and 3: Mark Y; Line 4: Mark W), from the allocation on the notice board before the start. Positions approximate: check the 2026 Sailing Instructions when published."
+  },
+  {
+   "id": "sydney-hobart",
+   "name": "Rolex Sydney Hobart Yacht Race · Lines 2 and 3",
+   "org": "CYCA",
+   "date2027": "2026-12-26",
+   "dateSource": "CYCA: start 13:00 AEDT, 26 Dec 2026 (02:00 UTC)",
+   "courseYear": 2023,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start: seamark Mark Y off Sydney Heads (Lines 2 and 3)",
     "lat": -33.83706,
     "lon": 151.30238
    },
@@ -481,7 +526,52 @@
    "nmSource": "CYCA",
    "source": "https://rolexsydneyhobart.com/about-the-race/course/",
    "page": "tasman-area",
-   "setNote": "Routed from the seamark off Sydney Heads: the start in the harbour and the legs to the seamark (about 2 nm, by the marks the SIs set) are too narrow for a forecast route, so the route begins at your seamark. Course from the 2023 Sailing Instructions (SI 12, 14, 15, 17; https://s3.ap-southeast-2.amazonaws.com/media.prod.cyca/media/3446708/sailing-instructions-2023-rolex-sydney-hobart-yacht-race.pdf): start on Line 3 north of Shark Island, Mark X (s) off South Head, seamark Mark Y (s), Tasman Island (s), Iron Pot (s), John Garrow Shoal Light (p), finish off Battery Point. Your line and seamark depend on your division (Line 1: V, Z; Line 2: V, Y; Line 3: X, Y; Line 4: X, W): edit the course to match your allocation. Positions approximate: check the 2026 Sailing Instructions when published."
+   "setNote": "Routed from the seamark off Sydney Heads: the start in the harbour and the legs to the seamark (about 2 nm, by the marks the SIs set) are too narrow for a forecast route, so the route begins at your seamark. Course from the 2023 Sailing Instructions (SI 12, 14, 15, 17; https://s3.ap-southeast-2.amazonaws.com/media.prod.cyca/media/3446708/sailing-instructions-2023-rolex-sydney-hobart-yacht-race.pdf): start on Line 3 north of Shark Island, Mark X (s) off South Head, seamark Mark Y (s), Tasman Island (s), Iron Pot (s), John Garrow Shoal Light (p), finish off Battery Point. Choose the entry for your start line (Line 1: Mark Z; Lines 2 and 3: Mark Y; Line 4: Mark W), from the allocation on the notice board before the start. Positions approximate: check the 2026 Sailing Instructions when published."
+  },
+  {
+   "id": "sydney-hobart-l4",
+   "name": "Rolex Sydney Hobart Yacht Race · Line 4",
+   "org": "CYCA",
+   "date2027": "2026-12-26",
+   "dateSource": "CYCA: start 13:00 AEDT, 26 Dec 2026 (02:00 UTC)",
+   "courseYear": 2023,
+   "courseStatus": "last-year",
+   "start": {
+    "name": "Start: seamark Mark W off Sydney Heads (Line 4)",
+    "lat": -33.84039,
+    "lon": 151.30238
+   },
+   "marks": [
+    {
+     "name": "Tasman Island",
+     "lat": -43.25,
+     "lon": 148.0,
+     "side": "starboard"
+    },
+    {
+     "name": "Iron Pot",
+     "lat": -43.05833,
+     "lon": 147.41667,
+     "side": "starboard"
+    },
+    {
+     "name": "John Garrow Shoal Light",
+     "lat": -42.91333,
+     "lon": 147.36667,
+     "side": "port"
+    }
+   ],
+   "finish": {
+    "name": "Finish, off Battery Point, Hobart",
+    "lat": -42.88667,
+    "lon": 147.34167,
+    "radius_nm": 0.2
+   },
+   "nm": 628,
+   "nmSource": "CYCA",
+   "source": "https://rolexsydneyhobart.com/about-the-race/course/",
+   "page": "tasman-area",
+   "setNote": "Routed from the seamark off Sydney Heads: the start in the harbour and the legs to the seamark (about 2 nm, by the marks the SIs set) are too narrow for a forecast route, so the route begins at your seamark. Course from the 2023 Sailing Instructions (SI 12, 14, 15, 17; https://s3.ap-southeast-2.amazonaws.com/media.prod.cyca/media/3446708/sailing-instructions-2023-rolex-sydney-hobart-yacht-race.pdf): start on Line 3 north of Shark Island, Mark X (s) off South Head, seamark Mark Y (s), Tasman Island (s), Iron Pot (s), John Garrow Shoal Light (p), finish off Battery Point. Choose the entry for your start line (Line 1: Mark Z; Lines 2 and 3: Mark Y; Line 4: Mark W), from the allocation on the notice board before the start. Positions approximate: check the 2026 Sailing Instructions when published."
   }
  ],
  "later": [

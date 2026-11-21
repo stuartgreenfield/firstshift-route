@@ -11,7 +11,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   /* the race list, from another page */
   await p.goto(BASE + '/channel-area/', { timeout: 120000 }); await p.waitForTimeout(8000);
   const opt = await p.evaluate(() => [...document.querySelectorAll('#raceSel optgroup')].map(g => g.label + ': ' + [...g.querySelectorAll('option')].map(o => o.value).join(',')).join(' | '));
-  ok(/CYCA races: sydney-hobart/.test(opt), 'The race list has a CYCA group with the Sydney Hobart', opt.slice(-80));
+  ok(/CYCA races: sydney-hobart-l1,sydney-hobart,sydney-hobart-l4/.test(opt), 'The race list has a CYCA group with the Sydney Hobart', opt.slice(-80));
   await p.evaluate(() => { document.getElementById('raceBtn').click(); }); await p.waitForTimeout(400);
   ok(await p.evaluate(() => { const b = document.getElementById('rmOther'); return !!(b && b.offsetParent); }), 'The race menu has Other races');
   await p.evaluate(() => { document.getElementById('raceMenu').hidden = true; document.getElementById('rmOther').click(); }); await p.waitForTimeout(800);
@@ -23,7 +23,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   ok(/\/tasman-area\//.test(p.url()), 'Choosing it opens the Sydney to Hobart page', p.url());
   await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && f.sel.path; }, null, { timeout: 900000 }).catch(() => null); await p.waitForTimeout(3000);
   const st = await p.evaluate(() => { const f = window.__navFc(), c = window.__navCourse(); const ids = [].concat(...['wind', 'tide', 'wave', 'met'].map(k => Object.keys(f.P[k] || {}))); return { course: c && c.name, marks: c && c.marks.map(m => m.name + ' ' + m.side), layers: ids, routes: (f.routes || []).length, sel: !!(f.sel && f.sel.path) }; });
-  ok(st.course === 'Rolex Sydney Hobart Yacht Race' && st.marks.length === 3, 'The course: from the seamark off the Heads, Tasman Island, Iron Pot, John Garrow Shoal Light', JSON.stringify(st.marks));
+  ok(/^Rolex Sydney Hobart Yacht Race/.test(st.course) && st.marks.length === 3, 'The course: from the seamark off the Heads, Tasman Island, Iron Pot, John Garrow Shoal Light', JSON.stringify(st.marks));
   ok(['ecmwf', 'gfs', 'aifs', 'mog'].every(k => st.layers.includes(k)) && !st.layers.some(k => ['ukv', 'icon', 'arome', 'nwscur'].includes(k)), 'Global wind models only (ECMWF, GFS, AIFS, Met Office global), no European ones', st.layers.join(','));
   ok(st.layers.includes('glocur'), 'Copernicus global currents with tides', st.layers.filter(k => /cur/.test(k)).join(','));
   ok(st.sel, 'A route is chosen', st.routes + ' routes');
