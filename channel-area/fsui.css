@@ -168,3 +168,5 @@ body.gpsstrip #liveBox{display:none!important}
 /* F110 (21 Nov, found by tests/gps-strip.js): on a phone the routing progress box spanned the top of the chart and covered the round buttons
    (CLEAR). It now keeps clear of the column of round buttons on the right. */
 @media (max-width:899px){#prog{left:var(--gut,16px);transform:none;width:auto;max-width:calc(100% - var(--gut,16px) - 70px)}}
+/* M93: the strip tagged RHUMB while the slider runs the rhumb-line boat on Mark */
+.now.rhumb::before{content:'RHUMB'}
