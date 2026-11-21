@@ -27,13 +27,15 @@ jobs:
     outputs:
       skip: ${{ steps.fresh.outputs.skip }}
     steps:
-      - name: Skip a back-up run if the last publish is recent
+      - name: Skip a scheduled run if the last publish is recent (the forecast clock or an earlier run did it)
         id: fresh
         run: |
-          if [ "${{ github.event.schedule }}" = "47 1,7,13,19 * * *" ]; then
+          # 21 Nov: the Cloudflare forecast clock (cloudflare/forecast-clock) starts runs on time; GitHub's own schedule is the back-up, so any
+          # scheduled run, not only the :47 one, stands down when forecasts were published in the last 3 hours (runs are 6 hours apart, so a late earlier run never stops the next)
+          if [ "${{ github.event_name }}" = "schedule" ]; then
             built=$(curl -fsS https://firstshift-route.pages.dev/status.json | python3 -c "import json,sys,calendar,time;print(calendar.timegm(time.strptime(json.load(sys.stdin)['built'],'%Y-%m-%dT%H:%MZ')))" || echo 0)
             age=$(( $(date -u +%s) - built ))
-            if [ "$age" -lt 18000 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
+            if [ "$age" -lt 10800 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
           fi
       - name: Tell Healthchecks.io a run has started (monitoring plan step 2)
         if: steps.fresh.outputs.skip != '1'
