@@ -83,9 +83,10 @@ if DEPTH == 'etopo':
         sf = shapefile.Reader(shp=z.open(base + '.shp'), shx=z.open(base + '.shx'), dbf=z.open(base + '.dbf'))
         cst = 1 / 480; ny_c = int(round((n - s) / cst)); nx_c = int(round((e - w) / cst))
         tr = rasterio.transform.from_origin(w, n, cst, cst); shapes = []
-        for i, b in enumerate(sf.bbox(i) for i in range(len(sf))):
+        for shp in sf.iterShapes():
+            b = shp.bbox
             if b[2] < w or b[0] > e or b[3] < s or b[1] > n: continue
-            shapes.append((sf.shape(i).__geo_interface__, 1))
+            shapes.append((shp.__geo_interface__, 1))
         LAND = rasterio.features.rasterize(shapes, out_shape=(ny_c, nx_c), transform=tr, fill=0, dtype='uint8')[::-1].copy()   # row 0 = south
         print('coast (OSM land polygons)', LAND.shape, len(shapes), 'polygons', flush=True)
         # the depth grid takes land from the OSM coast too, so the two always agree
