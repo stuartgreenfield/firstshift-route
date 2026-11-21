@@ -1507,8 +1507,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet(); if (l) { l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); } chipStart(); }
   function chipStart() { setTimeout(function () { try { setupRender(); } catch (e) {} }, 0); var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date((v + tzSh()) * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
-    c.innerHTML = '<span class="stl">Start' + (ok ? '<i class="utc"> ' + (tzLocal() ? 'LOCAL' : 'UTC') + '</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
-    c.title = ok ? 'Class start ' + clockAbs(v) + ' ' + tzS1() + ': tap to change' : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
+    var past = !!(ok && v < Date.now() / 1000 - 600); if (past) c.classList.add('ask');   /* 13 (Stuart 20 Nov 15:59, the start had been set for yesterday): a start already gone says Started, in amber */
+    c.innerHTML = '<span class="stl">' + (past ? 'Started' : 'Start') + (ok ? '<i class="utc"> ' + (tzLocal() ? 'LOCAL' : 'UTC') + '</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
+    c.title = ok ? (past ? 'The class start was ' : 'Class start ') + clockAbs(v) + ' ' + tzS1() + (past ? ': the race is under way. Tap to set a new start' : ': tap to change') : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
   function wizCourseChosen(fromEditor) { S.drawnNew = false; showCard(); afterCard(); return true; }   /* a chosen race or drawn course comes back to the set-up card */   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wizShow(n) {
@@ -1555,9 +1556,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if ($('wzLine')) $('wzLine').onclick = function () { if (window.__fsLineSet) window.__fsLineSet(); else if (window.__fsMarkLine) { wizClose(false); window.__fsMarkLine(); } };
       if ($('wzSS')) $('wzSS').onclick = function () { if ($('wizNext').disabled) return; $('wizNext').click(); setTimeout(function () { if (window.__fsStartScreen) window.__fsStartScreen(); }, 700); };   /* sets the start as Done does, then opens the start screen */   /* A (Stuart 20 Nov 13:58): tapping START offers the start screen once a start is set */   /* Stuart 20 Nov 11:58: the start step offers the line first */
       var fit = function () { var ep = startPickerRead('wz'); $('wzFit').innerHTML = ep === ep ? fitHtml(ep) : ''; $('wizNext').disabled = !(ep === ep); };
-      var dayMine = false;   /* F91 (21 Nov 00:10): until the crew picks a day, a typed time goes to its next coming occurrence, so 23:47 typed at 23:07 is today, not tomorrow */
+      var dayMine = false;   /* F91 (21 Nov 00:10, refined 02:40): until the crew picks a day, a typed time goes to its nearest occurrence: at 23:07, 23:47 is today (not tomorrow), 21:00 is today (a race under way) and 06:00 is tomorrow */
       var nextDay = function () { if (dayMine) return; var dd = $('wzDay'), tt = $('wzTime'); if (!dd || !tt || !/^\d{1,2}:\d{2}/.test(tt.value)) return; var now = Date.now() / 1000, best = null;
-        [].forEach.call(dd.options, function (o) { var ep = exactEpoch(o.value, tt.value); if (ep === ep && ep > now && (best === null || ep < best.ep)) best = { v: o.value, ep: ep }; }); if (best && dd.value !== best.v) dd.value = best.v; };
+        [].forEach.call(dd.options, function (o) { var ep = exactEpoch(o.value, tt.value); if (ep === ep && (best === null || Math.abs(ep - now) < Math.abs(best.ep - now))) best = { v: o.value, ep: ep }; }); if (best && dd.value !== best.v) dd.value = best.v; };
       $('wzDay').onchange = function () { dayMine = true; fit(); }; $('wzTime').oninput = function () { nextDay(); fit(); }; fit();
       var order = startDayList();
       if (!order.length) { $('wizHint').textContent = 'No start times: the forecast has not loaded yet.'; }
@@ -2107,6 +2108,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var st = $('startSel') ? +$('startSel').value : 0, fu = null; try { fu = meta ? futureGet() : null; } catch (e) {} if (fu && fu.ep) st = fu.ep;
       if (!st) { $('tzRace').innerHTML = ''; return; }
       var sec = Math.round(st - now / 1000);
+      if ((sec < -600) !== !!S.chipPast) { S.chipPast = sec < -600; try { chipStart(); } catch (e) {} }   /* the START chip turns to Started once the gun is 10 min gone (13, Stuart 20 Nov 15:59) */
       try { if (LIVE.on && LIVE.fix && LIVE.calc && LIVE.calc.pre) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}   /* the GPS countdown ticks every second, between fixes too */
       var nar = innerWidth <= 520; $('tzRace').innerHTML = sec > 0 ? (nar ? 'Start ' : 'Start in ') + '<b' + (sec <= 600 ? ' class="soon"' : '') + '>' + (sec <= 600 ? Math.floor(sec / 60) + ':' + p2(sec % 60) : sec < 86400 ? hm(sec / 60) : Math.floor(sec / 86400) + 'd ' + hm((sec % 86400) / 60)) + '</b>' : 'Race <b>' + hm(-sec / 60) + '</b>';
     }
