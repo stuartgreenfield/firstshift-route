@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-21T20:40:16.202Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 95,
+   "note": "Finer routes in 71.2 s. Times: first routes 3.9 s, standard 21.3 s, finer 92.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 186,
+   "note": "Finer routes in 72.0 s. Best known: in Meteo-France AROME’s forecast the ECMWF AIFS track is 286.7 min quicker than its "
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 279,
+   "note": "Finer routes in 73.7 s. Times: first routes 2.6 s, standard 19.0 s, finer 92.7 s. The faint line is the standard route. "
+  }
+ ]
+}
