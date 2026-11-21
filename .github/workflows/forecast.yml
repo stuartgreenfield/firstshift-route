@@ -18,7 +18,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: forecasts
+  group: forecasts${{ inputs.dry_run && '-dry' || '' }}   # a dry run publishes nothing, so it has its own queue (a waiting dry run was cancelled by the next scheduled run, 21 Nov)
   cancel-in-progress: false
 
 jobs:
