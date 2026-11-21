@@ -447,23 +447,11 @@
    "courseYear": 2023,
    "courseStatus": "last-year",
    "start": {
-    "name": "Start, Sydney Harbour, Line 3 (north of Shark Island)",
-    "lat": -33.852,
-    "lon": 151.257
+    "name": "Start: seamark off Sydney Heads (Mark Y)",
+    "lat": -33.83706,
+    "lon": 151.30238
    },
    "marks": [
-    {
-     "name": "Mark X, off South Head",
-     "lat": -33.82861,
-     "lon": 151.28056,
-     "side": "starboard"
-    },
-    {
-     "name": "Mark Y, seamark",
-     "lat": -33.83706,
-     "lon": 151.30238,
-     "side": "starboard"
-    },
     {
      "name": "Tasman Island",
      "lat": -43.25,
@@ -493,7 +481,7 @@
    "nmSource": "CYCA",
    "source": "https://rolexsydneyhobart.com/about-the-race/course/",
    "page": "tasman-area",
-   "setNote": "Course from the 2023 Sailing Instructions (SI 12, 14, 15, 17; https://s3.ap-southeast-2.amazonaws.com/media.prod.cyca/media/3446708/sailing-instructions-2023-rolex-sydney-hobart-yacht-race.pdf): start on Line 3 north of Shark Island, Mark X (s) off South Head, seamark Mark Y (s), Tasman Island (s), Iron Pot (s), John Garrow Shoal Light (p), finish off Battery Point. Your line and seamark depend on your division (Line 1: V, Z; Line 2: V, Y; Line 3: X, Y; Line 4: X, W): edit the course to match your allocation. Positions approximate: check the 2026 Sailing Instructions when published."
+   "setNote": "Routed from the seamark off Sydney Heads: the start in the harbour and the legs to the seamark (about 2 nm, by the marks the SIs set) are too narrow for a forecast route, so the route begins at your seamark. Course from the 2023 Sailing Instructions (SI 12, 14, 15, 17; https://s3.ap-southeast-2.amazonaws.com/media.prod.cyca/media/3446708/sailing-instructions-2023-rolex-sydney-hobart-yacht-race.pdf): start on Line 3 north of Shark Island, Mark X (s) off South Head, seamark Mark Y (s), Tasman Island (s), Iron Pot (s), John Garrow Shoal Light (p), finish off Battery Point. Your line and seamark depend on your division (Line 1: V, Z; Line 2: V, Y; Line 3: X, Y; Line 4: X, W): edit the course to match your allocation. Positions approximate: check the 2026 Sailing Instructions when published."
   }
  ],
  "later": [
@@ -652,25 +640,13 @@
     "w": 146.9,
     "e": 153.5
    },
-   "hours": 144,
+   "hours": 240,
    "start": {
-    "name": "Start, Sydney Harbour, Line 3 (north of Shark Island)",
-    "lat": -33.852,
-    "lon": 151.257
+    "name": "Start: seamark off Sydney Heads (Mark Y)",
+    "lat": -33.83706,
+    "lon": 151.30238
    },
    "marks": [
-    {
-     "name": "Mark X, off South Head",
-     "lat": -33.82861,
-     "lon": 151.28056,
-     "side": "starboard"
-    },
-    {
-     "name": "Mark Y, seamark",
-     "lat": -33.83706,
-     "lon": 151.30238,
-     "side": "starboard"
-    },
     {
      "name": "Tasman Island",
      "lat": -43.25,
