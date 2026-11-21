@@ -15,7 +15,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => { window.__fsSim(true); }); let la = 50.755;
   for (let i = 0; i < 10; i++) { await p.evaluate(([a, sp]) => window.__fsSimFix(a, -1.2925, sp, 0), [la, i < 8 ? 5 : 2]); la += 0.0002; await p.waitForTimeout(1100); }
   await p.evaluate(() => FSSolent.showList()); await p.waitForTimeout(400);
-  const nx = await p.evaluate(() => { const s = document.getElementById('solAccM'); return s && [...s.options].map(o => o.text).join(','); }); ok(/Typed/.test(nx || '') && /Boat size/.test(nx || '') && /Learn from/.test(nx || ''), 'To full speed: Typed, Boat size, Learn in a drop-down', nx);
+  const nx = await p.evaluate(() => { const s = document.getElementById('solAccM'); return s && [...s.options].map(o => o.text).join(','); }); ok(/Typed/.test(nx || '') && /Boat size/.test(nx || '') && /My table by wind/.test(nx || ''), 'To full speed: Boat size, My table by wind, Typed in a drop-down (21 Nov: learning now always on, blending in; tests/full-speed.js)', nx);
   await p.click('#solLegs [data-k=nxnow]'); await p.waitForTimeout(1500);
   const ml = await p.evaluate(() => FSSolent.ss().ml); ok(ml && ml.D > 0 && ml.burn != null, 'the moving line is worked out (distance back, seconds early or late)', JSON.stringify(ml && { D: Math.round(ml.D), burn: Math.round(ml.burn), early: ml.early }));
   const ss = await p.evaluate(() => document.getElementById('solStartScr').innerText.replace(/\s+/g, ' '));
