@@ -154,3 +154,20 @@ body.navclear #fsBadge{display:flex}
 /* F101: your version of a stored race */
 .yourtag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;border:1px solid var(--brand);color:var(--brand);font:600 10px var(--f-data);letter-spacing:.05em;text-transform:uppercase;vertical-align:middle}
 .yourc{display:block;margin:0 0 6px}.yourc .btn{margin-left:4px}
+/* F104 (21 Nov): no floating GPS window; the strip at the foot shows the live figures, the GPS button opens a short menu */
+body.gpsstrip #liveBox{display:none!important}
+.now.live::before{content:'LIVE';color:#2FA36B}
+.now.live.alarm b,.now .warnc b{color:#FF6B6B}
+.now .gpserr{align-self:center;font:500 12px var(--f-body);color:var(--muted);white-space:normal;max-width:60vw}
+.gpsmenu{position:fixed;z-index:60;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;width:min(360px,calc(100vw - 16px));box-shadow:0 8px 24px rgba(0,0,0,.35);max-height:70vh;overflow-y:auto}
+.gpsmenu[hidden]{display:none}
+.gpsmenu .btn{min-height:44px}
+.gpsmenu .gmh{width:100%;display:flex;justify-content:space-between;align-items:center;font:600 13px var(--f-data)}
+.gpsmenu .gmh .close{position:static}
+.gpsmenu .gminfo{width:100%;font-size:13px}
+/* F110 (21 Nov, found by tests/gps-strip.js): on a phone the routing progress box spanned the top of the chart and covered the round buttons
+   (CLEAR). It now keeps clear of the column of round buttons on the right. */
+@media (max-width:899px){#prog{left:var(--gut,16px);transform:none;width:auto;max-width:calc(100% - var(--gut,16px) - 70px)}}
+/* M93: the strip tagged RHUMB while the slider runs the rhumb-line boat on Mark */
+.now.rhumb::before{content:'RHUMB'}
+.battnote{display:flex;flex-direction:column;gap:8px;text-align:left}.battnote .xrow{display:flex;gap:8px;justify-content:flex-end}
