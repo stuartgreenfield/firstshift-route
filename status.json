@@ -125,7 +125,8 @@
   "solent-area:ens": "2026112112 shared (457s once for all areas, cut here in 0s)",
   "solent-area:nwswav": "2026112112 in 274s",
   "solent-area:icon": "2026112112 in 207s",
-  "solent-area:overview": "2026112112 ok"
+  "solent-area:overview": "2026112112 ok",
+  "tasman-area:ecmwf": "2026112100 trial"
  },
  "received": {
   "arpege": {
