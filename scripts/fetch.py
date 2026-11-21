@@ -21,20 +21,27 @@ CACHE = os.path.join(OUT, 'cache'); os.makedirs(CACHE, exist_ok=True)
 ECMWF_S3 = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'
 ECMWF_MIRRORS = [ECMWF_S3, 'https://data.ecmwf.int/forecasts']   # same paths on both; ECMWF's own server takes over when S3 says slow down
 
+STATS = {'n': 0, 'retry': 0, 'slow': 0.0, 'mirror': 0, 't': 0.0}   # 21 Nov 2026: each source's log line says how many requests, retries and the slowest one
 def get(u, rng=None, tries=8):
+    # 21 Nov 2026 (the 08:19 UTC run waited 50 minutes on ECMWF): a request gives up after 30 s, not 120 s, and alternates between ECMWF's
+    # Amazon mirror and its own server from the first retry, so one slow server costs seconds, not minutes
     import random
     for k in range(tries):
+        t = time.time()
         try:
             url = u
-            if u.startswith(ECMWF_S3) and k % 2 == 1: url = ECMWF_MIRRORS[1] + u[len(ECMWF_S3):]
+            if u.startswith(ECMWF_S3) and k % 2 == 1: url = ECMWF_MIRRORS[1] + u[len(ECMWF_S3):]; STATS['mirror'] += 1
             rq = urllib.request.Request(url)
             if rng: rq.add_header('Range', f'bytes={rng[0]}-{rng[1]}')
-            return urllib.request.urlopen(rq, timeout=120).read()
+            b = urllib.request.urlopen(rq, timeout=30 if u.startswith(ECMWF_S3) else 120).read()
+            dt = time.time() - t; STATS['n'] += 1; STATS['t'] += dt; STATS['slow'] = max(STATS['slow'], dt); return b
         except Exception as e:
-            err = e
+            err = e; STATS['retry'] += 1
             if getattr(e, 'code', None) == 404: break   # not published (yet): no point retrying
-            time.sleep(2 * (k + 1) + random.random() * 3)
+            time.sleep(1 + k + random.random() * 2)
     raise err
+def stats_line(name):
+    s = STATS; return f"{name}: {s['n']} requests, {s['retry']} retries, {s['mirror']} on the second server, average {s['t'] / max(1, s['n']):.2f} s, slowest {s['slow']:.1f} s"
 
 
 def cached(key, fn):
@@ -61,34 +68,56 @@ def grib_crop(buf, box=None):
     return v[np.ix_(iy[oy], ix[ox])].astype('f4'), lat[iy][oy], lon[ix][ox]
 
 
-def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1, opt=()):
+def ecmwf(model='ifs', stream='scda', params=('10u', '10v'), step=1, opt=(), hires=False):
     # opt: extra fields kept only when every hour has them, so a missing one never costs the main fields (14 Nov 2026)
     base = 'https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com'
     d, r = RUN
+    # A (Stuart 20 Nov 23:15, "Go A"): ECMWF's 9 km (0.1 deg) data has been free and open since 20 Oct 2026, two hours behind real time.
+    # The wind takes it when this run's first and last hours are already there (0p1/oper, every run); otherwise the 25 km files of the
+    # SAME run, so the finer grid never costs a newer run. Cache keys carry the grid, so 9 km and 25 km never mix.
+    want_h = [h for h in HOURS_LONG if h % step == 0 and (h <= 144 or h % 6 == 0)]
+    res9 = False
+    if hires and model == 'ifs' and want_h:
+        def idx9(hh):
+            try: return bool(get(f'{base}/{d}/{r}z/ifs/0p1/oper/{d}{r}0000-{hh}h-oper-fc-sfc.index', tries=2))
+            except Exception: return False
+        res9 = idx9(want_h[0]) and idx9(want_h[-1])
+        print('ecmwf 9 km' if res9 else 'ecmwf 9 km not ready: 25 km of the same run', flush=True)
+    # 21 Nov 2026: the hours and fields are fetched side by side (8 at a time), not one after another: ecmet is about 520 requests, which
+    # took 8 minutes in turn on a good day and over 25 when ECMWF's server was slow. The result is the same, in the same order.
+    from concurrent.futures import ThreadPoolExecutor
     out = {p: [] for p in params}; hrs = []; lat = lon = None; extra = {p: [] for p in opt}
-    for hh in [h for h in HOURS_LONG if h % step == 0 and (h <= 144 or h % 6 == 0)]:   # ECMWF: 3-hourly to 144 h, then 6-hourly to 240 h
-        stem = f'{d}/{r}z/{model}/0p25/{stream}/{d}{r}0000-{hh}h-{stream if model=="ifs" else "oper"}-fc'
-        try:
-            idx = [json.loads(l) for l in get(f'{base}/{stem}.index', tries=2).decode().splitlines() if l.strip()]
+    ck = ('9k' if res9 else '')
+    stem_of = lambda hh: f'{d}/{r}z/ifs/0p1/oper/{d}{r}0000-{hh}h-oper-fc-sfc' if res9 else f'{d}/{r}z/{model}/0p25/{stream}/{d}{r}0000-{hh}h-{stream if model=="ifs" else "oper"}-fc'
+    def index(hh):
+        try: return hh, [json.loads(l) for l in get(f'{base}/{stem_of(hh)}.index', tries=2).decode().splitlines() if l.strip()]
+        except Exception: return hh, None
+    def field(hh, x, p, need):
+        try: return cached(f'{model}{stream}{ck}{d}{r}_{hh}_{p}', lambda: grib_crop(get(f'{base}/{stem_of(hh)}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))[0])
         except Exception:
-            continue
-        ok = True
-        for p in params:
-            m = [x for x in idx if x.get('param') == p]
-            if not m: ok = False; break
-            x = m[0]
-            a = cached(f'{model}{stream}{d}{r}_{hh}_{p}', lambda: grib_crop(get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))[0])
-            out[p].append(a)
-            if lat is None: _, lat, lon = grib_crop(get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))
-        if ok:
+            if need: raise
+            return None
+    with ThreadPoolExecutor(8) as ex:
+        idxs = dict(ex.map(lambda h: index(h), want_h))
+        jobs = {}
+        for hh in want_h:
+            idx = idxs.get(hh)
+            if not idx: continue
+            mm = {p: [x for x in idx if x.get('param') == p] for p in params + tuple(opt)}
+            if not all(mm[p] for p in params): continue
+            for p in params: jobs[(hh, p)] = ex.submit(field, hh, mm[p][0], p, True)
+            for p in opt: jobs[(hh, p)] = ex.submit(field, hh, mm[p][0], p, False) if mm[p] else None
+        for hh in want_h:
+            if (hh, params[0]) not in jobs: continue
+            try: got = [jobs[(hh, p)].result() for p in params]
+            except Exception: continue
+            for p, a in zip(params, got): out[p].append(a)
             hrs.append(hh)
-            for p in opt:
-                m = [x for x in idx if x.get('param') == p]
-                if not m: extra[p].append(None); continue
-                x = m[0]
-                try: extra[p].append(cached(f'{model}{stream}{d}{r}_{hh}_{p}', lambda: grib_crop(get(f'{base}/{stem}.grib2', (x['_offset'], x['_offset'] + x['_length'] - 1)))[0]))
-                except Exception: extra[p].append(None)
-        print(model, stream, hh, end=' | ', flush=True)
+            for p in opt: extra[p].append(jobs[(hh, p)].result() if jobs[(hh, p)] else None)
+        if hrs:
+            x0 = [x for x in idxs[hrs[0]] if x.get('param') == params[0]][0]
+            _, lat, lon = grib_crop(get(f'{base}/{stem_of(hrs[0])}.grib2', (x0['_offset'], x0['_offset'] + x0['_length'] - 1)))
+    print(model, stream, len(hrs), 'hours', '|', stats_line(model + ' ' + stream), flush=True)
     res = {p: np.array(out[p][:len(hrs)]) for p in params}
     for p in opt:
         if len(extra[p]) == len(hrs) and all(a is not None for a in extra[p]): res[p] = np.array(extra[p])
@@ -297,7 +326,7 @@ if __name__ == '__main__':
     for s in sys.argv[1:]:
         short = RUN[1] in ('06', '18')       # ECMWF 06Z and 18Z runs use the short-cut-off streams
         if s in ('ecmwf', 'aifs'):
-            o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6)
+            o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf'))
             save(s, u=o['10u'], v=o['10v'], hours=h, lat=la, lon=lo)
         elif s == 'ecmet':   # ECMWF weather beyond the wind: gusts, pressure, rain, thunderstorm energy, cloud, air temperature, sea temperature
             o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))
