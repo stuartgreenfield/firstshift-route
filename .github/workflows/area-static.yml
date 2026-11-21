@@ -1,0 +1,38 @@
+name: Area static
+# Builds the fixed files for a new forecast area (depth, coastline, course band) on GitHub's network, which reaches the data
+# sources this needs (NOAA ETOPO 2022, OpenStreetMap land polygons), and commits static/<area> to the branch it ran on.
+# 21 Nov 2026, Sydney Hobart (F114). Started by hand.
+on:
+  workflow_dispatch:
+    inputs:
+      area:
+        description: area id in site/courses/rorc.json (regions)
+        required: true
+      ref:
+        description: branch holding the course and the builder; the result is committed there
+        required: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+      - name: Tools
+        run: pip install --quiet numpy netCDF4 pyshp rasterio tifffile
+      - name: Build
+        env:
+          AREA: ${{ github.event.inputs.area }}
+        run: |
+          python3 scripts/make_static.py "$AREA"
+          ls -la "static/$AREA"
+      - name: Commit
+        env:
+          AREA: ${{ github.event.inputs.area }}
+          REF: ${{ github.event.inputs.ref }}
+        run: |
+          git config user.name "FirstShift area builder"; git config user.email "actions@users.noreply.github.com"
+          git add "static/$AREA"; git commit -qm "Static files for $AREA (depth, coastline, course band)" && git push -q origin "HEAD:$REF"
