@@ -16,6 +16,31 @@ def good(path, need_h):
     except Exception: return False
 
 log = {}; recv = {}
+# 21 Nov 2026: the ECMWF family fetched once for every area by fetch_shared.py (FS_SHARED); an area cuts its own piece
+SHARED_DIR = os.environ.get('FS_SHARED'); SHARED_INFO = {}
+if SHARED_DIR:
+    try: SHARED_INFO = json.load(open(os.path.join(SHARED_DIR, 'shared.json')))
+    except Exception as e: print('no shared forecasts:', e, flush=True)
+def from_shared(src, box, hrs, dest):
+    """Cut the shared download of one source to this area's box (0.3 degrees round it, as fetch.py does) and hours; False if it cannot."""
+    d = os.path.join(SHARED_DIR or '', src); files = [f for f in os.listdir(d) if f.endswith('.npz')] if os.path.isdir(d) else []
+    if src + '.npz' not in files: return False
+    for f in files:
+        z = dict(np.load(os.path.join(d, f)))
+        if 'lat' in z and 'lon' in z:
+            la, lo = z['lat'], z['lon']; iy = np.where((la >= box['s'] - .3) & (la <= box['n'] + .3))[0]; ix = np.where((lo >= box['w'] - .3) & (lo <= box['e'] + .3))[0]
+            if not len(iy) or not len(ix): return False
+            ny, nx = len(la), len(lo)
+            for k, a in list(z.items()):
+                if hasattr(a, 'ndim') and a.ndim >= 2 and a.shape[-2:] == (ny, nx): z[k] = a[..., iy[0]:iy[-1] + 1, ix[0]:ix[-1] + 1]
+            z['lat'], z['lon'] = la[iy[0]:iy[-1] + 1], lo[ix[0]:ix[-1] + 1]
+        if 'hours' in z and z['hours'].ndim == 1:
+            hh = z['hours']; keep = hh <= hrs; n = len(hh)
+            for k, a in list(z.items()):
+                if k != 'hours' and hasattr(a, 'ndim') and a.ndim >= 3 and a.shape[0] == n: z[k] = a[keep]
+            z['hours'] = hh[keep]
+        np.savez_compressed(os.path.join(dest, f), **z)
+    return True
 for race in RACES:
     st = json.load(open(os.path.join(ROOT, 'static', race, 'static.json')))
     b = st['box']; data = os.path.join(ROOT, 'work', race); os.makedirs(data, exist_ok=True)
@@ -30,6 +55,13 @@ for race in RACES:
     def one(src):
         if src == 'mars' and (b['s'] > 50.0 or b['n'] < 48.6 or b['w'] > -1.2 or b['e'] < -3.3): return   # the 250 m model only covers the western Channel
         first = None
+        sh = SHARED_INFO.get(src) or {}
+        if sh.get('run'):   # the shared download, if it is the run this area would take first
+            want = [c for i, c in enumerate(cyc) if not (src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2)][:1]
+            t1 = time.time()
+            if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), 30):
+                log[f'{race}:{src}'] = f"{sh['run']} shared ({sh.get('secs', '?')}s once for all areas, cut here in {time.time() - t1:.0f}s)"; recv[src] = dict(run=sh['run'], at=sh['at'], latest=sh['latest'], newest=sh['newest'])
+                print(src, log[f'{race}:{src}'], flush=True); return
         for i, c in enumerate(cyc):
             if src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             if first is None: first = c   # the newest run this model should have by now

@@ -43,9 +43,31 @@ jobs:
           HC: ${{ secrets.HC_PING_URL || 'https://hc-ping.com/e66f00bb-7e1b-4b78-8b83-443aed0262fd' }}   # Stuart 21 Nov 02:55: "Put in public code" (a repository secret HC_PING_URL, if added, takes over)
         run: '[ -z "$HC" ] || [ "${{ inputs.dry_run }}" = "true" ] || curl -fsS -m 10 --retry 3 -o /dev/null "$HC/start" || true'
 
-  area:
+  # 21 Nov 2026: the ECMWF family once for every area (the 08:19 UTC run had eight jobs download the same fields at once and waited 50 minutes)
+  shared:
     needs: gate
     if: needs.gate.outputs.skip != '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
+      - name: Fetch ECMWF IFS, AIFS, weather, waves and the ensemble once, for one box round every area
+        run: python3 scripts/fetch_shared.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared
+          path: work/_shared
+          retention-days: 1
+          compression-level: 0
+
+  area:
+    needs: [gate, shared]
+    if: always() && needs.gate.outputs.skip != '1'   # if the shared job fails, each area fetches the ECMWF family itself, as before
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -59,9 +81,15 @@ jobs:
           python-version: '3.12'
       - name: Install
         run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: shared
+          path: work/_shared
       - name: Fetch forecasts and build the pack for ${{ matrix.area }}
         env:
           FS_STATUS_PART: status-${{ matrix.area }}.json
+          FS_SHARED: work/_shared
         run: python3 scripts/build.py ${{ matrix.area }}
       - uses: actions/upload-artifact@v4
         with:
