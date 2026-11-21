@@ -1,16 +1,33 @@
 /* Speed check before every release (Stuart 17 Nov 2026 22:20, "Yes, check every release"; 22:12: "if the UI is super cool but slow
    it won't be used"). Opens each tool on a tablet-sized screen with the processor slowed six times (a mid-range Android tablet)
    and measures: start-up to a usable chart, idle work in 10 s, continuous animations, and the size of the published JavaScript.
-   Fails if any tool is over its limit. Run: node tools/speed_check.js [route base] [route+ base]
+   Fails if any tool is over its limit. Run: node tools/speed_check.js [route base] [route+ base] (no addresses: compacted copies, see below)
    Limits (from the 17 Nov 22:25 measurements, with headroom): idle work 0.6 s in 10 s (unthrottled), start-up 25 s throttled,
    no animation that redraws on the main processor, JavaScript 1.8 MB compacted per tool.
    F35 (17 Nov 23:10, "Tougher speed check"): also with boat data flowing, where the 17 Nov slowness hid: Mark and Mark+ in test
    mode (the practice boat racing), Route+ with Practice on. Processor slowed six times for 15 s; limits: busy at most 60% of the
    time and no single pause over 700 ms (Android says "isn't responding" after 5 s, and pauses over half a second are felt). */
 const { chromium, devices } = require('playwright'); const fs = require('fs'), path = require('path');
-const RB = process.argv[2] || 'http://localhost:8779', PB = process.argv[3] || 'http://localhost:8778';
+/* Compacted by default (21 Nov 2026, after two false failures on 20 Nov: the test servers send the readable files, the live site sends
+   them compacted). With no addresses given, it copies Route's and Route+'s app files, compacts them with tools/compact.js as the live
+   publish does, serves each copy with tools/testserver.py on ports 8791 and 8792, and measures those. Give addresses to measure a
+   server as it is. Folders: FS_ROUTE_WEB (default site/cervantes), FS_PLUS_WEB (default /tmp/claude-0/navnight/web). */
+const { spawn, execFileSync } = require('child_process'), os = require('os'), ROOT = path.join(__dirname, '..');
+let RB = process.argv[2], PB = process.argv[3]; const kids = [];
+function compacted(web, port) {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'fs-speed-'));
+  for (const f of fs.readdirSync(web)) { const s = path.join(web, f); if (fs.statSync(s).isFile()) fs.copyFileSync(s, path.join(d, f)); }
+  execFileSync('node', [path.join(ROOT, 'tools/compact.js'), d], { stdio: 'ignore' });
+  kids.push(spawn('python3', [path.join(ROOT, 'tools/testserver.py'), '--web', d, '--media', path.join(ROOT, 'site'), '--port', String(port)], { cwd: ROOT, stdio: 'ignore' }));
+  return 'http://localhost:' + port; }
+async function up(base) { for (let i = 0; i < 60; i++) { try { const r = await fetch(base + '/mark/'); if (r.ok) return; } catch (e) {} await new Promise(r => setTimeout(r, 500)); } throw new Error('test server did not start: ' + base); }
+process.on('exit', () => kids.forEach(k => { try { k.kill(); } catch (e) {} }));
 const LIM = { idle: 0.6, start: 25, js: 1.8, busy: 0.6, pause: 700 };
-(async () => { const b = await chromium.launch(); let bad = 0; const rows = [];
+(async () => {
+  if (!RB) { RB = compacted(process.env.FS_ROUTE_WEB || path.join(ROOT, 'site/cervantes'), 8791); await up(RB); }
+  if (!PB) { PB = compacted(process.env.FS_PLUS_WEB || '/tmp/claude-0/navnight/web', 8792); await up(PB); }
+  console.log('Measuring ' + RB + ' and ' + PB + (process.argv[2] ? '' : ' (compacted copies, as the live site serves them)'));
+  const b = await chromium.launch(); let bad = 0; const rows = [];
   for (const [name, url] of [['Route', RB + '/channel-area/'], ['Mark', RB + '/mark/'], ['Route+', PB + '/channel-area/'], ['Mark+', PB + '/mark/']]) {
     const c = await b.newContext({ ...devices['Galaxy Tab S4'], serviceWorkers: 'block' });
     await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); });
