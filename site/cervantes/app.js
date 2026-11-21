@@ -3346,6 +3346,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.show.real) realBoats();
     if (S.show.ghosts && S.ghosts && S.sel) ghostsDraw();
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(tsOf(s.r.path), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
+    if (rhumbOn()) { var rb = rhumbAt(S.t); if (rb && !rb.done) triMark(X(rb.lo), Y(rb.la), rb.brg || 0, 13, css['--panel'], css['--brand'] || '#3574BA', 3); }   /* M93: the rhumb-line boat */
     if (S.from) { ctx.strokeStyle = css['--ink']; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(S.from.lon), Y(S.from.lat), 10, 0, 7); ctx.stroke(); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ORI.turned = false;   /* the scale bar stays square to the screen */
     scale();
@@ -3503,6 +3504,36 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.legs && S.legs[0].gate) { var g = S.legs[0].gate; ctx.strokeStyle = css['--ink']; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(g.a[1]), Y(g.a[0])); ctx.lineTo(X(g.b[1]), Y(g.b[0])); ctx.stroke(); ctx.setLineDash([]); }
   }
   /* FirstShift triangle markers: open for your boat, solid for the fleet, triangle in a circle for marks */
+  /* M93 (Stuart 21 Nov 09:45, Mark): "if you could run the boat along the rhumb line, you can actually see what the wind might be at different
+     parts of the rhumb line, what the tide might be". With no route on Mark, the time slider moves a boat along the course's rhumb lines
+     (round any land by the course's own automatic waypoints), timed by the boat's polar in the forecast wind and tide from the gun (the
+     worker's 'times' job, the same sums the fleet times use, holding the line on a beat or run), and the strip, tagged RHUMB, shows the
+     leg, the wind, the true wind angle and the tide where the boat is. */
+  var RH = { key: null, path: null, ts: null, busy: false };
+  function rhumbOn() { return !!window.FS_MARK && !S.sel && !!(meta && meta.course && meta.course.start && meta.course.finish) && !S.cleared && !S.edit && !LIVE.on; }
+  function rhumbBuild() {
+    if (!rhumbOn() || RH.busy) return; var pts = courseFull(meta.course), g = +$('startSel').value || Math.round(Date.now() / 1000), k = JSON.stringify([pts.map(function (q) { return [q.lat, q.lon]; }), g, cardModels(), $('tideSel').value, $('tcc').value]);
+    if (RH.key === k) return; RH.key = k; RH.ts = null; RH.busy = true; var path = [];
+    pts.forEach(function (q, i) { if (!i) { path.push({ la: q.lat, lo: q.lon, leg: 0 }); return; } var a = pts[i - 1], n = Math.max(1, Math.ceil(FSRouter.dist(a.lat, a.lon, q.lat, q.lon) / 0.2)); for (var j = 1; j <= n; j++) path.push({ la: a.lat + (q.lat - a.lat) * j / n, lo: a.lon + (q.lon - a.lon) * j / n, leg: i - 1 }); });
+    poolShort({ type: 'times', o: Object.assign({}, opts(cardModels()), { polZ: polZ() }), path: path, boats: [{ tcc: +$('tcc').value || 1, start: (g - T0) / 3600 }] })
+      .then(function (r) { RH.busy = false; if (RH.key !== k) return; RH.path = path; RH.ts = r[0]; update(); }, function () { RH.busy = false; RH.key = null; });
+  }
+  function rhumbAt(t) { var ts = RH.ts, p = RH.path; if (!ts || !p || !(t >= ts[0])) return null;
+    for (var i = 1; i < ts.length; i++) { if (!(ts[i] === ts[i]) || !isFinite(ts[i])) return { stuck: true, la: p[i - 1].la, lo: p[i - 1].lo, leg: p[i].leg }; if (ts[i] >= t) { var f = (t - ts[i - 1]) / ((ts[i] - ts[i - 1]) || 1); return { la: p[i - 1].la + (p[i].la - p[i - 1].la) * f, lo: p[i - 1].lo + (p[i].lo - p[i - 1].lo) * f, leg: p[i].leg, brg: FSRouter.brg(p[i - 1].la, p[i - 1].lo, p[i].la, p[i].lo) }; } }
+    return { done: true, la: p[p.length - 1].la, lo: p[p.length - 1].lo, leg: p[p.length - 1].leg, at: ts[ts.length - 1] }; }
+  function rhumbStrip() {
+    rhumbBuild(); var rp = rhumbAt(S.t), legs = courseFull(meta.course).length - 1;
+    if (!RH.ts) return kv('Rhumb', RH.busy ? 'timing…' : '-');
+    if (!rp) return kv('Rhumb', 'before the gun') + kv('Gun', clockH(RH.ts[0]).slice(-5));
+    if (rp.done) return kv('Finished', clockH(rp.at).slice(-5)) + kv('Elapsed', fmtH(rp.at - RH.ts[0]));
+    if (rp.stuck) return kv('Leg', (rp.leg + 1) + '/' + legs) + kv('Wind', 'none to sail');
+    var h = kv('Leg', (rp.leg + 1) + '/' + legs), W = null, T = null;
+    try { W = FSRouter.windSampler(P, cardModels())(rp.la, rp.lo, S.t); } catch (e) {}
+    try { if ($('tideSel').value && P.tide[$('tideSel').value]) T = FSRouter.tideSampler(P, $('tideSel').value)(rp.la, rp.lo, S.t); } catch (e) {}
+    if (W && W[0] === W[0]) { var twa = ((rp.brg - W[1] + 540) % 360) - 180; h += kv('TWS', W[0].toFixed(1)) + kv('TWD', pad((W[1] + 360) % 360) + '°') + kv('TWA', Math.abs(Math.round(twa)) + '°<i class="nside ' + (twa < 0 ? 's" data-s="S">STBD' : 'p" data-s="P">PORT') + '</i>'); }
+    if (T && T[0] === T[0]) { var ts = Math.hypot(T[0], T[1]), td = (Math.atan2(T[0], T[1]) / R + 360) % 360; h += kv('Tide', ts.toFixed(1) + '<i class="unit"> kn</i> ' + pad(td) + '°'); }
+    return h + kv('Elapsed', fmtH(S.t - RH.ts[0]));
+  }
   function triMark(x, y, hdg, size, fill, stroke, lw) {
     var r = hdg * R, dx = Math.sin(r), dy = -Math.cos(r);
     ctx.beginPath(); ctx.moveTo(x + dx * size, y + dy * size); ctx.lineTo(x - dx * size * 0.7 - dy * size * 0.62, y - dy * size * 0.7 + dx * size * 0.62); ctx.lineTo(x - dx * size * 0.7 + dy * size * 0.62, y - dy * size * 0.7 - dx * size * 0.62); ctx.closePath();
@@ -3621,7 +3652,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('SOG', sog.toFixed(1)) + kv('COG', pad((cog + 360) % 360) + '°') + kv('TWA', Math.abs(Math.round(q.twa)) + '°<i class="nside ' + (q.twa < 0 ? 's" data-s="S">STBD' : 'p" data-s="P">PORT') + '</i>') + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + '<i class="unit"> m</i>' : '-');
       } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
       else h = ['Hdg', 'BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
-    }
+    } else if (rhumbOn()) h = rhumbStrip();
+    $('now').classList.toggle('rhumb', !s && rhumbOn() && !!RH.ts);
     if (stripOn()) stripShow(); else { $('now').classList.remove('live', 'alarm'); $('now').innerHTML = h; } followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
   }
   /* Follow the boat: with it on, moving the time slider or playing keeps the chosen route's boat in the middle of the open chart.
