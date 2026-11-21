@@ -1,41 +1,41 @@
 {
- "at": "2026-11-21T03:04:43.442Z",
+ "at": "2026-11-21T09:36:38.388Z",
  "log": [
   {
    "race": "irishsea-area",
    "h": 0,
-   "s": 23,
-   "note": "Finer routes in 16.1 s. Times: first routes 1.9 s, standard 5.1 s, finer 21.3 s. The faint line is the standard route. F"
+   "s": 15,
+   "note": "Finer routes in 10.0 s. Times: first routes 1.4 s, standard 3.6 s, finer 13.6 s. The faint line is the standard route. F"
   },
   {
    "race": "irishsea-area",
    "h": 1,
-   "s": 43,
-   "note": "Finer routes in 16.3 s. Times: first routes 0.6 s, standard 3.6 s, finer 20.0 s. The faint line is the standard route. F"
+   "s": 26,
+   "note": "Finer routes in 9.0 s. Best known: in DWD ICON-EU’s forecast the Met Office UKV track is 0.6 min quicker than its own ro"
   },
   {
    "race": "irishsea-area",
    "h": 2,
-   "s": 62,
-   "note": "Finer routes in 15.2 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 2.5 min quicker than its ow"
+   "s": 37,
+   "note": "Finer routes in 9.0 s. Times: first routes 0.4 s, standard 2.1 s, finer 11.1 s. The faint line is the standard route. Fi"
   },
   {
    "race": "irishsea-area",
    "h": 3,
-   "s": 81,
-   "note": "Finer routes in 14.7 s. Best known: in ECMWF IFS’s forecast the Meteo-France AROME track is 0.7 min quicker than its own"
+   "s": 48,
+   "note": "Finer routes in 8.9 s. Times: first routes 0.4 s, standard 2.1 s, finer 11.0 s. The faint line is the standard route. Fi"
   },
   {
    "race": "irishsea-area",
    "h": 4,
-   "s": 100,
-   "note": "Finer routes in 15.2 s. Times: first routes 0.8 s, standard 3.9 s, finer 19.1 s. The faint line is the standard route. F"
+   "s": 59,
+   "note": "Finer routes in 8.3 s. Times: first routes 0.5 s, standard 2.0 s, finer 10.3 s. The faint line is the standard route. Fi"
   },
   {
    "race": "irishsea-area",
    "h": 5,
-   "s": 118,
-   "note": "Finer routes in 14.5 s. Best known: in ECMWF AIFS’s forecast the NOAA GFS track is 1.0 min quicker than its own route. T"
+   "s": 69,
+   "note": "Finer routes in 8.1 s. Times: first routes 0.5 s, standard 1.9 s, finer 10.0 s. The faint line is the standard route. Fi"
   }
  ]
 }

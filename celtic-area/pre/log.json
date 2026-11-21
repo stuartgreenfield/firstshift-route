@@ -1,41 +1,41 @@
 {
- "at": "2026-11-21T03:27:14.785Z",
+ "at": "2026-11-21T09:54:08.231Z",
  "log": [
   {
    "race": "celtic-area",
    "h": 0,
-   "s": 103,
-   "note": "Routed in 81.1 s. Finer routes coming…. The forecasts end before the finish on 6 routes: they show as far as the forecas"
+   "s": 77,
+   "note": "Routed in 64.1 s. Finer routes coming…. The forecasts end before the finish on 7 routes: they show as far as the forecas"
   },
   {
    "race": "celtic-area",
    "h": 1,
-   "s": 222,
-   "note": "Finer routes in 120.6 s. Times: first routes 16.7 s, standard 97.8 s, finer 218.6 s. The faint line is the standard rout"
+   "s": 166,
+   "note": "Finer routes in 90.0 s. Best known: in Met Office UKV’s forecast the Finest first (UKV, AROME, ICON-EU, ECMWF, GFS, AIFS"
   },
   {
    "race": "celtic-area",
    "h": 2,
-   "s": 321,
-   "note": "Routed in 81.1 s. Finer routes coming…. The forecasts end before the finish on 6 routes: they show as far as the forecas"
+   "s": 238,
+   "note": "Routed in 62.1 s. Finer routes coming…. The forecasts end before the finish on 7 routes: they show as far as the forecas"
   },
   {
    "race": "celtic-area",
    "h": 3,
-   "s": 441,
-   "note": "Finer routes in 121.9 s. Times: first routes 14.6 s, standard 95.8 s, finer 217.8 s. The faint line is the standard rout"
+   "s": 325,
+   "note": "Finer routes in 87.8 s. Times: first routes 7.9 s, standard 70.1 s, finer 157.9 s. The faint line is the standard route."
   },
   {
    "race": "celtic-area",
    "h": 4,
-   "s": 529,
-   "note": "Routed in 70.0 s. Finer routes coming…. The forecasts end before the finish on 6 routes: they show as far as the forecas"
+   "s": 399,
+   "note": "Routed in 63.6 s. Finer routes coming…. The forecasts end before the finish on every route: they show as far as the fore"
   },
   {
    "race": "celtic-area",
    "h": 5,
-   "s": 648,
-   "note": "Finer routes in 120.8 s. Times: first routes 14.9 s, standard 84.9 s, finer 205.8 s. The faint line is the standard rout"
+   "s": 492,
+   "note": "Finer routes in 92.4 s. Best known: in Met Office UKV’s forecast the Finest first (UKV, AROME, ICON-EU, ECMWF, GFS, AIFS"
   }
  ]
 }
