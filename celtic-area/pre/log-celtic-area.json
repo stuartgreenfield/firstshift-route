@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-21T14:22:34.927Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 104,
+   "note": "Routed in 82.5 s. Finer routes coming…. The forecasts end before the finish on every route: they show as far as the fore"
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 211,
+   "note": "Finer routes in 110.1 s. Times: first routes 15.7 s, standard 98.3 s, finer 208.5 s. The faint line is the standard rout"
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 307,
+   "note": "Routed in 83.2 s. Finer routes coming…. The forecasts end before the finish on 7 routes: they show as far as the forecas"
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 419,
+   "note": "Finer routes in 113.8 s. Times: first routes 9.5 s, standard 92.8 s, finer 206.7 s. The faint line is the standard route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 503,
+   "note": "Routed in 70.9 s. Finer routes coming…. The forecasts end before the finish on 6 routes: they show as far as the forecas"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 616,
+   "note": "Finer routes in 114.3 s. Times: first routes 10.7 s, standard 81.7 s, finer 196.1 s. The faint line is the standard rout"
+  }
+ ]
+}

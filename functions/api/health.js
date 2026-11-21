@@ -7,7 +7,7 @@
    run about 7 h after its time and the job takes up to about 2 h 30 min, so just before the next run lands a global model is normally
    up to about 16 h old; the job runs every 6 h. STALE when a global model is over 20 h, UKV, AROME or MOGREPS over 18 h, or a pack was
    built over 9 h ago. The phone fetches a model itself past 18 h (app.js omFallback), so STALE means crews are already on their own. */
-const AREAS = ['channel-area', 'solent-area', 'cervantes', 'fastnet', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area'];
+const AREAS = ['channel-area', 'solent-area', 'cervantes', 'fastnet', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area'];   // tasman-area (Sydney Hobart, 21 Nov) left out: it can be switched off (config/areas.json), and an area switched off would show as stale
 const REGIONAL = { ukv: 1, arome: 1, mog: 1 };
 const LIMIT = { global: 20, regional: 18, built: 9 };
 
