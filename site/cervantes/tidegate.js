@@ -131,7 +131,9 @@
     var r = work(); if (r.why || !r.T1 || !r.T1.t) { if (st) st.hidden = true; return; }
     if (deck) { css(); if (!st) { st = document.createElement('div'); st.id = 'tgStrip'; st.className = 'tgstrip'; st.onclick = function () { open(true); }; (document.querySelector('.app>.chart') || document.body).appendChild(st); }
       st.hidden = false; var miss = r.T1.now === 'fair' && r.margin < 0; st.className = 'tgstrip ' + (miss || atEta(r) === 'foul' ? 'bad' : 'ok');
-      st.textContent = 'TIDE ' + r.T1.now.toUpperCase() + ' · turns ' + hm(r.T1.t) + ' · ETA ' + hm(r.L1.eta) + ' · ' + (r.margin >= 0 ? '+' : '') + Math.round(r.margin) + ' min'; }
+      st.textContent = 'TIDE ' + r.T1.now.toUpperCase() + ' · turns ' + hm(r.T1.t) + ' · ETA ' + hm(r.L1.eta) + ' · ' + (r.margin >= 0 ? '+' : '') + Math.round(r.margin) + ' min';
+      /* F116 (Stuart's 16:45 photo, 21 Nov): the Routing box sat on the tide line; the line moves up clear of it while it shows */
+      clearProg(); }
     else if (st) st.hidden = true;
     var closesIn = (r.T1.t - Date.now()) / 60000;
     if (C.alarm && r.T1.now === 'fair' && r.margin < 0 && closesIn <= 15 && closesIn > 0 && Date.now() - beeped > 600000) { beeped = Date.now(); alarm('Tide gate closes in ' + Math.round(closesIn) + ' min: at this speed we miss it by ' + Math.round(-r.margin) + ' min.' + (r.need ? ' Need ' + r.need.toFixed(1) + ' kn.' : '')); }
@@ -146,7 +148,8 @@
     var b = document.createElement('button'); b.type = 'button'; b.id = 'tgBtn'; b.className = plotB.className.replace(/\brplotb\b/, '') + ' tgb'; b.textContent = 'TIDE'; b.title = 'Tide gate: will we beat the tide to the mark?'; b.setAttribute('aria-pressed', 'false'); b.onclick = function () { open(); };
     var after = $('fsDeckBtn') || plotB; after.parentNode.insertBefore(b, after.nextSibling); return true;
   }
-  function init() { if (!button()) return setTimeout(init, 1000); setInterval(tick, 30000); }
+  function clearProg() { var st = $('tgStrip'); if (!st || st.hidden) return; st.style.bottom = ''; var pg = $('prog'); if (pg && !pg.hidden && pg.getClientRects().length) { var a = pg.getBoundingClientRect(), b = st.getBoundingClientRect(); if (a.width && !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom)) st.style.bottom = Math.round((parseFloat(getComputedStyle(st).bottom) || 0) + b.bottom - a.top + 6) + 'px'; } }   /* raised by the overlap, in the strip's own frame */
+  function init() { if (!button()) return setTimeout(init, 1000); setInterval(tick, 30000); setInterval(clearProg, 2000); }
   window.FSTideGate = { parseList: parseList, open: open, work: work, sail: sail, turn: turn, need: need, C: C, tick: tick, along: along };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else setTimeout(init, 500);
 })();
