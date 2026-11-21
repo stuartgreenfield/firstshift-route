@@ -37,7 +37,7 @@ def get(u, rng=None, tries=8):
             dt = time.time() - t; STATS['n'] += 1; STATS['t'] += dt; STATS['slow'] = max(STATS['slow'], dt); return b
         except Exception as e:
             err = e; STATS['retry'] += 1; w = str(getattr(e, 'code', '') or type(e).__name__); STATS['why'][w] = STATS['why'].get(w, 0) + 1
-            if getattr(e, 'code', None) == 404: break   # not published (yet): no point retrying
+            if getattr(e, 'code', None) == 404 or (getattr(e, 'code', None) == 403 and 'cloudferro' in u): break   # not published (yet), or a Copernicus square that holds no sea: no point retrying
             time.sleep(1 + k + random.random() * 2)
     raise err
 def stats_line(name):
@@ -333,7 +333,12 @@ def zarr_geo(url, vars_, step_hours=1):
         jobs = [(tc, by, bx) for tc in sorted(set(idx // ct)) for by in range(iy.min() // cy, iy.max() // cy + 1) for bx in range(ix.min() // cx, ix.max() // cx + 1)]
         def one(job):
             tc, by, bx = job; key = f'{url}/{v}/{tc}.' + ('0.' if len(sh) == 4 else '') + f'{by}.{bx}'
-            raw = cached(url.split('/')[-2] + f'_g_{v}_{tc}_{by}_{bx}', lambda: dec(get(key), za['dtype']).copy())
+            def load():
+                try: return dec(get(key, tries=2), za['dtype']).copy()
+                except urllib.error.HTTPError as e:
+                    if e.code in (403, 404): return np.full(ct * cy * cx, np.nan, 'f4')   # a square with no sea is not stored at all (all land)
+                    raise
+            raw = cached(url.split('/')[-2] + f'_g_{v}_{tc}_{by}_{bx}', load)
             nt = min(ct, sh[0] - tc * ct); blk = raw.reshape((ct, cy, cx) if len(sh) == 3 else (ct, 1, cy, cx))
             blk = blk if len(sh) == 3 else blk[:, 0]
             return tc, by, bx, blk[:nt]
