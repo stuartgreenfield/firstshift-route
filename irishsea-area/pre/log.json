@@ -1,41 +1,41 @@
 {
- "at": "2026-11-20T23:23:16.671Z",
+ "at": "2026-11-21T03:04:43.442Z",
  "log": [
   {
    "race": "irishsea-area",
    "h": 0,
-   "s": 13,
-   "note": "Finer routes in 9.1 s. Best known: in ECMWF IFS’s forecast the NOAA GFS track is 1.3 min quicker than its own route; in "
+   "s": 23,
+   "note": "Finer routes in 16.1 s. Times: first routes 1.9 s, standard 5.1 s, finer 21.3 s. The faint line is the standard route. F"
   },
   {
    "race": "irishsea-area",
    "h": 1,
-   "s": 25,
-   "note": "Finer routes in 9.2 s. Best known: in ECMWF IFS’s forecast the NOAA GFS track is 0.9 min quicker than its own route; in "
+   "s": 43,
+   "note": "Finer routes in 16.3 s. Times: first routes 0.6 s, standard 3.6 s, finer 20.0 s. The faint line is the standard route. F"
   },
   {
    "race": "irishsea-area",
    "h": 2,
-   "s": 37,
-   "note": "Finer routes in 9.4 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 1.3 min quicker than its own"
+   "s": 62,
+   "note": "Finer routes in 15.2 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 2.5 min quicker than its ow"
   },
   {
    "race": "irishsea-area",
    "h": 3,
-   "s": 47,
-   "note": "Finer routes in 8.7 s. Times: first routes 0.4 s, standard 2.1 s, finer 10.8 s. The faint line is the standard route. Fi"
+   "s": 81,
+   "note": "Finer routes in 14.7 s. Best known: in ECMWF IFS’s forecast the Meteo-France AROME track is 0.7 min quicker than its own"
   },
   {
    "race": "irishsea-area",
    "h": 4,
-   "s": 58,
-   "note": "Finer routes in 8.6 s. Best known: in ECMWF IFS’s forecast the Combined (6 models) track is 1.8 min quicker than its own"
+   "s": 100,
+   "note": "Finer routes in 15.2 s. Times: first routes 0.8 s, standard 3.9 s, finer 19.1 s. The faint line is the standard route. F"
   },
   {
    "race": "irishsea-area",
    "h": 5,
-   "s": 69,
-   "note": "Finer routes in 8.8 s. Best known: in ECMWF AIFS’s forecast the Combined (6 models) track is 2.6 min quicker than its ow"
+   "s": 118,
+   "note": "Finer routes in 14.5 s. Best known: in ECMWF AIFS’s forecast the NOAA GFS track is 1.0 min quicker than its own route. T"
   }
  ]
 }
