@@ -43,7 +43,7 @@
   function grouped() { var all = topics(); SECTIONS.forEach(function (s) { s.items = []; }); all.forEach(function (tp) { var s = secOf(tp); tp.sec = s; s.items.push(tp); }); SECTIONS.forEach(function (s) { s.items.sort(function (a, b) { var i = s.titles.indexOf(a.t), j = s.titles.indexOf(b.t); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); }); }); return all; }
   /* pictures: the topic's own screen picture if it has one, else the screenshot made for it; a section uses its own */
   function picOf(tp) { var im = tp.el.querySelector('img.hpic,img[data-pic]'); if (im && im.getAttribute('src')) return im.getAttribute('src'); return MEDIA + 'shots/' + tp.s + '.webp'; }
-  function secPic(s) { return MEDIA + 'shots/sec-' + s.id + '.webp'; }
+  function secPic(s) { return s.id === 'more' && s.items && s.items[0] ? picOf(s.items[0]) : MEDIA + 'shots/sec-' + s.id + '.webp'; }   /* no sec-more picture: More shows its first topic's (button test 21 Nov) */
   function img(src, alt, cls) { return '<img class="' + cls + '" loading="lazy" alt="' + esc(alt) + '" src="' + esc(src) + '" onerror="this.hidden=true">'; }
   function css() {
     if ($('hfCss')) return; var s = document.createElement('style'); s.id = 'hfCss';
@@ -105,9 +105,11 @@
       var s = stem(a), max = s.length >= 7 ? 2 : s.length >= 4 ? 1 : 0, m = function (list) { var v = 0; for (var i = 0; i < list.length; i++) { var w = list[i]; if (w === s) return 1; if (ai === 0 && s.length >= 3 && w.indexOf(s) === 0) v = Math.max(v, 0.85); else if (ai === 0 && max && lev(s, w, max) <= max) v = Math.max(v, 0.6);   /* start-of-word and near misses for the word typed, not its synonyms */ } return v; };
       best = Math.max(best, 3 * syn * m(T), syn * m(X)); });
     return best; }
-  function search(q) { var terms = norm(q).split(/\s+/).filter(function (x) { return x.length > 1; }); if (!terms.length) return [];
+  var STOP = ' the a an and or to of in on at for with how do does did i my me is it its can what when where why you your this that be are from by about should would '; function keep(x) { return x.length > 1 && STOP.indexOf(' ' + x + ' ') < 0; }   /* button test 21 Nov: 'how do I fit the pole' matched 57 topics on the word 'the' */
+  var FULL = 0;   /* how many topics matched every word of the last search */
+  function search(q) { FULL = 0; var terms = norm(q).split(/\s+/).filter(keep); if (!terms.length) terms = norm(q).split(/\s+/).filter(function (x) { return x.length > 1; }); if (!terms.length) return [];
     return topics().map(function (tp) { var sc = 0, all = true; terms.forEach(function (t) { var v = termScore(tp, t); if (!v) all = false; sc += v; }); return { tp: tp, sc: all ? sc : terms.length > 1 && sc > 0 ? sc * 0.4 : 0, all: all }; })
-      .filter(function (r) { return r.sc > 0; }).sort(function (a, b) { return (b.all - a.all) || (b.sc - a.sc); }).map(function (r) { return r.tp; }); }
+      .filter(function (r) { return r.sc > 0; }).filter(function (r, i, arr) { if (i === 0) FULL = 0; if (r.all) FULL++; return true; }).sort(function (a, b) { return (b.all - a.all) || (b.sc - a.sc); }).map(function (r) { return r.tp; }); }
   /* Help for this screen: what is open now, as search words */
   function hereWords() { var v = function (id) { var e = $(id); return !!(e && !e.hidden && e.getClientRects().length); }, w = [];
     if (v('solStartScr')) w.push('start screen'); if (v('solSeq')) w.push('start sequence'); if (v('kitLine')) w.push('start line'); if (v('deckNums') || document.body.classList.contains('fsdeck')) w.push('deck');
@@ -117,10 +119,13 @@
   function tool() { var plus = !!window.NAV_VERSION; return window.FS_MARK ? (plus ? 'Mark+' : 'Mark') : (plus ? 'Route+' : 'Route'); }
   function waUrl(q) { var ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || window.FS_VERSION || (document.querySelector('#sheet .shead h2 span') || {}).textContent || '') || [])[1] || '', here = hereWords().join(', ');
     return 'https://wa.me/447788662697?text=' + encodeURIComponent('FirstShift ' + tool() + (ver ? ' v' + ver : '') + ' question' + (here ? ' (screen: ' + here + ')' : '') + ': ' + (q || '')); }   /* never the race or the boat's position */
+  var MAILTO = 'stuart@greenfield.co.uk';   /* Stuart 21 Nov 18:50: the Help email goes here */
+  function mailUrl(q) { var ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || window.FS_VERSION || (document.querySelector('#sheet .shead h2 span') || {}).textContent || '') || [])[1] || '', here = hereWords().join(', ');   /* Stuart 21 Nov 18:43: a help email, filled in like WhatsApp; never the race or the boat's position */
+    return 'mailto:' + MAILTO + '?subject=' + encodeURIComponent('FirstShift ' + tool() + (ver ? ' v' + ver : '') + ' help') + '&body=' + encodeURIComponent('My question: ' + (q || '') + '\n\nTool: ' + tool() + (ver ? ' v' + ver : '') + (here ? '\nScreen: ' + here : '') + '\nDevice: ' + (/Android/.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone or iPad' : 'computer') + '\n'); }
   function missLog(q) { try { var a = JSON.parse(localStorage.getItem('fs-help-miss') || '[]'); a.push([Date.now(), q]); localStorage.setItem('fs-help-miss', JSON.stringify(a.slice(-50))); } catch (e) {} }
-  function askBox(q) { var ac = window.__fsAskClaude ? window.__fsAskClaude() : null, url = ac ? ac.url + encodeURIComponent(q || '') : 'https://claude.ai/new';
-    return '<div class="hfask"><p><b>Not found? Ask.</b></p><a class="btn primary" id="hfAskC" target="_blank" rel="noopener" href="' + esc(url) + '">Ask Claude about ' + esc(tool()) + '</a>' +
-      '<a class="btn" id="hfWa" target="_blank" rel="noopener" href="' + esc(waUrl(q)) + '">Message FirstShift on WhatsApp</a><p class="hfnote">WhatsApp goes to FirstShift (+44 7788 662697): usually replies within 24 hours; not watched during races. Your question, the tool and its version are filled in; never your position. Or email via firstshiftsailing.com.</p></div>'; }
+  function askBox(q, n) { var ac = window.__fsAskClaude ? window.__fsAskClaude() : null, url = ac ? ac.url + encodeURIComponent(q || '') : 'https://claude.ai/new';
+    return '<div class="hfask"><p><b>' + (n ? 'Not what you need? Ask.' : 'Not found? Ask.') + '</b></p><a class="btn primary" id="hfAskC" target="_blank" rel="noopener" href="' + esc(url) + '">Ask Claude about ' + esc(tool()) + '</a>' +
+      '<a class="btn" id="hfWa" target="_blank" rel="noopener" href="' + esc(waUrl(q)) + '">Message FirstShift on WhatsApp</a><a class="btn" id="hfMail" href="' + esc(mailUrl(q)) + '">Email FirstShift</a><p class="hfnote">WhatsApp goes to FirstShift (+44 7788 662697), email to ' + MAILTO + ': usually a reply within 24 hours; not watched during races. Your question, the tool and its version are filled in; never your position.</p></div>'; }
   /* ---- the views ---- */
   function render() {
     var vw = $('hfView'); if (!vw) return; stop(); var all = grouped(), h = '';
@@ -139,18 +144,19 @@
       h = '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><span class="hfcrumb">' + esc(s.name) + '</span></div>' + img(secPic(s), s.name, 'hfhero') +
         '<ul class="hflist">' + s.items.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t) + '</b><span>' + esc(first(tp.text)) + '</span></div></button></li>'; }).join('') + '</ul>';
     } else if (V.view === 'find') {
-      var words = V.q.toLowerCase().split(/\s+/).filter(function (x) { return x.length > 1; });
+      var words = V.q.toLowerCase().split(/\s+/).filter(keep); if (!words.length) words = V.q.toLowerCase().split(/\s+/).filter(function (x) { return x.length > 1; });
       var hits = search(V.q), byS = {}; all.forEach(function (x) { byS[x.s] = x; }); hits = hits.map(function (x) { return byS[x.s] || x; }); if (!hits.length && V.q.trim().length > 2 && V.q !== V.lastMiss) { V.lastMiss = V.q; missLog(V.q.trim()); }
       V.list = hits.map(function (tp) { return tp.s; });
       var re = new RegExp('(' + words.map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')', 'gi');
       var line = function (tp) { var ss = tp.text.match(/[^.!?]+[.!?]*/g) || [tp.text], f = ss.filter(function (x) { re.lastIndex = 0; return re.test(x); })[0] || ss[0]; re.lastIndex = 0; return esc(f).replace(re, '<mark class="hfq">$1</mark>'); };
       h = '<div class="hfsearch"><input type="search" id="hfQ" aria-label="Search Help" enterkeyhint="search" value="' + esc(V.q) + '"><button class="btn primary" type="button" id="hfGo">Search</button></div>' +
-        '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><p class="hfnote" id="hfNote">' + (hits.length ? hits.length + ' topic' + (hits.length === 1 ? '' : 's') + ' mention ' + esc(V.q.trim()) + '.' : 'No topic matches ' + esc(V.q.trim()) + '. Try other words, or ask below.') + '</p></div>' +
-        '<ul class="hflist">' + hits.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t).replace(re, '<mark class="hfq">$1</mark>') + '</b><span>' + line(tp) + '</span></div></button></li>'; }).join('') + '</ul>' + (hits.length < 3 ? askBox(V.q.trim()) : '');
+        '<div class="hfnav"><button class="btn" type="button" data-go="home">‹ Help</button><p class="hfnote" id="hfNote">' + (hits.length && FULL ? FULL + ' topic' + (FULL === 1 ? '' : 's') + ' cover ' + esc(V.q.trim()) + (hits.length > FULL ? ', then ' + (hits.length - FULL) + ' that cover part of it.' : '.') : hits.length ? 'No topic covers all of ' + esc(V.q.trim()) + '. The closest ' + hits.length + ' are below, or ask at the foot.' : 'No topic matches ' + esc(V.q.trim()) + '. Try other words, or ask below.') + '</p></div>' +
+        '<ul class="hflist">' + hits.map(function (tp) { return '<li><button type="button" data-t="' + tp.s + '">' + img(picOf(tp), '', 'hfmini') + '<div><b>' + esc(tp.t).replace(re, '<mark class="hfq">$1</mark>') + '</b><span>' + line(tp) + '</span></div></button></li>'; }).join('') + '</ul>' + askBox(V.q.trim(), hits.length);
     } else {
       var tp = all.filter(function (x) { return x.s === V.t; })[0]; if (!tp) { V.view = 'home'; return render(); }
       var list = V.from === 'find' || V.from === 'path' ? V.list : tp.sec.items.map(function (x) { return x.s; }), k = list.indexOf(tp.s), pv = all.filter(function (x) { return x.s === list[k - 1]; })[0], nx = all.filter(function (x) { return x.s === list[k + 1]; })[0];
       var body = tp.el.cloneNode(true); [].forEach.call(body.querySelectorAll('h3,h2,button.say,[data-nsay],img.hpic,img[data-pic]'), function (x) { x.remove(); });
+      [].forEach.call(body.querySelectorAll('button[id],a[id],input[id],select[id]'), function (x) { var id = x.id; x.removeAttribute('id'); x.setAttribute('data-hfid', id); if (x.tagName === 'BUTTON' || x.tagName === 'A') x.addEventListener('click', function (e) { var o = $(id); if (o && o !== x) { e.preventDefault(); o.click(); } }); });   /* button test 21 Nov: a copied button keeps no handler (Show me round, Watch the film did nothing); it now presses the real one */
       h = '<div class="hfnav"><button class="btn" type="button" data-go="' + (V.from === 'find' ? 'find' : V.from === 'path' ? 'path' : 'sec') + '">‹ ' + (V.from === 'find' ? 'Results' : V.from === 'path' ? esc((PATHS.filter(function (x) { return x.id === V.path; })[0] || {}).name || 'Back') : esc(tp.sec.name)) + '</button></div>' +
         '<article class="hftopic"><h2>' + esc(tp.t) + '</h2></article>' + img(picOf(tp), 'Screen picture: ' + tp.t, 'hfhero') +
         '<div><button class="btn hfplay" type="button" id="hfPlay" aria-pressed="false">▶ Play</button></div><div class="hftext" id="hfText"></div>' +
