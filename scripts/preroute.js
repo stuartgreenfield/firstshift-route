@@ -1,6 +1,10 @@
 /* Pre-route each race on the server after a forecast build, so users with the standard settings see routes at once.
    Usage: node scripts/preroute.js <siteDir> <race> [<race> ...]   (serves siteDir on a local port; needs playwright)
-   Writes <siteDir>/<race>/pre/routes.json: { built, at, r: { key: { routes, matrix } } } for the next HOURS start times. */
+   Writes <siteDir>/<race>/pre/routes.json: { built, at, files: { key: file } } and one file per start time, for the next HOURS start times.
+   F100 (Stuart 21 Nov 07:22): each start is written as soon as it is routed, so a job stopped by its time limit still hands over the
+   starts it finished; files are named by start (not r0, r1), so jobs for the same page (its own race and its extra races) can be
+   merged; a "race@a-b" argument routes only start times a to b (0 based), so one slow race (the Fastnet) can be split over jobs;
+   routes built on an older forecast pack are never kept. */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const site = path.resolve(process.argv[2]), races = process.argv.slice(3), HOURS = +(process.env.PRE_HOURS || 6);
@@ -18,10 +22,19 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
   const OUTS = {};
   for (const arg of races) {
     /* "page" routes the page's own course; "page:race" routes one race held on that page (fewer start times) */
-    const [race, rid] = arg.split(':'), hours = rid ? +(process.env.PRE_HOURS_RACE || 3) : HOURS;
-    if (!OUTS[race]) fs.rmSync(path.join(site, race, 'pre'), { recursive: true, force: true });
-    const meta = JSON.parse(fs.readFileSync(path.join(site, race, 'pack', 'pack.json')));
-    const out = OUTS[race] || (OUTS[race] = { built: meta.built || meta.t0, at: Math.round(Date.now() / 1000), r: {}, log: [] }), log = out.log, t0 = Date.now();
+    const [spec, span] = arg.split('@'), [race, rid] = spec.split(':'), hours = rid ? +(process.env.PRE_HOURS_RACE || 3) : HOURS;
+    const [h0, h1] = span ? span.split('-').map(Number) : [0, hours - 1];
+    const meta = JSON.parse(fs.readFileSync(path.join(site, race, 'pack', 'pack.json'))), built = meta.built || meta.t0, dir = path.join(site, race, 'pre');
+    if (!OUTS[race]) { let old = null; try { old = JSON.parse(fs.readFileSync(path.join(dir, 'routes.json'))); } catch (e) {} if (!old || old.built !== built) fs.rmSync(dir, { recursive: true, force: true }); }   /* never keep routes from an older pack */
+    const out = OUTS[race] || (OUTS[race] = { built, at: Math.round(Date.now() / 1000), files: {}, log: [] }), log = out.log, t0 = Date.now();
+    const save = (key, data) => {   /* one start, written at once, and the index brought up to date */
+      fs.mkdirSync(dir, { recursive: true });
+      let ix = null; try { ix = JSON.parse(fs.readFileSync(path.join(dir, 'routes.json'))); } catch (e) {} if (ix && ix.built === built) Object.assign(out.files, ix.files || {});
+      const f = 's' + require('crypto').createHash('sha1').update(key).digest('hex').slice(0, 12) + '.json'; out.files[key] = f;
+      fs.writeFileSync(path.join(dir, f), JSON.stringify(data));
+      fs.writeFileSync(path.join(dir, 'routes.json.tmp'), JSON.stringify({ built, at: out.at, files: out.files })); fs.renameSync(path.join(dir, 'routes.json.tmp'), path.join(dir, 'routes.json'));
+      fs.writeFileSync(path.join(dir, 'log-' + (rid || race) + (span ? '-' + span : '') + '.json'), JSON.stringify({ at: new Date().toISOString(), log }, null, 1));
+    };
     const p = await b.newPage(); p.on('pageerror', (e) => console.log(race, 'page error', e.message));
     await p.addInitScript((FS) => { try { if (FS) localStorage.setItem('fs-finesec', FS); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} }, process.env.PRE_FINESEC || '');   /* the server's finer pass (Stuart 20 Nov 12:42: 2000 sectors) */
     await p.goto(`http://localhost:${port}/${race}/` + (rid ? '?race=' + rid : ''));
@@ -29,7 +42,7 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
     const waitDone = () => p.waitForFunction(() => { const t = document.getElementById('runNote').textContent; return /First answer|Routed on the server/.test(t) || (!/Quick route|Refining/.test(t) && /No route|Cannot|outside|No way|forecasts end/.test(t)); }, null, { timeout: +(process.env.PRE_WAIT_MS || 1500000) });
     try {
       await waitDone();   // the page routes the first start time by itself once the forecasts are in
-      for (let h = 0; h < hours; h++) {
+      for (let h = h0; h <= h1; h++) {
         if (h > 0) {
           const ok = await p.evaluate((h) => { const s = document.getElementById('startSel'); if (h >= s.options.length) return false; s.selectedIndex = h; s.dispatchEvent(new Event('change', { bubbles: true })); document.getElementById('runNote').textContent = ''; document.getElementById('run').click(); return true; }, h);
           if (!ok) break;
@@ -37,18 +50,11 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
         }
         const d = await p.evaluate(() => window.__fsDump());
         const nt = (await note()).slice(0, 120); console.log(race, 'start', h, nt); log.push({ race: rid || race, h, s: Math.round((Date.now() - t0) / 1000), note: nt });
-        if (d) out.r[d.key] = round({ routes: d.routes, matrix: d.matrix, cur: d.cur });
+        if (d) { save(d.key, round({ routes: d.routes, matrix: d.matrix, cur: d.cur })); console.log(race, 'saved start', h, (fs.statSync(path.join(dir, out.files[d.key])).size / 1e6).toFixed(2), 'MB'); }
       }
     } catch (e) { console.log(race, 'pre-routing stopped:', e.message); log.push({ race: rid || race, stopped: e.message.slice(0, 200), s: Math.round((Date.now() - t0) / 1000) }); }
     await p.close();
-    if (Object.keys(out.r).length) {
-      fs.mkdirSync(path.join(site, race, 'pre'), { recursive: true });
-      /* one file per start time (Stuart 20 Nov 12:49): a phone downloads only the start it routes, not all of them (the Fastnet's six were 6.8 MB) */
-      const files = {}; Object.keys(out.r).forEach((k, i) => { const f = 'r' + i + '.json'; files[k] = f; fs.writeFileSync(path.join(site, race, 'pre', f), JSON.stringify(out.r[k])); });
-      fs.writeFileSync(path.join(site, race, 'pre', 'routes.json'), JSON.stringify({ built: out.built, at: out.at, files }));
-      fs.writeFileSync(path.join(site, race, 'pre', 'log.json'), JSON.stringify({ at: new Date().toISOString(), log }, null, 1));   // readable on the live site, as GitHub's log download is not always reachable
-      console.log(race, 'wrote', Object.keys(out.r).length, 'start times', (Object.values(files).reduce((t, f) => t + fs.statSync(path.join(site, race, 'pre', f)).size, 0) / 1e6).toFixed(2), 'MB in all, one file each');
-    }
+    console.log(race, 'has', Object.keys(out.files).length, 'start times in all');
   }
   await b.close(); srv.close();
 })();

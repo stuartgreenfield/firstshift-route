@@ -22,6 +22,11 @@ for race in RACES:
     cyc = cycles(); T0 = None
     hrs = int(st['course'].get('hours', 48)) + 6
     env = dict(os.environ, FS_DATA=data, FS_BOX=f"{b['s']},{b['n']},{b['w']},{b['e']}", FS_HOURS=str(hrs))
+    # Resilience (21 Nov 2026, Stuart 09:58 "resilience of the servers to delivery up to date data quickly"): the 08:19 UTC run of 21 Nov waited
+    # 50 minutes for one source (ecmet: the 00Z try timed out at 25 min, then the older 12Z took another 25), so every area published 40 minutes
+    # late. Each area now has a time budget (FS_FETCH_MIN, 20 min): a source not in by then is left out this run, and the publish step keeps
+    # its last good run, marked as older (keep_old_layers.py), so a slow server holds up only its own layer.
+    T_END = time.time() + float(os.environ.get('FS_FETCH_MIN', '20')) * 60
     def one(src):
         if src == 'mars' and (b['s'] > 50.0 or b['n'] < 48.6 or b['w'] > -1.2 or b['e'] < -3.3): return   # the 250 m model only covers the western Channel
         first = None
@@ -30,9 +35,11 @@ for race in RACES:
             if first is None: first = c   # the newest run this model should have by now
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)
-            t1 = time.time()
+            t1 = time.time(); left = T_END - t1
+            if left < 60:
+                log[f'{race}:{src}'] = f'{c} not tried: out of time (the last good run is kept)'; print(src, 'try', log[f'{race}:{src}'], flush=True); break
             try:
-                r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=dict(env, FS_RUN=c), capture_output=True, text=True, timeout=1500)
+                r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=dict(env, FS_RUN=c), capture_output=True, text=True, timeout=min(1500, left))
             except subprocess.TimeoutExpired:
                 log[f'{race}:{src}'] = f'{c} timed out'; print(src, 'try', log[f'{race}:{src}'], flush=True); continue   # every failed try in the job log, not only the last (19 Nov 2026)
             if r.returncode == 0 and good(out, (12 if src == 'mars' else 30) + 6 * i):

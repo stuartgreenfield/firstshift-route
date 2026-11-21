@@ -1,0 +1,5 @@
+name = "firstshift-forecast-clock"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+[triggers]
+crons = ["20 1,7,13,19 * * *", "32 1,7,13,19 * * *"]

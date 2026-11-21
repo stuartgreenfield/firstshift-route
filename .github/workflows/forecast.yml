@@ -8,12 +8,17 @@ on:
     # back-up: GitHub sometimes skips a scheduled run; these rebuild only if nothing was published for 5 hours
     - cron: '47 1,7,13,19 * * *'
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: do everything but publish and ping (to time a change on a test branch)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
-  group: forecasts
+  group: forecasts${{ inputs.dry_run && '-dry' || '' }}   # a dry run publishes nothing, so it has its own queue (a waiting dry run was cancelled by the next scheduled run, 21 Nov)
   cancel-in-progress: false
 
 jobs:
@@ -22,19 +27,21 @@ jobs:
     outputs:
       skip: ${{ steps.fresh.outputs.skip }}
     steps:
-      - name: Skip a back-up run if the last publish is recent
+      - name: Skip a scheduled run if the last publish is recent (the forecast clock or an earlier run did it)
         id: fresh
         run: |
-          if [ "${{ github.event.schedule }}" = "47 1,7,13,19 * * *" ]; then
+          # 21 Nov: the Cloudflare forecast clock (cloudflare/forecast-clock) starts runs on time; GitHub's own schedule is the back-up, so any
+          # scheduled run, not only the :47 one, stands down when forecasts were published in the last 3 hours (runs are 6 hours apart, so a late earlier run never stops the next)
+          if [ "${{ github.event_name }}" = "schedule" ]; then
             built=$(curl -fsS https://firstshift-route.pages.dev/status.json | python3 -c "import json,sys,calendar,time;print(calendar.timegm(time.strptime(json.load(sys.stdin)['built'],'%Y-%m-%dT%H:%MZ')))" || echo 0)
             age=$(( $(date -u +%s) - built ))
-            if [ "$age" -lt 18000 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
+            if [ "$age" -lt 10800 ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; echo "Published $((age/60)) min ago: nothing to do"; fi
           fi
       - name: Tell Healthchecks.io a run has started (monitoring plan step 2)
         if: steps.fresh.outputs.skip != '1'
         env:
           HC: ${{ secrets.HC_PING_URL || 'https://hc-ping.com/e66f00bb-7e1b-4b78-8b83-443aed0262fd' }}   # Stuart 21 Nov 02:55: "Put in public code" (a repository secret HC_PING_URL, if added, takes over)
-        run: '[ -z "$HC" ] || curl -fsS -m 10 --retry 3 -o /dev/null "$HC/start" || true'
+        run: '[ -z "$HC" ] || [ "${{ inputs.dry_run }}" = "true" ] || curl -fsS -m 10 --retry 3 -o /dev/null "$HC/start" || true'
 
   area:
     needs: gate
@@ -117,24 +124,100 @@ jobs:
           git config user.email "forecasts@users.noreply.github.com"
           git add -A
           git commit -q -m "Forecasts $(date -u +%Y-%m-%dT%H:%MZ)"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then echo "dry run: not published"; exit 0; fi
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
-      # F2 (17 Nov): every page's own race first, the extra races after, so the 75-minute limit never leaves Fastnet and Cervantes without pre-routes
-      - name: Pre-route each race for the standard settings
-        continue-on-error: true
-        timeout-minutes: 75
+      - name: Keep the site just published for the pre-route jobs (a dry run publishes nothing, so they read it from here)
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-built
+          path: |
+            site
+            !site/.git
+          retention-days: 1
+          compression-level: 0
+
+  # F100 (Stuart 21 Nov 07:22 and 07:44: the work done off the phone must be there when it is wanted; the 02:24 run of 21 Nov stopped
+  # after 75 minutes, one race after another, mid-Fastnet, with Cervantes and the extra races never reached and the Fastnet's four
+  # finished starts thrown away). Each race now has its own job, side by side, with its own time limit; the slow Fastnet is split by
+  # start time over three jobs; every start is saved as it finishes, so a job stopped by its limit still hands over what it finished.
+  preroute:
+    needs: publish
+    if: needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - { name: channel-area, args: channel-area, limit: 30 }
+          - { name: northsea-area, args: northsea-area, limit: 35 }
+          - { name: irishsea-area, args: irishsea-area, limit: 20 }
+          - { name: biscay-area, args: biscay-area, limit: 30 }
+          - { name: celtic-area, args: celtic-area, limit: 35 }
+          - { name: fastnet-1, args: 'fastnet@0-1', limit: 35 }
+          - { name: fastnet-2, args: 'fastnet@2-3', limit: 40 }
+          - { name: fastnet-3, args: 'fastnet@4-5', limit: 40 }
+          - { name: cervantes, args: cervantes, limit: 30 }
+          - { name: myth, args: 'channel-area:myth', limit: 30 }
+          - { name: deguingand, args: 'channel-area:deguingand', limit: 30 }
+          - { name: morgan, args: 'channel-area:morgan', limit: 30 }
+          - { name: dinard, args: 'channel-area:dinard', limit: 30 }
+          - { name: channel, args: 'channel-area:channel', limit: 30 }
+          - { name: cherbourg, args: 'channel-area:cherbourg', limit: 30 }
+          - { name: northsea, args: 'northsea-area:northsea', limit: 30 }
+    steps:
+      - uses: actions/checkout@v4   # the scripts of this run's commit (main on a schedule); the app comes from the site just built
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-built
+          path: site
+      - name: Install the browser
         run: |
           npm i --no-save playwright@1.47.2
           npx playwright install chromium || true
           npx playwright install-deps chromium || echo 'system packages not refreshed; using what the runner has'
-          PRE_HOURS=6 PRE_HOURS_RACE=3 node scripts/preroute.js site channel-area northsea-area irishsea-area biscay-area celtic-area fastnet cervantes channel-area:myth channel-area:deguingand channel-area:morgan channel-area:dinard channel-area:channel channel-area:cherbourg northsea-area:northsea
+      - name: Pre-route ${{ matrix.args }}
+        continue-on-error: true
+        timeout-minutes: ${{ matrix.limit }}
+        run: PRE_HOURS=6 PRE_HOURS_RACE=3 node scripts/preroute.js site ${{ matrix.args }}
+      - name: Hand over the starts routed (also after the time limit)
+        if: always()
+        run: |
+          mkdir -p out; for d in site/*/pre; do [ -f "$d/routes.json" ] && { n=$(basename "$(dirname "$d")"); mkdir -p "out/$n"; cp -r "$d" "out/$n/"; echo "$n: $(ls "$d" | grep -c '^s.*\.json$') start files"; }; done; true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pre-${{ matrix.name }}
+          path: out
+          retention-days: 1
+          if-no-files-found: ignore
+
+  collect:
+    needs: [area, publish, preroute]
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4   # the scripts of this run's commit (main on a schedule); the app comes from the site just built
+      - uses: actions/download-artifact@v4
+        with:
+          name: site-built
+          path: site
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pre-*
+          path: pre
+      - name: Lay every race's pre-routes over the site, only those built on these forecasts
+        run: python3 scripts/premerge.py site pre | tee premerge.txt
       - name: Use the newest app from main again before the second publish
         run: |
           git fetch -q origin main
           git archive origin/main site/cervantes site/index.html site/courses site/functions site/help site/helpmedia site/brand site/route.webmanifest site/_routes.json site/follow site/zones site/android tools/compact.js _headers | tar -x
           for d in fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do mkdir -p "site/$d"; cp site/cervantes/*.js site/cervantes/*.css site/cervantes/index.html "site/$d/"; done
-          # Mark (17 Nov 18:40: Mark went missing from the live site at the 15:45 run, as this list left it out); F28 compacted code with FirstShift's notice
           npm i --no-save terser@5.31.6 >/dev/null 2>&1 && for d in cervantes fastnet channel-area northsea-area irishsea-area biscay-area celtic-area mark; do TERSER=$PWD/node_modules/terser node tools/compact.js "site/$d"; done || echo "code not compacted this run"
       - name: Publish again with the pre-routes
+        if: inputs.dry_run != true
         run: |
           cd site
           rm -rf .git && git init -q -b site
@@ -144,18 +227,19 @@ jobs:
           git commit -q -m "Forecasts and pre-routes $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site:site
       - name: Check the live site matches main (Route, Mark, and the Route+ and Mark+ downloads)
-        if: always()
+        if: always() && inputs.dry_run != true
         # 20 Nov: a release that reached the live site but not main was undone by the next run, unnoticed. This fails the job, and GitHub emails, if they differ.
         run: |
           git fetch -q origin main && git checkout -q origin/main -- tools/live_check.js site/cervantes/app.js site/android
           node tools/live_check.js https://firstshift-route.pages.dev --wait 10
-      - name: Tell Healthchecks.io how the run ended (success, or fail if any area or step failed; a missing or late ping alerts too)
-        if: always()
+      - name: Tell Healthchecks.io how the run ended (fail if any area failed, any step failed, or a race has no pre-routes)
+        if: always() && inputs.dry_run != true
         env:
           HC: ${{ secrets.HC_PING_URL || 'https://hc-ping.com/e66f00bb-7e1b-4b78-8b83-443aed0262fd' }}   # Stuart 21 Nov 02:55: "Put in public code" (a repository secret HC_PING_URL, if added, takes over)
           AREAS: ${{ needs.area.result }}
           JOB: ${{ job.status }}
         run: |
           [ -z "$HC" ] && { echo "HC_PING_URL not set: no ping"; exit 0; }
-          if [ "$JOB" = "success" ] && [ "$AREAS" = "success" ]; then curl -fsS -m 10 --retry 3 -o /dev/null "$HC" || true
-          else curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "publish: $JOB, areas: $AREAS, run ${{ github.run_id }}" "$HC/fail" || true; fi
+          MISSING=$(grep '^MISSING' premerge.txt 2>/dev/null | tr '\n' ' ')
+          if [ "$JOB" = "success" ] && [ "$AREAS" = "success" ] && [ -z "$MISSING" ]; then curl -fsS -m 10 --retry 3 -o /dev/null "$HC" || true
+          else curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "collect: $JOB, areas: $AREAS, $MISSING run ${{ github.run_id }}" "$HC/fail" || true; fi

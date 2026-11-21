@@ -1,4 +1,4 @@
-/* Stuart 14 Nov 20:27: an edited course "came back with no marks". Edit the Cowes Dinard St Malo course (one mark,
+/* Stuart 14 Nov 20:27: an edited course "came back with no marks". Edit the Cowes Dinard St Malo course (Needles Fairway and, since 21 Nov, the Casquets, Les Hanois and the W Minquiers;
    Needles Fairway) in each way the editor allows, then reopen it each way Route reopens a saved course, and count marks.
    Run: node tests/losemarks.js http://localhost:8769 */
 const { chromium } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8769';
@@ -35,7 +35,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
 
   // 2. edit again from the reopened course, Course list, Save and route
   await p.evaluate(() => document.getElementById('editFab').click()); await p.waitForTimeout(800);
-  e = await pts(); console.log('editor 2:', e.map(q => q[2]).join(' / ')); ok(e.length === 3, '2 editing the saved course shows its mark', e.length);
+  e = await pts(); console.log('editor 2:', e.map(q => q[2]).join(' / ')); ok(e.length === 6, '2 editing the saved course shows its marks (start, Needles Fairway, Casquets, Les Hanois, W Minquiers, finish since 21 Nov)', e.length);
   await drag(e[1], 15, 10); await p.click('#edDone'); await p.waitForTimeout(800); await p.click('#edSave'); await p.waitForTimeout(3000); await routed();
   console.log('saved 2:', JSON.stringify(await saved())); ok(/Needles/.test(await shown()), '2 Save and route keeps it', await shown());
   await p.goto(BASE + '/channel-area/'); await p.waitForTimeout(8000); ok(/Needles/.test(await shown()), '2 reload keeps it', await shown());
@@ -50,26 +50,29 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   let now = await saved(); console.log('saved 3:', JSON.stringify(now));
   ok(now.length === 2 && now.some(x => x.startsWith(id + ':') && /Needles/.test(x)), '3 a new course is saved beside the Dinard course, not over it', now.length);
 
-  // 4. with a saved course open, pick a RORC race from the race picker, edit and Re-route: the saved courses must stay
+  // 4. with a saved course open, pick a RORC race from the race picker, edit and Re-route: the saved courses must stay.
+  //    Since 21 Nov (F101, Stuart "go for your recommendation"): St Malo was edited in step 1, so the picker opens that edit (your version)
+  //    and editing it again updates it, rather than saving a second copy
   await p.goto(BASE + '/channel-area/?my=' + id); await p.waitForTimeout(8000);
   await p.evaluate(() => { const s = document.getElementById('raceSel'); s.value = 'dinard'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await p.waitForTimeout(3000); await routed();
   await p.evaluate(() => document.getElementById('editFab').click()); await p.waitForTimeout(800); e = await pts();
   await drag(e[1], -30, 20); await p.click('#edGo'); await p.waitForTimeout(3000); await routed();
   now = await saved(); console.log('saved 4:', JSON.stringify(now));
-  ok(now.length === 3 && now.some(x => x.startsWith(id + ':')), '4 editing a RORC race opened from the picker saves a new course, keeping the others', now.length);
+  ok(now.length === 2 && now.some(x => x.startsWith(id + ':')), '4 editing St Malo opened from the picker updates your version of it, keeping the others', now.length);
 
   // 5. Stuart's own steps (20:41): race list, Edit, add marks on the legs, Re-route; then reopen it every way
-  await p.goto(BASE + '/channel-area/?race=dinard'); await routed(); await p.waitForTimeout(1500);
+  await p.goto(BASE + '/channel-area/?race=dinard'); console.log('5 at load:', await p.evaluate(() => JSON.stringify({ last: localStorage.getItem('fs-last-channel-area'), wiz: localStorage.getItem('fs-wiz'), ss: sessionStorage.getItem('fs-wiz') }))); await routed(); await p.waitForTimeout(1500);
+  console.log('5 opened:', await shown(), await p.evaluate(() => location.href));
   await p.evaluate(() => document.getElementById('editFab').click()); await p.waitForTimeout(800);
-  for (let k = 0; k < 2; k++) { const pp = await pts(); const L = pp.length - 2; const lg = [(pp[L][0] * 0.4 + pp[L + 1][0] * 0.6), (pp[L][1] * 0.4 + pp[L + 1][1] * 0.6)]; await p.mouse.click(lg[0], lg[1]); await p.waitForTimeout(500); await p.click('#addPop'); await p.waitForTimeout(500); }
+  for (let k = 0; k < 2; k++) { const pp = await pts(); const L = 2;   /* the Casquets to Les Hanois leg, open water (21 Nov: the last leg now runs in among the Minquiers rocks, where a mark is refused) */ const lg = [(pp[L][0] * 0.4 + pp[L + 1][0] * 0.6), (pp[L][1] * 0.4 + pp[L + 1][1] * 0.6)]; await p.mouse.click(lg[0], lg[1]); await p.waitForTimeout(500); await p.click('#addPop'); await p.waitForTimeout(500); }
   console.log('5 editor:', (await pts()).map(q => q[2] || 'new').join(' / '));
   await p.click('#edGo'); await p.waitForTimeout(3000); await routed();
   now = await saved(); const id5 = now[0].split(':')[0]; console.log('saved 5:', now[0]);
-  ok(now[0].split(':')[2].split('+').length === 3, '5 Re-route saves the course with Needles Fairway and the two added marks', now[0]);
+  ok(id5 === id && now[0].split(':')[2].split('+').length === 6, '5 Re-route saves your St Malo with its four marks and the two added', now[0]);
   const marks5 = async () => p.evaluate(() => window.__fsCourseFull().pts.filter(q => q[2] !== 'auto').length - 2);
-  await p.goto(BASE + '/channel-area/'); await p.waitForTimeout(8000); ok(await marks5() === 3, '5 reload: three marks', await marks5());
-  await p.goto(BASE + '/cervantes/?my=' + id5); await p.waitForTimeout(10000); ok(await marks5() === 3, '5 opened from another page: three marks', p.url() + ' ' + await marks5());
-  await p.evaluate(() => document.getElementById('editFab').click()); await p.waitForTimeout(800); e = await pts(); ok(e.length === 5, '5 editing again shows all five points', e.length);
+  await p.goto(BASE + '/channel-area/'); await p.waitForTimeout(8000); ok(await marks5() === 6, '5 reload: six marks', await marks5());
+  await p.goto(BASE + '/cervantes/?my=' + id5); await p.waitForTimeout(10000); ok(await marks5() === 6, '5 opened from another page: six marks', p.url() + ' ' + await marks5());
+  await p.evaluate(() => document.getElementById('editFab').click()); await p.waitForTimeout(800); e = await pts(); ok(e.length === 8, '5 editing again shows all eight points', e.length);
   await drag(e[2], -40, 25); await p.click('#edGo'); await p.waitForTimeout(3000); await routed();
   ok((await saved()).filter(x => x.startsWith(id5 + ':')).length === 1 && (await saved()).length === now.length, '5 Re-route again updates the same saved course', (await saved()).length);
 

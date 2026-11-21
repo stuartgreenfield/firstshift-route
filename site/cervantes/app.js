@@ -1847,7 +1847,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function startEdit(c) {
     $('races').hidden = true; $('wizBar').hidden = true; closePanel(); $('cbanner').hidden = true; $('tip').hidden = true;
     if (!c || !(meta.course.race && meta.course.race.custom)) S.myId = null;   /* Stuart 14 Nov "loses the courses": a new course or an edited RORC or JOG race used to be saved over the My race opened before */
-    S.edit = { name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks || []).concat([c.finish]).filter(function (p) { return !p.auto; }).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side, via: !!p.via, must: !!p.must, auto: !!p.auto }; }) : [], closed: !!c, hist: [] };
+    var base0 = c ? (S.yours ? S.yours.race : meta.course.race && !meta.course.race.custom ? meta.course.race : null) : null;   /* F101: only an edit of a stored race's own course is your version of it; a new course never is */
+    S.edit = { base: base0, name: c ? c.name : 'My course', pts: c ? [c.start].concat(c.marks || []).concat([c.finish]).filter(function (p) { return !p.auto; }).map(function (p) { return { lat: p.lat, lon: p.lon, name: p.name, side: p.side, via: !!p.via, must: !!p.must, auto: !!p.auto }; }) : [], closed: !!c, hist: [] };
     S.edit.orig = JSON.stringify(S.edit.pts);
     if (!c) S.drawnNew = true;
     var cb = null; if (c) { cb = { s: 90, n: -90, w: 180, e: -180 }; S.edit.pts.forEach(function (q) { cb.s = Math.min(cb.s, q.lat); cb.n = Math.max(cb.n, q.lat); cb.w = Math.min(cb.w, q.lon); cb.e = Math.max(cb.e, q.lon); }); var mla = Math.max(0.08, (cb.n - cb.s) * 0.15), mlo = Math.max(0.12, (cb.e - cb.w) * 0.15); cb.s -= mla; cb.n += mla; cb.w -= mlo; cb.e += mlo; }   /* an existing course: the whole course in view */
@@ -2024,7 +2025,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var p = S.edit.pts;
       var pts = p.map(function (q, i) { var mid = i > 0 && i < p.length - 1; if (mid && q.via) return { name: q.name || '', lat: q.lat, lon: q.lon, via: true, must: !!q.must }; return { name: q.name || (i === 0 ? 'Start' : i === p.length - 1 ? 'Finish' : 'Mark ' + i), lat: q.lat, lon: q.lon, side: mid ? (q.side || 'port') : undefined }; });
       var c = { name: S.edit.name || 'My course', start: pts[0], marks: pts.slice(1, -1), finish: pts[pts.length - 1] };
-      var base = S.yours ? S.yours.race : meta.course.race && !meta.course.race.custom ? meta.course.race : null;   /* F101: an edit of a stored race is your version of it */
+      var base = S.edit.base || null;   /* F101: an edit of a stored race is your version of it (fixed 21 Nov: a new course drawn while your St Malo was open had been filed as your St Malo) */
       var stv = stv0, keepId = S.myId, later = beyond(+stv); if (later) { stv = String((startRange() || [0, 0])[1]); } S.edit = null; applyCourseObj(asRace(c, keepId || undefined)); S.myId = keepId; setStart(+stv); var rec = saveMyRace(c.name); if (base) { var ya = myRaces(); ya.forEach(function (x) { if (x.id === rec.id) { x.raceId = base.id; x.baseSig = courseSig(base); } else if (x.raceId === base.id) x.raceId = null; }); setMyRaces(ya); if (BC.push) BC.push(); rec = yourVersion(base.id) || rec; S.yours = { race: base, rec: rec }; } startChosen(); S.newDone = true; meta.course.race.id = rec.id; if (later) { futureSet(+stv0); chipStart(); } else futureDrop();
       $('races').hidden = true; busy('Saved under My races. Routing ' + c.name + ' from ' + clockAbs(+stv) + ' UTC…');
       var issue = courseIssue(meta.course), reg = issue ? regionFor(c) : null;
