@@ -48,11 +48,56 @@ def strip(w0, w1):
     a = tifffile.imread(io.BytesIO(get(u))).astype('f4'); a = np.where(np.abs(a) > 1e4, np.nan, a)
     a = a[: a.shape[0] // STEP * STEP, : a.shape[1] // STEP * STEP]
     return np.nanmax(a.reshape(a.shape[0] // STEP, STEP, a.shape[1] // STEP, STEP), axis=(1, 3))
-edges = np.arange(np.floor(w * 4) / 4, e + 1.5, 1.5); parts = []
-for w0, w1 in zip(edges[:-1], edges[1:]):
-    p = strip(w0, w1); parts.append(p); print('depth strip', w0, w1, p.shape, flush=True)
-ny = min(p.shape[0] for p in parts); g = np.concatenate([p[:ny] for p in parts], axis=1)[::-1]   # row 0 = south
-st = STEP / 960; lat0 = s + st / 2; lon0 = edges[0] + st / 2
+DEPTH = R.get('depthSource', 'emodnet')
+if DEPTH == 'etopo':
+    # Outside EMODnet's European seas (21 Nov 2026, Sydney Hobart, F114): NOAA ETOPO 2022, 15 arc-second (1/240 degree, about 460 m
+    # north-south), surface elevation, read from NOAA's THREDDS tiles (15 x 15 degree files named by their north-west corner)
+    import netCDF4
+    TD = 'https://www.ngdc.noaa.gov/thredds/fileServer/global/ETOPO2022/15s/15s_surface_elev_netcdf/'
+    def tile(la, lo): return f"ETOPO_2022_v1_15s_{'N' if la >= 0 else 'S'}{abs(la):02d}{'E' if lo >= 0 else 'W'}{abs(lo):03d}_surface.nc"
+    names = sorted({tile(int(15 * np.ceil(la / 15)), int(15 * np.floor(lo / 15))) for la in (s, n - 1e-6) for lo in (w, e - 1e-6)})
+    LAs, LOs, Z = [], [], {}
+    for nm in names:
+        f = os.path.join(os.environ.get('FS_ETOPO_DIR', '/tmp'), nm)
+        if not os.path.exists(f): open(f, 'wb').write(get(TD + nm))
+        ds = netCDF4.Dataset(f); la = np.array(ds['lat'][:]); lo = np.array(ds['lon'][:]); Z[nm] = (la, lo, ds['z'])
+    st = 1 / 240; la_g = np.arange(np.floor(s * 240) / 240 + st / 2, n, st); lo_g = np.arange(np.floor(w * 240) / 240 + st / 2, e, st)
+    g = np.full((len(la_g), len(lo_g)), np.nan, 'f4')
+    for nm, (la, lo, z) in Z.items():
+        iy = np.where((la >= la_g[0] - st / 4) & (la <= la_g[-1] + st / 4))[0]; ix = np.where((lo >= lo_g[0] - st / 4) & (lo <= lo_g[-1] + st / 4))[0]
+        if not len(iy) or not len(ix): continue
+        blk = np.array(z[iy[0]:iy[-1] + 1, ix[0]:ix[-1] + 1], 'f4')
+        lsel = la[iy]
+        if lsel[0] > lsel[-1]: blk = blk[::-1]; lsel = lsel[::-1]   # rows south first
+        ry = int(np.searchsorted(la_g, lsel[0] - st / 4)); rx = int(np.searchsorted(lo_g, lo[ix][0] - st / 4))
+        hy = min(len(iy), len(la_g) - ry); hx = min(len(ix), len(lo_g) - rx)
+        g[ry:ry + hy, rx:rx + hx] = blk[:hy, :hx]
+    lat0 = la_g[0]; lon0 = lo_g[0]; STEP = 4   # so the coast (st * 4 below, 1/60) is replaced by the OSM coast at 1/480
+    print('depth grid (ETOPO 2022 15s)', g.shape, 'tiles', names, flush=True)
+    if R.get('coastSource') == 'osm':
+        # coastline from OpenStreetMap's land polygons (osmdata.openstreetmap.de, ODbL), drawn at 1/480 degree (about 230 m): finer than the depth grid
+        import shapefile, rasterio.features, rasterio.transform, zipfile
+        zf = os.environ.get('FS_OSM_LAND', '/tmp/land-polygons-split-4326.zip')
+        if not os.path.exists(zf): open(zf, 'wb').write(get('https://osmdata.openstreetmap.de/download/land-polygons-split-4326.zip'))
+        z = zipfile.ZipFile(zf); base = [x for x in z.namelist() if x.endswith('.shp')][0][:-4]
+        sf = shapefile.Reader(shp=z.open(base + '.shp'), shx=z.open(base + '.shx'), dbf=z.open(base + '.dbf'))
+        cst = 1 / 480; ny_c = int(round((n - s) / cst)); nx_c = int(round((e - w) / cst))
+        tr = rasterio.transform.from_origin(w, n, cst, cst); shapes = []
+        for i, b in enumerate(sf.bbox(i) for i in range(len(sf))):
+            if b[2] < w or b[0] > e or b[3] < s or b[1] > n: continue
+            shapes.append((sf.shape(i).__geo_interface__, 1))
+        LAND = rasterio.features.rasterize(shapes, out_shape=(ny_c, nx_c), transform=tr, fill=0, dtype='uint8')[::-1].copy()   # row 0 = south
+        print('coast (OSM land polygons)', LAND.shape, len(shapes), 'polygons', flush=True)
+        # the depth grid takes land from the OSM coast too, so the two always agree
+        fy = (lat0 - (s + cst / 2)) / cst; fx = (lon0 - (w + cst / 2)) / cst
+        yy = np.clip(np.rint(fy + np.arange(g.shape[0]) * 2).astype(int), 0, ny_c - 1); xx = np.clip(np.rint(fx + np.arange(g.shape[1]) * 2).astype(int), 0, nx_c - 1)
+        g = np.where(LAND[np.ix_(yy, xx)] > 0, np.where(g > 0, g, 1.0), np.where(g > 0, -1.0, g))   # water in OSM stays water (at least 1 m)
+else:
+    edges = np.arange(np.floor(w * 4) / 4, e + 1.5, 1.5); parts = []
+    for w0, w1 in zip(edges[:-1], edges[1:]):
+        p = strip(w0, w1); parts.append(p); print('depth strip', w0, w1, p.shape, flush=True)
+    ny = min(p.shape[0] for p in parts); g = np.concatenate([p[:ny] for p in parts], axis=1)[::-1]   # row 0 = south
+    st = STEP / 960; lat0 = s + st / 2; lon0 = edges[0] + st / 2
 print('depth grid', g.shape)
 
 def pool(a, m):
@@ -81,13 +126,15 @@ for v, m in (('full', 1), ('lite', 2)):
     dep[v] = dict(file=fn, runs=f'emodnet-{v}-runs.json', bytes=len(qb) + len(rj), gz=len(gzip.compress(qb, 6)) + len(gzip.compress(rj.encode(), 6)), lat0=float(la[0]), dlat=ss, ny=len(la), lon0=float(lo[0]), dlon=ss, nx=len(lo),
                   hours=None, z=dict(off=0, n=len(qb) // 2, scale=0.1), res_km=[round(ss * KM, 2), round(ss * KM * K, 2)], step_h=None, band=round(float(ins.mean()), 3))
     print('depth', v, dep[v]['gz'] / 1e6, 'MB gz')
-depth = dict(kind='depth', id='emodnet', name='EMODnet seabed depth', note='shallower than 20 m and land only; deeper water marked deep', **dep)
+depth = dict(kind='depth', id='emodnet', name='EMODnet seabed depth' if DEPTH != 'etopo' else 'ETOPO 2022 seabed depth (NOAA)', note='shallower than 20 m and land only; deeper water marked deep', **dep)
 
 # ---- coastline bitmap for the whole box, 1/120 degree ----
-gc = pool(g, 4); land = (np.isnan(gc) | (gc > 0)).astype(np.uint8)
+if DEPTH == 'etopo' and R.get('coastSource') == 'osm':
+    land = LAND; cst = 1 / 480; clat0 = s + cst / 2; clon0 = w + cst / 2
+else:
+    gc = pool(g, 4); land = (np.isnan(gc) | (gc > 0)).astype(np.uint8); cst = st * 4; clat0 = lat0 - st / 2 + cst / 2; clon0 = lon0 - st / 2 + cst / 2
 open(f'{OUT}/coast.wasm', 'wb').write(np.packbits(land.ravel()).tobytes())
-cst = st * 4
-coast = dict(file='coast.wasm', lat0=lat0 - st / 2 + cst / 2, dlat=cst, ny=land.shape[0], lon0=lon0 - st / 2 + cst / 2, dlon=cst, nx=land.shape[1], gz=len(gzip.compress(np.packbits(land.ravel()).tobytes(), 6)))
+coast = dict(file='coast.wasm', lat0=clat0, dlat=cst, ny=land.shape[0], lon0=clon0, dlon=cst, nx=land.shape[1], gz=len(gzip.compress(np.packbits(land.ravel()).tobytes(), 6)))
 
 course = dict(name=R['name'], raceId=RACE, start=R['start'], marks=R['marks'], finish=R['finish'], hours=R.get('hours', 48),
               band=None if REGION else [[a[0], a[1], b[0], b[1], W] for a, b, W in SEG], region=REGION)
