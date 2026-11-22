@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-22T02:48:13.674Z",
+ "log": [
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 67,
+   "note": "Finer routes in 47.7 s. Times: first routes 3.4 s, standard 16.4 s, finer 64.1 s. The faint line is the standard route. "
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 125,
+   "note": "Finer routes in 46.0 s. Times: first routes 1.6 s, standard 12.4 s, finer 58.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 184,
+   "note": "Finer routes in 45.2 s. Best known: in NOAA GFS’s forecast the Meteo-France AROME track is 8.4 min quicker than its own "
+  }
+ ]
+}

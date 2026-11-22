@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-22T02:48:14.972Z",
+ "log": [
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 59,
+   "note": "Finer routes in 41.8 s. Times: first routes 3.8 s, standard 14.9 s, finer 56.7 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 112,
+   "note": "Finer routes in 41.4 s. Times: first routes 1.7 s, standard 11.1 s, finer 52.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 167,
+   "note": "Finer routes in 42.9 s. Best known: in ECMWF AIFS’s forecast the ECMWF IFS track is 1.2 min quicker than its own route. "
+  }
+ ]
+}
