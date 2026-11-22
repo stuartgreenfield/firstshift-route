@@ -1526,7 +1526,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     return { tcc: tc, polar: pol, name: $('boatName').value.trim() };
   }
   function boatWarn() {
-    var d = boatDesc(), set = boatIsSet(); $('boatWarn').hidden = set || WIZ.on;
+    var d = boatDesc(), set = boatIsSet(), sc = $('setupCard'); $('boatWarn').hidden = set || WIZ.on || !!(sc && sc.offsetParent && sc.textContent);   /* first use C: the set-up card already asks for the boat */
     $('boatWarn').textContent = 'TCC ' + d.tcc + ' · Polar: ' + d.polar + ' · Boat: ' + (d.name || 'not named') + (set ? '' : '. Tap to set up your boat');
   }
   /* a set-up step that cannot go on says why, in red, beside Next, and marks the box to fix */
@@ -1615,7 +1615,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); chipStart(); }
   function chipStart() { setTimeout(function () { try { setupRender(); } catch (e) {} }, 0); var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date((v + tzSh()) * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
     var past = !!(ok && v < Date.now() / 1000 - 600); if (past) c.classList.add('ask');   /* 13 (Stuart 20 Nov 15:59, the start had been set for yesterday): a start already gone says Started, in amber */
-    c.innerHTML = '<span class="stl">' + (past ? 'Started' : 'Start') + (ok ? '<i class="utc"> ' + (tzLocal() ? 'LOCAL' : 'UTC') + '</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to choose') + '</span>';
+    c.innerHTML = '<span class="stl">' + (past ? 'Started' : 'Start') + (ok ? '<i class="utc"> ' + (tzLocal() ? 'LOCAL' : 'UTC') + '</i>' : '') + '</span><span class="stv">' + (ok ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (innerWidth >= 700 && !matchMedia('(orientation:landscape) and (max-height:500px)').matches ? d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' : '') + hm : 'tap to set') + '</span>';
     c.title = ok ? (past ? 'The class start was ' : 'Class start ') + clockAbs(v) + ' ' + tzS1() + (past ? ': the race is under way. Tap to set a new start' : ': tap to change') : 'Class start: tap to choose'; }   /* its own button beside the race name (Stuart 12 Nov: the two were too close for a finger) */
   function wizCourseChosen(fromEditor) { S.drawnNew = false; showCard(); afterCard(); return true; }   /* a chosen race or drawn course comes back to the set-up card */   /* a course drawn from scratch goes through every step: race and boat, start, fleet, check */
   function wizEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -1656,7 +1656,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       h += '<h3>' + wizEsc(meta.course.name) + '</h3><ol class="wzsteps">' +
         (window.__fsLineSet || window.__fsMarkLine ? '<li><b>Start line</b> <span class="wzst ' + (lnSet ? 'ok' : '') + '">' + (lnSet ? '✓ set' : 'optional') + '</span><p class="note" id="wzLnNote">' + (lnSet ? 'Both ends are set. Change it here.' : 'The RYS or JOG line, or your own. Without it, Route starts from the course start and the start screen has no time to burn.') + '</p><button class="btn" id="wzLine">' + (lnSet ? 'Change start line' : 'Set start line') + '</button></li>' : '') +
         '<li><b>Your class start</b> <span class="wztz"><button class="btn' + (tzLocal() ? '' : ' on') + '" data-tz="utc">UTC</button><button class="btn' + (tzLocal() ? ' on' : '') + '" data-tz="local">Local</button></span><p class="note">The exact time from the sailing instructions, in the time they use: UTC, or local time (' + tzS1() + ' on this device).</p>' + startPickerHtml('wz', cur) + '<div id="wzFit"></div></li>' +
-        (window.__fsStartScreen ? '<li><b>Countdown</b><p class="note">With your start time set, the countdown bar appears by itself ' + barTxt + ' before the gun and the start screen 10 minutes before (change both on the start screen). Or open it now.</p><button class="btn primary" id="wzSS">Done, open the start screen</button></li>' : '') +
+        (window.__fsStartScreen ? '<li><b>Countdown</b><p class="note">With your start time set, the countdown bar appears by itself ' + barTxt + ' before the gun and the start screen 10 minutes before (change both on the start screen). Or open it now.</p><button class="btn primary" id="wzSS">Open the start screen now</button></li>' : '') +
         '</ol><p class="note">For a race further ahead, set it up now and choose the start nearer the day.</p>';
       B.innerHTML = h + '</div>';
       [].forEach.call(B.querySelectorAll('[data-tz]'), function (b) { b.onclick = function () { var keep = startPickerRead('wz'); tzSet(b.dataset.tz); if (keep === keep) { /* keep the same moment, shown in the other zone */ var d = Math.floor((keep + tzSh()) / 86400) * 86400, dd = $('wzDay'), tt = $('wzTime'); if (dd) dd.value = String(d); if (tt) tt.value = hhmm(keep); } }; });   /* Local / UTC in the Start window: the same setting as Settings, Display (Stuart 20 Nov 16:03) */
@@ -2158,11 +2158,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function cardSettingsClosed() {
     var tab = S.card; if (tab !== 'boat' && tab !== 'fc') return; S.card = false; if ($('setDone')) $('setDone').hidden = true;
-    if (tab === 'boat') { var tc = +$('tcc').value; if (tc >= 0.7 && tc <= 2.2) { if (!$('boatName').value.trim()) $('boatName').value = 'My boat'; $('boatSave').click(); store('fs-boatset', '1'); store('fs-wizdone', '1'); } }
+    if (tab === 'boat') { var tc = +$('tcc').value; if (!(tc >= 0.7 && tc <= 2.2)) { busy('Enter your TCC from your IRC certificate to finish the boat.'); setTimeout(function () { busy(''); }, 3500); } if (tc >= 0.7 && tc <= 2.2) { if (!$('boatName').value.trim()) $('boatName').value = 'My boat'; $('boatSave').click(); store('fs-boatset', '1'); store('fs-wizdone', '1'); } }
     setTimeout(function () { showCard(); if (!S.running && !(S.routes && S.routes.length)) afterCard(); }, 50);
   }
   function cardStep(n) { S.card = true; WIZ.on = true; S.wizHold = true; wizShow(n); $('wizH').textContent = n === 1 ? 'Your boat' : 'The start'; $('wizDots').innerHTML = ''; $('wizNext').textContent = 'Done'; $('wizBack').hidden = true; }   /* one item from the set-up card: no step numbers */
-  function setupRender() {
+  /* first use A (Stuart 22 Nov 16:50): a new boat had TCC 1.031 filled in and turned green without the user's own rating; now the box is
+     empty until they type it (or fill it from an entry), and Boat stays amber until then. Accuracy first. */
+  function tccFresh() { if (tccFresh.done) return; tccFresh.done = true; if (!boatIsSet() && $('tcc').value === '1.031') $('tcc').value = ''; }
+  function setupRender() { tccFresh(); setTimeout(boatWarn, 0);
     try { coverRender(); } catch (e) {}
     var el = $('setupCard'); if (!el || !meta) return; var rows; try { rows = setupRows(); } catch (e) { return; }
     var ready = rows.filter(function (r) { return r.ok; }).length, all = ready === rows.length, has = S.routes && S.routes.length;
@@ -4032,9 +4035,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('plotKey').innerHTML = ws.map(function (w, i) { return '<span style="color:' + tok(cols[i]) + ';font-weight:700">━</span> ' + w + ' kn'; }).join(' &nbsp; ') + (tuned ? ' &nbsp; dashed: before tuning' : '') + '. Boat speed in knots; wind from the top.';
   }
   var spTimer = null;
-  function boatChanged() { try { if (document.activeElement && /^(tcc|boatType|boatName)$/.test(document.activeElement.id) || boatChanged.user) store('fs-boatset', '1'); boatChanged.user = false; boatWarn(); } catch (e) {} spCache = {}; ['Up', 'Reach', 'Run'].forEach(function (n) { $('tu' + n + 'V').textContent = $('tu' + n).value + '%'; }); clearTimeout(spTimer); spTimer = setTimeout(plotPolar, 60); }
+  function boatChanged() { try { var tcv = +$('tcc').value; if ((document.activeElement && /^(tcc|boatType|boatName)$/.test(document.activeElement.id) || boatChanged.user) && tcv >= 0.7 && tcv <= 2.2) store('fs-boatset', '1');   /* first use A (22 Nov): not set until a real TCC is in */ boatChanged.user = false; boatWarn(); } catch (e) {} spCache = {}; ['Up', 'Reach', 'Run'].forEach(function (n) { $('tu' + n + 'V').textContent = $('tu' + n).value + '%'; }); clearTimeout(spTimer); spTimer = setTimeout(plotPolar, 60); }
   function boats() { try { return JSON.parse(store('fsBoats') || '{}') || {}; } catch (e) { return {}; } }
-  function listBoats(sel) { var b = boats(); $('myBoat').innerHTML = '<option value="">' + (Object.keys(b).length ? 'Choose a saved boat…' : 'Not saved yet') + '</option>' + Object.keys(b).sort().map(function (n) { return '<option>' + n.replace(/</g, '&lt;') + '</option>'; }).join(''); $('myBoat').value = sel || ''; $('boatDel').hidden = !sel; }
+  function listBoats(sel) { var b = boats(); $('myBoat').innerHTML = '<option value="">' + (Object.keys(b).length ? 'Choose a saved boat…' : 'Not saved yet') + '</option>' + Object.keys(b).sort().map(function (n) { return '<option>' + n.replace(/</g, '&lt;') + '</option>'; }).join(''); $('myBoat').value = sel || ''; $('boatDel').hidden = !sel; var row = $('myBoat').closest('.row'); if (row) row.hidden = !Object.keys(b).length; }   /* first use E: no Save boat before there is a boat; Done saves it */
   function initBoat() {
     $('boatType').innerHTML = FSBoat.TYPES.map(function (t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join('');
     $('boatType').value = 'perf';

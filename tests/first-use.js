@@ -1,0 +1,25 @@
+/* First use fixes A to F (Stuart 22 Nov 16:50), a brand-new user on a phone. Run: node tests/first-use.js <url> [path] */
+const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779', P = process.argv[3] || '/channel-area/';
+let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block' }); const p = await c.newPage();
+  await c.route(/open-meteo|googleapis|openseamap/, r => r.fulfill({ status: 200, body: '' }));
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + P); await p.waitForTimeout(3000);
+  await p.getByText('I understand', { exact: true }).click(); await p.waitForTimeout(3000);
+  const s0 = await p.evaluate(() => ({ warn: !document.getElementById('boatWarn').hidden, chip: document.getElementById('startChip').textContent, clockClip: (e => e.scrollWidth > e.clientWidth + 1)(document.getElementById('clock')), tcc: document.getElementById('tcc').value }));
+  ok(!s0.warn, 'C: no yellow boat note over the chart while Race set-up asks for the boat', s0);
+  ok(/tap to set/.test(s0.chip) && !s0.clockClip, 'D: start chip says "tap to set"; clock not cut off', s0);
+  ok(s0.tcc === '', 'A: a new boat has no TCC filled in', s0.tcc);
+  await p.locator('#setupCard .srow', { hasText: 'Boat' }).first().click(); await p.waitForTimeout(1500);
+  const e0 = await p.evaluate(() => { const r = document.getElementById('myBoat').closest('.row'); return !!(r && r.hidden); }); ok(e0, 'E: no My boats or Save boat before a boat is saved', e0);
+  await p.fill('#boatName', 'Morning After'); await p.click('#setDone'); await p.waitForTimeout(2000);
+  const a1 = await p.evaluate(() => [...document.querySelectorAll('#setupCard .srow')].map(r => r.textContent.trim().slice(0, 30)));
+  ok(a1.some(t => /^!Boat/.test(t)), 'A: Boat stays amber with a name but no TCC', a1);
+  await p.locator('#setupCard .srow', { hasText: 'Boat' }).first().click(); await p.waitForTimeout(1500);
+  await p.fill('#tcc', '0.968'); await p.click('#setDone'); await p.waitForTimeout(2000);
+  const a2 = await p.evaluate(() => [...document.querySelectorAll('#setupCard .srow')].map(r => r.textContent.trim().slice(0, 40)));
+  ok(a2.some(t => /^✓Boat.*0\.968/.test(t)), 'A: Boat turns green once the TCC is typed', a2);
+  await p.locator('#setupCard .srow', { hasText: 'Start' }).first().click(); await p.waitForTimeout(1500);
+  const f = await p.evaluate(() => [...document.querySelectorAll('button')].filter(x => x.getClientRects().length && /^Done/.test(x.textContent.trim())).map(x => x.textContent.trim()));
+  ok(f.length === 1, 'F: one Done on the start page', f);
+  const bt = await p.evaluate(() => (document.getElementById('spFirst') || {}).textContent || ''); ok(/routes as soon as both are set/.test(bt), 'B: the first-time line says what happens', bt);
+  ok(!errs.length, 'No script errors', errs.slice(0, 2)); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

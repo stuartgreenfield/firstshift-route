@@ -15,7 +15,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   s = await strip(); ok(/boatd/.test(s.cls) && /BSP 6\.5/.test(s.txt) && /TWA 40°\s*STBD/i.test(s.txt) && /TWS 14/.test(s.txt) && /HDG 250°/i.test(s.txt) && /Depth 2[01]/i.test(s.txt), 'Boat data arriving: BOAT strip with BSP, TWA, TWS, HDG and depth from the boat', s);
   const order = s.txt.split(' ').filter(w => /^(SOG|COG|BSP|TWA|TWS|HDG)$/i.test(w)).map(w => w.toUpperCase()).join(',');
   ok(order === 'SOG,COG,BSP,TWA,TWS,HDG', 'BOAT strip in the one column order', order);
-  await p.click('#now'); await p.waitForTimeout(500); let pk = await strip(); ok(!/boatd|live/.test(pk.cls) && /VMC/i.test(pk.txt) && pk.txt.toUpperCase().indexOf('SOG') < pk.txt.toUpperCase().indexOf('HDG'), 'A tap shows the PLAN figures, same order', pk);
+  let pk = await p.evaluate(() => { const z = document.getElementById('now2'); return { shown: !!(z && !z.hidden && z.getClientRects().length), txt: z ? z.innerText.replace(/\s+/g, ' ') : '' }; }); ok(pk.shown && /VMC/i.test(pk.txt) && pk.txt.toUpperCase().indexOf('SOG') < pk.txt.toUpperCase().indexOf('HDG'), 'The PLAN figures show underneath, same order (since 0.12.100 they no longer need a tap)', pk);
   for (let i = 0; i < 6; i++) { await feed(); await p.waitForTimeout(2000); } pk = await strip(); ok(/boatd/.test(pk.cls), 'After 10 s back to the BOAT strip', pk.cls);
   await p.waitForTimeout(7000); s = await strip(); ok(!/boatd/.test(s.cls), 'Boat data stops: back to the plan strip', s);
   ok(!errs.length, 'No script errors', errs.slice(0, 2)); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
