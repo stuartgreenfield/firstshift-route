@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-22T08:31:38.307Z",
+ "log": [
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 72,
+   "note": "Finer routes in 49.9 s. Times: first routes 4.9 s, standard 19.5 s, finer 69.4 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 136,
+   "note": "Finer routes in 49.4 s. Times: first routes 2.1 s, standard 14.1 s, finer 63.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 203,
+   "note": "Finer routes in 51.6 s. Times: first routes 2.3 s, standard 15.1 s, finer 66.8 s. The faint line is the standard route. "
+  }
+ ]
+}

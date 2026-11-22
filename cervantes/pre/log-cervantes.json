@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-22T08:35:05.960Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 60,
+   "note": "Finer routes in 43.1 s. Times: first routes 3.0 s, standard 15.5 s, finer 58.6 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 116,
+   "note": "Finer routes in 44.7 s. Best known: in NOAA GFS’s forecast the ECMWF AIFS track is 4.1 min quicker than its own route. T"
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 171,
+   "note": "Finer routes in 43.5 s. Times: first routes 1.9 s, standard 11.3 s, finer 54.8 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 232,
+   "note": "Finer routes in 48.0 s. Best known: in NOAA GFS’s forecast the ECMWF IFS track is 2.2 min quicker than its own route; in"
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 297,
+   "note": "Finer routes in 50.7 s. Best known: in Met Office UKV’s forecast the Combined (6 models) track is 2.9 min quicker than i"
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 369,
+   "note": "Finer routes in 57.2 s. Best known: in Met Office UKV’s forecast the Combined (6 models) track is 16.2 min quicker than "
+  }
+ ]
+}

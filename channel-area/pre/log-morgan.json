@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-22T08:30:22.760Z",
+ "log": [
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 49,
+   "note": "Finer routes in 33.5 s. Best known: in Met Office UKV’s forecast the NOAA GFS track is 1.5 min quicker than its own rout"
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 94,
+   "note": "Finer routes in 35.5 s. Times: first routes 1.2 s, standard 9.2 s, finer 44.8 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 144,
+   "note": "Finer routes in 38.9 s. Best known: in Met Office UKV’s forecast the NOAA GFS track is 1.9 min quicker than its own rout"
+  }
+ ]
+}

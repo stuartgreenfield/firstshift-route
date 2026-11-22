@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-22T08:37:27.275Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 366,
+   "note": "Finer routes in 150.6 s. Times: first routes 5.9 s, standard 36.1 s, finer 186.7 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 572,
+   "note": "Finer routes in 164.4 s. Best known: in DWD ICON-EU’s forecast the Finest first (UKV, AROME, ICON-EU, ECMWF, GFS, AIFS) "
+  }
+ ]
+}

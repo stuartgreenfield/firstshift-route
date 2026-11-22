@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-22T08:33:43.389Z",
+ "log": [
+  {
+   "race": "northsea-area",
+   "h": 0,
+   "s": 56,
+   "note": "Finer routes in 39.6 s. Times: first routes 5.2 s, standard 14.3 s, finer 53.9 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 1,
+   "s": 105,
+   "note": "Finer routes in 39.9 s. Times: first routes 1.4 s, standard 9.4 s, finer 49.3 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 2,
+   "s": 162,
+   "note": "Finer routes in 45.8 s. Times: first routes 1.5 s, standard 10.4 s, finer 56.3 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 3,
+   "s": 221,
+   "note": "Finer routes in 47.6 s. Times: first routes 1.7 s, standard 11.0 s, finer 58.6 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 4,
+   "s": 284,
+   "note": "Finer routes in 50.7 s. Times: first routes 1.7 s, standard 11.8 s, finer 62.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 5,
+   "s": 345,
+   "note": "Finer routes in 49.0 s. Times: first routes 1.8 s, standard 12.1 s, finer 61.2 s. The faint line is the standard route. "
+  }
+ ]
+}
