@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-22T21:07:46.509Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 4,
+   "s": 754,
+   "note": "Finer routes in 304.3 s. Also worth knowing: in UKV wind, the GFS route is 120 min faster than UKV’s own route. Compare "
+  },
+  {
+   "race": "fastnet",
+   "h": 5,
+   "s": 1193,
+   "note": "Finer routes in 356.3 s. Times: first routes 12.0 s, standard 80.5 s, finer 436.8 s. The faint line is the standard rout"
+  }
+ ]
+}

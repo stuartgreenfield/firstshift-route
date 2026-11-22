@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-22T21:03:20.143Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 594,
+   "note": "Finer routes in 236.3 s. Times: first routes 9.2 s, standard 59.9 s, finer 296.2 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 900,
+   "note": "Finer routes in 240.7 s. Also worth knowing: in AROME wind, the GFS route is 345 min faster than AROME’s own route. Comp"
+  }
+ ]
+}

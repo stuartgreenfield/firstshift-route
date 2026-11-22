@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-22T21:00:03.198Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 369,
+   "note": "Finer routes in 287.2 s. Also worth knowing: in AROME wind, the Combined (6 models) route is 188 min faster than AROME’s"
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 739,
+   "note": "Finer routes in 295.5 s. Times: first routes 11.2 s, standard 72.2 s, finer 367.8 s. The faint line is the standard rout"
+  }
+ ]
+}
