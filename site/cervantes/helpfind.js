@@ -87,7 +87,7 @@
     ['time to burn', 'burn'], ['bias', 'favoured end', 'favored'], ['layline', 'laylines'], ['mark', 'buoy', 'rounding', 'waypoint'], ['vmg', 'velocity made good'],
     ['heading', 'compass', 'hdg'], ['cog', 'course over ground'], ['sog', 'speed over ground'], ['bsp', 'boat speed', 'log', 'speedo'], ['depth', 'shallow', 'shoal', 'echo sounder', 'dpt'],
     ['ais', 'ships', 'ship', 'collision', 'cpa', 'traffic'], ['tss', 'traffic separation', 'lanes'], ['gps', 'position', 'fix'], ['dead reckoning', 'dr', 'gps lost'],
-    ['nmea', 'instruments', 'boat link', 'gateway', 'wifi', 'wi-fi', 'router'], ['night', 'red', 'dark'], ['offline', 'no signal', 'no internet'], ['battery', 'saver', 'power'], ['dim', 'brightness', 'bright', 'screen'],
+    ['nmea', 'instruments', 'boat link', 'gateway', 'wifi', 'wi-fi', 'router'], ['night', 'red', 'dark'], ['helm', 'helmsman', 'big figures', 'steering'], ['deck', 'nav', 'clean chart', 'cockpit view'], ['offline', 'no signal', 'no internet'], ['battery', 'saver', 'power'], ['dim', 'brightness', 'bright', 'screen'],
     ['crew', 'boat code', 'sync', 'share'], ['follow', 'family', 'friends', 'tracker'], ['track', 'tracks', 'trail'], ['plotter', 'chart', 'map'], ['zoom', 'pinch'],
     ['course', 'route', 'routing', 'router'], ['plan', 'brief', 'briefing'], ['fleet', 'rivals', 'competitors', 'tcc', 'irc', 'handicap', 'rating'], ['finish', 'finishing'],
     ['recall', 'general recall', 'over early', 'ocs', 'course side'], ['flag', 'flags', 'p flag', 'black flag', 'u flag', 'z flag'], ['settings', 'options', 'set up', 'setup'],

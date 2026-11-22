@@ -126,9 +126,9 @@
     var name = o.ok && o.m.route ? '<b>' + esc(o.m.name) + '</b><small>' + (o.after != null ? 'then ' + brg(o.after) : 'the end of the route') + '</small>' : !o.ok ? '<b>Plotter</b><small>' + esc(o.why) + '</small>' : '<b>' + esc(o.m.name || (o.m.finish ? 'Finish' : 'Mark')) + '</b><small>' + (o.m.finish ? 'Finish' : 'Mark ' + (o.i + 1) + ' of ' + (o.n - 1)) + (o.m.side && !o.m.finish ? ', leave to ' + o.m.side : '') + '</small>';
     var x = o.xte, mini = !!(C.mini && o.ok);
     bar.classList.toggle('mini', mini);
-    var key = (mini ? 'mini' : 'full') + '|' + C.mode + '|' + (window.FS_HIDE || 'Hide');
+    var key = (mini ? 'mini' : 'full') + '|' + C.mode + '|' + (C.view || 'deck') + '|' + (window.FS_HIDE || 'Hide');
     if (P.key !== key) { P.key = key; P.name = null;
-      P.head.innerHTML = '<button class="rpname" data-k="mini" aria-label="' + (mini ? 'Show all the figures' : 'Show one line') + '"></button>' + modeBtn() + (mini ? '' : '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button>'); }
+      P.head.innerHTML = '<button class="rpname" data-k="mini" aria-label="' + (mini ? 'Show all the figures' : 'Show one line') + '"></button>' + modeBtn() + viewSw() + (mini ? '' : '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button>'); }
     var nb = P.head.querySelector('.rpname');
     var nm = mini ? '<b>' + esc(o.m.name || 'Mark') + ' <em>▾ more</em></b><span class="rpline">' + brg(o.btw) + ' · ' + dist(o.dtw) + (x ? ' · XTE ' + (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '') + '</span>' : name;
     if (P.name !== nm) { P.name = nm; nb.innerHTML = nm; }
@@ -155,9 +155,22 @@
     if (t.dataset.k === 'prev' || t.dataset.k === 'next') { var c = course(); if (!c) return; setMark((MKS[c.key] || 0) + (t.dataset.k === 'next' ? 1 : -1)); return; }
     if (t.dataset.k === 'mini') { C.mini = !C.mini; saveC(); tick(true); }
     if (t.dataset.k === 'mode') { C.mode = C.mode === 'route' ? 'mark' : 'route'; saveC(); tick(true); }
+    if (t.dataset.k === 'view') { viewSet((C.view || 'deck') === 'deck' ? 'nav' : 'deck'); }
   }
+  /* ---- DECK and NAV views (Stuart 22 Nov 08:52: "Add to all four"; Route+ since 13 Nov). DECK: the boat, the plotter, the route
+     followed only, AIS, land and depth, the track; no other models, wind or tide arrows; it always opens clean (22 Nov 09:35). NAV: the full
+     picture. Turning PLOT off brings back the NAV layers. ---- */
+  var VK = 'fs-views', V = ld(VK, {});
+  function viewSw() { var v = C.view || 'deck'; return '<button class="rpnav rpview" data-k="view" aria-label="' + (v === 'deck' ? 'Deck view: tap for the Nav view with every route and layer' : 'Nav view: tap for the Deck view') + '" title="DECK: just the boat, the mark and your route. NAV: everything."><span' + (v === 'deck' ? ' class="on"' : '') + '>DECK</span><span' + (v === 'nav' ? ' class="on"' : '') + '>NAV</span></button>'; }
+  function layersNow() { try { return window.__navLayers ? window.__navLayers() : null; } catch (e) { return null; } }
+  function layersSet(st) { try { if (window.__navLayers && st) window.__navLayers(st); } catch (e) {} }
+  function viewApply(v) { if (v === 'deck') { var d = layersNow() || {}; d.show = Object.assign({}, d.show || {}, { wind: false, tide: false, ghosts: false, real: false, band: false, tracks: true }); d.only = true; layersSet(d); } else if (V.nav) layersSet(V.nav); }
+  function viewSet(v) { if (C.view === v && C.on) return; if (C.on && (C.view || 'deck') === 'nav') { V.nav = layersNow(); sv(VK, V); } C.view = v; saveC(); if (C.on) viewApply(v); tick(true); }
+  window.__navAfterRoutes = window.__navAfterRoutes || function () { if (C.on && (C.view || 'deck') === 'deck') layersSet({ only: true }); };
   function toggle(on) {
+    var was = !!C.on;
     C.on = on == null ? !C.on : !!on; saveC();
+    if (C.on && !was) { var nst = layersNow(); if (nst) { V.nav = nst; sv(VK, V); } viewApply(C.view || 'deck'); } else if (!C.on && was && (C.view || 'deck') === 'deck' && V.nav) layersSet(V.nav);
     var b = document.getElementById('fsPlotBtn'); if (b) b.setAttribute('aria-pressed', String(C.on));
     if (C.on) { try { if (window.__navLiveOn) window.__navLiveOn(true); if (window.__navPanelMin) window.__navPanelMin(); setTimeout(function () { var o0 = calc(); if (o0.ok && window.__navScale) window.__navScale(Math.max(0.5, Math.min(20, o0.dtw * 1.3))); }, 300); } catch (e) {} }
     tick(true);

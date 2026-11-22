@@ -138,7 +138,12 @@
     [].forEach.call(p.querySelectorAll('[data-k]'), function (b) { b.onclick = function () { C.boxes[i] = b.dataset.k; save(); p.hidden = true; tick(); }; });
     p.querySelector('[data-x]').onclick = function () { p.hidden = true; };
   }
+  /* 22 Nov (navigator review, finding 2): without the boat's instruments (Route and Mark) "% of polar" can never fill, so the 4th
+     default box is VMC to the mark, and a saved "% of polar" moves to VMC. Route+ and Mark+ (window.__navBoat) keep it. */
+  var NOBOAT = null;
+  function noBoatFix() { if (NOBOAT !== null) return; NOBOAT = !window.__navBoat; if (NOBOAT && C.boxes.indexOf('perf') >= 0 && C.boxes.indexOf('vmc') < 0) { C.boxes[C.boxes.indexOf('perf')] = 'vmc'; save(); } }
   function tick() {
+    noBoatFix();
     ORDER.forEach(function (k) { if (C.boxes.indexOf(k) < 0) return; var v = null; try { v = F[k].f(); } catch (e) {} if (!F[k].noavg) push(k, v); });
     if (!on || !el) return;
     /* the Live GPS box is hidden on the deck screen, so its dead reckoning warning comes here (Stuart 15 Nov, H) */

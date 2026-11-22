@@ -119,16 +119,6 @@
   "t": "Send to the crew",
   "sec": 16.3
  },
- "fleet-e7af0192": {
-  "f": "fleet-e7af0192.mp3",
-  "t": "Fleet",
-  "sec": 10.3
- },
- "tide-gate-5cca65c": {
-  "f": "tide-gate-5cca65c.mp3",
-  "t": "Tide gate",
-  "sec": 37.4
- },
  "solent-races-on-the-chart-8ca1d189": {
   "f": "solent-races-on-the-chart-8ca1d189.mp3",
   "t": "Solent races on the chart",
@@ -418,5 +408,30 @@
   "f": "screen-and-battery-ad9a042d.mp3",
   "t": "Screen and battery",
   "sec": 69.6
+ },
+ "20-20-four-big-numbers-17bae6c3": {
+  "f": "20-20-four-big-numbers-17bae6c3.mp3",
+  "t": "20/20: four big numbers",
+  "sec": 39.3
+ },
+ "deck-and-nav-the-plotter-s-two-views-631ab43": {
+  "f": "deck-and-nav-the-plotter-s-two-views-631ab43.mp3",
+  "t": "DECK and NAV: the plotter\u2019s two views",
+  "sec": 32.0
+ },
+ "helm-the-helmsman-s-screen-6f6b8fcc": {
+  "f": "helm-the-helmsman-s-screen-6f6b8fcc.mp3",
+  "t": "HELM: the helmsman\u2019s screen",
+  "sec": 60.0
+ },
+ "tide-gate-7d540e56": {
+  "f": "tide-gate-7d540e56.mp3",
+  "t": "Tide gate",
+  "sec": 38.4
+ },
+ "fleet-13680e24": {
+  "f": "fleet-13680e24.mp3",
+  "t": "Fleet",
+  "sec": 84.5
  }
 }

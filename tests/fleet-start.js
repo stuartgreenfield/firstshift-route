@@ -1,0 +1,31 @@
+/* Stuart 22 Nov 15:09: each boat you race has its own start: default yours, 15/10/5 min before, 5/10/15/30 min after, or an exact time
+   (UTC or local). The fleet gaps use it. Run: node tests/fleet-start.js <url> */
+const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
+let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block', });
+  await c.route(/open-meteo|googleapis|openseamap/, r => r.fulfill({ status: 200, body: '' }));
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); ['fs-wizdone', 'fs-boatset', 'fs-autostart'].forEach(k => localStorage.setItem(k, '1')); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/channel-area/?race=cervantes');
+  await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length && document.getElementById('prog').hidden && !/Refining|coming/.test(document.getElementById('runNote').textContent), null, { timeout: 600000 }); await p.waitForTimeout(1500);
+  await p.evaluate(() => { const s = document.getElementById('aisSrc'); s.value = 'test'; s.dispatchEvent(new Event('change')); const t = document.getElementById('time'); t.value = 300; t.dispatchEvent(new Event('input', { bubbles: true })); }); await p.waitForTimeout(2500);
+  const pick = await p.evaluate(() => { const b = [...document.querySelectorAll('#aisTable [data-rb]')][0]; b.click(); return b.dataset.rb; }); await p.waitForTimeout(400);
+  await p.evaluate(m => { const box = document.getElementById('rb' + m); box.querySelector('input').value = '1.021'; box.querySelector('[data-rbok]').click(); }, pick); await p.waitForTimeout(2500);
+  const gap = () => p.evaluate(m => { const r = document.querySelector('#aisTable tr[data-mmsi="' + m + '"]'); const t = r && r.querySelector('.fgap') ? r.querySelector('.fgap').textContent : ''; const g = /At this point: (level|you (?:(\d+)h(\d\d)|(\d+) min) (ahead|behind))/.exec(t); if (!g) return null; if (g[1] === 'level') return 0; const mins = g[2] ? +g[2] * 60 + +g[3] : +g[4]; return g[5] === 'ahead' ? mins : -mins; }, pick);
+  const nudge = () => p.evaluate(() => { const s = document.getElementById('time'); s.value = 301 + (s.value % 2); s.dispatchEvent(new Event('input', { bubbles: true })); });
+  await nudge(); await p.waitForTimeout(2500); const g0 = await gap(); ok(g0 != null, 'Gap shows with the boat on your start', g0);
+  const opts = await p.evaluate(() => { const s = document.querySelector('#mfList select[data-st]'); return s ? [...s.options].map(o => o.text) : null; });
+  ok(opts && opts.join('|') === 'Same start as you|15 min before you|10 min before you|5 min before you|5 min after you|10 min after you|15 min after you|30 min after you|Exact time…', 'Start choices as asked, default your start', opts);
+  const lbl = () => p.evaluate(() => document.querySelector('#mfList .mfat').textContent);
+  const l0 = await lbl();
+  await p.evaluate(() => { const s = document.querySelector('#mfList select[data-st]'); s.value = '30'; s.dispatchEvent(new Event('change')); }); await p.waitForTimeout(2500); await nudge(); await p.waitForTimeout(2500);
+  const l30 = await lbl(), g30 = await gap();
+  const mm = t => { const m = /(\d\d):(\d\d)/.exec(t); return m ? +m[1] * 60 + +m[2] : null; };
+  ok(((mm(l30) - mm(l0)) + 1440) % 1440 === 30, 'Its start shows 30 min after yours', [l0, l30]);
+  ok(g0 != null && g30 != null && (g0 - g30) >= 25 && (g0 - g30) <= 35, 'A 30 min later start moves "At this point" about 30 min corrected their way', { before: g0, after: g30 });
+  await p.evaluate(() => { const s = document.querySelector('#mfList select[data-st]'); s.value = 'x'; s.dispatchEvent(new Event('change')); }); await p.waitForTimeout(400);
+  const ex = await p.evaluate(() => { const x = document.querySelector('#mfList .mfx'); return x && !x.hidden; }); ok(ex, 'Exact time shows a time box and UTC or Local');
+  await p.evaluate(() => { const x = document.querySelector('#mfList .mfx'); x.querySelector('input').value = '11:40'; x.querySelector('select').value = 'utc'; x.querySelector('.mfok').click(); }); await p.waitForTimeout(2000);
+  const st = await p.evaluate(() => { const k = Object.keys(localStorage).find(k => k.indexOf('fs-fleet-') === 0); return JSON.parse(localStorage.getItem(k))[0]; });
+  ok(st.at && new Date(st.at * 1000).toISOString().slice(11, 16) === '11:40' && st.off == null, 'Exact 11:40 UTC is kept with the boat', st);
+  const kept = await p.evaluate(() => document.querySelector('#mfList select[data-st]').value); ok(kept === 'x', 'The list shows Exact time after setting it', kept);
+  ok(!errs.length, 'No script errors', errs.slice(0, 2)); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

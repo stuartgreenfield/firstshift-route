@@ -1,0 +1,167 @@
+{
+ "ais.js": {
+  "over": 2,
+  "max": 33,
+  "n": 24
+ },
+ "app.js": {
+  "over": 68,
+  "max": 154,
+  "n": 1927
+ },
+ "astro.js": {
+  "over": 1,
+  "max": 19,
+  "n": 52
+ },
+ "boat.js": {
+  "over": 1,
+  "max": 16,
+  "n": 33
+ },
+ "deck.js": {
+  "over": 2,
+  "max": 23,
+  "n": 102
+ },
+ "engine.js": {
+  "over": 8,
+  "max": 60,
+  "n": 187
+ },
+ "fscore.js": {
+  "over": 1,
+  "max": 16,
+  "n": 111
+ },
+ "fsdemo.js": {
+  "over": 0,
+  "max": 12,
+  "n": 20
+ },
+ "fsdrag.js": {
+  "over": 3,
+  "max": 26,
+  "n": 92
+ },
+ "fshelm.js": {
+  "over": 0,
+  "max": 15,
+  "n": 40
+ },
+ "fshelp.js": {
+  "over": 0,
+  "max": 5,
+  "n": 16
+ },
+ "fshelpimg.js": {
+  "over": 0,
+  "max": 0,
+  "n": 0
+ },
+ "fsoff.js": {
+  "over": 1,
+  "max": 27,
+  "n": 66
+ },
+ "fsplot.js": {
+  "over": 5,
+  "max": 53,
+  "n": 62
+ },
+ "fsprefs.js": {
+  "over": 0,
+  "max": 10,
+  "n": 47
+ },
+ "fsset.js": {
+  "over": 0,
+  "max": 6,
+  "n": 34
+ },
+ "fstour.js": {
+  "over": 1,
+  "max": 16,
+  "n": 74
+ },
+ "fswind.js": {
+  "over": 1,
+  "max": 28,
+  "n": 12
+ },
+ "helpfind.js": {
+  "over": 1,
+  "max": 35,
+  "n": 122
+ },
+ "logpdf.js": {
+  "over": 1,
+  "max": 17,
+  "n": 28
+ },
+ "mark.js": {
+  "over": 15,
+  "max": 145,
+  "n": 186
+ },
+ "markhelp.js": {
+  "over": 1,
+  "max": 32,
+  "n": 71
+ },
+ "qr.js": {
+  "over": 5,
+  "max": 42,
+  "n": 118
+ },
+ "router.js": {
+  "over": 4,
+  "max": 107,
+  "n": 95
+ },
+ "sails.js": {
+  "over": 1,
+  "max": 19,
+  "n": 70
+ },
+ "saver.js": {
+  "over": 0,
+  "max": 5,
+  "n": 7
+ },
+ "setorder.js": {
+  "over": 1,
+  "max": 72,
+  "n": 29
+ },
+ "solent.js": {
+  "over": 42,
+  "max": 157,
+  "n": 510
+ },
+ "startcoach.js": {
+  "over": 1,
+  "max": 51,
+  "n": 28
+ },
+ "tidegate.js": {
+  "over": 4,
+  "max": 25,
+  "n": 61
+ },
+ "tracks.js": {
+  "over": 0,
+  "max": 13,
+  "n": 41
+ },
+ "waypoints.js": {
+  "over": 2,
+  "max": 44,
+  "n": 102
+ },
+ "worker.js": {
+  "over": 0,
+  "max": 14,
+  "n": 5
+ }
+}

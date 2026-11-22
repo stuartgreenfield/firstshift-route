@@ -1,0 +1,17 @@
+/* Stuart 22 Nov: DECK | NAV on Route's plotter bar, full and one line, ROUTE and MARK: no button overlaps the name or the readout, nothing spills. Run: node tests/plotbar-view.js <url> */
+const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
+let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block', permissions: ['geolocation'], geolocation: { latitude: 50.62, longitude: -1.6 } });
+  await c.route(/open-meteo|googleapis|openseamap/, r => r.fulfill({ status: 200, body: '' }));
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); ['fs-wizdone', 'fs-boatset', 'fs-autostart'].forEach(k => localStorage.setItem(k, '1')); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/channel-area/?race=cervantes');
+  await p.waitForFunction(() => document.getElementById('liveBtn') && document.getElementById('fsDeckBtn'), null, { timeout: 400000 }); await p.waitForTimeout(1500);
+  await p.evaluate(() => document.getElementById('liveBtn').click()); await p.waitForTimeout(2500); await p.evaluate(() => document.getElementById('liveBtn').click()); await p.waitForTimeout(800);
+  await p.evaluate(() => document.querySelectorAll('#gpsMenu').forEach(m => m.hidden = true)); await p.evaluate(() => document.getElementById('fsPlotBtn').click()); await p.waitForTimeout(1500);
+  const chk = (n) => p.evaluate(n => { const h = document.querySelector('.rpname').parentElement, nm = document.querySelector('.rpname'), kids = [...h.querySelectorAll('.rpnav')].map(e => e.getBoundingClientRect()), R = nm.getBoundingClientRect();
+    const lap = kids.some(k => k.left < R.right - 1 && k.right > R.left + 1 && k.top < R.bottom - 1 && k.bottom > R.top + 1); const ln = nm.querySelector('.rpline'); return { n: (document.querySelector('.rplotbar').classList.contains('mini') ? 'one line' : 'full') + ', ' + (document.querySelector('.rpmode') || {}).textContent, lap, spill: h.scrollWidth > h.clientWidth + 1 || (ln && ln.getBoundingClientRect().right > R.right + 1), sw: !!document.querySelector('.rpview') }; }, n);
+  const r = []; r.push(await chk('full')); await p.evaluate(() => document.querySelector('.rpname').click()); await p.waitForTimeout(700); r.push(await chk('one line'));
+  await p.evaluate(() => document.querySelector('.rpmode').click()); await p.waitForTimeout(700); r.push(await chk('one line, other mode')); await p.evaluate(() => document.querySelector('.rpname').click()); await p.waitForTimeout(700); r.push(await chk('full, other mode'));
+  if (process.env.SP) await p.screenshot({ path: process.env.SP + '/plotbar.png' });
+  r.forEach(x => ok(x.sw && !x.lap && !x.spill, x.n + ': DECK | NAV shown, no overlap, nothing spills', x));
+  ok(!errs.length, 'No script errors', errs.slice(0, 2)); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
