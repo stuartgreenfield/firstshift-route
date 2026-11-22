@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-22T14:47:23.573Z",
+ "log": [
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 75,
+   "note": "Finer routes in 53.7 s. Best known: in ECMWF IFS’s forecast the ECMWF AIFS track is 11.3 min quicker than its own route."
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 143,
+   "note": "Finer routes in 54.0 s. Best known: in Meteo-France AROME’s forecast the DWD ICON-EU track is 275.0 min quicker than its"
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 211,
+   "note": "Finer routes in 53.4 s. Times: first routes 1.9 s, standard 13.7 s, finer 67.1 s. The faint line is the standard route. "
+  }
+ ]
+}

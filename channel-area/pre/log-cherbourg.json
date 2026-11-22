@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-22T14:46:54.742Z",
+ "log": [
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 77,
+   "note": "Finer routes in 54.2 s. Best known: in ECMWF AIFS’s forecast the DWD ICON-EU track is 4.3 min quicker than its own route"
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 146,
+   "note": "Finer routes in 54.2 s. Best known: in NOAA GFS’s forecast the Combined (6 models) track is 6.8 min quicker than its own"
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 215,
+   "note": "Finer routes in 53.8 s. Best known: in Met Office UKV’s forecast the ECMWF AIFS track is 1.5 min quicker than its own ro"
+  }
+ ]
+}
