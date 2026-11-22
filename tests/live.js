@@ -24,7 +24,10 @@ const adiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
     if (!(await p.evaluate(() => !!window.__fsPlan()))) { const nt = await p.evaluate(() => document.getElementById('runNote').textContent); if (/set on the day/i.test(nt)) { out.push('SKIP | ' + race + ' | course set on the day: nothing to route'); await ctx.close(); continue; } }   /* a race whose course is given on the day has no route to measure */
     const setup = async () => { const plan = await p.evaluate(() => window.__fsPlan()); P = plan.path; TS = plan.ts; T0 = plan.T0;
       k = Math.floor(P.length / 3);
-      for (; k < P.length - 3; k++) { const s1 = rhumb(P[k - 1], P[k]), s2 = rhumb(P[k], P[k + 1]), s3 = rhumb(P[k + 1], P[k + 2]); if (s2.nm > 0.4 && adiff(s1.brg, s2.brg) < 8 && adiff(s2.brg, s3.brg) < 8 && P[k][2] === P[k + 1][2]) break; }
+      /* open water only (22 Nov): 1 nm either side of the track and 1.5 nm round each of those points clear of land, so a straight way back can exist
+         (the 22 Nov 03:00 check measured in the Needles Channel, where the Shingles and the Needles leave none, and Route rightly offered none) */
+      const open = async (m, b) => { const pts = []; for (const off of [-90, 90]) { const q = dest(m, (b + off + 360) % 360, 1.0); pts.push(q); for (let a = 0; a < 360; a += 30) pts.push(dest(q, a, 1.5)); } return p.evaluate(ps => !window.__fsOnLand || ps.every(x => !window.__fsOnLand(x[0], x[1])), pts); };
+      for (; k < P.length - 3; k++) { const s1 = rhumb(P[k - 1], P[k]), s2 = rhumb(P[k], P[k + 1]), s3 = rhumb(P[k + 1], P[k + 2]); if (s2.nm > 0.4 && adiff(s1.brg, s2.brg) < 8 && adiff(s2.brg, s3.brg) < 8 && P[k][2] === P[k + 1][2] && await open([(P[k][0] + P[k + 1][0]) / 2, (P[k][1] + P[k + 1][1]) / 2], s2.brg)) break; }
       A = P[k]; Bp = P[k + 1]; trk = rhumb(A, Bp).brg; mid = [(A[0] + Bp[0]) / 2, (A[1] + Bp[1]) / 2]; tMid = (TS[k] + TS[k + 1]) / 2; };
     await setup();
     const at = async (tH, pos, limits) => {
@@ -74,7 +77,7 @@ const adiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
     rec(name, '1.5 nm off, limit 1.0: alert', r.alarm, r.alarm ? 'alert' : 'no alert', 'alert');
     // G: sailing at 6 kn on 135°T, fixes 10 s apart (GPS speed not given, so Route works it out)
     let pos = mid, t = tMid; for (let i = 0; i < 8; i++) { pos = dest(pos, 135, 6 * 10 / 3600); t += 10 / 3600; r = await at(t, pos); }
-    const sog = +(r.text.match(/SOG ([\d.]+) kn/) || [0, 'NaN'])[1], cog = +(r.text.match(/COG (\d+)°T/) || [0, 'NaN'])[1];
+    const sog = +(r.text.match(/SOG\s*([\d.]+)\s*kn/) || [0, 'NaN'])[1], cog = +(r.text.match(/COG\s*(\d+)°T/) || [0, 'NaN'])[1];   /* label and figure may sit with no space between (live box, 21 Nov) */
     rec(name, 'sailing 6 kn on 135°T: SOG', Math.abs(sog - 6) < 0.2, sog + ' kn', '6.0 kn');
     rec(name, 'sailing 6 kn on 135°T: COG', adiff(cog, 135) < 2, cog + '°T', '135°T');
     const trail = await p.evaluate(() => JSON.parse(localStorage.getItem('fs-livetrail') || '[]').length);
