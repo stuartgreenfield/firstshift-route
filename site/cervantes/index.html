@@ -614,6 +614,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <p class="note warnt" id="fleetEmpty" hidden><span class="offsh">No entry list for this race yet. </span>Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>
       <h4 class="xh">Boats you are racing</h4>
+      <button class="btn" id="mfDemo" type="button">Try it with a test fleet</button>
       <div id="mfList"></div>
       <div class="mfadd"><input id="mfName" placeholder="Boat name" maxlength="40" aria-label="Boat name"><input id="mfTcc" type="number" inputmode="decimal" step="0.001" min="0.5" max="2" placeholder="TCC" aria-label="IRC TCC"><button class="btn" id="mfAdd">Add</button></div>
       <details class="sltext"><summary>Paste or upload an entry list</summary><p class="note">One boat per line: name and TCC, for example <i>Jolly Jack, 1.021</i>. Sail number, class and MMSI columns are read too. Copy it from the race entry list or a spreadsheet, or upload the file (.xlsx, CSV or text). Boats on AIS are then found by MMSI, name or sail number and show their corrected gap.</p><textarea id="mfPaste" spellcheck="false" style="min-height:120px"></textarea><button class="btn" id="mfPasteGo">Add these boats</button> <button class="btn" id="mfFileBtn">Upload a file</button><input type="file" id="mfFile" accept=".xlsx,.csv,.tsv,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden><p class="note" id="mfMsg" role="status" hidden></p></details>

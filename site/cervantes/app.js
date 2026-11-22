@@ -2959,13 +2959,27 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     mfSetStart(i, { at: ep }); return true; }
   function mfShow() {
     var a = myFleet(), esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    $('mfList').innerHTML = a.length ? a.map(function (f, i) { var cur = f.at ? 'x' : String(f.off || 0); return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>TCC ' + f.tcc.toFixed(3) + (f.cls ? ' · ' + esc(f.cls) : '') + (f.sail ? ' · ' + esc(f.sail) : '') + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>' +
+    $('mfList').innerHTML = a.length ? a.map(function (f, i) { var cur = f.at ? 'x' : String(f.off || 0); return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>' + (f.demo ? 'Test boat · ' : '') + 'TCC ' + f.tcc.toFixed(3) + (f.cls ? ' · ' + esc(f.cls) : '') + (f.sail ? ' · ' + esc(f.sail) : '') + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>' +
       '<div class="mfst"><label>Starts <select data-st="' + i + '" aria-label="Start of ' + esc(f.name) + '">' + MF_OFF.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === cur ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label><span class="mfat">' + esc(mfStartLabel(f)) + '</span>' +
       '<span class="mfx" data-x="' + i + '"' + (cur === 'x' ? '' : ' hidden') + '><input type="time" aria-label="Exact start time" value="' + (f.at ? new Date(f.at * 1000).toISOString().slice(11, 16) : '') + '"><select aria-label="Time zone"><option value="utc">UTC</option><option value="local">Local</option></select><button class="slb mfok">Set</button></span></div>'; }).join('') : '<p class="note">None added yet.</p>';
     [].forEach.call($('mfList').querySelectorAll('button[data-i]'), function (b) { b.onclick = function () { var x = myFleet(); x.splice(+b.dataset.i, 1); setMyFleet(x); }; });
     [].forEach.call($('mfList').querySelectorAll('select[data-st]'), function (sel) { sel.onchange = function () { var i = +sel.dataset.st, x = $('mfList').querySelector('[data-x="' + i + '"]'); if (sel.value === 'x') { x.hidden = false; x.querySelector('input').focus(); return; } x.hidden = true; mfSetStart(i, { off: +sel.value }); }; });
     [].forEach.call($('mfList').querySelectorAll('.mfok'), function (b) { b.onclick = function () { var x = b.parentNode, i = +x.dataset.x; if (!mfExact(i, x.querySelector('input').value, x.querySelector('select').value)) { busy('Enter the start time, for example 10:15.'); setTimeout(function () { busy(''); }, 2000); } }; });
   }
+  /* Stuart 22 Nov 17:12: a test mode so a user can see how the fleet works: pretend AIS boats sailing the race, added to the fleet with
+     ratings (one starting 10 min after you), the time moved into the race, so "At this point" and "Routed finish" show. End removes them. */
+  var FD_TCC = [1.021, 0.995, 1.050, 1.012, 0.978, 1.034, 1.007, 1.063];
+  function fdBoats() { AIS.fleet = null; return (aisFleet() || []).filter(function (b) { return b.kind === 'race'; }).map(function (b, i) { return { name: b.name, tcc: FD_TCC[i % 8], mmsi: b.mmsi, demo: true, off: i === 2 ? 10 : undefined }; }); }
+  function fleetDemo() {
+    var on = myFleet().some(function (f) { return f.demo; });
+    if (on) { setMyFleet(myFleet().filter(function (f) { return !f.demo; })); $('aisSrc').value = store('fs-aisPrev') || 'off'; $('aisSrc').dispatchEvent(new Event('change')); mfSay('Test fleet ended.'); return fdBtn(); }
+    if (!S.sel || !S.start) { mfSay('Set your boat and start first, so there is a route for the test fleet to sail.'); return; }
+    store('fs-aisPrev', $('aisSrc').value); $('aisSrc').value = 'test'; $('aisSrc').dispatchEvent(new Event('change'));
+    var keep = myFleet().filter(function (f) { return !f.demo; }), d = fdBoats(); setMyFleet(keep.concat(d));
+    if (S.t < S.start.t + 1) setTime(Math.min(S.start.t + 1.5, S.tmax != null ? S.tmax : S.start.t + 1.5));
+    mfSay('Test fleet: ' + d.length + ' pretend boats on AIS, added with ratings. Each row in the AIS list and the fleet table shows the gap in corrected time. Move the slider to watch it change. Tap again to end.'); fdBtn();
+  }
+  function fdBtn() { var b = $('mfDemo'); if (b) b.textContent = myFleet().some(function (f) { return f.demo; }) ? 'End the test fleet' : 'Try it with a test fleet'; }
   function mfSay(t) { $('mfMsg').textContent = t; $('mfMsg').hidden = false; }
   function mfImport(text) {   /* an entry list: kept with each boat's start, and its MMSI unless the list gives a new one */
     var R = FSENT.parse(text), a = myFleet(), by = {};
@@ -2984,6 +2998,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     chipStart();
     $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCC between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
     $('mfPasteGo').onclick = function () { var t = $('mfPaste').value; if (!t.trim()) { mfSay('Paste a list first.'); return; } mfSay(mfImport(t)); $('mfPaste').value = ''; };
+    if (AIS.src !== 'test' && myFleet().some(function (f) { return f.demo; })) store(mfKey(), JSON.stringify(myFleet().filter(function (f) { return !f.demo; })));   /* a test fleet never outlives the session */
+    $('mfDemo').onclick = fleetDemo; fdBtn();
     $('mfFileBtn').onclick = function () { $('mfFile').click(); };
     $('mfFile').onchange = function () { var f = this.files[0]; this.value = ''; if (!f) return; var r = new FileReader(); r.onload = function () { FSENT.fileText(r.result).then(function (t) { mfSay(mfImport(t)); }, function (e) { mfSay(e.message); }); }; r.readAsArrayBuffer(f); };
     mfShow();
