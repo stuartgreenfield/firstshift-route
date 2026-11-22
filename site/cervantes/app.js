@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.98';
+  var VERSION = 'FirstShift Route v0.12.99';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -339,6 +339,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function omFetch(G, model) { var ctl = typeof AbortController === 'function' ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 25000);
     return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + G.lats.join(',') + '&longitude=' + G.lons.join(',') + '&hourly=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms&timeformat=unixtime&forecast_days=7' + (model ? '&models=' + model : ''), ctl ? { signal: ctl.signal } : {})
       .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Open-Meteo answered ' + r.status); return r.json(); }, function (e) { clearTimeout(tm); throw e; }); }
+  /* Stuart 22 Nov 07:55 (decided 08:05): Get newest on a finish box fetches that one model's newest run to this device, then routes again */
+  window.__fsCanFetch = function (id) { return !!(OMN[id] && P && P.wind && P.wind[id]); };
+  window.__fsGetNewest = function (id) {
+    var L = (meta.layers || []).filter(function (x) { return x.id === id; })[0]; if (!L || !OMN[id] || !navigator.onLine) return Promise.resolve(false);
+    var G = omGrid(); return omFetch(G, OMN[id]).then(function (j) { var o = omLayer(G, j, id, L.name.replace(/ \(this device\)$/, '') + ' (this device)'); L.dev = o.full; L.name = o.spec.name; L.device = true; L.devAt = Date.now(); FSRouter.addLayer(P, o.spec, o.buf); S.loaded[id] = 'dev';
+      S.omNote = 'Fetched on this device from Open-Meteo: ' + short(id) + ' (its newest run).'; var copy = o.buf.slice(0);
+      return all(function () { return { msg: { type: 'layer', L: o.spec, buf: copy }, tr: [copy] }; }); })
+      .then(function () { try { modelsList(); selects(); dataTable(); chip(); } catch (e) {} S.key = null; S.from = null; userRun(); return true; }, function (e) { L.devErr = e && e.message; return false; }); };
   function omFallback() {
     var age = (Date.now() / 1000 - meta.t0) / 3600, none = !Object.keys(P.wind).length;
     if (navigator.onLine && !none) { var nowS = Date.now() / 1000, stale = meta.layers.filter(function (L) { return L.kind === 'wind' && OMN[L.id] && P.wind[L.id] && !L.device && L.run_t0 && (nowS - L.run_t0) / 3600 > 18; });
@@ -379,7 +387,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.98 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.99 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -812,7 +820,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('courseNote').innerHTML = (r.custom ? 'Your own course' + (r.nm ? ', about ' + r.nm + ' nm' : '') + '. ' : (r.nm ? 'About ' + r.nm + ' nm' + (r.nmSource ? ' (' + r.nmSource + ')' : '') + '. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>') + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
     try { history.replaceState(null, '', location.pathname + (!r.custom && r.id !== HERE && r.page ? '?race=' + encodeURIComponent(r.id) : '')); } catch (e) {}   /* the address always matches what is on screen, so a reload reopens it */
     try { var fk = raceKey(); if (FIX.on && FIX.for && FIX.for !== fk && !window.FS_SOLENT) { FIX.on = false; fixSave(true); busy('Fixed wind is off for this new race: set it again from the wind on the water.'); setTimeout(function () { busy(''); }, 4000); } if (FIX.on && !FIX.for) { FIX.for = fk; store('fs-fix', JSON.stringify(FIX)); } } catch (e) {}   /* F17 (Stuart 17 Nov 09:01): Fixed wind turns off at the start of a new course or race, so it never makes odd routes */
-    if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if (W && !(r.solent || S.inshore)) fit(); draw();   /* a Solent race keeps the chart where the user has it */
+    if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if ($('finBox')) $('finBox').innerHTML = ''; if ($('runNote')) $('runNote').textContent = ''; if ($('fleet')) $('fleet').innerHTML = ''; if (W && !(r.solent || S.inshore)) fit(); draw();   /* 22 Nov (tests/races-sweep.js): the panel's route cards and note went with the old race too, not only its lines on the chart */   /* a Solent race keeps the chart where the user has it */
   }
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
@@ -1411,7 +1419,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       S.myId = null; applyRace(id); $('races').hidden = true; startEdit(courseCopy()); }; });
     [].forEach.call($('raceList').querySelectorAll('[data-race]'), function (b) { b.onclick = function () {
       var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + pg + '/?race=' + encodeURIComponent(id); return; }
-      S.myId = null; applyRace(id); $('races').hidden = true; if (wizCourseChosen(false)) return; if (!courseIssue(meta.course)) { S.from = null; run(); } };
+      S.myId = null; applyRace(id); $('races').hidden = true;
+        /* 22 Nov (found by tests/races-sweep.js): a race set on the day no longer keeps the last race's routes on screen under its name */
+        var iss = courseIssue(meta.course); if (iss) { S.gen = (S.gen || 0) + 1; S.running = false; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = ''; $('runNote').textContent = iss; draw(); }
+        if (wizCourseChosen(false)) return; if (!iss) { S.from = null; run(); } };
     });
   }
 
@@ -2573,13 +2584,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      back, on whatever is under the finger by then. A tap the page could not act on within two seconds is dropped (a busy moment on a slow phone takes up to about 1.3 s, 21 Nov replay). */
   ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend'].forEach(function (ev) { window.addEventListener(ev, function (e) { try { if (e.isTrusted && e.timeStamp > 0 && performance.now() - e.timeStamp > 2000) { e.stopImmediatePropagation(); e.preventDefault(); } } catch (x) {} }, { capture: true, passive: false }); });
   function stripOn() { return !GPSWIN && LIVE.on && !LIVE.sim; }
-  function liveStrip() {
+  function liveStrip(noSC) {
     var f = LIVE.fix, c = LIVE.calc, n1 = function (x) { return x < 10 ? x.toFixed(1) : String(Math.round(x)); }, p3 = function (x) { return pad((x + 360) % 360) + '°'; },
       ds = function (nm) { return nm < 0.1 ? Math.round(nm * 1852) + '<i class="unit"> m</i>' : n1(nm) + '<i class="unit"> nm</i>'; }, mmss = function (t) { var a = Math.abs(Math.round(t)); return (t < 0 ? '−' : '') + Math.floor(a / 60) + ':' + ('0' + a % 60).slice(-2); },
       mm = function (m) { var a = Math.abs(Math.round(m)); return a >= 60 ? Math.floor(a / 60) + 'h' + ('0' + a % 60).slice(-2) : a + 'm'; }, warn = function (k, v) { return kv(k, v).replace('<div', '<div class="warnc"'); };
     if (!f) return kv('GPS', LIVE.err ? 'no fix' : 'finding…') + (LIVE.err ? '<div class="gpserr">' + wizEsc(LIVE.err.replace(/<[^>]+>/g, '')).slice(0, 90) + '</div>' : '');
     if (f.acc > 150) return warn('GPS', 'rough') + kv('±', ds(f.acc / 1852));
-    var h = (f.dr ? warn('DR', '±' + ds(f.rad || 0)) : '') + kv('SOG', f.sog != null ? n1(f.sog) : '--') + kv('COG', f.cog != null && f.sog > 0.5 ? p3(f.cog) : '--');
+    var h = (f.dr ? warn('DR', '±' + ds(f.rad || 0)) : '') + (noSC ? '' : kv('SOG', f.sog != null ? n1(f.sog) : '--') + kv('COG', f.cog != null && f.sog > 0.5 ? p3(f.cog) : '--'));
     if (c && c.pre) { var pr = c.pre, ln = pr.line || {}, sc = Math.max(0, Math.round(pr.secs));
       if (ln.d != null) h += (ln.over ? warn('Over', ds(ln.d)) : kv('Line', ds(ln.d))) + kv('Burn', ln.burn != null ? mmss(ln.burn) : '--');
       else h += kv('Start', p3(pr.to.brg) + ' ' + ds(pr.to.nm));
@@ -2593,7 +2604,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     return h;
   }
-  function stripShow() { var n = $('now'); if (!n) return; document.body.classList.toggle('gpsstrip', !GPSWIN); if (!stripOn()) { if (n.classList.contains('live')) { n.classList.remove('live', 'alarm'); update(); } return; }
+  /* Stuart 22 Nov 09:16 (decided 09:20): a tap on the LIVE or BOAT strip shows the PLAN figures for 10 s, in the same columns, to compare */
+  var PEEK = 0; function peeking() { return Date.now() < PEEK; }
+  (function () { var n = $('now'); if (!n) return; n.addEventListener('click', function () { if (!n.classList.contains('live') || peeking()) return; PEEK = Date.now() + 10000; update(); setTimeout(function () { PEEK = 0; n.classList.remove('peek'); update(); stripShow(); }, 10100); }); })();
+  function stripShow() { var n = $('now'); if (!n || peeking()) return; document.body.classList.toggle('gpsstrip', !GPSWIN); if (!stripOn()) { if (n.classList.contains('live')) { n.classList.remove('live', 'alarm'); update(); } return; }
     n.innerHTML = liveStrip(); n.classList.add('live'); n.classList.toggle('alarm', !!LIVE.alarm); var m = $('gpsMenu'); if (m && !m.hidden) gpsMenu(true); }
   function mkRound() { var M = LIVE.mk, mk = LIVE.calc && LIVE.calc.mark; if (!M || !mk) return; M.done.push({ name: mk.name, t: Date.now() }); M.i++; M.near = null; M.just = Date.now(); LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }
   function mkBack() { var M = LIVE.mk; if (!M || !M.i) return; M.i--; M.done.pop(); M.near = null; M.just = null; LIVE.calc = liveCalc(LIVE.fix); liveShow(); draw(); }
@@ -2896,7 +2910,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var boats = meta.fleet.filter(function (f) { return f.irc && f.start; }).map(function (f) { return { name: f.name, tcc: f.tcc, start: meta.live ? S.start.t : Math.max((f.start - T0) / 3600, S.from ? S.start.t : -1), f: f }; });
     var have = {}; boats.forEach(function (b) { have[b.name.toUpperCase()] = 1; });
     myFleet().forEach(function (m) { if (!have[m.name.toUpperCase()]) boats.push({ name: m.name, tcc: m.tcc, start: S.start.t, f: { name: m.name, tcc: m.tcc, mine: true, mmsi: m.mmsi } }); });
-    return poolShort({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: S.sel.r.path, boats: boats.map(function (b) { return { tcc: b.tcc, start: b.start }; }) }).then(function (ts) {
+    return poolShort({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: S.sel.r.path, tccMe: +$('tcc').value || 1, boats: boats.map(function (b) { return { tcc: b.tcc, start: b.start }; }) }).then(function (ts) {
       S.ghosts = boats.map(function (b, i) { return { name: b.name, tcc: b.tcc, f: b.f, ts: ts[i] }; });
     });
   }
@@ -3332,7 +3346,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      screen always gets an immediate redraw */
   var SV = { last: 0, t: 0, touch: 0 };
   ['pointerdown', 'pointermove', 'wheel'].forEach(function (n) { window.addEventListener(n, function (e) { if (n !== 'pointermove' || e.buttons || e.pointerType === 'touch') SV.touch = Date.now(); }, { passive: true, capture: true }); });
+  /* Stuart 22 Nov 07:50 (decided 08:05): a race put away (Stop race, or the course cleared) leaves an empty race panel: one card, No race open,
+     with Choose a race and Draw a course; its route cards, checks, banner, start chip and the PLAN strip go. Route and Route+ only (Mark has its own card) */
+  function noRaceSync() { var on = !!(S.cleared && !S.inshore && !window.FS_MARK && !(S.routes && S.routes.length) && !S.edit); if (document.body.classList.contains('norace') !== on) document.body.classList.toggle('norace', on); }
+  (function () { var st = document.createElement('style'); st.textContent = '#noRace{display:none;padding:14px 4px}#noRace b{font-size:18px}body.norace #noRace{display:block}body.norace #noRace~*,body.norace #cbanner,body.norace #startChip,body.norace .bar .now{display:none!important}'; document.head.appendChild(st);
+    var pk = $('nrPick'), dr = $('nrDraw'); if (pk) pk.onclick = function (e) { e.stopPropagation(); var rb = $('raceBtn'); if (rb && rb.onclick) rb.onclick(e); }; if (dr) dr.onclick = function (e) { e.stopPropagation(); newCourse(); }; })();   /* the tap stops here, or the page's tap-away closes the menu it opened */
   function draw() {
+    try { noRaceSync(); } catch (e) {}
     if (!window.__fsSaver || Date.now() - SV.touch < 1500) { SV.last = Date.now(); drawNow(); return; }
     var wait = 500 - (Date.now() - SV.last); if (wait <= 0) { clearTimeout(SV.t); SV.t = 0; SV.last = Date.now(); drawNow(); return; }
     if (!SV.t) SV.t = setTimeout(function () { SV.t = 0; SV.last = Date.now(); drawNow(); }, wait);
@@ -3693,12 +3713,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         /* the plan over the ground, tide included, as the route is sailed (Stuart 14 Nov: BSP and SOG, VMC over the ground) */
         var gx = q.bsp * Math.sin(q.hdg * R) + (q.cu || 0), gy = q.bsp * Math.cos(q.hdg * R) + (q.cv || 0), sog = Math.hypot(gx, gy), cog = Math.atan2(gx, gy) / R;
         var vmc = sog * Math.cos((cog - FSRouter.brg(pos.la, pos.lo, tg[0], tg[1])) * R);
-        h = kv('Hdg', pad(q.hdg) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('SOG', sog.toFixed(1)) + kv('COG', pad((cog + 360) % 360) + '°') + kv('TWA', Math.abs(Math.round(q.twa)) + '°<i class="nside ' + (q.twa < 0 ? 's" data-s="S">STBD' : 'p" data-s="P">PORT') + '</i>') + kv('TWS', q.tws.toFixed(1)) + kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + '<i class="unit"> m</i>' : '-');
+        h = kv('SOG', sog.toFixed(1)) + kv('COG', pad((cog + 360) % 360) + '°') + kv('BSP', q.bsp.toFixed(1)) + kv('TWA', Math.abs(Math.round(q.twa)) + '°<i class="nside ' + (q.twa < 0 ? 's" data-s="S">STBD' : 'p" data-s="P">PORT') + '</i>') + kv('TWS', q.tws.toFixed(1)) + kv('Hdg', pad(q.hdg) + '°') +   /* Stuart 22 Nov 09:16: one column order for PLAN, LIVE and BOAT */ kv('VMC', vmc.toFixed(1)) + kv('Sail', rig(q)) + kv('Sea', q.hs ? q.hs.toFixed(1) + '<i class="unit"> m</i>' : '-');
       } else if (pos && pos.done) h = kv(s.r.partial ? 'Forecast end' : 'Finished', clockH(s.r.finish).slice(-5)) + ['BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');   /* same seven boxes, so the time slider beside them never changes width under your finger */
       else h = ['Hdg', 'BSP', 'SOG', 'COG', 'TWA', 'TWS', 'VMC', 'Sail', 'Sea'].map(function (k) { return kv(k, '-'); }).join('');
     } else if (rhumbOn()) h = rhumbStrip();
     $('now').classList.toggle('rhumb', !s && rhumbOn() && !!RH.ts);
-    if (stripOn()) stripShow(); else { $('now').classList.remove('live', 'alarm'); $('now').innerHTML = h; } followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
+    if ((stripOn() || (typeof boatData === 'function' && boatData())) && !peeking()) stripShow(); else { $('now').classList.remove('live', 'alarm', 'boatd'); $('now').classList.toggle('peek', peeking()); $('now').innerHTML = h; } followBoat(); draw(); if (S.ghosts && !$('t-fleet').hidden) fleetTable();
   }
   /* Follow the boat: with it on, moving the time slider or playing keeps the chosen route's boat in the middle of the open chart.
      Dragging the chart turns it off; the button turns it back on. */

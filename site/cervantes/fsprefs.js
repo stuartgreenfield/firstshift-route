@@ -71,7 +71,7 @@
       '<div class="npask" id="npAsk" hidden></div><p class="note" id="npNote" role="status"></p>' +
       '<p class="note">A set-up holds your settings: boat, sails, display, night mode, Deck and Nav views and clear screen. It never holds the race, its marks or recordings, so loading one cannot lose them.</p>' +
       '<h4>Copy to another device</h4><div class="xrow"><button class="btn" id="npExport" type="button">Export to a file</button><button class="btn" id="npImport" type="button">Import a file</button><input type="file" id="npFile" accept=".json,application/json" hidden></div>' +
-      '<h4 id="npClearH">Clear screen</h4><label class="nprow">Hide the menus again after <select id="npHide" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="3">3 minutes</option><option value="5">5 minutes</option></select></label>' +
+      '<h4 id="npClearH">Clear screen</h4><label class="nprow">With a boat connection, hide the menus again after <select id="npHide" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><p class="note">CLEAR leaves the chart, MOB and MENU. MENU brings back the menus and any windows that were open. With the phone\u2019s GPS, or ashore, they stay up until you tap CLEAR again; in the Route+ and Mark+ apps, while the boat\u2019s instruments are connected, they hide again after the time set here.</p>' +
       
       
       '</div>';
@@ -112,7 +112,7 @@
       var f = this.files && this.files[0]; if (!f) return;
       var r = new FileReader(); r.onload = function () { importText(String(r.result)); }; r.readAsText(f);
     };
-    $('npHide').onchange = function () { if (window.__navHide) window.__navHide(+this.value); note(+this.value ? 'Menus hide again after ' + this.value + ' minute' + (+this.value > 1 ? 's' : '') + ' without a tap.' : 'Menus stay up until you clear the screen.'); };
+    $('npHide').onchange = function () { if (window.__navHide) window.__navHide(+this.value); note(+this.value ? 'With a boat connection, menus hide again after ' + this.value + ' minute' + (+this.value > 1 ? 's' : '') + ' without a tap.' : 'Menus stay up until you clear the screen.'); };
     render();
     return true;
   }

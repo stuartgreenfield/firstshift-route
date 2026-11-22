@@ -15,6 +15,7 @@ const HONEST = /set on the day|beyond the forecasts|outside the forecast|Cannot 
   await ready(); await settle(240);
   const races = await p.evaluate(() => { const out = []; ['rmRorc', 'rmJog', 'rmOther'].forEach(id => { const bt = document.getElementById(id); if (!bt) return; bt.click(); [].forEach.call(document.querySelectorAll('#raceList [data-race]'), x => { if (!out.some(o => o.id === x.dataset.race)) out.push({ id: x.dataset.race, menu: id, name: (x.closest('.ritem') && x.closest('.ritem').querySelector('b') || {}).textContent }); }); document.getElementById('races').hidden = true; }); return out; });
   console.log('races', races.length, races.map(r => r.name).join(' | '));
+  let prevNote = null;
   for (const r of races) {
     if (process.env.ONLY && !new RegExp(process.env.ONLY, 'i').test(r.name)) continue;
     const before = p.url();
@@ -22,8 +23,9 @@ const HONEST = /set on the day|beyond the forecasts|outside the forecast|Cannot 
     await p.waitForTimeout(2500); if (p.url() !== before) await ready().catch(() => {});
     await p.evaluate(() => { const s = document.querySelector('#setupCard [data-su="start"]'); }).catch(() => {});
     const s = await settle(300);
-    const good = !!s && ((s.fins > 0 && !s.prog) || HONEST.test(s.note + ' ' + s.busy));
-    ok(good, 'Race "' + r.name + '": routes, or says plainly why not', s && { url: s.url, name: s.name, fins: s.fins, note: (s.note || s.busy).slice(0, 110) });
+    const stale = !!s && s.fins > 0 && prevNote && s.note === prevNote;   /* 22 Nov: De Guingand kept the Myth's routes under its own name */
+    const good = !!s && !stale && ((s.fins > 0 && !s.prog) || HONEST.test(s.note + ' ' + s.busy)); if (s) prevNote = s.note;
+    ok(good, 'Race "' + r.name + '": routes, or says plainly why not (not the last race\'s routes)', s && { stale, url: s.url, name: s.name, fins: s.fins, note: (s.note || s.busy).slice(0, 110) });
   }
   /* the 22 Nov sequence: an inshore race, then back to an offshore race and Route */
   if (await p.evaluate(() => !!document.getElementById('rmSolent'))) {

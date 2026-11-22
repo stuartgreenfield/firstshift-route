@@ -15,7 +15,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   });
   const ready = () => p.waitForFunction(() => window.__fsPlan && window.__fsPlan() && window.FSDeck && document.getElementById('fsDeckBtn'), null, { timeout: 300000 });
   await p.goto(BASE + '/channel-area/'); await ready(); await p.waitForTimeout(800);
-  ok(await p.evaluate(() => { const b = document.getElementById('fsDeckBtn'); const r = b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && b.textContent === 'DECK'; }), 'a DECK button on the chart, big enough for a wet finger');
+  ok(await p.evaluate(() => { const b = document.getElementById('fsDeckBtn'); const r = b.getBoundingClientRect(); return r.width >= 40 && r.height >= 40 && b.textContent === '20/20'; }), 'a 20/20 button on the chart (renamed from DECK, 22 Nov), big enough for a wet finger');
   await p.tap('#fsDeckBtn'); await p.waitForTimeout(600);
   const L = () => p.evaluate(() => { const n = document.getElementById('deckNums').getBoundingClientRect(), m = document.getElementById('map').getBoundingClientRect(), bx = [...document.querySelectorAll('.dkbox')].map(e => e.getBoundingClientRect()); return { n: [n.top, n.bottom, n.left, n.right].map(Math.round), m: [m.top, m.bottom, m.left, m.right, m.width, m.height].map(Math.round), boxes: bx.length, bh: Math.round(bx[0].height), bw: Math.round(bx[0].width), sx: document.documentElement.scrollWidth > innerWidth }; });
   const po = await L();

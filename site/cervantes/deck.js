@@ -177,7 +177,7 @@
   }
   function button() {
     if ($('fsDeckBtn')) return; var plotB = [].filter.call(document.querySelectorAll('button'), function (b) { return b.textContent.trim() === 'PLOT' && !b.closest('#deckNums'); })[0]; if (!plotB) return false;
-    var b = document.createElement('button'); b.type = 'button'; b.id = 'fsDeckBtn'; b.className = plotB.className + ' fsdeckb'; b.textContent = 'DECK'; b.title = 'Deck screen: four big numbers over the chart or a panel'; b.setAttribute('aria-pressed', 'false');
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'fsDeckBtn'; b.className = plotB.className + ' fsdeckb'; b.textContent = '20/20';   /* Stuart 22 Nov 08:55: 20/20, so it is not confused with the plotter's DECK and NAV views */  b.title = '20/20: four big numbers over the chart or a panel'; b.setAttribute('aria-pressed', 'false');
     b.onclick = function () { set(!on); }; plotB.parentNode.insertBefore(b, plotB.nextSibling); return true;
   }
   function boot() { var n = 0, t = setInterval(function () { n++; if (button() !== false || n > 60) { clearInterval(t); if (C.on) set(true); } }, 500); timer = setInterval(tick, 1000); }

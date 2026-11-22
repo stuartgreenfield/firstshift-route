@@ -104,20 +104,33 @@
   /* ---- model run ages (Stuart 13 Nov: big differences between models, partly from runs of different ages) ----
      Each model's run time and age under its finish box and beside it in Settings, Forecasts; an option to leave out
      runs older than a set age, so a stale run does not pull the combined route about. */
-  var AGEK = 'nav-age-max', dropped = {};   /* each old run is left out once; ticking it again keeps it */
+  var AGEK = 'nav-age-max', dropped = {};
+  (function () { var st = document.createElement('style'); st.textContent = '.fin .navage.amber{color:#E8A33A}.fin .navage.red{color:#E5484D;font-weight:700}.fin .navage.fresh{color:#4CC38A}.fin .navgn{display:block;margin-top:4px;padding:4px 8px;font:600 12px var(--f-body,system-ui);border-radius:8px;border:1px solid #E8A33A;background:transparent;color:#E8A33A;cursor:pointer}.fin .navgn:disabled{opacity:.7}html[data-night] .fin .navage.amber,html[data-night] .fin .navgn{color:#9A2A1A;border-color:#9A2A1A}'; (document.head || document.documentElement).appendChild(st); })();   /* each old run is left out once; ticking it again keeps it */
   function runs() { var f = fc(), o = {}; if (!f || !f.layers) return o; f.layers.forEach(function (L) { if (L.run_t0) o[L.id] = +L.run_t0; }); return o; }
   function ageH(t0) { return (Date.now() / 1000 - t0) / 3600; }
   function zh(t0) { var d = new Date(t0 * 1000); return ('0' + d.getUTCHours()).slice(-2) + 'Z'; }
   function maxAge() { try { return +(localStorage.getItem(AGEK) || 0); } catch (e) { return 0; } }
   function ageTxt(t0) { var h = ageH(t0); return zh(t0) + ' run, ' + (h < 1 ? 'under an hour' : Math.round(h) + ' h') + ' old'; }
+  /* Stuart 22 Nov 07:55 (decided 08:05): each finish box says how old the forecast it used is: amber over 12 h, red over 18 h, "older run"
+     when the newest was not ready, and Get newest (with a signal) fetches that model's newest run to this device from Open-Meteo and routes
+     again. A model already fetched to this device says so, not the server's older run (the Cervantes card said 20 h old after a fetch). */
+  function layerOf(id) { var f = fc(); return f && f.layers ? f.layers.filter(function (L) { return L.id === id; })[0] : null; }
+  function hm(ms) { var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   function finAges() {
     var R = runs(), lim = maxAge();
     [].forEach.call(document.querySelectorAll('#finBox .fin[data-id]'), function (d) {
-      var id = d.dataset.id, t0 = R[id]; var e = d.querySelector('.navage'); if (!t0) { if (e) e.remove(); return; }
+      var id = d.dataset.id, t0 = R[id], L = layerOf(id); var e = d.querySelector('.navage'), g = d.querySelector('.navgn'); if (!t0) { if (e) e.remove(); if (g) g.remove(); return; }
       if (!e) { e = document.createElement('small'); e.className = 'navage'; d.appendChild(e); }
-      var txt = ageTxt(t0); if (e.textContent !== txt) e.textContent = txt; e.classList.toggle('old', !!lim && ageH(t0) > lim);
+      var dev = !!(L && L.device), h = ageH(t0), txt = dev ? 'Fresh copy on this device, fetched ' + hm(L.devAt || Date.now()) : ageTxt(t0) + (L && L.latest === false ? ' · older run' : '');
+      if (e.textContent !== txt) e.textContent = txt; e.classList.toggle('old', !dev && !!lim && h > lim); e.classList.toggle('amber', !dev && h > 12 && h <= 18); e.classList.toggle('red', !dev && h > 18); e.classList.toggle('fresh', dev);
+      var can = !dev && (h > 12 || (L && L.latest === false)) && navigator.onLine && window.__fsCanFetch && window.__fsCanFetch(id);
+      if (can && !g) { g = document.createElement('button'); g.type = 'button'; g.className = 'navgn'; g.textContent = 'Get newest'; g.title = 'Fetch the newest run of this model to this device and route again';
+        g.onclick = function (ev) { ev.stopPropagation(); if (g.disabled) return; g.disabled = true; g.textContent = 'Fetching…'; window.__fsGetNewest(id).then(function (ok) { g.textContent = ok ? 'Fetched: routing' : 'Could not fetch'; if (!ok) setTimeout(function () { g.disabled = false; g.textContent = 'Get newest'; }, 4000); }); };
+        d.appendChild(g); }
+      else if (!can && g && !g.disabled) g.remove();
     });
   }
+
   function modelAges() {
     var box = $('models'); if (!box) return; var R = runs(), lim = maxAge(), left = [], newest = 0;
     [].forEach.call(box.querySelectorAll('[data-m]'), function (cb) { var t = R[cb.getAttribute('data-m')]; if (t && !cb.disabled && t > newest) newest = t; });   /* the newest runs are never left out, so something always routes */

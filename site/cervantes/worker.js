@@ -19,7 +19,11 @@ onmessage = function (e) {
     if (m.type === 'times') {
       var res = m.boats.map(function (b) {
         var s3 = samplers({ models: m.o.models, tide: m.o.tide, wave: m.o.wave, sea: m.o.sea, tcc: b.tcc, adj: m.o.adj, polZ: m.o.polZ, stab: m.o.stab }), path = m.path, t = b.start, ts = [t];
-        for (var i = 1; i < path.length; i++) { t = FSRouter.sailTrack([{ t: t, la: path[i - 1].la, lo: path[i - 1].lo }, { la: path[i].la, lo: path[i].lo }], s3); ts.push(t); }
+        /* 22 Nov (Stuart's photo: corrected 429h 49, +24822 min): a straight piece of your route that lies dead into the wind at the ghost's time
+           made it crawl. A piece taking more than three times yours (or no answer) is sailed at yours, scaled by the ratings, as IRC's par boat would */
+        var k = m.tccMe > 0 && b.tcc > 0 ? m.tccMe / b.tcc : 1;
+        for (var i = 1; i < path.length; i++) { var mine = path[i].t != null && path[i - 1].t != null ? (path[i].t - path[i - 1].t) * k : null, t2 = FSRouter.sailTrack([{ t: t, la: path[i - 1].la, lo: path[i - 1].lo }, { la: path[i].la, lo: path[i].lo }], s3), dt = t2 - t;
+          if (mine != null && mine >= 0 && !(dt >= 0 && dt <= 3 * mine + 0.05)) dt = mine; t += dt; ts.push(t); }
         return ts;
       });
       postMessage({ id: m.id, ok: true, r: res }); return;

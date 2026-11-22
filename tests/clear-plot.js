@@ -41,8 +41,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   ok(!!card && !(await cleared(p)), '2. A long press on CLEAR opens the choice and does not clear', card && card.opts.join(' / '));
   ok(card && card.val === '1' && card.opts[0] === 'Off: leave them up', '2. The choice shows the setting now in force, with the same options as Settings', card && card.val);
   ok(card && card.r.left >= 0 && card.r.right <= 400 && card.r.top >= 0 && card.r.bottom <= 860, '2. The choice is on the screen', card && JSON.stringify(card.r));
-  await p.selectOption('#navHideSel', '3'); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => window.__navHide()) === 3, '2. Choosing there changes the setting itself');
+  await p.selectOption('#navHideSel', '5'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => window.__navHide()) === 5, '2. Choosing there changes the setting itself');
   await p.click('#navHideOk'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => !document.getElementById('navHideCard') && !document.querySelector('.navmove-on')), '2. Done closes it, and the long press did not start moving the button');
   const cbr = await (await p.$('#navClearBtn')).boundingBox(), hit = await p.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e ? (e.id || e.className || e.tagName) + '' : null; }, [cbr.x + cbr.width / 2, cbr.y + cbr.height / 2]);

@@ -562,6 +562,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <button class="close" id="panelX" aria-label="Close results">×</button>
     </div>
     <div class="pbody" id="t-decision">
+      <div class="norace" id="noRace" role="status"><b>No race open</b><p class="note">The last race was put away; it is kept in Races, Saved routes.</p><div class="xrow"><button class="btn primary" id="nrPick" type="button">Choose a race</button><button class="btn" id="nrDraw" type="button">Draw a course</button></div></div>
       <div class="setup" id="setupCard" aria-label="Race set-up"></div>
       <div class="rerow"><button class="btn" id="run" title="Work the routes out again with the current settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>Route again</button><span class="note">Routes by itself when it opens, when new forecasts arrive and when you close Settings after a change.</span></div>
       <div class="finbox" id="finBox" aria-label="Finish times"></div>
@@ -685,7 +686,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.98</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.99</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
