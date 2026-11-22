@@ -320,8 +320,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var OMN = { ukv: 'ukmo_uk_deterministic_2km', arome: 'meteofrance_arome_france_hd', icon: 'icon_eu', ecmwf: 'ecmwf_ifs025', aifs: 'ecmwf_aifs025_single', gfs: 'gfs_global', arpege: 'meteofrance_arpege_europe' };
   function omGrid() { var c = meta.course, la = [c.start.lat, c.finish.lat], lo = [c.start.lon, c.finish.lon]; c.marks.forEach(function (m) { la.push(m.lat); lo.push(m.lon); });
     var b = dataBox || { s: Math.min.apply(0, la) - 0.7, n: Math.max.apply(0, la) + 0.7, w: Math.min.apply(0, lo) - 1, e: Math.max.apply(0, lo) + 1 };
-    var step = 0.25; while (((b.n - b.s) / step + 1) * ((b.e - b.w) / step + 1) > 300) step += 0.25;
-    var ny = Math.floor((b.n - b.s) / step) + 1, nx = Math.floor((b.e - b.w) / step) + 1, lats = [], lons = [];
+    /* 22 Nov (Stuart's Sydney Hobart screenshot): rows and columns reach past the far edges of the area; rounding down left the top row
+       of a 0.75 degree grid at 33.85 S, short of the start off Sydney Heads, so that model had no wind there */
+    var cells = function (st) { return (Math.ceil((b.n - b.s) / st - 1e-9) + 1) * (Math.ceil((b.e - b.w) / st - 1e-9) + 1); };
+    var step = 0.25; while (cells(step) > 300) step += 0.25;
+    var ny = Math.ceil((b.n - b.s) / step - 1e-9) + 1, nx = Math.ceil((b.e - b.w) / step - 1e-9) + 1, lats = [], lons = [];
     for (var y = 0; y < ny; y++) for (var x = 0; x < nx; x++) { lats.push((b.s + y * step).toFixed(2)); lons.push((b.w + x * step).toFixed(2)); }
     return { b: b, step: step, ny: ny, nx: nx, lats: lats, lons: lons }; }
   function omLayer(G, j, id, name) {   /* Open-Meteo's answer for the grid points as a wind layer; hours past the model's last one are left out */
@@ -349,8 +352,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!navigator.onLine || !(none || (meta.live && age > 18)) || P.wind.om) return Promise.resolve();   /* F1 (17 Nov): the server's runs come every six hours and arrive some eight hours after their time, so 12 hours old is normal each morning; only past 18 hours is the phone sent to Open-Meteo */
     var c = meta.course, la = [c.start.lat, c.finish.lat], lo = [c.start.lon, c.finish.lon]; c.marks.forEach(function (m) { la.push(m.lat); lo.push(m.lon); });
     var b = dataBox || { s: Math.min.apply(0, la) - 0.7, n: Math.max.apply(0, la) + 0.7, w: Math.min.apply(0, lo) - 1, e: Math.max.apply(0, lo) + 1 };
-    var step = 0.25; while (((b.n - b.s) / step + 1) * ((b.e - b.w) / step + 1) > 300) step += 0.25;
-    var ny = Math.floor((b.n - b.s) / step) + 1, nx = Math.floor((b.e - b.w) / step) + 1, lats = [], lons = [];
+    /* 22 Nov (Stuart's Sydney Hobart screenshot): rows and columns reach past the far edges of the area; rounding down left the top row
+       of a 0.75 degree grid at 33.85 S, short of the start off Sydney Heads, so that model had no wind there */
+    var cells = function (st) { return (Math.ceil((b.n - b.s) / st - 1e-9) + 1) * (Math.ceil((b.e - b.w) / st - 1e-9) + 1); };
+    var step = 0.25; while (cells(step) > 300) step += 0.25;
+    var ny = Math.ceil((b.n - b.s) / step - 1e-9) + 1, nx = Math.ceil((b.e - b.w) / step - 1e-9) + 1, lats = [], lons = [];
     for (var y = 0; y < ny; y++) for (var x = 0; x < nx; x++) { lats.push((b.s + y * step).toFixed(2)); lons.push((b.w + x * step).toFixed(2)); }
     prog('Fresh wind from Open-Meteo', null, (none ? 'The forecast pack did not load' : 'The server forecast is ' + Math.round(age) + ' h old') + ', so Route is fetching wind for ' + lats.length + ' points straight to this device.');
     var ctl = typeof AbortController === 'function' ? new AbortController() : null, tm = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
@@ -397,7 +403,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('depth').oninput = function () { depthSet($('depth').value); };
     if ($('depth2')) $('depth2').oninput = function () { depthSet($('depth2').value); };
     depthSet($('depth').value, true);
-    $('run').onclick = function () { S.from = null; run(); };
+    $('run').onclick = function () { S.from = null; userRun(); };
     /* From here: with no position on this device (a Mac without location, or location turned off), it says so and you tap the chart where the boat is */
     try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) { var f = function () { var no = st.state === 'denied' || !navigator.geolocation; $('fromHere').classList.toggle('nogps', no); $('fromHere').title = no ? 'From here: no position on this device, so tap the chart where the boat is' : 'From here: route from where you are now (GPS), or tap the chart'; }; f(); st.onchange = f; }).catch(function () {}); } catch (e) {}
     $('fromHere').onclick = function () {   /* reroute from where the boat is now: the device's GPS first, else tap the chart */
@@ -2099,7 +2105,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       else if (k === 'boat') cardSettings('boat');
       else if (k === 'start') cardStep(3);
       else cardSettings('fc'); }; });
-    $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; run(); };
+    $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); };
     if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
   }
   /* how far each forecast reaches against the race (wireframe A4): a bar per wind model from the start, the white tick the estimated finish */
@@ -2762,6 +2768,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     try { setTime(S.from ? S.from.t : S.start.t); } catch (e) { draw(); }
   }
   window.__fsDump = function () { return S.key ? { key: S.key, routes: S.routes.map(function (s) { return { id: s.id, name: s.name, models: s.models, combined: !!s.combined, best: !!s.best, mean: s.mean, worst: s.worst, r: s.r }; }), matrix: S.matrix, cur: (S.cur || []).map(function (s) { return { id: s.id, r: { finish: s.r.finish, path: s.r.path.map(function (q) { return { t: q.t, la: q.la, lo: q.lo }; }) } }; }) } : null; };
+  /* Stuart 22 Nov 07:18 (Cervantes, "No action when tapped"): a tap on Route or Route again is the crew asking for routes, so it never
+     does nothing in silence. A course put away by an inshore race, a set-up hold left behind by a closed window, or a run with no progress
+     for two minutes no longer swallow the tap; anything else that stops it says why. */
+  function userRun() {
+    if (S.edit) return run();   /* run() explains the edit */
+    S.cleared = false;
+    if (S.wizHold && $('wiz').hidden && !S.card) S.wizHold = false;
+    if (S.running) { var still = Date.now() - Math.max(S.runSince || 0, S.progAt || 0); if (still < 120000) { busy('Routing is already under way: the routes come up when it finishes.'); setTimeout(function () { busy(''); }, 3500); return; } S.gen = (S.gen || 0) + 1; S.running = false; }
+    if (S.wizHold) { busy('Finish the set-up window first, then Route.'); setTimeout(function () { busy(''); }, 3500); return; }
+    run();
+  }
   function run() {
     if (S.cleared) return;   /* inshore with no Solent race yet (Stuart 16 Nov 08:00): nothing routes until one is chosen */
     try { adjPill(); } catch (e) {}   /* the chart note follows the race's own tide by leg too */

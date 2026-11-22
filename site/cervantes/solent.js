@@ -71,14 +71,21 @@
       var x = X(m.lon), y = Y(m.lat), back = dim && !oncourse[m.id] && !used[m.id]; if (back) ctx.globalAlpha = 0.3; dot(ctx, x, y, used[m.id] ? r + 2 : back ? r * 0.7 : r, m.col); if (back) { ctx.globalAlpha = 1; return; }
       if (oncourse[m.id] && !used[m.id]) return;   /* the course already labels its own marks */
       if (used[m.id]) { ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 2 * Math.PI); ctx.lineWidth = 2; ctx.strokeStyle = '#2563eb'; ctx.stroke(); }
-      if (!code) return; var osm = !!(window.__fsChartOn && window.__fsChartOn('cmarks')), t = m.id + (name && (!osm || used[m.id] || m.id === HOT) ? ' ' + m.name : '');   /* M22 (Stuart 17 Nov 06:14 photo): with the OpenSeaMap buoys on, their names are already on the chart, so the Solent code sits on the left and the name only shows when tapped */
-      LJ.push([t, x, y, used[m.id] || m.id === HOT ? 1 : osm ? 0.75 : 0.3, osm && !(used[m.id] || m.id === HOT)]);   /* A14: drawn after the line and its labels, and only where there is room */   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
+      if (!code && m.id !== HOT) return; var osm = !!(window.__fsChartOn && window.__fsChartOn('cmarks')), t = m.id + (name && (!osm || used[m.id] || m.id === HOT) ? ' ' + m.name : '');   /* M22 (Stuart 17 Nov 06:14 photo): with the OpenSeaMap buoys on, their names are already on the chart, so the Solent code sits on the left and the name only shows when tapped */
+      if (m.id === HOT && m.name && t.indexOf(m.name) < 0) t = m.id + ' ' + m.name;   /* the tapped buoy always names itself, at any zoom */
+      LJ.push([t, x, y, used[m.id] || m.id === HOT ? 1 : osm ? 0.75 : 0.3, osm && !(used[m.id] || m.id === HOT), m.id === HOT]);   /* A14: drawn after the line and its labels, and only where there is room */   /* plain text, no halo (Stuart 15 Nov 17:52): white on the dark screen, dark on the light one, red at night */
     });
     if (HOT && BY[HOT]) { var hm = BY[HOT], hx = X(hm.lon), hy = Y(hm.lat); ctx.save(); ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(hx, hy, r + 7, 0, 2 * Math.PI); ctx.stroke(); ctx.globalAlpha = 0.45; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(hx, hy, r + 13, 0, 2 * Math.PI); ctx.stroke(); ctx.restore(); }   /* M21 (Stuart 17 Nov 06:14): a picked buoy has a halo round it */
     if (builderOpen() || pick) drawPlan(ctx, X, Y);
     try { extras(ctx, X, Y); } catch (e) {}
     ctx.font = '400 10px system-ui, sans-serif'; ctx.textBaseline = 'middle'; ctx.fillStyle = INK(); var fit = window.__fsLabelFit;
-    ctx.textAlign = 'left'; LJ.forEach(function (q) { var w = ctx.measureText(q[0]).width, lx = q[4] ? q[1] - r - 3 - w : q[1] + r + 3; if (fit && fit(lx, q[2] - 6, w, 12, 0) == null) return; ctx.globalAlpha = q[3]; ctx.fillText(q[0], lx, q[2]); }); ctx.globalAlpha = 1;
+    /* Stuart 22 Nov 07:31: the buoy tapped shows its code and name big and clear, larger as you zoom in, with a dark edge so it reads over
+       the wind symbols; the other labels grow a little with the zoom too */
+    var fs0 = pxnm > 120 ? 12 : pxnm > 45 ? 11 : 10, fsH = pxnm > 120 ? 18 : pxnm > 45 ? 16 : 15;
+    LJ.sort(function (a, b) { return (b[5] ? 1 : 0) - (a[5] ? 1 : 0); });   /* the tapped buoy's name is placed first; the others give way */
+    ctx.textAlign = 'left'; LJ.forEach(function (q) { var hot = q[5]; ctx.font = hot ? '700 ' + fsH + 'px system-ui, sans-serif' : '400 ' + fs0 + 'px system-ui, sans-serif';
+      var w = ctx.measureText(q[0]).width, lx = q[4] && !hot ? q[1] - r - 3 - w : q[1] + r + (hot ? 10 : 3), lh = hot ? fsH + 4 : fs0 + 2; if (!hot && fit && fit(lx, q[2] - lh / 2, w, lh, 0) == null) return;
+      ctx.globalAlpha = q[3]; if (hot) { ctx.save(); ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(q[0], lx, q[2]); ctx.restore(); if (fit) fit(lx, q[2] - lh / 2, w, lh, 0); } ctx.fillText(q[0], lx, q[2]); }); ctx.globalAlpha = 1; ctx.font = '400 10px system-ui, sans-serif';
   }
   function usedCodes() { var u = {}; if (!builderOpen() && !pick) return u; (B.marks || []).forEach(function (m) { if (m.code) u[m.code] = 1; }); if (B.start && B.start.code) u[B.start.code] = 1; if (B.wl.wcode) u[B.wl.wcode.toUpperCase()] = 1; return u; }
   function drawPlan(ctx, X, Y) {
