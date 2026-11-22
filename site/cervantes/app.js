@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.100';
+  var VERSION = 'FirstShift Route v0.12.101';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -387,7 +387,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.100 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.101 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2621,7 +2621,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (c.pre) h += b('pingb', lineGet().transit ? 'Ping inshore' : 'Ping boat') + b('pingp', lineGet().transit ? 'Ping outer mark' : 'Ping pin') + (window.__fsStartScreen ? b('ss', 'Start screen') : '') + (window.__fsLineSet ? b('setline', 'Set line') : '');
     if (mk && !c.pre) h += (mk.finish ? '' : b('round', 'Rounded ' + wizEsc(mk.name))) + (LIVE.mk && LIVE.mk.i > 0 ? b('back', 'Back one mark') : '') + (S.inshore ? b('end', LIVE.endArm && Date.now() - LIVE.endArm < 5000 ? 'Tap again to end' : 'End race') : '');
     if (S.sel) h += b('re', 'Re-route from here');
-    h += b('big', 'Big numbers') + b('file', 'File track') + b('clr', 'Clear track') + (f && f.dr ? b('drstop', 'Stop dead reckoning') : '') + b('info', 'What these mean') + b('stop', 'Stop GPS', 'primary');
+    h += b('big', '20/20') + b('file', 'File track') + b('clr', 'Clear track') + (f && f.dr ? b('drstop', 'Stop dead reckoning') : '') + b('info', 'What these mean') + b('stop', 'Stop GPS', 'primary');
     if (LIVE.info) h += '<div class="gminfo">' + liveInfo() + '</div>';
     m.innerHTML = h; m.hidden = false;
     var r = $('liveBtn').getBoundingClientRect(), w = Math.min(360, innerWidth - 16); m.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px'; m.style.bottom = Math.max(8, innerHeight - r.top + 8) + 'px';
@@ -2629,7 +2629,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (k === 'x') { m.hidden = true; return; }
       if (k === 'pingb') linePing('boat'); else if (k === 'pingp') linePing('pin'); else if (k === 'ss') { m.hidden = true; window.__fsStartScreen(); return; } else if (k === 'setline') { m.hidden = true; window.__fsLineSet(); return; }
       else if (k === 'round') mkRound(); else if (k === 'back') mkBack(); else if (k === 'end') { if (!(LIVE.endArm && Date.now() - LIVE.endArm < 5000)) { LIVE.endArm = Date.now(); gpsMenu(true); return; } LIVE.endArm = null; m.hidden = true; endRace(); return; }
-      else if (k === 're') { m.hidden = true; liveReroute(); return; } else if (k === 'big') { m.hidden = true; LIVE.big = true; liveShow(); return; }
+      else if (k === 're') { m.hidden = true; liveReroute(); return; } else if (k === 'big') { m.hidden = true; var db = $('fsDeckBtn'); if (db) { if (db.getAttribute('aria-pressed') !== 'true') db.click(); return; } LIVE.big = true; liveShow(); return; }   /* Stuart 22 Nov 10:32: the GPS menu's big numbers are the 20/20 screen */
       else if (k === 'file') { if (window.FSTracks) { var ok = FSTracks.file(LIVE.trail.slice(), (meta && meta.course && meta.course.name) || ''); if (ok) { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); } } }
       else if (k === 'clr') { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }
       else if (k === 'drstop') { if ($('drOn')) { $('drOn').checked = false; $('drOn').onchange(); } liveShow(); draw(); }

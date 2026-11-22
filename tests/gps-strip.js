@@ -34,9 +34,9 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   await p.click('#gpsMenu [data-g="info"]'); await p.waitForTimeout(300);
   ok(await p.evaluate(() => !!document.querySelector('#gpsMenu .gminfo')), 'What these mean opens in the menu');
   await p.click('#gpsMenu [data-g="big"]'); await p.waitForTimeout(800);
-  ok(await p.evaluate(() => !document.getElementById('liveBig').hidden && document.getElementById('gpsMenu').hidden), 'Big numbers opens the big view and closes the menu');
-  await p.evaluate(() => { const x = document.getElementById('lbChart'); if (x) x.click(); }); await p.waitForTimeout(500);
-  ok(await p.evaluate(() => document.getElementById('liveBig').hidden), 'Chart closes the big view');
+  ok(await p.evaluate(() => document.getElementById('fsDeckBtn').getAttribute('aria-pressed') === 'true' && document.getElementById('gpsMenu').hidden), '20/20 (was Big numbers, Stuart 22 Nov 10:32) opens the 20/20 screen and closes the menu');
+  await p.evaluate(() => { const x = document.getElementById('dkExit'); if (x) x.click(); }); await p.waitForTimeout(500);
+  ok(await p.evaluate(() => document.getElementById('fsDeckBtn').getAttribute('aria-pressed') !== 'true'), 'CHART × closes the 20/20 screen');
   /* a tap elsewhere closes the menu */
   await p.click('#liveBtn'); await p.waitForTimeout(300); const mr = await p.evaluate(() => document.getElementById('gpsMenu').getBoundingClientRect().top); await p.mouse.click(4, 330); await p.waitForTimeout(300);
   ok(await p.evaluate(() => document.getElementById('gpsMenu').hidden), 'A tap elsewhere closes the menu', await p.evaluate((y) => { const e = document.elementFromPoint(4, 330); return (e && (e.id || e.className || e.tagName)) + ' (menu top ' + y + ')'; }, mr));
