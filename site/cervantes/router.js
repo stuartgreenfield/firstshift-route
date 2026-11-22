@@ -269,187 +269,285 @@
   }
 
   /* ---------- isochrone router ---------- */
-  function route(o) {
-    /* o: { start:{lat,lon,t}, legs:[{name, gate:{a,b}} | {name, point:[la,lo], r}], wind, tide, wave, speed, depth, safety (m), margin (depth squares, 0 to 3),
-            dt (s), hstep (deg), sectors, maxHours, tackS, gybeS, sea } */
-    var dt0 = o.dt || 600, dt = dt0, hstep = o.hstep || 5, sectors = o.sectors || 360, maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt);
-    var nh = Math.round(360 / hstep), H = [], sinH = [], cosH = [];
-    for (var i = 0; i < nh; i++) { H.push(i * hstep); sinH.push(Math.sin(i * hstep * R)); cosH.push(Math.cos(i * hstep * R)); }
-    var safety = o.safety || 0, depth = o.depth;
-    /* the true wind angles tried at each point: the grid every hstep, and the best VMG angle up and down on each side for this wind
-       speed (cached by half knot) */
+  /* The router in parts (Stuart 22 Nov 19:46, "go next to do on untangling"). route() was one function of complexity 107. It is now
+     the water and no-go checks, the headings tried at each point, one step of the front, one heading from one point, the rounding of a
+     mark, the end of the forecasts, and the way back along the route. The sums are the same, in the same order: tools/router_diff.js
+     sails hundreds of races through this and the old engine (tools/router_old.js) and every number must match. */
+
+  /* the true wind angles tried at each point: the grid every hstep, and the best VMG angle up and down on each side for this wind
+     speed (cached by half knot) */
+  function routeHeads(o, hstep) {
     var vmgC = {}, gridA = []; for (var ga0 = -180 + hstep; ga0 <= 180; ga0 += hstep) gridA.push(ga0);
     var NHmax = gridA.length + 4, bHH = new Float64Array(NHmax), bSN = new Float64Array(NHmax), bCS = new Float64Array(NHmax), bTW = new Float64Array(NHmax), gCa = gridA.map(function (a) { return Math.cos(a * R); }), gSa = gridA.map(function (a) { return Math.sin(a * R); }), outH = [bHH, bSN, bCS, bTW, 0];
-    function headsFor(tws, twd) {
-      var key = Math.round(tws * 2), extra = vmgC[key];
-      if (!extra) { var up = bestVmg(o.speed, key / 2, true)[0], dn = bestVmg(o.speed, key / 2, false)[0]; extra = vmgC[key] = [up, -up, dn, -dn].filter(function (x) { return x && Math.abs(x) % hstep; }); }
+    function vmgExtra(key) {
+      var up = bestVmg(o.speed, key / 2, true)[0], dn = bestVmg(o.speed, key / 2, false)[0];
+      return [up, -up, dn, -dn].filter(function (x) { return x && Math.abs(x) % hstep; });
+    }
+    return function headsFor(tws, twd) {
+      var key = Math.round(tws * 2), extra = vmgC[key] || (vmgC[key] = vmgExtra(key));
       var ct = Math.cos(twd * R), st = Math.sin(twd * R), n = 0;
       for (var j = 0; j < gridA.length; j++, n++) { var a = gridA[j]; bHH[n] = (twd + a + 720) % 360; bSN[n] = st * gCa[j] + ct * gSa[j]; bCS[n] = ct * gCa[j] - st * gSa[j]; bTW[n] = a > 180 ? a - 360 : a; }
       for (var e = 0; e < extra.length; e++, n++) { var a2 = extra[e], h2 = (twd + a2 + 720) % 360; bHH[n] = h2; bSN[n] = Math.sin(h2 * R); bCS[n] = Math.cos(h2 * R); bTW[n] = a2 > 180 ? a2 - 360 : a2; }
       outH[4] = n; return outH;
+    };
+  }
+
+  /* no-go zones: traffic separation schemes and the sailing instructions' keep-out areas, each a ring of [lat, lon] */
+  function nogoZones(o) { return (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; }); }
+  function inRing(ring, la, lo) { var c = false; for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) { var a = ring[i], q = ring[j]; if ((a[0] > la) !== (q[0] > la) && lo < (q[1] - a[1]) * (la - a[0]) / (q[0] - a[0]) + a[1]) c = !c; } return c; }
+  function inNogo(nogo, la, lo) { for (var i = 0; i < nogo.length; i++) { var b = nogo[i].b; if (la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3] && inRing(nogo[i].r, la, lo)) return true; } return false; }
+  function nogoLine(nogo, la0, lo0, la1, lo1) { for (var k = 1; k <= 8; k++) if (inNogo(nogo, la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return true; return false; }
+
+  /* water deep enough, as a ready-made map of cells: built once per depth layer and safety depth, so each step is a lookup rather than a search */
+  function wetMask(depth, safety) {
+    depth._wet = depth._wet || {}; var wm = depth._wet[safety]; if (wm) return wm;
+    wm = new Uint8Array(depth.ny * depth.nx);
+    for (var wy = 0; wy < depth.ny; wy++) for (var wx = 0; wx < depth.nx; wx++) { var zc = depth.cellAt('z', 0, wy, wx); if (zc === zc && zc <= -safety) wm[wy * depth.nx + wx] = 1; }
+    return (depth._wet[safety] = wm);
+  }
+  function maskAt(depth, wm, I) { return wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1; }
+  /* the whole step must be in water deep enough, checked at every depth square it passes through (Stuart 15 Nov 2026: a route crossed
+     the Shingles in 2.5 m with the safety depth at 3 m; the step was checked at only four points, about 0.25 nm apart, and a narrow
+     shoal one or two squares wide fell between them; now every square the step touches) */
+  /* safety margin (Stuart 15 Nov 2026, B): keep this many depth squares clear of water shallower than the safety depth, because
+     EMODnet depths are averages over about 115 m and a rock or bank edge can sit in a square that reads deep. A square counts only
+     if it and every square within the margin are deep enough. Within MREL nm of the start, each mark and the finish the margin is
+     relaxed to the safety depth alone, so a start line, a buoy or a finish close to shallow water can still be reached. */
+  var MREL = 0.4;
+  function clearAround(cur, ny0, nx0, ey, ex) {
+    for (var ddy = -1; ddy <= 1; ddy++) for (var ddx = -1; ddx <= 1; ddx++) { var yy = ey + ddy, xx = ex + ddx; if (yy < 0 || xx < 0 || yy >= ny0 || xx >= nx0 || cur[yy * nx0 + xx] !== 1) return false; }
+    return true;
+  }
+  function shrinkMask(cur, ny0, nx0) {
+    var nxt = new Uint8Array(ny0 * nx0);
+    for (var ey = 0; ey < ny0; ey++) for (var ex = 0; ex < nx0; ex++) if (cur[ey * nx0 + ex] === 1 && clearAround(cur, ny0, nx0, ey, ex)) nxt[ey * nx0 + ex] = 1;
+    return nxt;
+  }
+  function marginMask(depth, safety, wm, margin) {
+    var mk = safety + ':m' + margin, cur = depth._wet[mk]; if (cur) return cur;
+    cur = wm; for (var mi = 0; mi < margin; mi++) cur = shrinkMask(cur, depth.ny, depth.nx);
+    return (depth._wet[mk] = cur);
+  }
+  function gateLong(g) { return dist(g.a[0], g.a[1], g.b[0], g.b[1]) > 2; }
+  function marginAnchors(o) {
+    var anchors = [[o.start.lat, o.start.lon]];
+    o.legs.forEach(function (lg) { if (lg.point) anchors.push(lg.point); if (lg.gate) { anchors.push(lg.gate.a); if (!gateLong(lg.gate)) anchors.push(lg.gate.b); } if (lg.at) anchors.push(lg.at); });
+    return anchors;
+  }
+  /* marks in shallow water (Stuart 15 Nov 2026, Solent racing): inshore race marks are often laid where the depth data (below lowest
+     astronomical tide, about 230 m by 150 m squares) reads shallower than the safety depth, or even as the shore: 31 of the 157 Solent
+     marks do at 2.5 m. Only for a start, mark or finish that is itself in such water: within SREL nm of it any square below chart datum
+     counts as water. Only for the start, where the route begins, every square within SALL nm counts too, since a start the data shows
+     as shore cannot otherwise be left. Never for a mark: the boat rounds a mark from up to 0.5 nm off, and a mark can be a rock or a
+     fort (the Fastnet Rock, No Man's Land Fort), so a route must never cut across it. Everywhere else the safety depth holds, and a
+     course whose marks are all in deep water routes exactly as before. */
+  /* The start, always (Stuart 15 Nov 20:04, "Both": find a way out automatically, and if even that fails, the plain message): a start
+     or a boat position whose surroundings read shallower than the safety depth (an inshore line off Cowes at 3 to 6 m) is left through
+     any water below chart datum within SSTART nm, as boats really leave an inshore line; the app says so under the route. */
+  var SREL = 0.4, SALL = 0.15, SSTART = 1.0;
+  function shallowAnchors(o, depth, wm) {
+    var allA = [[o.start.lat, o.start.lon]], out = [];
+    o.legs.forEach(function (lg) { if (lg.point) allA.push(lg.point); if (lg.gate) { allA.push(lg.gate.a); allA.push(lg.gate.b); } if (lg.at) allA.push(lg.at); });
+    allA.forEach(function (a, k) { var I = depth.idx(a[0], a[1]), okI = I && maskAt(depth, wm, I); if (k === 0 || !okI) out.push([a[0], a[1], k === 0, k === 0 && okI]); });
+    return out;
+  }
+  function routeWater(o) {
+    var W = { nogo: nogoZones(o), depth: o.depth, safety: o.safety || 0, wm: null, wmM: null, margin: Math.max(0, Math.min(3, Math.round(o.margin || 0))), anchors: [], shAnch: [] };
+    if (W.depth) W.wm = wetMask(W.depth, W.safety);
+    W.wmM = W.wm;
+    if (W.depth && W.margin) { W.wmM = marginMask(W.depth, W.safety, W.wm, W.margin); W.anchors = marginAnchors(o); }
+    if (W.depth) W.shAnch = shallowAnchors(o, W.depth, W.wm);
+    return W;
+  }
+  function cellLaLo(L, y, x) { return [L.lat0 + y * L.dlat, L.lon0 + x * L.dlon]; }
+  function shallowOk(W, y, x) {
+    var q = cellLaLo(W.depth.L, y, x), z = null, sh = W.shAnch;
+    for (var i = 0; i < sh.length; i++) {
+      var d = dist(q[0], q[1], sh[i][0], sh[i][1]); if (d <= SALL && sh[i][2] && !sh[i][3]) return true;
+      if (d <= (sh[i][2] ? SSTART : SREL)) { if (z === null) z = W.depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; }
     }
-    /* no-go zones: traffic separation schemes and the sailing instructions' keep-out areas, each a ring of [lat, lon] */
-    var nogo = (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; });
-    function inside(ring, la, lo) { var c = false; for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) { var a = ring[i], q = ring[j]; if ((a[0] > la) !== (q[0] > la) && lo < (q[1] - a[1]) * (la - a[0]) / (q[0] - a[0]) + a[1]) c = !c; } return c; }
-    function blocked(la, lo) { for (var i = 0; i < nogo.length; i++) { var b = nogo[i].b; if (la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3] && inside(nogo[i].r, la, lo)) return true; } return false; }
-    /* water deep enough, as a ready-made map of cells: built once per depth layer and safety depth, so each step is a lookup rather than a search */
-    var wm = null;
-    if (depth) { depth._wet = depth._wet || {}; wm = depth._wet[safety]; if (!wm) { wm = new Uint8Array(depth.ny * depth.nx); for (var wy = 0; wy < depth.ny; wy++) for (var wx = 0; wx < depth.nx; wx++) { var zc = depth.cellAt('z', 0, wy, wx); if (zc === zc && zc <= -safety) wm[wy * depth.nx + wx] = 1; } depth._wet[safety] = wm; } }
-    function wet(la, lo) { if (nogo.length && blocked(la, lo)) return false; if (!depth) return true; var I = depth.idx(la, lo); if (!I) return false; return wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1; }
-    /* the whole step must be in water deep enough, checked at every depth square it passes through (Stuart 15 Nov 2026: a route crossed
-       the Shingles in 2.5 m with the safety depth at 3 m; the step was checked at only four points, about 0.25 nm apart, and a narrow
-       shoal one or two squares wide fell between them; now every square the step touches) */
-    /* safety margin (Stuart 15 Nov 2026, B): keep this many depth squares clear of water shallower than the safety depth, because
-       EMODnet depths are averages over about 115 m and a rock or bank edge can sit in a square that reads deep. A square counts only
-       if it and every square within the margin are deep enough. Within MREL nm of the start, each mark and the finish the margin is
-       relaxed to the safety depth alone, so a start line, a buoy or a finish close to shallow water can still be reached. */
-    var margin = Math.max(0, Math.min(3, Math.round(o.margin || 0))), wmM = wm, MREL = 0.4, anchors = [];
-    if (depth && margin) {
-      var mk = safety + ':m' + margin; wmM = depth._wet[mk];
-      if (!wmM) { var nx0 = depth.nx, ny0 = depth.ny, cur = wm; for (var mi = 0; mi < margin; mi++) { var nxt = new Uint8Array(ny0 * nx0); for (var ey = 0; ey < ny0; ey++) for (var ex = 0; ex < nx0; ex++) { var okc = cur[ey * nx0 + ex] === 1; for (var ddy = -1; okc && ddy <= 1; ddy++) for (var ddx = -1; okc && ddx <= 1; ddx++) { var yy = ey + ddy, xx = ex + ddx; if (yy < 0 || xx < 0 || yy >= ny0 || xx >= nx0 || cur[yy * nx0 + xx] !== 1) okc = false; } if (okc) nxt[ey * nx0 + ex] = 1; } cur = nxt; } wmM = depth._wet[mk] = cur; }
-      anchors.push([o.start.lat, o.start.lon]); o.legs.forEach(function (lg) { if (lg.point) anchors.push(lg.point); if (lg.gate) { anchors.push(lg.gate.a); if (!(dist(lg.gate.a[0], lg.gate.a[1], lg.gate.b[0], lg.gate.b[1]) > 2)) anchors.push(lg.gate.b); } if (lg.at) anchors.push(lg.at); });
-    }
-    /* marks in shallow water (Stuart 15 Nov 2026, Solent racing): inshore race marks are often laid where the depth data (below lowest
-       astronomical tide, about 230 m by 150 m squares) reads shallower than the safety depth, or even as the shore: 31 of the 157 Solent
-       marks do at 2.5 m. Only for a start, mark or finish that is itself in such water: within SREL nm of it any square below chart datum
-       counts as water. Only for the start, where the route begins, every square within SALL nm counts too, since a start the data shows
-       as shore cannot otherwise be left. Never for a mark: the boat rounds a mark from up to 0.5 nm off, and a mark can be a rock or a
-       fort (the Fastnet Rock, No Man's Land Fort), so a route must never cut across it. Everywhere else the safety depth holds, and a
-       course whose marks are all in deep water routes exactly as before. */
-    /* The start, always (Stuart 15 Nov 20:04, "Both": find a way out automatically, and if even that fails, the plain message): a start
-       or a boat position whose surroundings read shallower than the safety depth (an inshore line off Cowes at 3 to 6 m) is left through
-       any water below chart datum within SSTART nm, as boats really leave an inshore line; the app says so under the route. */
-    var SREL = 0.4, SALL = 0.15, SSTART = 1.0, shAnch = [];
-    if (depth) {
-      var allA = [[o.start.lat, o.start.lon]]; o.legs.forEach(function (lg) { if (lg.point) allA.push(lg.point); if (lg.gate) { allA.push(lg.gate.a); allA.push(lg.gate.b); } if (lg.at) allA.push(lg.at); });
-      allA.forEach(function (a, k) { var I = depth.idx(a[0], a[1]); if (k === 0 || !I || wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] !== 1) shAnch.push([a[0], a[1], k === 0, k === 0 && I && wm[(I[0] + (I[2] > 0.5 ? 1 : 0)) * depth.nx + I[1] + (I[3] > 0.5 ? 1 : 0)] === 1]); });
-    }
-    function shallowOk(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon, z = null; for (var i = 0; i < shAnch.length; i++) { var d = dist(la, lo, shAnch[i][0], shAnch[i][1]); if (d <= SALL && shAnch[i][2] && !shAnch[i][3]) return true; if (d <= (shAnch[i][2] ? SSTART : SREL)) { if (z === null) z = depth.cellAt('z', 0, y, x); if (z === z && z < 0) return true; } } return false; }
-    function nearAnchor(y, x) { var L = depth.L, la = L.lat0 + y * L.dlat, lo = L.lon0 + x * L.dlon; for (var i = 0; i < anchors.length; i++) if (dist(la, lo, anchors[i][0], anchors[i][1]) <= MREL) return true; return false; }
-    function wetLine(la0, lo0, la1, lo1) {
-      if (nogo.length) for (var k = 1; k <= 8; k++) if (blocked(la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return false;
-      if (!depth) return true; var L = depth.L;
-      return eachCell(L, la0, lo0, la1, lo1, function (y, x) { if (y < 0 || x < 0 || y >= L.ny || x >= L.nx) return false; var i = y * L.nx + x; return wmM[i] === 1 || (wm[i] === 1 && margin > 0 && nearAnchor(y, x)) || (shAnch.length > 0 && shallowOk(y, x)); });
-    }
-    var pts = [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t = o.start.t, hist = [], arrivals = [], iso = o.iso ? [] : null, isoT = t;   /* iso: the front each hour, for the isochrones on the chart */
-    for (var li = 0; li < o.legs.length; li++) {
-      var leg = o.legs[li]; dt = leg.dt || dt0; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); var far = leg.gate && dist(leg.gate.a[0], leg.gate.a[1], leg.gate.b[0], leg.gate.b[1]) > 2;   /* offshore rounding mark: aim at the mark itself */
-      var tgt = leg.point || (far ? leg.gate.a : [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2]);
-      var oLa = 0, oLo = 0; pts.forEach(function (p) { oLa += p.la; oLo += p.lo; }); oLa /= pts.length; oLo /= pts.length;
-      var kO = Math.cos(oLa * R), done = false;
-      /* an offshore rounding mark (the Fastnet Rock): near it, keep the front in sectors round the mark itself, so routes can work
-         round any side of it; beyond it, sailing on past the mark loses score instead of gaining it (Stuart 12 Nov: routes overshot
-         the Rock and sat against the edge of the forecasts) */
-      var MS = far ? 72 : 0, NEARM = 20, mx = (tgt[1] - oLo) * kO, my = tgt[0] - oLa, dM = Math.sqrt(mx * mx + my * my) * 60, ux = dM ? mx * 60 / dM : 0, uy = dM ? my * 60 / dM : 0, kT = Math.cos(tgt[0] * R);
-      for (var step = 0; step < maxSteps; step++) {
-        /* the front is thinned to one point per bearing sector; the sectors are as fine as a step is short (E2, 19 Nov 2026): with a fixed 360, a
-           3-minute or 1-minute step lost the best points and a veering beat came out up to 5% slow; `sectors` is the count for a 10-minute step (or the caller's own coarser step), and grows as the step shortens, to at most 1000 (within 0.05% of 1200 on the veering beat, for 15% less work) */
-        var SEC = o.fine === false ? sectors : Math.max(90, Math.min(o.secCap || 1000, 4 * sectors, Math.round(sectors * Math.max(1, dt0 / dt, 600 / dt)))), hit = [], calm = 0, ncand = 0, best = new Array(SEC + MS), bestS = new Float64Array(SEC + MS).fill(-Infinity), secW = 360 / SEC, wDtg = far ? 0.6 : 0.15, near0 = leg.point || far ? 25 : 8;
-        var gate = leg.gate, ga = gate && gate.a, gb = gate && gate.b;
-        for (var pi = 0; pi < pts.length; pi++) {
-          var p = pts[pi], tm = t + dt / 7200, W = o.wind(p.la, p.lo, tm), C = o.tide(p.la, p.lo, tm), V = o.wave ? o.wave(p.la, p.lo, tm) : [0, NaN];   /* read at the middle of the step, not its start (E2, 19 Nov 2026): a veering or building wind and a turning tide are met as the boat meets them */
-          var tws = W[0], twd = W[1], kp = Math.cos(p.la * R); if (!(tws > 0)) calm++;
-          /* headings relative to the wind here, every hstep of true wind angle, plus the best VMG angles up and down on each side
-             (14 Nov 2026, review finding 15): with headings fixed to north the angles on offer, and so the time, depended on the
-             wind direction against the heading grid */
-          var hl = headsFor(tws, twd), HH = hl[0], SN = hl[1], CS = hl[2], TW = hl[3];
-          for (var hi = 0, NH = hl[4]; hi < NH; hi++) {
-            var twa = TW[hi], s = o.speed(tws, twa);
-            if (s <= 0.05) continue;
-            s *= seaFactor(V[0], V[1], HH[hi], o.sea);
-            var side = twa < 0 ? -1 : 1, lost = 0;
-            if (p.side && side !== p.side) lost = Math.abs(twa) > 90 ? (o.gybeS || 0) : (o.tackS || 0);
-            var run = Math.max(0, dt - lost) / 3600;
-            var dn = (s * CS[hi] * run + C[1] * dt / 3600), de = (s * SN[hi] * run + C[0] * dt / 3600);
-            var nla = p.la + dn / 60, nlo = p.lo + de / (60 * kp);
-            var arrived = false, fr = 1;
-            if (gate) {
-              arrived = crosses4(p.la, p.lo, nla, nlo, ga, gb);
-              /* only a crossing that goes round the mark the right way counts: anticlockwise for a mark left to port, clockwise to starboard.
-                 Without this a boat on the wrong side of a turn-back mark (Eddystone) could cross the line on its way out and count as rounded. */
-              if (arrived && gate.side) {
-                var gk = Math.cos(ga[0] * R), gx = (p.lo - ga[1]) * gk, gy = p.la - ga[0], hx = (nlo - ga[1]) * gk, hy = nla - ga[0], sw = gx * hy - gy * hx;
-                var right = gate.side === 'port' ? sw > 0 : sw < 0;
-                /* the line is a wall the wrong way: a boat cannot cross it going the wrong way round, so it cannot step across and back */
-                if (!right) continue;
-                /* and the rounding only counts close to the mark: going round the far end of the line is not rounding the mark */
-                if (Math.min(dist(p.la, p.lo, ga[0], ga[1]), dist(nla, nlo, ga[0], ga[1])) > 6) arrived = false;
-              }
-            }
-            else {
-              var k = Math.cos(tgt[0] * R), ax = (p.lo - tgt[1]) * 60 * k, ay = (p.la - tgt[0]) * 60, bx = (nlo - tgt[1]) * 60 * k, by = (nla - tgt[0]) * 60;
-              var dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy + 1e-12)));
-              arrived = Math.hypot(ax + u * dx, ay + u * dy) <= (leg.r || 0.5);
-              /* when in the step the boat first comes within the radius (13 Nov 2026, review finding 1) */
-              if (arrived) { var rr = leg.r || 0.5, qa = dx * dx + dy * dy, qb = 2 * (ax * dx + ay * dy), qc = ax * ax + ay * ay - rr * rr; fr = qc <= 0 || qa < 1e-12 ? 0 : Math.max(0, Math.min(1, (-qb - Math.sqrt(Math.max(0, qb * qb - 4 * qa * qc))) / (2 * qa))); }
-            }
-            /* gate: the fraction of the step at which the boat's track crosses the gate line */
-            if (arrived && gate) { var gk2 = Math.cos(ga[0] * R), px = p.lo * gk2, py = p.la, rx = (nlo - p.lo) * gk2, ry = nla - p.la, sx = (gb[1] - ga[1]) * gk2, sy = gb[0] - ga[0], den = rx * sy - ry * sx; fr = Math.abs(den) < 1e-15 ? 1 : Math.max(0, Math.min(1, ((ga[1] * gk2 - px) * sy - (ga[0] - py) * sx) / den)); }
-            var sec = 0, score = 0;
-            if (!arrived) {   /* prune as we go: keep only the best point in each bearing sector from the leg origin, and test the water only for a new best */
-              var bx2 = (nlo - oLo) * kO, by2 = nla - oLa, bb = (Math.atan2(bx2, by2) / R + 360) % 360;
-              sec = Math.min(SEC - 1, Math.floor(bb / secW));
-              var dtg = dist(nla, nlo, tgt[0], tgt[1]), dfo = Math.sqrt(bx2 * bx2 + by2 * by2) * 60;
-              score = dfo - wDtg * dtg - (lost > 0 ? 0.01 : 0) + 2 * Math.max(0, near0 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
-              if (MS) {
-                if (dtg < NEARM) { var mb = (Math.atan2((nlo - tgt[1]) * kT, nla - tgt[0]) / R + 360) % 360; sec = SEC + Math.min(MS - 1, Math.floor(mb / (360 / MS))); score = 1000 - dtg - (lost > 0 ? 0.01 : 0); }
-                else { var over = Math.max(0, (bx2 * ux + by2 * uy) * 60 - dM); score = Math.min(dfo, dM) - 2 * over - wDtg * dtg - (lost > 0 ? 0.01 : 0); }
-              }
-              if (score <= bestS[sec]) { ncand++; continue; }
-            }
-            if (!wetLine(p.la, p.lo, nla, nlo)) continue;
-            var c = { la: nla, lo: nlo, par: pi, hdg: HH[hi], tws: tws, twd: twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: V[0], wd: V[1], side: side, tack: lost > 0, lost: Math.min(lost, dt) };
-            if (arrived) { c.fr = fr; c.la = p.la + (nla - p.la) * fr; c.lo = p.lo + (nlo - p.lo) * fr; hit.push(c); } else { ncand++; c.score = score; best[sec] = c; bestS[sec] = score; }
-          }
-        }
-        t += dt / 3600;
-        if (hit.length) {
-          /* the mark is rounded (or the finish reached) at the moment the first boat crosses, not at the end of the step: the leg
-             is timed from there and the next leg starts from that point (13 Nov 2026, review finding 1: up to a whole step late before,
-             and the next leg started up to a step's sailing beyond the mark) */
-          /* a tack or gybe in the arrival step costs its whole time, not the share of it the boat had sailed (19 Nov 2026, peer review: the
-             arrival was timed as a share of the whole step, so a tack just before a mark or the finish was partly free) */
-          var arrT = function (c) { var L = c.lost || 0; return L + c.fr * (dt - L); };
-          var first = hit.reduce(function (a, c) { return arrT(c) < arrT(a) ? c : a; }, hit[0]), tArr = t - dt / 3600 + arrT(first) / 3600;
-          t = tArr;
-          hist.push({ pts: [first], t: tArr, leg: li }); arrivals.push({ name: leg.name, t: tArr });
-          pts = [{ la: first.la, lo: first.lo, side: first.side, par: 0 }];
-          done = true; break;
-        }
-        if (!ncand && calm === pts.length && pts.length) {   /* no wind anywhere on the front: the forecasts have run out before the finish */
-          var bp = pts[0], bd = 1e9; pts.forEach(function (q) { var d = dist(q.la, q.lo, tgt[0], tgt[1]); if (d < bd) { bd = d; bp = q; } });
-          var togo = bd, prevP = tgt; for (var lj = li + 1; lj < o.legs.length; lj++) { var L2 = o.legs[lj], nx = L2.point || L2.gate.a; togo += dist(prevP[0], prevP[1], nx[0], nx[1]); prevP = nx; }
-          if (o.partial) {   /* keep the route as far as the forecasts reach, and say how far is left */
-            var kb = pts.indexOf(bp), path0 = [], kk = kb;
-            for (var hJ = hist.length - 1; hJ >= 0; hJ--) { var c4 = hist[hJ].pts[kk]; path0.push({ t: hist[hJ].t, la: c4.la, lo: c4.lo, hdg: c4.hdg, tws: c4.tws, twd: c4.twd, twa: c4.twa, bsp: c4.bsp, cu: c4.cu, cv: c4.cv, hs: c4.hs, wd: c4.wd, leg: hist[hJ].leg, tack: c4.tack }); kk = c4.par; }
-            path0.reverse(); path0.unshift({ t: o.start.t, la: o.start.lat, lo: o.start.lon, leg: 0 });
-            return { arrivals: arrivals, path: path0, finish: path0[path0.length - 1].t, partial: { togo: Math.round(togo), leg: leg.name, end: t }, iso: iso };
-          }
-          var e0 = new Error('The forecasts end ' + Math.round(t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
-        }
-        /* no step fits (Stuart 17 Nov 14:47, testrace1: rounding 2C Colten, the leg home ran in 20-minute steps of about 2.7 nm, and every
-           one from the narrows by Colten crossed water shallower than the safety depth): halve the step and try again before giving up */
-        if (!ncand && !(calm === pts.length && pts.length) && dt > 75) { t -= dt / 3600; dt = Math.max(60, dt / 2); step--; maxSteps = Math.ceil((o.maxHours || 60) * 3600 / dt); continue; }
-        if (!ncand) { var mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; }); var e = new Error('No way through on the leg to ' + leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(t - o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, step]; throw e; }
-        var keep = best.filter(Boolean);
-        hist.push({ pts: keep, t: t, leg: li });
-        if (iso && t - isoT >= 0.999) { isoT = t; iso.push({ t: t, leg: li, p: keep.map(function (c) { return [Math.round(c.la * 1e4) / 1e4, Math.round(c.lo * 1e4) / 1e4]; }) }); }
-        pts = keep.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
-      }
-      if (!done) throw new Error('Did not reach ' + leg.name + ' within ' + (o.maxHours || 60) + ' hours.');
-    }
-    // backtrack from the arrival closest to the finish
-    var path = [], k2 = 0, last = hist[hist.length - 1].pts;
-    if (o.legs[o.legs.length - 1].point) { var f = o.legs[o.legs.length - 1].point, bd = 1e9; last.forEach(function (c, i) { var d = dist(c.la, c.lo, f[0], f[1]); if (d < bd) { bd = d; k2 = i; } }); }
+    return false;
+  }
+  function nearAnchor(W, y, x) { var q = cellLaLo(W.depth.L, y, x); for (var i = 0; i < W.anchors.length; i++) if (dist(q[0], q[1], W.anchors[i][0], W.anchors[i][1]) <= MREL) return true; return false; }
+  function wetCell(W, L, y, x) {
+    if (y < 0 || x < 0 || y >= L.ny || x >= L.nx) return false;
+    var i = y * L.nx + x;
+    return W.wmM[i] === 1 || (W.wm[i] === 1 && W.margin > 0 && nearAnchor(W, y, x)) || (W.shAnch.length > 0 && shallowOk(W, y, x));
+  }
+  function wetLine(W, la0, lo0, la1, lo1) {
+    if (W.nogo.length && nogoLine(W.nogo, la0, lo0, la1, lo1)) return false;
+    if (!W.depth) return true; var L = W.depth.L;
+    return eachCell(L, la0, lo0, la1, lo1, function (y, x) { return wetCell(W, L, y, x); });
+  }
+
+  /* one leg: where it aims and where its front is measured from */
+  function legGeom(leg, pts) {
+    var far = leg.gate && gateLong(leg.gate);   /* offshore rounding mark: aim at the mark itself */
+    var tgt = leg.point || (far ? leg.gate.a : [(leg.gate.a[0] + leg.gate.b[0]) / 2, (leg.gate.a[1] + leg.gate.b[1]) / 2]);
+    var oLa = 0, oLo = 0; pts.forEach(function (p) { oLa += p.la; oLo += p.lo; }); oLa /= pts.length; oLo /= pts.length;
+    var kO = Math.cos(oLa * R);
+    /* an offshore rounding mark (the Fastnet Rock): near it, keep the front in sectors round the mark itself, so routes can work
+       round any side of it; beyond it, sailing on past the mark loses score instead of gaining it (Stuart 12 Nov: routes overshot
+       the Rock and sat against the edge of the forecasts) */
+    var MS = far ? 72 : 0, mx = (tgt[1] - oLo) * kO, my = tgt[0] - oLa, dM = Math.sqrt(mx * mx + my * my) * 60;
+    return { leg: leg, far: far, tgt: tgt, oLa: oLa, oLo: oLo, kO: kO, MS: MS, dM: dM, ux: dM ? mx * 60 / dM : 0, uy: dM ? my * 60 / dM : 0, kT: Math.cos(tgt[0] * R) };
+  }
+  var NEARM = 20;
+  /* one step of the front */
+  function stepSetup(S, G) {
+    /* the front is thinned to one point per bearing sector; the sectors are as fine as a step is short (E2, 19 Nov 2026): with a fixed 360, a
+       3-minute or 1-minute step lost the best points and a veering beat came out up to 5% slow; `sectors` is the count for a 10-minute step (or the caller's own coarser step), and grows as the step shortens, to at most 1000 (within 0.05% of 1200 on the veering beat, for 15% less work) */
+    var o = S.o, dt = G.dt, sectors = S.sectors, leg = G.leg;
+    var SEC = o.fine === false ? sectors : Math.max(90, Math.min(o.secCap || 1000, 4 * sectors, Math.round(sectors * Math.max(1, S.dt0 / dt, 600 / dt))));
+    return { SEC: SEC, hit: [], calm: 0, ncand: 0, best: new Array(SEC + G.MS), bestS: new Float64Array(SEC + G.MS).fill(-Infinity), secW: 360 / SEC, wDtg: G.far ? 0.6 : 0.15, near0: leg.point || G.far ? 25 : 8,
+      gate: leg.gate, p: null, pi: 0, tws: 0, twd: 0, C: null, V: null, kp: 1, sec: 0, score: 0 };
+  }
+  function turnLoss(o, pSide, side, twa) { return pSide && side !== pSide ? (Math.abs(twa) > 90 ? (o.gybeS || 0) : (o.tackS || 0)) : 0; }
+  /* a gate: -1 not crossed, -2 crossed the wrong way (the heading is not sailed), or the fraction of the step at which the track crosses */
+  function gateWay(gate, p, nla, nlo) {
+    /* only a crossing that goes round the mark the right way counts: anticlockwise for a mark left to port, clockwise to starboard.
+       Without this a boat on the wrong side of a turn-back mark (Eddystone) could cross the line on its way out and count as rounded. */
+    var ga = gate.a, gk = Math.cos(ga[0] * R), gx = (p.lo - ga[1]) * gk, gy = p.la - ga[0], hx = (nlo - ga[1]) * gk, hy = nla - ga[0], sw = gx * hy - gy * hx;
+    var right = gate.side === 'port' ? sw > 0 : sw < 0;
+    /* the line is a wall the wrong way: a boat cannot cross it going the wrong way round, so it cannot step across and back */
+    if (!right) return -2;
+    /* and the rounding only counts close to the mark: going round the far end of the line is not rounding the mark */
+    return Math.min(dist(p.la, p.lo, ga[0], ga[1]), dist(nla, nlo, ga[0], ga[1])) > 6 ? -1 : 0;
+  }
+  function gateFrac(ga, gb, p, nla, nlo) {   /* the fraction of the step at which the boat's track crosses the gate line */
+    var gk2 = Math.cos(ga[0] * R), px = p.lo * gk2, py = p.la, rx = (nlo - p.lo) * gk2, ry = nla - p.la, sx = (gb[1] - ga[1]) * gk2, sy = gb[0] - ga[0], den = rx * sy - ry * sx;
+    return Math.abs(den) < 1e-15 ? 1 : Math.max(0, Math.min(1, ((ga[1] * gk2 - px) * sy - (ga[0] - py) * sx) / den));
+  }
+  function gateArrive(gate, p, nla, nlo) {
+    if (!crosses4(p.la, p.lo, nla, nlo, gate.a, gate.b)) return -1;
+    var w = gate.side ? gateWay(gate, p, nla, nlo) : 0; if (w < 0) return w;
+    return gateFrac(gate.a, gate.b, p, nla, nlo);
+  }
+  /* a point (a finish, an inshore buoy): -1 not reached, or when in the step the boat first comes within the radius (13 Nov 2026, review finding 1) */
+  function pointArrive(tgt, leg, p, nla, nlo) {
+    var k = Math.cos(tgt[0] * R), ax = (p.lo - tgt[1]) * 60 * k, ay = (p.la - tgt[0]) * 60, bx = (nlo - tgt[1]) * 60 * k, by = (nla - tgt[0]) * 60;
+    var dx = bx - ax, dy = by - ay, u = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy + 1e-12)));
+    if (!(Math.hypot(ax + u * dx, ay + u * dy) <= (leg.r || 0.5))) return -1;
+    var rr = leg.r || 0.5, qa = dx * dx + dy * dy, qb = 2 * (ax * dx + ay * dy), qc = ax * ax + ay * ay - rr * rr;
+    return qc <= 0 || qa < 1e-12 ? 0 : Math.max(0, Math.min(1, (-qb - Math.sqrt(Math.max(0, qb * qb - 4 * qa * qc))) / (2 * qa)));
+  }
+  /* prune as we go: keep only the best point in each bearing sector from the leg origin, and test the water only for a new best */
+  function markPlace(G, P, nla, nlo, dtg, dfo, bx2, by2, tk) {
+    if (dtg < NEARM) { var mb = (Math.atan2((nlo - G.tgt[1]) * G.kT, nla - G.tgt[0]) / R + 360) % 360; P.sec = P.SEC + Math.min(G.MS - 1, Math.floor(mb / (360 / G.MS))); P.score = 1000 - dtg - tk; return; }
+    var over = Math.max(0, (bx2 * G.ux + by2 * G.uy) * 60 - G.dM); P.score = Math.min(dfo, G.dM) - 2 * over - P.wDtg * dtg - tk;
+  }
+  function frontPlace(G, P, nla, nlo, lost) {
+    var bx2 = (nlo - G.oLo) * G.kO, by2 = nla - G.oLa, bb = (Math.atan2(bx2, by2) / R + 360) % 360, tk = lost > 0 ? 0.01 : 0;
+    P.sec = Math.min(P.SEC - 1, Math.floor(bb / P.secW));
+    var dtg = dist(nla, nlo, G.tgt[0], G.tgt[1]), dfo = Math.sqrt(bx2 * bx2 + by2 * by2) * 60;
+    P.score = dfo - P.wDtg * dtg - tk + 2 * Math.max(0, P.near0 - dtg);   // near the mark, reward closeness so the front is not pruned away from it
+    if (G.MS) markPlace(G, P, nla, nlo, dtg, dfo, bx2, by2, tk);
+  }
+  /* one heading from one point of the front */
+  function tryHeading(S, G, P, hl, hi) {
+    var o = S.o, p = P.p, twa = hl[3][hi], s = o.speed(P.tws, twa);
+    if (s <= 0.05) return;
+    s *= seaFactor(P.V[0], P.V[1], hl[0][hi], o.sea);
+    var side = twa < 0 ? -1 : 1, lost = turnLoss(o, p.side, side, twa), dt = G.dt, C = P.C;
+    var run = Math.max(0, dt - lost) / 3600;
+    var dn = (s * hl[2][hi] * run + C[1] * dt / 3600), de = (s * hl[1][hi] * run + C[0] * dt / 3600);
+    var nla = p.la + dn / 60, nlo = p.lo + de / (60 * P.kp);
+    var fr = P.gate ? gateArrive(P.gate, p, nla, nlo) : pointArrive(G.tgt, G.leg, p, nla, nlo);
+    if (fr === -2) return;
+    if (fr < 0) { frontPlace(G, P, nla, nlo, lost); if (P.score <= P.bestS[P.sec]) { P.ncand++; return; } }
+    if (!wetLine(S.water, p.la, p.lo, nla, nlo)) return;
+    var c = { la: nla, lo: nlo, par: P.pi, hdg: hl[0][hi], tws: P.tws, twd: P.twd, twa: twa, bsp: s, cu: C[0], cv: C[1], hs: P.V[0], wd: P.V[1], side: side, tack: lost > 0, lost: Math.min(lost, dt) };
+    if (fr >= 0) { c.fr = fr; c.la = p.la + (nla - p.la) * fr; c.lo = p.lo + (nlo - p.lo) * fr; P.hit.push(c); } else { P.ncand++; c.score = P.score; P.best[P.sec] = c; P.bestS[P.sec] = P.score; }
+  }
+  function expandPoint(S, St, G, P, pi) {
+    var o = S.o, p = St.pts[pi], tm = St.t + G.dt / 7200;   /* read at the middle of the step, not its start (E2, 19 Nov 2026): a veering or building wind and a turning tide are met as the boat meets them */
+    var W = o.wind(p.la, p.lo, tm); P.C = o.tide(p.la, p.lo, tm); P.V = o.wave ? o.wave(p.la, p.lo, tm) : [0, NaN];
+    P.p = p; P.pi = pi; P.tws = W[0]; P.twd = W[1]; P.kp = Math.cos(p.la * R); if (!(P.tws > 0)) P.calm++;
+    /* headings relative to the wind here, every hstep of true wind angle, plus the best VMG angles up and down on each side
+       (14 Nov 2026, review finding 15): with headings fixed to north the angles on offer, and so the time, depended on the
+       wind direction against the heading grid */
+    var hl = S.heads(P.tws, P.twd);
+    for (var hi = 0, NH = hl[4]; hi < NH; hi++) tryHeading(S, G, P, hl, hi);
+  }
+  /* the mark is rounded (or the finish reached) at the moment the first boat crosses, not at the end of the step: the leg
+     is timed from there and the next leg starts from that point (13 Nov 2026, review finding 1: up to a whole step late before,
+     and the next leg started up to a step's sailing beyond the mark) */
+  /* a tack or gybe in the arrival step costs its whole time, not the share of it the boat had sailed (19 Nov 2026, peer review: the
+     arrival was timed as a share of the whole step, so a tack just before a mark or the finish was partly free) */
+  function arriveLeg(St, G, P, li) {
+    var dt = G.dt, arrT = function (c) { var L = c.lost || 0; return L + c.fr * (dt - L); };
+    var first = P.hit.reduce(function (a, c) { return arrT(c) < arrT(a) ? c : a; }, P.hit[0]), tArr = St.t - dt / 3600 + arrT(first) / 3600;
+    St.t = tArr;
+    St.hist.push({ pts: [first], t: tArr, leg: li }); St.arrivals.push({ name: G.leg.name, t: tArr });
+    St.pts = [{ la: first.la, lo: first.lo, side: first.side, par: 0 }];
+  }
+  /* the way back: from a point of the last front to the start, through each step's parent */
+  function trackBack(o, hist, k) {
+    var path = [];
     for (var hI = hist.length - 1; hI >= 0; hI--) {
-      var c3 = hist[hI].pts[k2];
+      var c3 = hist[hI].pts[k];
       path.push({ t: hist[hI].t, la: c3.la, lo: c3.lo, hdg: c3.hdg, tws: c3.tws, twd: c3.twd, twa: c3.twa, bsp: c3.bsp, cu: c3.cu, cv: c3.cv, hs: c3.hs, wd: c3.wd, leg: hist[hI].leg, tack: c3.tack });
-      // parent index refers to the previous step's kept list
-      k2 = c3.par;
+      k = c3.par;   // parent index refers to the previous step's kept list
     }
     path.reverse();
     path.unshift({ t: o.start.t, la: o.start.lat, lo: o.start.lon, leg: 0 });
-    return { arrivals: arrivals, path: path, finish: arrivals.length ? arrivals[arrivals.length - 1].t : null, iso: iso };
+    return path;
+  }
+  function nearestTo(pts, tgt) { var bp = pts[0], bd = 1e9; pts.forEach(function (q) { var d = dist(q.la, q.lo, tgt[0], tgt[1]); if (d < bd) { bd = d; bp = q; } }); return { p: bp, d: bd }; }
+  function legsAfter(o, li, prevP, togo) { for (var lj = li + 1; lj < o.legs.length; lj++) { var L2 = o.legs[lj], nx = L2.point || L2.gate.a; togo += dist(prevP[0], prevP[1], nx[0], nx[1]); prevP = nx; } return togo; }
+  /* no wind anywhere on the front: the forecasts have run out before the finish */
+  function forecastEnd(S, St, G, li) {
+    var o = S.o, n = nearestTo(St.pts, G.tgt), togo = legsAfter(o, li, G.tgt, n.d);
+    if (o.partial) {   /* keep the route as far as the forecasts reach, and say how far is left */
+      var path0 = trackBack(o, St.hist, St.pts.indexOf(n.p));
+      return { arrivals: St.arrivals, path: path0, finish: path0[path0.length - 1].t, partial: { togo: Math.round(togo), leg: G.leg.name, end: St.t }, iso: St.iso };
+    }
+    var e0 = new Error('The forecasts end ' + Math.round(St.t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + G.leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
+  }
+  function noWay(S, St, G) {
+    var pts = St.pts, mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; });
+    var e = new Error('No way through on the leg to ' + G.leg.name + ' near ' + (mla / pts.length).toFixed(2) + ' N ' + (-mlo / pts.length).toFixed(2) + ' W after ' + Math.round(St.t - S.o.start.t) + ' h. Try a smaller safety depth.'); e.at = [mla / pts.length, mlo / pts.length, pts.length, G.step]; return e;
+  }
+  function keepFront(St, P, li) {
+    var keep = P.best.filter(Boolean);
+    St.hist.push({ pts: keep, t: St.t, leg: li });
+    if (St.iso && St.t - St.isoT >= 0.999) { St.isoT = St.t; St.iso.push({ t: St.t, leg: li, p: keep.map(function (c) { return [Math.round(c.la * 1e4) / 1e4, Math.round(c.lo * 1e4) / 1e4]; }) }); }
+    St.pts = keep.map(function (c, i) { return { la: c.la, lo: c.lo, side: c.side, par: i }; });
+  }
+  function setStep(S, G, dt) { G.dt = dt; G.maxSteps = Math.ceil((S.o.maxHours || 60) * 3600 / dt); }
+  /* one step: 'done' when the mark or finish is reached, a partial route when the forecasts end, otherwise nothing */
+  function routeStep(S, St, G, li) {
+    var dt = G.dt, P = stepSetup(S, G);
+    for (var pi = 0; pi < St.pts.length; pi++) expandPoint(S, St, G, P, pi);
+    St.t += dt / 3600;
+    if (P.hit.length) { arriveLeg(St, G, P, li); return 'done'; }
+    if (P.ncand) { keepFront(St, P, li); return null; }
+    if (P.calm === St.pts.length && St.pts.length) return forecastEnd(S, St, G, li);
+    /* no step fits (Stuart 17 Nov 14:47, testrace1: rounding 2C Colten, the leg home ran in 20-minute steps of about 2.7 nm, and every
+       one from the narrows by Colten crossed water shallower than the safety depth): halve the step and try again before giving up */
+    if (dt > 75) { St.t -= dt / 3600; setStep(S, G, Math.max(60, dt / 2)); G.step--; return null; }
+    throw noWay(S, St, G);
+  }
+  function routeLeg(S, St, li) {
+    var o = S.o, leg = o.legs[li], G = legGeom(leg, St.pts);
+    setStep(S, G, leg.dt || S.dt0);
+    for (G.step = 0; G.step < G.maxSteps; G.step++) { var r = routeStep(S, St, G, li); if (r === 'done') return null; if (r) return r; }
+    throw new Error('Did not reach ' + leg.name + ' within ' + (o.maxHours || 60) + ' hours.');
+  }
+  /* backtrack from the arrival closest to the finish */
+  function routeResult(o, St) {
+    var hist = St.hist, last = hist[hist.length - 1].pts, fin = o.legs[o.legs.length - 1].point, k2 = 0;
+    if (fin) { var bd = 1e9; last.forEach(function (c, i) { var d = dist(c.la, c.lo, fin[0], fin[1]); if (d < bd) { bd = d; k2 = i; } }); }
+    var arr = St.arrivals;
+    return { arrivals: arr, path: trackBack(o, hist, k2), finish: arr.length ? arr[arr.length - 1].t : null, iso: St.iso };
+  }
+  function route(o) {
+    /* o: { start:{lat,lon,t}, legs:[{name, gate:{a,b}} | {name, point:[la,lo], r}], wind, tide, wave, speed, depth, safety (m), margin (depth squares, 0 to 3),
+            dt (s), hstep (deg), sectors, maxHours, tackS, gybeS, sea } */
+    var hstep = o.hstep || 5, S = { o: o, dt0: o.dt || 600, sectors: o.sectors || 360, heads: routeHeads(o, hstep), water: routeWater(o) };
+    var St = { pts: [{ la: o.start.lat, lo: o.start.lon, side: 0, par: -1 }], t: o.start.t, hist: [], arrivals: [], iso: o.iso ? [] : null, isoT: o.start.t };   /* iso: the front each hour, for the isochrones on the chart */
+    for (var li = 0; li < o.legs.length; li++) { var part = routeLeg(S, St, li); if (part) return part; }
+    return routeResult(o, St);
   }
 
   /* Sail a fixed track through a forecast, by the optimiser's own rules (peer review, 19 Nov 2026; ROUTING-ENGINE-PLAN E1). Each piece of the
