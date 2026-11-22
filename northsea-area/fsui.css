@@ -113,7 +113,8 @@ html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
 :root[data-night] .rpl b,:root[data-night] .rpname b,:root[data-night] .rpline{color:#E0322A}
 :root[data-night] .rplotb[aria-pressed="true"]{background:#3A0A08!important;color:#E0322A!important}
 img.hpic:not([src]){display:none}
-.rpmode{font-size:11px;padding:0 6px;letter-spacing:.04em}   /* F8: MARK or ROUTE */
+.rpmode{font-size:11px;padding:0 6px;letter-spacing:.04em}
+.rpnav.rpview{display:flex;gap:3px;padding:3px;font:700 12px/1 var(--f-data,inherit);letter-spacing:.04em}.rpview span{display:flex;align-items:center;justify-content:center;min-width:40px;padding:0 5px;border-radius:6px;color:var(--muted)}.rpview span.on{background:var(--brand,var(--route));color:var(--panel)}   /* F8: MARK or ROUTE */
 
 /* M20 (Stuart 17 Nov 06:05): in clear screen the product's logo top left, with a line turning round it while it is working and receiving; M5: Mark's logo box has the line all the time */
 @property --fsA{syntax:'<angle>';initial-value:0deg;inherits:false}
@@ -171,3 +172,26 @@ body.gpsstrip #liveBox{display:none!important}
 /* M93: the strip tagged RHUMB while the slider runs the rhumb-line boat on Mark */
 .now.rhumb::before{content:'RHUMB'}
 .battnote{display:flex;flex-direction:column;gap:8px;text-align:left}.battnote .xrow{display:flex;gap:8px;justify-content:flex-end}
+/* HELM (fshelm.js, Stuart 22 Nov 10:36): the helmsman's full screen on the phone's GPS; PLAN figures dimmer */
+.fshelm{position:fixed;inset:0;z-index:70;background:#05101E;color:#F4F7FB;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.fshelm[hidden]{display:none!important}
+.fhbar{display:flex;align-items:center;gap:8px}.fhutc{font:600 13px var(--f-data,monospace);color:#9FB2CC;white-space:nowrap}
+.fhseg{display:flex;flex:1;border:1px solid #2A3B55;border-radius:10px;overflow:hidden}.fhseg button{flex:1;min-height:44px;border:0;background:transparent;color:#9FB2CC;font:600 15px inherit}.fhseg button[aria-pressed="true"]{background:#2F80D8;color:#fff}
+.fhbtn{min-width:52px;min-height:44px;border-radius:10px;border:1px solid #2A3B55;background:transparent;color:#F4F7FB;font:700 15px inherit}
+.fhmob{background:#E5484D;border-color:#E5484D;color:#fff;font-weight:800}.fhmob.holding{background:#8B0000}
+.fhwarn{margin:8px 0 0;padding:8px;border-radius:8px;background:#E5484D;color:#fff;font:700 15px inherit;text-align:center}
+.fhstart{margin-top:8px;border:1px solid #2A3B55;border-radius:12px;padding:6px;display:flex;align-items:baseline;justify-content:center;gap:12px}.fhstart b{font:700 clamp(40px,14vw,96px)/1 var(--f-data,monospace)}.fhstart span{font:600 clamp(14px,4vw,22px) inherit;color:#9FB2CC}
+.fhgrid{flex:1;display:grid;grid-template-rows:repeat(3,1fr);gap:6px;margin-top:8px;min-height:0}
+.fhgrid.n6,.fhgrid.n9{grid-template-columns:1fr 1fr}.fhgrid.n6{grid-template-rows:repeat(3,1fr)}.fhgrid.n9{grid-template-columns:repeat(3,1fr)}
+.fhgrid>div{display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid #1C2B42;min-height:0;min-width:0;overflow:hidden}
+.fhgrid span{font:700 clamp(13px,3.6vw,22px) inherit;letter-spacing:.08em;color:#9FB2CC}
+.fhgrid b{font:700 clamp(56px,22vw,200px)/1 var(--f-data,monospace);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fhgrid.n6 b{font-size:min(13vw,10vh)}.fhgrid.n9 b{font-size:min(9vw,7vh)}
+.fhgrid i{font:600 clamp(12px,3.4vw,24px) inherit;font-style:normal;color:#9FB2CC;margin-top:4px;text-align:center}
+.fhgrid .plan{opacity:.62}.fhgrid .plan span::after{content:' PLAN';font-size:.7em;letter-spacing:.04em}
+.fshelm.starting .fhgrid b{font-size:clamp(36px,12vw,120px)}
+@media (orientation:landscape){.fhgrid{grid-template-rows:none;grid-template-columns:repeat(3,1fr)}.fhgrid.n6,.fhgrid.n9{grid-template-rows:1fr 1fr;grid-template-columns:repeat(3,1fr)}.fhgrid.n9{grid-template-rows:repeat(3,1fr)}.fhgrid>div{border-bottom:0;border-right:1px solid #1C2B42}.fhgrid b{font-size:min(12vw,34vh)}.fhgrid.n6 b{font-size:min(8vw,19vh)}.fhgrid.n9 b{font-size:min(5.5vw,11vh)}.fhgrid.n9 span,.fhgrid.n9 i{font-size:clamp(10px,3.2vh,16px);margin-top:0}}
+.fshelm.red{background:#000;color:#E01010}.fshelm.red .fhgrid span,.fshelm.red .fhgrid i,.fshelm.red .fhseg button,.fshelm.red .fhbtn,.fshelm.red .fhutc,.fshelm.red .fhstart span{color:#A00808;border-color:#400}.fshelm.red .fhseg{border-color:#400}.fshelm.red .fhseg button[aria-pressed="true"]{background:#600;color:#F02020}.fshelm.red .fhgrid>div{border-color:#300}.fshelm.red .fhmob{background:#600;color:#F02020}
+/* Stuart 22 Nov: DECK | NAV on the plotter bar. On a phone the buttons take their own short row and the mark name and the one-line readout
+   the full width under them, so no button sits on the figures. */
+@media (max-width:600px){.rphead{flex-wrap:wrap;justify-content:center;row-gap:4px}.rphead .rpname{order:2;flex:1 1 100%}.rphead .rpnav{min-height:30px;font-size:11px}.rpnav.rpview span{min-width:36px}.rpline{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}}
