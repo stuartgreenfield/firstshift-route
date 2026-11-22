@@ -39,7 +39,9 @@ const round = (v) => typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : Array.i
     await p.addInitScript((FS) => { try { if (FS) localStorage.setItem('fs-finesec', FS); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); } catch (e) {} }, process.env.PRE_FINESEC || '');   /* the server's finer pass (Stuart 20 Nov 12:42: 2000 sectors) */
     await p.goto(`http://localhost:${port}/${race}/` + (rid ? '?race=' + rid : ''));
     const note = () => p.evaluate(() => document.getElementById('runNote').textContent);
-    const waitDone = () => p.waitForFunction(() => { const t = document.getElementById('runNote').textContent; return /First answer|Routed on the server/.test(t) || (!/Quick route|Refining/.test(t) && /No route|Cannot|outside|No way|forecasts end/.test(t)); }, null, { timeout: +(process.env.PRE_WAIT_MS || 1500000) });
+    /* 22 Nov: "forecasts end before the finish" also shows while the finer pass is still coming; choosing the next start then saved the
+       last start's finer routes under its key (Celtic kept 3 of 6). Done means no pass still coming. */
+    const waitDone = () => p.waitForFunction(() => { const t = document.getElementById('runNote').textContent; if (/Quick route|Refining|Finer routes coming/.test(t)) return false; return /First answer|Routed on the server/.test(t) || /No route|Cannot|outside|No way|forecasts end/.test(t); }, null, { timeout: +(process.env.PRE_WAIT_MS || 1500000) });
     try {
       await waitDone();   // the page routes the first start time by itself once the forecasts are in
       for (let h = h0; h <= h1; h++) {
