@@ -27,7 +27,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   ok(rq && !rq.rb && /On your list as Quite Another Name/.test(rq.txt), 'A boat with a different AIS name is matched by MMSI', rq);
   const learnt = await p.evaluate(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => /^fs-fleet-(?!no)/.test(k))) || '[]'));
   ok(learnt[0].mmsi === +a.m && !learnt[1].mmsi, 'A name match keeps the MMSI; a close match does not', learnt.map(f => f.mmsi));
-  const ft = await p.evaluate(() => document.getElementById('fleet').textContent); ok(/AIS · At this point/.test(ft), 'Fleet table shows the live AIS corrected gap', ft.slice(0, 200));
+  const ft = await p.evaluate(() => [...document.querySelectorAll('#fleet tr')].slice(1).map(r => [...r.cells].map(c => c.textContent))); ok(ft.filter(r => /min|level/.test(r[2] || '')).length >= 2 && ft.some(r => /You/.test(r[1])), 'Fleet table shows the live AIS corrected gap (At this point column)', ft.slice(0, 4));
   await p.evaluate(m => { document.querySelector('#aisTable tr[data-mmsi="' + m + '"] [data-no]').click(); }, z.m); await p.waitForTimeout(2500);
   rz = await row(z.m); ok(rz && rz.rb, '"Not this boat" removes the match and brings back Race boat', rz);
   await p.setInputFiles('#mfFile', path.join(__dirname, 'data-entries.xlsx')); await p.waitForTimeout(1500);
