@@ -17,7 +17,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   ok(opts && opts.join('|') === 'Same start as you|15 min before you|10 min before you|5 min before you|5 min after you|10 min after you|15 min after you|30 min after you|Exact time…', 'Start choices as asked, default your start', opts);
   const lbl = () => p.evaluate(() => document.querySelector('#mfList .mfat').textContent);
   const l0 = await lbl();
-  await p.evaluate(() => { const s = document.querySelector('#mfList select[data-st]'); s.value = '30'; s.dispatchEvent(new Event('change')); }); await p.waitForTimeout(2500); await nudge(); await p.waitForTimeout(2500);
+  await p.evaluate(() => { const s = document.querySelector('#mfList select[data-st]'); s.value = '30'; s.dispatchEvent(new Event('change')); }); await p.waitForTimeout(2500); await nudge(); await p.waitForTimeout(1500); await nudge(); await p.waitForTimeout(2500);   /* back to the same slider time as the first reading, so only the start differs */
   const l30 = await lbl(), g30 = await gap();
   const mm = t => { const m = /(\d\d):(\d\d)/.exec(t); return m ? +m[1] * 60 + +m[2] : null; };
   ok(((mm(l30) - mm(l0)) + 1440) % 1440 === 30, 'Its start shows 30 min after yours', [l0, l30]);
