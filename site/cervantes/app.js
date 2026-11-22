@@ -185,6 +185,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     var keep = false; try { keep = sessionStorage.getItem('fs-keep') === '1'; sessionStorage.removeItem('fs-keep'); } catch (e) {}
     if (keep) { gone = true; sp.hidden = true; S.splashDone = function () {}; setTimeout(function () { var n = $('spTourNo'); if (n) n.click(); }, 300); return; }   /* after Reload: straight back to the chart */
+    var spf = $('spFirst'); if (spf) { var bset = false; try { bset = localStorage.getItem('fs-boatset') === '1'; } catch (e) {} spf.hidden = bset; }   /* 22 Nov navigator review: first time, say the routes are for a typical boat until the boat and start are set */
     if ($('spTour')) { S.splashDone = function () {}; sp.addEventListener('click', hide); return; }   /* Show me round? Yes or No, asked every time: the splash waits for the answer (Stuart 14 Nov) */
     S.splashDone = function () { setTimeout(hide, Math.max(0, SPLASH_MIN - (Date.now() - t0))); }; sp.addEventListener('click', hide); setTimeout(hide, 12000); })();
   /* ---------- start ---------- */
@@ -933,6 +934,34 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* ---------- AIS: targets from an AIS feed (test fleet now; the boat's own receiver and an online feed next), CPA alarm ---------- */
   var AIS = { tg: new FSAIS.Targets(), src: 'off', danger: {}, lastEmit: -1, fleet: null, warned: {} };
   function aisNowMs() { return AIS.src === 'test' ? (T0 + S.t * 3600) * 1000 : Date.now(); }
+  /* Fleet gaps (Stuart 22 Nov 08:26, decided 08:30 "At this point" and "Routed finish"; go 14:56). For a race boat seen on AIS with a TCC,
+     two corrected-time gaps, + = you ahead (IRC corrected time = elapsed x TCC, both boats from the same start):
+     At this point: both boats where they are now, each sailing the rest of our planned route at par for its rating (the plan's time from
+       each boat's nearest point on the route, scaled by the ratings).
+     Routed finish: each boat sails our route from where it is now, at its own TCC, through the forecast (the routing worker's 'times').
+     Routed finishes are worked out at most once a minute per boat, in the background. */
+  var FG = { me: null, b: {} };
+  function fgNear(path, la, lo) { var bi = 0, bd = 1e9; for (var i = 0; i < path.length; i++) { var d = FSRouter.dist(la, lo, path[i].la, path[i].lo); if (d < bd) { bd = d; bi = i; } } return Math.min(bi + 1, path.length - 1); }
+  function fgSail(la, lo, tcc, path, j, nowH, myT) { return poolShort({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: [{ la: la, lo: lo, t: null }].concat(path.slice(j)), tccMe: myT, boats: [{ tcc: tcc, start: nowH }] }).then(function (r) { var ts = r && r[0]; return ts ? ts[ts.length - 1] : null; }); }
+  function fgWords(m) { return Math.abs(m) < 1 ? 'level' : 'you ' + (Math.abs(m) >= 60 ? Math.floor(Math.abs(m) / 60) + 'h' + ('0' + Math.round(Math.abs(m) % 60)).slice(-2) : Math.round(Math.abs(m)) + ' min') + (m > 0 ? ' ahead' : ' behind'); }
+  function fgRefresh(x, own, tt, path, jm, jt, nowH, myT, st) {   /* the routed finishes, in the background, at most once a minute per boat */
+    var b = FG.b[x.mmsi]; if (FG.busy || (b && Date.now() - b.at < 60000)) return; FG.busy = true;
+    var me = FG.me && Date.now() - FG.me.at < 60000 ? Promise.resolve(FG.me.fin) : fgSail(own.lat, own.lon, myT, path, jm, nowH, myT);
+    me.then(function (mf) { if (mf != null) FG.me = { at: Date.now(), fin: mf }; return fgSail(x.lat, x.lon, tt, path, jt, nowH, myT).then(function (tf) { if (mf != null && tf != null) FG.b[x.mmsi] = { at: Date.now(), m: ((tf - st) * tt - (mf - S.start.t) * myT) * 60 }; }); })
+      .catch(function () {}).then(function () { FG.busy = false; AIS.forceTable = true; });
+  }
+  function fleetGap(x, e, own, nowMs) {
+    if (!S.sel || !S.sel.r || !S.start || !S.base || !own || x.lat == null) return '';
+    var path = S.sel.r.path, nowH = (nowMs / 1000 - T0) / 3600, E = nowH - S.start.t, myT = +$('tcc').value || 1, tt = e.tcc, fin = S.sel.r.finish;
+    var st = fleetStartH(e), Et = nowH - st;   /* the rival's own start (Stuart 15:09) */
+    if (E <= 0 || Et <= 0 || nowH >= fin || !(tt > 0)) return '';
+    var jm = fgNear(path, own.lat, own.lon), jt = fgNear(path, x.lat, x.lon);
+    var restMe = Math.max(0, fin - path[jm].t), restTh = Math.max(0, fin - path[jt].t) * myT / tt;
+    fgRefresh(x, own, tt, path, jm, jt, nowH, myT, st);
+    var b = FG.b[x.mmsi];
+    return 'At this point: ' + fgWords(((Et + restTh) * tt - (E + restMe) * myT) * 60) + (b ? ' · Routed finish: ' + fgWords(b.m) : '');
+  }
+  window.__fsFleetGaps = function () { return FG; };   /* for the automatic tests */
   function ownForCpa() {
     /* F53 (Stuart 18 Nov 2026, found by the boat simulator): our position for the collision warning is the Live GPS fix whenever Live GPS
        is on (the boat's GPS on the + tools, or dead reckoning when the GPS is lost). It used to be the phone's GPS only while MOB was running,
@@ -988,6 +1017,28 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var h = AIS_SHOW.map(function (o) { var c = n(o[0]); return '<option value="' + o[0] + '">' + o[1] + (c != null ? ' (' + c + ')' : '') + '</option>'; }).join('');
     if (el.dataset.h !== h) { el.innerHTML = h; el.dataset.h = h; el.value = v; }
   }
+  /* Stuart 22 Nov 15:17: the entry list (pasted, or a file) is matched to AIS automatically: by MMSI, by the name as AIS sends it
+     (20 capitals and digits) or its sail number, or by a close name you can reject. See fsentries.js. */
+  function mfNoKey() { return 'fs-fleet-no-' + raceKey(); }
+  function mfNo() { try { return JSON.parse(store(mfNoKey()) || '{}') || {}; } catch (e) { return {}; } }
+  function mfNoAdd(v) { var o = mfNo(); o[v] = 1; store(mfNoKey(), JSON.stringify(o)); var m = +v.split('|')[0], a = myFleet(); a.forEach(function (f) { if (+f.mmsi === m && f.name.toUpperCase() === v.split('|')[1]) f.mmsi = null; }); store(mfKey(), JSON.stringify(a)); mfShow(); }
+  function aisEntries() { var mine = myFleet(), have = {}; mine.forEach(function (e) { have[e.name.toUpperCase()] = 1; }); return mine.concat((meta.fleet || []).filter(function (e) { return e.tcc && !have[e.name.toUpperCase()]; })); }
+  function aisLearn(list) {   /* a boat found by its AIS name keeps its MMSI, so it is still found if the name changes or is cut */
+    var a = myFleet(), ch = 0;
+    list.forEach(function (x) { if (x.how !== 'name') return; a.forEach(function (f) { if (!f.mmsi && f.name === x.ent.name) { f.mmsi = x.mmsi; ch++; } }); });
+    if (ch) { store(mfKey(), JSON.stringify(a)); mfShow(); }
+  }
+  function aisRace(list) {
+    var m = window.FSENT ? FSENT.match(list, aisEntries(), mfNo()) : {};
+    list.forEach(function (x) { var r = m[x.mmsi]; x.ent = r ? r.e : null; x.how = r ? r.how : ''; x.race = !!r; x.cat = x.race ? 'race' : FSAIS.shipCat(x); });
+    aisLearn(list);
+  }
+  function aisHow(x, e, g) {
+    x.ogG = g ? g.replace(/ · Routed finish.*/, '') : '';
+    var esc = String(e.name).replace(/[&<>"]/g, ''), same = FSENT.key(x.name) === FSENT.key(e.name);
+    if (x.how === 'close') return '<br><span class="note">Found by a close name: ' + esc + ' on your list. </span><button class="aisrb" data-no="' + x.mmsi + '|' + esc.toUpperCase() + '">Not this boat</button>';
+    return same || x.how === 'mmsi' && !x.name ? '' : '<br><span class="note">On your list as ' + esc + '</span>';
+  }
   function aisUpdate() {
     if (AIS.src === 'off') { $('aisBox').hidden = true; return; }
     if (AIS.src === 'test') aisEmulate();
@@ -997,8 +1048,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (fresh.length && $('cpaSound').checked && (!AIS.lastBeep || Date.now() - AIS.lastBeep > 4000)) { beep(); AIS.lastBeep = Date.now(); }
     AIS.warned = danger; AIS.all = list; AIS.own = own;
     list.sort(function (a, b) { return (b.danger - a.danger) || ((a.c ? a.c.range : 99) - (b.c ? b.c.range : 99)); });
-    var myT = +$('tcc').value || 1, rest = S.sel ? Math.max(0, S.sel.r.finish - S.t) : 0, ent = {}, byM = {}; (meta.fleet || []).forEach(function (e) { if (e.tcc) ent[e.name.toUpperCase()] = e; }); myFleet().forEach(function (e) { ent[e.name.toUpperCase()] = e; if (e.mmsi) byM[e.mmsi] = e; });
-    list.forEach(function (x) { x.race = !!(byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()])); x.cat = x.race ? 'race' : FSAIS.shipCat(x); });
+    var myT = +$('tcc').value || 1, rest = S.sel ? Math.max(0, S.sel.r.finish - S.t) : 0;
+    aisRace(list);
     var cnt = {}; list.forEach(function (x) { cnt[x.cat] = (cnt[x.cat] || 0) + 1; }); aisShowOpts(cnt, list.length);
     var show = $('aisShow') ? $('aisShow').value : 'all', shown = list.filter(function (x) { return x.danger || aisShown(x, show); });   /* a close-quarters target always shows, whatever is chosen */
     AIS.list = shown;
@@ -1009,9 +1060,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (dz && !hid) {   /* build the box once, then only change its words, so the × is never swapped out under a finger */
       if (!$('cpaX')) { $('cpaWarn').innerHTML = '<span id="cpaTxt"></span><button class="cpax" id="cpaX" aria-label="Close this warning for this ship">×</button>'; $('cpaX').onclick = function (ev) { ev.stopPropagation(); var d = AIS.cpaNow; if (d) AIS.dismiss = { mmsi: d.mmsi, at: Date.now(), cpa: d.c.cpa }; $('cpaWarn').hidden = true; }; }
       AIS.cpaNow = dz; var txt = 'Close quarters: ' + String(dz.name || dz.mmsi) + ' passes ' + dz.c.cpa.toFixed(2) + ' nm away in ' + Math.round(dz.c.tcpa) + ' min'; if ($('cpaTxt').textContent !== txt) $('cpaTxt').textContent = txt; }
-    var og = function (x) { var e = byM[x.mmsi] || (x.name && ent[x.name.toUpperCase()]); if (!e) return ''; var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>'; };
+    AIS.liveG = {};
+    var og = function (x) { var e = x.ent; if (!e) return ''; if (x.ogAt !== now || x.ogE !== e) { x.ogAt = now; x.ogE = e; x.og = ogText(x, e, myT, own, now); } if (x.ogG) AIS.liveG[e.name.toUpperCase()] = x.ogG; return x.og; };
+    var ogText = function (x, e, myT, own, now) { var perH = (e.tcc / myT - 1) * 60, tot = perH * (S.sel ? S.sel.r.finish - S.start.t : 0), g = fleetGap(x, e, own, now); return '<span class="note">TCC ' + e.tcc.toFixed(3) + ', ' + (perH >= 0 ? 'owes you ' : 'you owe ') + Math.abs(perH).toFixed(1) + ' min/h' + (tot ? ' (' + Math.round(Math.abs(tot)) + ' min race)' : '') + '</span>' + (g ? '<br><span class="note fgap">' + g + '</span>' : '') + aisHow(x, e, g); };
     var h = '<tr><th>Target</th><th>Range</th><th>Brg</th><th>CPA</th><th>TCPA</th><th>SOG</th></tr>' + shown.slice(0, 40).map(function (x) {
       var c = x.c; return '<tr data-mmsi="' + x.mmsi + '" class="' + (x.danger ? 'danger' : '') + '"><td style="font-family:var(--f-body)">' + (x.name || x.mmsi) + ' <span class="note">' + (FSAIS.CATS[x.cat] || '') + (x.at && now - x.at > 150000 ? ', seen ' + Math.round((now - x.at) / 60000) + ' min ago' : '') + '</span>' + (x.race ? '' : '<button class="aisrb" data-rb="' + x.mmsi + '">Race boat</button>') + (og(x) ? '<br>' + og(x) : '') + '<span class="aistcc" id="rb' + x.mmsi + '" hidden><input type="number" inputmode="decimal" step="0.001" placeholder="TCC" aria-label="TCC"><button class="aisrb" data-rbok="' + x.mmsi + '">Add</button></span>' + '</td><td>' + (c ? c.range.toFixed(1) : '-') + '</td><td>' + (c ? pad(c.brg) + '°' : '-') + '</td><td>' + (c ? c.cpa.toFixed(2) : '-') + '</td><td>' + (c && c.tcpa > 0 ? Math.round(c.tcpa) + ' min' : '-') + '</td><td>' + (x.sog != null ? x.sog.toFixed(1) : '-') + '</td></tr>'; }).join('');
+    if (AIS.liveSig !== (AIS.liveSig = JSON.stringify(AIS.liveG))) fleetTable();   /* the fleet table shows each AIS boat's live corrected gap */
     var ae = document.activeElement; if (AIS.open && Date.now() - AIS.open.at < 90000 && ae && $('aisTable').contains(ae)) return;   /* someone is typing a TCC: do not redraw the table under them */
     if (AIS.tableAt && Date.now() - AIS.tableAt < 2000 && !AIS.forceTable) return; AIS.tableAt = Date.now(); AIS.forceTable = false;   /* the table redraws at most every 2 s, so a tap on a button lands (it was redrawn on every frame of the replay) */
     $('aisTable').innerHTML = h; $('aisBox').hidden = false;
@@ -1020,6 +1074,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('aisNote').textContent = (shown.length < list.length ? shown.length + ' of ' : '') + list.length + ' targets · ' + (AIS.src === 'test' ? 'test fleet, ' + (AIS.lines || 0) + ' sentences decoded' : AIS.err ? AIS.err : 'free online AIS: not every target, not for navigation; updated every 30 s') + (own ? ' · CPA from ' + (own.src === 'GPS' ? 'your GPS' : own.src === 'dead reckoning' ? 'dead reckoning' : 'the route boat') : ' · route first for CPA');
     [].forEach.call($('aisTable').querySelectorAll('[data-rb]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var box = $('rb' + b.dataset.rb); box.hidden = false; b.hidden = true; var x = AIS.tg.t[b.dataset.rb], k = x && x.name && (meta.fleet || []).filter(function (f) { return f.name.toUpperCase() === x.name.toUpperCase(); })[0]; if (k) box.querySelector('input').value = k.tcc; var inp = box.querySelector('input'); AIS.open = { m: b.dataset.rb, v: inp.value, at: Date.now() }; inp.oninput = function () { AIS.open.v = this.value; AIS.open.at = Date.now(); }; inp.focus(); AIS.hold = Date.now(); }; });
     [].forEach.call($('aisTable').querySelectorAll('[data-rbok]'), function (b) { b.onclick = function (e) { e.stopPropagation(); var x = AIS.tg.t[b.dataset.rbok], v = b.previousSibling.value; AIS.open = null; AIS.forceTable = true; if (!mfAdd(x ? x.name || String(x.mmsi) : b.dataset.rbok, v, +b.dataset.rbok)) { busy('Enter the TCC, for example 1.021.'); setTimeout(function () { busy(''); }, 2000); } }; });
+    [].forEach.call($('aisTable').querySelectorAll('[data-no]'), function (b) { b.onclick = function (e) { e.stopPropagation(); mfNoAdd(b.dataset.no); AIS.forceTable = true; aisUpdate(); }; });
     [].forEach.call($('aisTable').querySelectorAll('.aistcc input'), function (i) { i.onclick = function (e) { e.stopPropagation(); }; });
     [].forEach.call($('aisTable').querySelectorAll('tr[data-mmsi]'), function (tr) { tr.onclick = function () { var x = AIS.tg.t[tr.dataset.mmsi]; if (x) { view.la = x.lat; view.lo = x.lon; draw(); } }; });
   }
@@ -1963,6 +2018,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__navCourse = function () { var c = meta && meta.course; if ((S.cleared && !(S.routes && S.routes.length)) || !c || !c.start || !c.finish) return null; return { key: raceKey(), name: c.name, start: { name: c.start.name || 'Start', lat: c.start.lat, lon: c.start.lon }, marks: realMarks(c).map(function (m) { return { name: m.name, lat: m.lat, lon: m.lon, side: m.side || 'port' }; }), finish: { name: c.finish.name || 'Finish', lat: c.finish.lat, lon: c.finish.lon }, tide: $('tideSel') ? $('tideSel').value : '', gun: +$('startSel').value || null }; };   /* the course for the plotter */
   window.__navUp = function (x, y, fn) { upright(x, y, fn); };
   window.__fsLiveFix = function () { return LIVE.on ? LIVE.fix : null; };
+  /* for HELM (fshelm.js): the chosen route's plan at the clock time now, not the slider's; null before the start or after the finish */
+  window.__fsPlanNow = function () { var s = S.sel; if (!s || !s.r || !s.r.path) return null; var p = s.r.path, pos = posAt(tsOf(p), p, (Date.now() / 1000 - T0) / 3600); if (!pos || pos.done || pos.i == null) return null; var q = p[pos.i + 1] || p[pos.i]; return { twa: q.twa, tws: q.tws, bsp: q.bsp, hdg: q.hdg, sail: rig(q) }; };
+  window.__fsLiveCalc = function () { return LIVE.on ? LIVE.calc : null; };
+  window.__fsMob = function () { mobStart(); };
   window.__fsAisWarn = function () { return { warned: Object.keys(AIS.warned || {}), own: AIS.own || null }; };   /* F53 test hook */
   /* Mark's test mode (Stuart 17 Nov 05:13): a practice boat feeds the GPS instead of the phone's own; nothing is sent anywhere */
   window.__fsSim = function (on) { if (on) { if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; LIVE.on = true; LIVE.sim = true; LIVE.fix = null; } else if (LIVE.sim) { LIVE.sim = false; liveStop(); } };
@@ -2621,7 +2680,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (c.pre) h += b('pingb', lineGet().transit ? 'Ping inshore' : 'Ping boat') + b('pingp', lineGet().transit ? 'Ping outer mark' : 'Ping pin') + (window.__fsStartScreen ? b('ss', 'Start screen') : '') + (window.__fsLineSet ? b('setline', 'Set line') : '');
     if (mk && !c.pre) h += (mk.finish ? '' : b('round', 'Rounded ' + wizEsc(mk.name))) + (LIVE.mk && LIVE.mk.i > 0 ? b('back', 'Back one mark') : '') + (S.inshore ? b('end', LIVE.endArm && Date.now() - LIVE.endArm < 5000 ? 'Tap again to end' : 'End race') : '');
     if (S.sel) h += b('re', 'Re-route from here');
-    h += b('big', '20/20') + b('file', 'File track') + b('clr', 'Clear track') + (f && f.dr ? b('drstop', 'Stop dead reckoning') : '') + b('info', 'What these mean') + b('stop', 'Stop GPS', 'primary');
+    h += b('helm', 'HELM') + b('big', '20/20') + b('file', 'File track') + b('clr', 'Clear track') + (f && f.dr ? b('drstop', 'Stop dead reckoning') : '') + b('info', 'What these mean') + b('stop', 'Stop GPS', 'primary');
     if (LIVE.info) h += '<div class="gminfo">' + liveInfo() + '</div>';
     m.innerHTML = h; m.hidden = false;
     var r = $('liveBtn').getBoundingClientRect(), w = Math.min(360, innerWidth - 16); m.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px'; m.style.bottom = Math.max(8, innerHeight - r.top + 8) + 'px';
@@ -2629,7 +2688,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (k === 'x') { m.hidden = true; return; }
       if (k === 'pingb') linePing('boat'); else if (k === 'pingp') linePing('pin'); else if (k === 'ss') { m.hidden = true; window.__fsStartScreen(); return; } else if (k === 'setline') { m.hidden = true; window.__fsLineSet(); return; }
       else if (k === 'round') mkRound(); else if (k === 'back') mkBack(); else if (k === 'end') { if (!(LIVE.endArm && Date.now() - LIVE.endArm < 5000)) { LIVE.endArm = Date.now(); gpsMenu(true); return; } LIVE.endArm = null; m.hidden = true; endRace(); return; }
-      else if (k === 're') { m.hidden = true; liveReroute(); return; } else if (k === 'big') { m.hidden = true; var db = $('fsDeckBtn'); if (db) { if (db.getAttribute('aria-pressed') !== 'true') db.click(); return; } LIVE.big = true; liveShow(); return; }   /* Stuart 22 Nov 10:32: the GPS menu's big numbers are the 20/20 screen */
+      else if (k === 're') { m.hidden = true; liveReroute(); return; } else if (k === 'helm') { m.hidden = true; if (window.FSHelm) window.FSHelm.open(); return; } else if (k === 'big') { m.hidden = true; var db = $('fsDeckBtn'); if (db) { if (db.getAttribute('aria-pressed') !== 'true') db.click(); return; } LIVE.big = true; liveShow(); return; }   /* Stuart 22 Nov 10:32: the GPS menu's big numbers are the 20/20 screen */
       else if (k === 'file') { if (window.FSTracks) { var ok = FSTracks.file(LIVE.trail.slice(), (meta && meta.course && meta.course.name) || ''); if (ok) { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); } } }
       else if (k === 'clr') { LIVE.trail = []; store('fs-livetrail', '[]'); draw(); }
       else if (k === 'drstop') { if ($('drOn')) { $('drOn').checked = false; $('drOn').onchange(); } liveShow(); draw(); }
@@ -2863,8 +2922,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           $('runNote').textContent = (quick ? 'Quick route in ' : finer ? 'Finer routes in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : !finer && RD ? '. Finer routes coming…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Choose an earlier start for a full route.' : '') + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
           /* E7 / F75 (20 Nov): the optimiser can be beaten. Each route is sailed in every forecast (the matrix); where another route's track is
              quicker in a model's own forecast than that model's own route, say so: the best known route in that forecast is that track */
-          S.beaten = []; ms.forEach(function (m, j) { var i = -1; S.routes.forEach(function (x, k) { if (x.id === m) i = k; }); if (i < 0) return; var c = cols[j], bi = i; c.forEach(function (v, k) { if (v < c[bi]) bi = k; }); var d = (c[i] - c[bi]) * 60; if (bi !== i && d >= 0.5) S.beaten.push({ model: m, name: S.routes[i].name, by: S.routes[bi].name, min: d }); });
-          if (S.beaten.length) $('runNote').textContent += ' Best known: ' + S.beaten.map(function (q) { return 'in ' + q.name + '\u2019s forecast the ' + q.by + ' track is ' + q.min.toFixed(1) + ' min quicker than its own route'; }).join('; ') + '.';
+          S.beaten = []; ms.forEach(function (m, j) { var i = -1; S.routes.forEach(function (x, k) { if (x.id === m) i = k; }); if (i < 0) return; var c = cols[j], bi = i; c.forEach(function (v, k) { if (v < c[bi]) bi = k; }); var d = (c[i] - c[bi]) * 60; if (bi !== i && d >= 0.5) S.beaten.push({ model: m, name: S.routes[i].name, by: S.routes[bi].name, byId: S.routes[bi].id, min: d }); });
+          /* 22 Nov (navigator review, finding 1): plain words. Before: "Best known: in Met Office UKV's forecast the Finest first (UKV, AROME, ...)
+             track is 1.2 min quicker than its own route". Now: which route sails faster in which model's wind, by how much, and what that means. */
+          if (S.beaten.length) { var bmax = Math.max.apply(null, S.beaten.map(function (q) { return q.min; })); $('runNote').textContent += ' Also worth knowing: ' + S.beaten.map(function (q) { return 'in ' + short(q.model) + ' wind, the ' + (short(q.byId) !== q.byId ? short(q.byId) : q.by) + ' route is ' + (q.min < 10 ? q.min.toFixed(1) : Math.round(q.min)) + ' min faster than ' + short(q.model) + '\u2019s own route'; }).join('; ') + '.' + (bmax < 5 ? ' Gaps this small mean the routes are close.' : ' Compare these routes before you commit.'); }
           var edge = edgeHit(); if (edge) $('runNote').textContent += ' ' + edge;   /* shown in the checks list, not as an error */
           return ghosts();
         });
@@ -2885,10 +2946,33 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     name = String(name || '').trim(); tcc = +tcc; if (!name || !(tcc >= 0.7 && tcc <= 2.2)) return false;
     var a = myFleet().filter(function (f) { return f.name.toUpperCase() !== name.toUpperCase() && (!mmsi || f.mmsi !== mmsi); }); a.push({ name: name, tcc: tcc, mmsi: mmsi || null }); setMyFleet(a); return true;
   }
+  /* Stuart 22 Nov 15:09: each boat in your fleet has its own start. Default: yours. Or 15, 10, 5 min before, 5, 10, 15, 30 min after,
+     or an exact time in UTC or local. Kept with the boat: off (minutes after your start) or at (epoch seconds). Used by the fleet gaps
+     and the fleet ghosts. */
+  function fleetStartH(f) { if (!f) return S.start ? S.start.t : 0; if (f.at) return (f.at - T0) / 3600; if (f.off) return (S.start ? S.start.t : 0) + f.off / 60; if (f.start && !f.mine && f.off == null) return (f.start - T0) / 3600; return S.start ? S.start.t : 0; }
+  var MF_OFF = [[0, 'Same start as you'], [-15, '15 min before you'], [-10, '10 min before you'], [-5, '5 min before you'], [5, '5 min after you'], [10, '10 min after you'], [15, '15 min after you'], [30, '30 min after you'], ['x', 'Exact time\u2026']];
+  function mfStartLabel(f) { var ep = T0 + fleetStartH(f) * 3600; return clockAbs(ep).slice(-5) + ' ' + tzS1(); }
+  function mfSetStart(i, patch) { var a = myFleet(); if (!a[i]) return; delete a[i].off; delete a[i].at; Object.assign(a[i], patch); if (a[i].mmsi && FG.b) delete FG.b[a[i].mmsi]; setMyFleet(a); }
+  function mfExact(i, tm, zone) { var my = +$('startSel').value || Date.now() / 1000, m = /^(\d{1,2}):(\d{2})/.exec(tm || ''); if (!m) return false;
+    var day = Math.floor(my / 86400) * 86400, sh = zone === 'local' ? -new Date(my * 1000).getTimezoneOffset() * 60 : 0, ep = day + (+m[1]) * 3600 + (+m[2]) * 60 - sh;
+    if (ep - my > 43200) ep -= 86400; else if (my - ep > 43200) ep += 86400;   /* the nearest such time to your start */
+    mfSetStart(i, { at: ep }); return true; }
   function mfShow() {
     var a = myFleet(), esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    $('mfList').innerHTML = a.length ? a.map(function (f, i) { return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>TCC ' + f.tcc.toFixed(3) + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>'; }).join('') : '<p class="note">None added yet.</p>';
-    [].forEach.call($('mfList').querySelectorAll('button'), function (b) { b.onclick = function () { var x = myFleet(); x.splice(+b.dataset.i, 1); setMyFleet(x); }; });
+    $('mfList').innerHTML = a.length ? a.map(function (f, i) { var cur = f.at ? 'x' : String(f.off || 0); return '<div class="mfrow"><b>' + esc(f.name) + '</b><span>TCC ' + f.tcc.toFixed(3) + (f.cls ? ' · ' + esc(f.cls) : '') + (f.sail ? ' · ' + esc(f.sail) : '') + (f.mmsi ? ' · AIS' : '') + '</span><button class="slb" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '">✕</button></div>' +
+      '<div class="mfst"><label>Starts <select data-st="' + i + '" aria-label="Start of ' + esc(f.name) + '">' + MF_OFF.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === cur ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label><span class="mfat">' + esc(mfStartLabel(f)) + '</span>' +
+      '<span class="mfx" data-x="' + i + '"' + (cur === 'x' ? '' : ' hidden') + '><input type="time" aria-label="Exact start time" value="' + (f.at ? new Date(f.at * 1000).toISOString().slice(11, 16) : '') + '"><select aria-label="Time zone"><option value="utc">UTC</option><option value="local">Local</option></select><button class="slb mfok">Set</button></span></div>'; }).join('') : '<p class="note">None added yet.</p>';
+    [].forEach.call($('mfList').querySelectorAll('button[data-i]'), function (b) { b.onclick = function () { var x = myFleet(); x.splice(+b.dataset.i, 1); setMyFleet(x); }; });
+    [].forEach.call($('mfList').querySelectorAll('select[data-st]'), function (sel) { sel.onchange = function () { var i = +sel.dataset.st, x = $('mfList').querySelector('[data-x="' + i + '"]'); if (sel.value === 'x') { x.hidden = false; x.querySelector('input').focus(); return; } x.hidden = true; mfSetStart(i, { off: +sel.value }); }; });
+    [].forEach.call($('mfList').querySelectorAll('.mfok'), function (b) { b.onclick = function () { var x = b.parentNode, i = +x.dataset.x; if (!mfExact(i, x.querySelector('input').value, x.querySelector('select').value)) { busy('Enter the start time, for example 10:15.'); setTimeout(function () { busy(''); }, 2000); } }; });
+  }
+  function mfSay(t) { $('mfMsg').textContent = t; $('mfMsg').hidden = false; }
+  function mfImport(text) {   /* an entry list: kept with each boat's start, and its MMSI unless the list gives a new one */
+    var R = FSENT.parse(text), a = myFleet(), by = {};
+    a.forEach(function (f, i) { by[f.name.toUpperCase()] = i; });
+    R.boats.forEach(function (b) { var i = by[b.name.toUpperCase()], o = i == null ? {} : a[i]; var n = Object.assign(o, { name: b.name, tcc: b.tcc, cls: b.cls || o.cls || '', sail: b.sail || o.sail || '', mmsi: b.mmsi || o.mmsi || null }); if (i == null) { by[b.name.toUpperCase()] = a.length; a.push(n); } });
+    setMyFleet(a);
+    return R.boats.length + (R.boats.length === 1 ? ' boat' : ' boats') + ' read' + (R.other ? ', ' + R.other + ' non-IRC left out' : '') + (R.skip ? ', ' + R.skip + ' lines not read' : '') + '. Your fleet now has ' + a.length + '. Boats on AIS are found by MMSI, name or sail number.';
   }
   function mfInit() {
     var exSync = function () { var v = +$('startSel').value; if (v) $('startExact').value = hhmm(v); };
@@ -2899,18 +2983,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('startChip').onclick = function (e) { e.stopPropagation(); cardStep(3); };
     chipStart();
     $('mfAdd').onclick = function () { if (mfAdd($('mfName').value, $('mfTcc').value)) { $('mfName').value = ''; $('mfTcc').value = ''; $('mfName').focus(); } else { busy('Enter a name and a TCC between 0.5 and 2, for example 1.021.'); setTimeout(function () { busy(''); }, 2500); } };
-    $('mfPasteGo').onclick = function () {
-      var a = myFleet(), n = 0;
-      $('mfPaste').value.split(/\r?\n/).forEach(function (l) { var m = /^(.*?)[\s,;\t]+([01]\.\d{2,4})\s*$/.exec(l.trim()); if (!m) return; var nm = m[1].replace(/[,;\t]+$/, '').trim(); a = a.filter(function (f) { return f.name.toUpperCase() !== nm.toUpperCase(); }); a.push({ name: nm, tcc: +m[2], mmsi: null }); n++; });
-      setMyFleet(a); $('mfPaste').value = ''; busy(n + ' boats added.'); setTimeout(function () { busy(''); }, 2000);
-    };
+    $('mfPasteGo').onclick = function () { var t = $('mfPaste').value; if (!t.trim()) { mfSay('Paste a list first.'); return; } mfSay(mfImport(t)); $('mfPaste').value = ''; };
+    $('mfFileBtn').onclick = function () { $('mfFile').click(); };
+    $('mfFile').onchange = function () { var f = this.files[0]; this.value = ''; if (!f) return; var r = new FileReader(); r.onload = function () { FSENT.fileText(r.result).then(function (t) { mfSay(mfImport(t)); }, function (e) { mfSay(e.message); }); }; r.readAsArrayBuffer(f); };
     mfShow();
   }
   function ghosts() {
     if (!S.sel) return Promise.resolve();
     var boats = meta.fleet.filter(function (f) { return f.irc && f.start; }).map(function (f) { return { name: f.name, tcc: f.tcc, start: meta.live ? S.start.t : Math.max((f.start - T0) / 3600, S.from ? S.start.t : -1), f: f }; });
     var have = {}; boats.forEach(function (b) { have[b.name.toUpperCase()] = 1; });
-    myFleet().forEach(function (m) { if (!have[m.name.toUpperCase()]) boats.push({ name: m.name, tcc: m.tcc, start: S.start.t, f: { name: m.name, tcc: m.tcc, mine: true, mmsi: m.mmsi } }); });
+    myFleet().forEach(function (m) { if (!have[m.name.toUpperCase()]) boats.push({ name: m.name, tcc: m.tcc, start: fleetStartH(m), f: { name: m.name, tcc: m.tcc, mine: true, mmsi: m.mmsi, off: m.off, at: m.at } }); });
     return poolShort({ type: 'times', o: Object.assign({}, S.base, { models: S.sel.models }), path: S.sel.r.path, tccMe: +$('tcc').value || 1, boats: boats.map(function (b) { return { tcc: b.tcc, start: b.start }; }) }).then(function (ts) {
       S.ghosts = boats.map(function (b, i) { return { name: b.name, tcc: b.tcc, f: b.f, ts: ts[i] }; });
     });
@@ -3018,7 +3100,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ['Send to the crew', 'Plan tab, Send to crew. On a phone choose WhatsApp, Messages or email. The message carries the finish times, the first legs and a link that opens the same course and start in Route on their phones.'],
     ['AIS', 'Settings, Display, AIS (in Route+ and Mark+: Settings, Instruments, beside the alarms). Test fleet shows emulated race boats and ships to try the screens; Live online shows real AIS from shore stations when you have signal. The Fleet tab lists every target with range, bearing, CPA and time to CPA; a target inside the CPA alarm flashes red and beeps.'],
     ['Man overboard', 'The red man overboard button (a stick man with his arms up) sits at the left end of the time bar at the bottom: on a phone, at the left of the time slider. It stays on the start screen and the deck screen. Press and hold it for one second. Route marks the position from the phone GPS, starts the clock and shows the bearing and distance back to where they went in, and to where the tide has probably carried them. Show on chart shrinks the panel so you can see both. Hold End MOB to finish. Route is no substitute for the boat\'s own MOB drill, the VHF DSC button and the Coastguard.'],
-    ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you.']
+    ['Fleet', 'The Fleet tab compares your boat with others on corrected time, using their TCC: who you owe time to, and who owes you. For a boat seen on AIS that you have marked as a race boat with its TCC, two more figures show once the race has started. At this point: where both boats are now, each sailing the rest of your planned route at the speed its rating expects. Routed finish: each boat sails your route from where it is now, at its own TCC, through the forecast, worked out about once a minute. Both are corrected time, and say whether you are ahead or behind. Each boat you are racing starts with you unless you say otherwise: under Boats you are racing, choose 15, 10 or 5 minutes before you, 5, 10, 15 or 30 minutes after, or Exact time, in UTC or local. Before the race, paste or upload the entry list under Boats you are racing: a spreadsheet (.xlsx), CSV or text, read as the Corrected tool reads it. Each boat on AIS is then found for you by its MMSI, by its name as AIS sends it (20 capitals and digits) or by its sail number, and shows these figures. A boat found by a close name says so, with Not this boat to undo it.']
   ];
   var speaking = -1;
   function voice() { var v = speechSynthesis.getVoices(); return v.filter(function (x) { return /en-GB/i.test(x.lang); })[0] || v.filter(function (x) { return /^en/i.test(x.lang); })[0] || null; }
@@ -3115,7 +3197,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var myCor = (S.sel.r.finish - S.start.t) * (+$('tcc').value || 1), path = S.sel.r.path, me = posAt(tsOf(path), path, S.t);
     var rows = S.ghosts.map(function (g) { var fin = g.ts[g.ts.length - 1], pos = posAt(g.ts, path, S.t); return { g: g, fin: fin, cor: (fin - g.ts[0]) * g.tcc, gap: me && pos ? FSRouter.dist(me.la, me.lo, pos.la, pos.lo) * (pos.k > me.k ? 1 : -1) : null }; }).sort(function (a, b) { return a.cor - b.cor; });
     var h = '<tr><th>Boat</th><th>TCC</th><th>Now</th><th>Corrected</th><th>vs you</th></tr>';
-    rows.forEach(function (r) { var d = (r.cor - myCor) * 60; h += '<tr><td style="font-family:var(--f-body)">' + r.g.name + '</td><td>' + r.g.tcc.toFixed(3) + '</td><td>' + (r.gap == null ? '-' : (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ' nm') + '</td><td>' + fmtH(r.cor) + '</td><td>' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' min</td></tr>'; });
+    rows.forEach(function (r) { var d = (r.cor - myCor) * 60; var lg = AIS.liveG && AIS.src !== 'off' ? AIS.liveG[r.g.name.toUpperCase()] : ''; h += '<tr><td style="font-family:var(--f-body)">' + r.g.name + (lg ? '<br><span class="note fgap">AIS · ' + lg + '</span>' : '') + '</td><td>' + r.g.tcc.toFixed(3) + '</td><td>' + (r.gap == null ? '-' : (r.gap >= 0 ? '+' : '−') + Math.abs(r.gap).toFixed(1) + ' nm') + '</td><td>' + fmtH(r.cor) + '</td><td>' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' min</td></tr>'; });
     $('fleet').innerHTML = rows.length ? h : ''; $('fleetEmpty').hidden = !!rows.length;
   }
 
