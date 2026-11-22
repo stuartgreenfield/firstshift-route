@@ -1,23 +1,23 @@
 {
- "at": "2026-11-22T02:48:13.674Z",
+ "at": "2026-11-22T08:30:22.760Z",
  "log": [
   {
    "race": "morgan",
    "h": 0,
-   "s": 67,
-   "note": "Finer routes in 47.7 s. Times: first routes 3.4 s, standard 16.4 s, finer 64.1 s. The faint line is the standard route. "
+   "s": 49,
+   "note": "Finer routes in 33.5 s. Best known: in Met Office UKV’s forecast the NOAA GFS track is 1.5 min quicker than its own rout"
   },
   {
    "race": "morgan",
    "h": 1,
-   "s": 125,
-   "note": "Finer routes in 46.0 s. Times: first routes 1.6 s, standard 12.4 s, finer 58.5 s. The faint line is the standard route. "
+   "s": 94,
+   "note": "Finer routes in 35.5 s. Times: first routes 1.2 s, standard 9.2 s, finer 44.8 s. The faint line is the standard route. F"
   },
   {
    "race": "morgan",
    "h": 2,
-   "s": 184,
-   "note": "Finer routes in 45.2 s. Best known: in NOAA GFS’s forecast the Meteo-France AROME track is 8.4 min quicker than its own "
+   "s": 144,
+   "note": "Finer routes in 38.9 s. Best known: in Met Office UKV’s forecast the NOAA GFS track is 1.9 min quicker than its own rout"
   }
  ]
 }

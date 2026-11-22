@@ -1,41 +1,41 @@
 {
- "at": "2026-11-22T02:53:09.591Z",
+ "at": "2026-11-22T08:45:34.662Z",
  "log": [
   {
    "race": "celtic-area",
    "h": 0,
-   "s": 70,
-   "note": "Routed in 53.2 s. Finer routes coming…. The forecasts end before the finish on 7 routes: they show as far as the forecas"
+   "s": 163,
+   "note": "Finer routes in 86.3 s. Times: first routes 12.8 s, standard 73.3 s, finer 159.7 s. The faint line is the standard route"
   },
   {
    "race": "celtic-area",
    "h": 1,
-   "s": 165,
-   "note": "Finer routes in 96.1 s. Times: first routes 12.3 s, standard 65.6 s, finer 161.8 s. The faint line is the standard route"
+   "s": 315,
+   "note": "Finer routes in 85.0 s. Times: first routes 9.6 s, standard 66.9 s, finer 151.9 s. The faint line is the standard route."
   },
   {
    "race": "celtic-area",
    "h": 2,
-   "s": 232,
-   "note": "Routed in 56.2 s. Finer routes coming…. The forecasts end before the finish on every route: they show as far as the fore"
+   "s": 468,
+   "note": "Finer routes in 83.6 s. Times: first routes 9.7 s, standard 68.0 s, finer 151.7 s. The faint line is the standard route."
   },
   {
    "race": "celtic-area",
    "h": 3,
-   "s": 326,
-   "note": "Finer routes in 95.1 s. Times: first routes 9.1 s, standard 65.4 s, finer 160.5 s. The faint line is the standard route."
+   "s": 610,
+   "note": "Finer routes in 80.9 s. Times: first routes 8.8 s, standard 60.2 s, finer 141.1 s. The faint line is the standard route."
   },
   {
    "race": "celtic-area",
    "h": 4,
-   "s": 388,
-   "note": "Routed in 50.8 s. Finer routes coming…. The forecasts end before the finish on 7 routes: they show as far as the forecas"
+   "s": 762,
+   "note": "Finer routes in 84.2 s. Times: first routes 9.4 s, standard 67.2 s, finer 151.4 s. The faint line is the standard route."
   },
   {
    "race": "celtic-area",
    "h": 5,
-   "s": 485,
-   "note": "Finer routes in 98.5 s. Times: first routes 9.4 s, standard 60.2 s, finer 158.8 s. The faint line is the standard route."
+   "s": 981,
+   "note": "Finer routes in 151.0 s. The forecasts end before the finish on 1 routes: they show as far as the forecasts reach, with "
   }
  ]
 }
