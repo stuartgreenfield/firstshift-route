@@ -67,11 +67,13 @@
       '<div class="xrow"><button class="btn primary" id="npSave" type="button">Save as my defaults</button><button class="btn" id="npBack" type="button">Back to my defaults</button></div>' +
       '<h4>Named set-ups</h4><p class="note">For each crew, watch or boat: for example Night watch, Deliveries, Training.</p>' +
       '<div class="xrow"><select id="npList" aria-label="Named set-ups"></select><button class="btn" id="npLoad" type="button">Load</button><button class="btn" id="npDel" type="button">Delete</button></div>' +
-      '<div class="xrow"><input id="npName" type="text" maxlength="40" placeholder="Name, for example Night watch" aria-label="Name for this set-up"><button class="btn" id="npSaveAs" type="button">Save as</button></div>' +
-      '<h4>Copy to another device</h4><div class="xrow"><button class="btn" id="npExport" type="button">Export to a file</button><button class="btn" id="npImport" type="button">Import a file</button><input type="file" id="npFile" accept=".json,application/json" hidden></div>' +
-      '<h4>Clear screen</h4><label class="nprow">Hide the menus again after <select id="npHide" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="3">3 minutes</option><option value="5">5 minutes</option></select></label>' +
+      '<div class="xrow"><input id="npName" type="text" maxlength="40" autocomplete="off" autocorrect="off" autocapitalize="words" name="fs-setup-name" placeholder="Name, for example Night watch" aria-label="Name for this set-up"><button class="btn" id="npSaveAs" type="button">Save as</button></div>' +
       '<div class="npask" id="npAsk" hidden></div><p class="note" id="npNote" role="status"></p>' +
       '<p class="note">A set-up holds your settings: boat, sails, display, night mode, Deck and Nav views and clear screen. It never holds the race, its marks or recordings, so loading one cannot lose them.</p>' +
+      '<h4>Copy to another device</h4><div class="xrow"><button class="btn" id="npExport" type="button">Export to a file</button><button class="btn" id="npImport" type="button">Import a file</button><input type="file" id="npFile" accept=".json,application/json" hidden></div>' +
+      '<h4 id="npClearH">Clear screen</h4><label class="nprow">Hide the menus again after <select id="npHide" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="3">3 minutes</option><option value="5">5 minutes</option></select></label>' +
+      
+      
       '</div>';
     link.appendChild(d);
     d.addEventListener('toggle', function () { if (d.open) render(); });

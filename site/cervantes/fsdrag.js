@@ -214,7 +214,7 @@
     h.innerHTML = '<h4>Window positions</h4><p class="note">Drag the small dots on a window to move it; let go and it stays there. Hold a round button to move it, drag it, then hold again to lock it. It never covers another button: it slides to the nearest gap. While moving, drag a window most of the way off the left or right edge, or flick it towards one, to put it away; tap its tab on the edge to bring it back. Kept for each screen size and orientation, and saved with My set-up.</p>' +
       '<label class="np-row"><input type="checkbox" id="fsWinLock"> Lock layout: nothing moves</label><label class="np-row">Grip on each window <select id="fsWinHand"><option value="c">In the middle</option><option value="l">On the left (left hand)</option><option value="r">On the right (right hand)</option></select></label>' +
       '<div class="xrow"><button class="btn" id="navMoveAll" type="button">Reset to FirstShift layout</button></div>';
-    var note = body.querySelector('.npask'); body.insertBefore(h, note || null);
+    var note = $('npClearH'); body.insertBefore(h, note && note.parentNode === body ? note : null);   /* 22 Nov: before Clear screen (the confirm box now sits under the named set-ups) */
     $('navMoveAll').onclick = function () { resetAll(); };
     $('fsWinLock').checked = locked(); $('fsWinLock').onchange = function () { setOpt('lock', this.checked ? '1' : '0'); };
     $('fsWinHand').value = opt('hand', 'c'); $('fsWinHand').onchange = function () { setOpt('hand', this.value); place(); };
