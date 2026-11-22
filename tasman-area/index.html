@@ -685,7 +685,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.97</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.98</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
@@ -766,6 +766,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <p class="note" data-i>How finely Route searches. It keeps the best point in each slice of the compass as it fans out: more slices, a longer wait, a quicker route for the boat. On the Fastnet (20 Nov) 2000 slices found routes up to 104 hours quicker than 360 in two models; 4000 adds a few minutes more for twice the wait. Auto: 2000 on a computer, 1000 on a phone or tablet. Quick: no finer pass. The server's ready-made routes use 2000.</p>
       <div class="row"><label for="tideSel">Tidal stream</label><select id="tideSel"></select></div>
       <div class="row tune"><label for="adjTtime">Tide timing</label><input type="range" id="adjTtime" min="-120" max="120" step="5" value="0"><b id="adjTtimeV"></b></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="adjTon" checked> Tide on time</label></div>
       <p class="note" data-i>Stuart, 19 Nov: moves the tidal stream earlier or later, in minutes. The rates and directions stay the same; only the time they apply moves. Routes, the tide arrows on the chart and Mark's start screen all use it.</p>
       <div class="row"><label class="chk"><input type="checkbox" id="tideWind" checked> Sail on the wind over the water</label></div>
       <p class="note" data-i>On: Route takes the tide out of the forecast wind, so the boat sails on the wind it feels. Wind against tide blows harder, wind with tide softer, and a cross-tide shifts it. Off: the forecast wind as it is.</p>
