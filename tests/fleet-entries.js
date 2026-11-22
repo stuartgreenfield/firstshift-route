@@ -11,7 +11,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   await p.evaluate(() => { const s = document.getElementById('aisSrc'); s.value = 'test'; s.dispatchEvent(new Event('change')); const t = document.getElementById('time'); t.value = 300; t.dispatchEvent(new Event('input', { bubbles: true })); }); await p.waitForTimeout(2500);
   const free = await p.evaluate(() => [...document.querySelectorAll('#aisTable [data-rb]')].map(b => ({ m: b.dataset.rb, n: b.closest('td').firstChild.textContent.trim() })));
   ok(free.length >= 3, 'At least 3 test AIS boats not yet on the list', free.map(f => f.n));
-  const [a, z, q] = free; const title = s => s.toLowerCase().replace(/\b\w/g, x => x.toUpperCase());
+  const lng = free.filter(f => f.n.replace(/[^A-Z0-9]/g, '').length >= 6), a = lng[0], z = lng[1], q = free.find(f => f !== a && f !== z);   /* a close name needs 6 letters or more */ const title = s => s.toLowerCase().replace(/\b\w/g, x => x.toUpperCase());
   const close = z.n.slice(0, -1) + (z.n.slice(-1) === 'X' ? 'Y' : 'X');   /* one letter wrong */
   const list = 'Sail No,Boat,Class,IRC TCC,MMSI\nGBR 11,' + title(a.n).replace(' ', '-') + ',IRC 2,1.021,\nGBR 12,' + title(close) + ',IRC 3,"0,995",\nGBR 13,Quite Another Name,IRC 1,1.050,' + q.m + '\n';
   await p.evaluate(() => { document.querySelectorAll('details').forEach(d => d.open = true); });
