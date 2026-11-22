@@ -1,0 +1,20 @@
+/* Stuart 22 Nov 09:40 (yes 09:43): with LIVE (phone GPS) or BOAT (instruments) figures under the slider, a second, dimmer line keeps the PLAN
+   at the slider time (forecast and polars). Run: node tests/two-lines.js http://localhost:8779 (Route, GPS) and http://localhost:8778 (Route+, boat) */
+const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
+let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block', permissions: ['geolocation'], geolocation: { latitude: 50.70, longitude: -1.45, accuracy: 6 } });
+  await c.route(/open-meteo|googleapis|openseamap/, r => r.fulfill({ status: 200, body: '' }));
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); ['fs-wizdone', 'fs-boatset', 'fs-autostart'].forEach(k => localStorage.setItem(k, '1')); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + '/channel-area/?race=cervantes');
+  await p.waitForFunction(() => document.querySelectorAll('#finBox .fin').length && document.getElementById('prog').hidden, null, { timeout: 500000 }); await p.waitForTimeout(1500);
+  const plus = await p.evaluate(() => !!window.__navFeed);
+  const lines = () => p.evaluate(() => { const a = document.getElementById('now'), z = document.getElementById('now2'); return { top: a.className, topTxt: a.innerText.replace(/\s+/g, ' ').slice(0, 90), two: !!(z && !z.hidden && z.getClientRects().length), twoTxt: z ? z.innerText.replace(/\s+/g, ' ').slice(0, 90) : '', dim: z ? +getComputedStyle(z).opacity : 1, bottom: Math.round(document.querySelector('.bar').getBoundingClientRect().bottom), vh: innerHeight }; });
+  let r = await lines(); ok(!r.two && /VMC/i.test(r.topTxt), 'No GPS, no boat: one line, the PLAN', r);
+  if (plus) { const feed = () => p.evaluate(() => { const t = Date.now() / 1000, cs = x => { let k = 0; for (const ch of x) k ^= ch.charCodeAt(0); return '$' + x + '*' + k.toString(16).toUpperCase().padStart(2, '0'); }; window.__navFeed([t.toFixed(3) + '\t' + cs('IIVHW,,T,,M,6.5,N,12.0,K'), t.toFixed(3) + '\t' + cs('IIMWV,40.0,T,14.0,N,A')]); });
+    for (let i = 0; i < 4; i++) { await feed(); await p.waitForTimeout(600); } await p.waitForTimeout(1500); }
+  else { await p.evaluate(() => document.getElementById('liveBtn').click()); await p.waitForTimeout(4000); }
+  r = await lines(); ok(/live/.test(r.top) && r.two && /VMC/i.test(r.twoTxt) && r.dim < 0.8 && r.bottom <= r.vh + 1, (plus ? 'BOAT' : 'LIVE') + ' on top, the PLAN line under it, dimmer, all on screen', r);
+  const before = r.twoTxt; await p.evaluate(() => { const s = document.getElementById('slider') || document.querySelector('input[type=range]#t') || document.querySelector('.bar input[type=range]'); s.value = String(+s.max * 0.6 || 50); s.dispatchEvent(new Event('input', { bubbles: true })); }); await p.waitForTimeout(800);
+  if (plus) { await p.evaluate(() => { const t = Date.now() / 1000, cs = x => { let k = 0; for (const ch of x) k ^= ch.charCodeAt(0); return '$' + x + '*' + k.toString(16).toUpperCase().padStart(2, '0'); }; window.__navFeed([t.toFixed(3) + '\t' + cs('IIVHW,,T,,M,6.5,N,12.0,K')]); }); }
+  r = await lines(); ok(r.two && r.twoTxt !== before, 'Moving the slider changes the PLAN line', { before, after: r.twoTxt });
+  ok(!errs.length, 'No script errors', errs.slice(0, 2)); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
