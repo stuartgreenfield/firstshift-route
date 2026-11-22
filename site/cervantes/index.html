@@ -513,7 +513,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 @media (max-width:899px){.bar .clock{min-width:max-content}}
 
 /* fleet table (22 Nov 19:20): boat names read from the left; ahead or behind under the minutes, so five columns fit a phone */
-#fleet td:nth-child(2),#fleet th:nth-child(2){text-align:left}#fleet td:nth-child(n+3){white-space:nowrap}#fleet td,#fleet th{padding-left:6px;padding-right:6px}
+.lsol{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0 2px}.lsol .seg button{min-width:44px;min-height:32px}#fleet td:nth-child(2),#fleet th:nth-child(2){text-align:left}#fleet td:nth-child(n+3){white-space:nowrap}#fleet td,#fleet th{padding-left:6px;padding-right:6px}
 </style>
 <style id="logoBalance">/* Stuart 20 Nov 06:01: "position the logo in the box so there is more space around the name and sails logo so it looks better balanced", all four tools */.logobox .mk-r{height:33px!important}.logobox{padding:0 14px!important}@media (max-width:1279px){.logobox{padding:0!important}.logobox .mk-s{width:40px!important}}@media (orientation:landscape) and (max-height:500px){.logobox .mk-s{width:37px!important}}@media (max-width:360px){.logobox .mk-s{width:36px!important}}</style>
 
@@ -878,12 +878,13 @@ A4, 125, 180, 18, 60</textarea>
       <p class="note" data-i>File track in the GPS window keeps the boat's trail here with its date, race and distance, offers it as a GPX file or a log in PDF (an entry each hour: time, position, course and speed made good, distance run, forecast wind, remarks, with space for the boat and crew) and starts a fresh trail; Live GPS keeps running. Show puts a filed track back on the chart. Tracks in Layers hides every track, the trail, dead reckoning and filed tracks, without deleting anything. Up to 30 tracks are kept on this device.</p>
       <div class="solsettings"><h3>Racing in the Solent</h3>
       <label class="chk"><input type="checkbox" id="solentOn"><span>Show the Solent race marks</span></label>
+      <p class="note" data-i>The same switch as Solent race marks in the Layers menu, under Chart: change either and the other follows.</p>
       <p class="note" data-i>The JOG and SCRA Solent Area Mark Codes 2026 list (23 February 2026): 157 marks with their codes, in their colours. Tap a mark for its name, position and any notes. Most yellow race marks are laid March to November only.</p>
       <div class="xrow"><button class="btn primary" id="solentBuild">Build a Solent race</button></div>
       <p class="note" data-i>Pick the start on the chart, then type the marks from the course board, each to port or starboard, or tap them on the chart. Or set a windward-leeward course, the windward mark a buoy or a heading and distance from the start. The race is routed as normal, kept clear of water shallower than your safety depth, and saved in My races.</p>
       </div>
       <h3>How to change it</h3>
-      <p class="note">Tap the layers button at the top of the screen (two stacked layers). Under <b>Chart</b>, turn the OpenSeaMap buoys, beacons and lights on or off. Under <b>Weather and race</b>, choose wind, tidal stream, traffic separation schemes, lighthouses, laylines, isochrones and the forecast weather, and which routes to show. <b>Show all</b>, <b>Just the course</b> and <b>Just the route</b> set several at once. The wind and tide symbols and AIS are in the Display tab.</p>
+      <p class="note">Tap the layers button at the top of the screen (two stacked layers). Under <b>Chart</b>, turn the OpenSeaMap buoys, beacons and lights on or off, and the Solent race marks (the JOG and SCRA list): On or Off, and on Route and Route+ also Auto, which shows them while your GPS puts you between Poole Harbour and the Nab. Under <b>Weather and race</b>, choose wind, tidal stream, traffic separation schemes, lighthouses, laylines, isochrones and the forecast weather, and which routes to show. <b>Show all</b>, <b>Just the course</b> and <b>Just the route</b> set several at once. The wind and tide symbols and AIS are in the Display tab.</p>
       <h3>Not for navigation</h3>
       <p class="note">This chart is not an official chart. It is drawn from free public data that may be incomplete, out of date or wrong, and it leaves out much that an official chart shows. Use it to plan and to compare routes, never to navigate: navigate with your official paper or electronic charts and your boat's own instruments.</p>
       <h3>Coming soon: official charts from GeoGarage</h3>

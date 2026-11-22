@@ -56,9 +56,20 @@
      and the Nab ("Poole harbour to nab"; all the marks, codes as you zoom in). The boat is the GPS fix, at most two minutes old. */
   var AREA = { s: 50.55, n: 50.92, w: -2.05, e: -0.90 };
   function areaOn() { if (!ROUTE) return false; try { var f = window.__fsLiveFix && window.__fsLiveFix(); return !!(f && f.la != null && Date.now() - (f.at || 0) < 120000 && f.la > AREA.s && f.la < AREA.n && f.lo > AREA.w && f.lo < AREA.e); } catch (e) { return false; } }
+  /* The Layers switch (Stuart 22 Nov 22:46, "it should be in the main layers menu"; 22:50, "Auto, On or Off"): on Mark and Mark+ it is
+     the same switch as Settings, Racing in the Solent (either one moves the other). On Route and Route+: Auto shows the marks between
+     Poole Harbour and the Nab as before, On shows them anywhere, Off hides them even in the Solent. Building a race always shows them. */
+  var LKEY = 'fs-solent-layer';
+  function layerMode() { var m = ld(LKEY, 'auto'); return m === 'on' || m === 'off' ? m : 'auto'; }
+  function routeShown() { var m = layerMode(); return m === 'on' || (m === 'auto' && (!!C.on || areaOn())); }
+  function shownNow() { if (pick || builderOpen()) return true; return ROUTE ? routeShown() : !!C.on; }
+  window.__fsSolentLayer = {
+    get: function () { return ROUTE ? layerMode() : (C.on ? 'on' : 'off'); }, shown: function () { return shownNow(); }, modes: ROUTE ? ['auto', 'on', 'off'] : ['on', 'off'],
+    set: function (v) { if (!ROUTE) { setOn(v === 'on'); return; } sv(LKEY, v); if (v === 'on') load(); redraw(); }
+  };
   function overlay(ctx, X, Y, editing) {
     last = { X: X, Y: Y };
-    if (!C.on && !pick && !builderOpen() && !areaOn()) return; if (!MK) { load(); return; }
+    if (!shownNow()) return; if (!MK) { load(); return; }
     var pxnm = Math.abs(Y(50.8) - Y(50.8 + 1 / 60)); if (pxnm < 1.2) return;
     var r = pxnm > 40 ? 6 : pxnm > 12 ? 5 : 3.5, code = pxnm > 9, name = pxnm > 45, used = usedCodes();
     ctx.font = '400 10px system-ui, sans-serif'; ctx.textBaseline = 'middle';   /* Stuart 16 Nov 07:47: "Very faded buoy number and name very faint as you touch them": faint, small; the buoy touched, and the course's own, in full */
@@ -1216,7 +1227,7 @@
   /* ---- Settings, Charts: the switch and the button ---- */
   /* Stuart 15 Nov 11:26: "on solent race zoom should be set to allow the max": the Closest zoom slider (Settings, Chart) goes to 6 times */
   function zoomMax() { var z = $('zoomMax'); if (!z || +z.value >= +z.max) return; z.value = z.max; z.dispatchEvent(new Event('input', { bubbles: true })); z.dispatchEvent(new Event('change', { bubbles: true })); }
-  function setOn(v) { C.on = !!v; sv(KEY, C); if (C.on) { load(); zoomMax(); } redraw(); var e = $('solentOn'); if (e) e.checked = C.on; }
+  function setOn(v) { C.on = !!v; sv(KEY, C); if (C.on) { load(); zoomMax(); } redraw(); var e = $('solentOn'); if (e) e.checked = C.on; try { if (window.__fsLayersPop) window.__fsLayersPop(); } catch (er) {} }   /* Layers, Chart follows at once if it is open */
   function hookSettings() {
     var e = $('solentOn'); if (e) { e.checked = !!C.on; e.onchange = function () { setOn(e.checked); }; }
     var bt = $('solentBuild'); if (bt) bt.onclick = function () { if (!C.on) setOn(true); openBuilder(); };
