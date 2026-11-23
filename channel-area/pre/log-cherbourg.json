@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-23T02:47:28.236Z",
+ "log": [
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 60,
+   "note": "Finer routes in 44.5 s. Also worth knowing: in ICON-EU wind, the ECMWF route is 19 min faster than ICON-EU’s own route. "
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 115,
+   "note": "Finer routes in 43.6 s. Times: first routes 1.4 s, standard 11.2 s, finer 54.8 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 166,
+   "note": "Finer routes in 39.9 s. Times: first routes 1.4 s, standard 10.4 s, finer 50.3 s. The faint line is the standard route. "
+  }
+ ]
+}

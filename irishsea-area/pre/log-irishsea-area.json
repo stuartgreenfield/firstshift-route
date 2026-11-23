@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-23T02:44:36.617Z",
+ "log": [
+  {
+   "race": "irishsea-area",
+   "h": 0,
+   "s": 13,
+   "note": "Finer routes in 9.1 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 1.1 min faster than GFS’s own r"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 1,
+   "s": 25,
+   "note": "Finer routes in 8.8 s. Also worth knowing: in AIFS wind, the GFS route is 1.8 min faster than AIFS’s own route. Gaps thi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 2,
+   "s": 35,
+   "note": "Finer routes in 7.8 s. Also worth knowing: in UKV wind, the AIFS route is 1.5 min faster than UKV’s own route; in GFS wi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 3,
+   "s": 45,
+   "note": "Finer routes in 8.0 s. Also worth knowing: in GFS wind, the UKV route is 1.8 min faster than GFS’s own route; in AIFS wi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 4,
+   "s": 56,
+   "note": "Finer routes in 8.4 s. Times: first routes 0.5 s, standard 2.0 s, finer 10.5 s. The faint line is the standard route. Fi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 5,
+   "s": 66,
+   "note": "Finer routes in 8.4 s. Times: first routes 0.5 s, standard 2.0 s, finer 10.4 s. The faint line is the standard route. Fi"
+  }
+ ]
+}
