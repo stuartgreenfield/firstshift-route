@@ -1,23 +1,23 @@
 {
- "at": "2026-11-22T08:30:14.872Z",
+ "at": "2026-11-23T08:53:40.002Z",
  "log": [
   {
    "race": "cherbourg",
    "h": 0,
-   "s": 37,
-   "note": "Finer routes in 27.1 s. Times: first routes 2.0 s, standard 7.6 s, finer 34.7 s. The faint line is the standard route. F"
+   "s": 47,
+   "note": "Finer routes in 33.2 s. Times: first routes 2.5 s, standard 12.2 s, finer 45.4 s. The faint line is the standard route. "
   },
   {
    "race": "cherbourg",
    "h": 1,
-   "s": 70,
-   "note": "Finer routes in 26.4 s. Times: first routes 0.9 s, standard 6.5 s, finer 33.0 s. The faint line is the standard route. F"
+   "s": 89,
+   "note": "Finer routes in 32.7 s. Times: first routes 1.1 s, standard 8.5 s, finer 41.2 s. The faint line is the standard route. F"
   },
   {
    "race": "cherbourg",
    "h": 2,
-   "s": 101,
-   "note": "Finer routes in 24.0 s. Best known: in ECMWF IFS’s forecast the ECMWF AIFS track is 1.0 min quicker than its own route. "
+   "s": 130,
+   "note": "Finer routes in 32.3 s. Times: first routes 1.1 s, standard 8.4 s, finer 40.8 s. The faint line is the standard route. F"
   }
  ]
 }

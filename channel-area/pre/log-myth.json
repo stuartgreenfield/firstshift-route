@@ -1,23 +1,23 @@
 {
- "at": "2026-11-22T08:32:48.410Z",
+ "at": "2026-11-23T08:54:23.974Z",
  "log": [
   {
    "race": "myth",
    "h": 0,
-   "s": 101,
-   "note": "Finer routes in 75.7 s. Times: first routes 4.5 s, standard 22.5 s, finer 98.2 s. The faint line is the standard route. "
+   "s": 67,
+   "note": "Finer routes in 50.0 s. Also worth knowing: in ECMWF wind, the ICON-EU route is 3.6 min faster than ECMWF’s own route. G"
   },
   {
    "race": "myth",
    "h": 1,
-   "s": 199,
-   "note": "Finer routes in 79.2 s. Times: first routes 2.6 s, standard 18.6 s, finer 97.9 s. The faint line is the standard route. "
+   "s": 126,
+   "note": "Finer routes in 46.7 s. Also worth knowing: in ECMWF wind, the ICON-EU route is 4.3 min faster than ECMWF’s own route. G"
   },
   {
    "race": "myth",
    "h": 2,
-   "s": 299,
-   "note": "Finer routes in 80.0 s. Times: first routes 2.8 s, standard 19.4 s, finer 99.4 s. The faint line is the standard route. "
+   "s": 184,
+   "note": "Finer routes in 46.3 s. Also worth knowing: in AIFS wind, the ICON-EU route is 2.8 min faster than AIFS’s own route. Gap"
   }
  ]
 }

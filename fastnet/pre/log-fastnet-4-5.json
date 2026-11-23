@@ -1,17 +1,17 @@
 {
- "at": "2026-11-22T08:42:25.157Z",
+ "at": "2026-11-23T09:07:42.082Z",
  "log": [
   {
    "race": "fastnet",
    "h": 4,
-   "s": 563,
-   "note": "Finer routes in 237.3 s. Times: first routes 9.4 s, standard 59.4 s, finer 296.7 s. The faint line is the standard route"
+   "s": 662,
+   "note": "Finer routes in 258.3 s. Times: first routes 9.7 s, standard 62.2 s, finer 320.5 s. The faint line is the standard route"
   },
   {
    "race": "fastnet",
    "h": 5,
-   "s": 876,
-   "note": "Finer routes in 248.8 s. Best known: in Met Office UKV’s forecast the Combined (6 models) track is 375.7 min quicker tha"
+   "s": 999,
+   "note": "Finer routes in 268.9 s. Times: first routes 10.3 s, standard 66.5 s, finer 335.5 s. The faint line is the standard rout"
   }
  ]
 }
