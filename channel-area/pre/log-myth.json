@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-23T19:51:36.191Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 137,
+   "note": "Finer routes in 86.0 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 0.8 min faster than UKV’s own "
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 240,
+   "note": "Finer routes in 81.7 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 1.4 min faster than UKV’s own "
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 342,
+   "note": "Finer routes in 81.3 s. Also worth knowing: in ECMWF wind, the UKV route is 2.0 min faster than ECMWF’s own route; in GF"
+  }
+ ]
+}

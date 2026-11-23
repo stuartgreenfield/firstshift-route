@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-23T19:56:05.859Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 327,
+   "note": "Finer routes in 251.3 s. Times: first routes 14.2 s, standard 69.4 s, finer 320.8 s. The faint line is the standard rout"
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 634,
+   "note": "Finer routes in 243.1 s. Times: first routes 9.6 s, standard 63.0 s, finer 306.1 s. The faint line is the standard route"
+  }
+ ]
+}

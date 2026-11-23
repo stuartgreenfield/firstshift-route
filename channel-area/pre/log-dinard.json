@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-23T19:48:39.334Z",
+ "log": [
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 69,
+   "note": "Finer routes in 47.9 s. Times: first routes 3.9 s, standard 16.7 s, finer 64.7 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 128,
+   "note": "Finer routes in 47.0 s. Times: first routes 2.0 s, standard 12.5 s, finer 59.4 s. The faint line is the standard route. "
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 186,
+   "note": "Finer routes in 44.8 s. Also worth knowing: in GFS wind, the ICON-EU route is 213 min faster than GFS’s own route. Compa"
+  }
+ ]
+}
