@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.110';
+  var VERSION = 'FirstShift Route v0.12.111';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -391,7 +391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.110 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.111 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2249,7 +2249,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     tick(); setInterval(tick, 1000);
   })();
   /* ---------- Live GPS (Stuart 12 Nov): the boat from this phone's GPS against the chosen route; how far off, ahead or behind, the way back ---------- */
-  var LIVE = { mini: store('fs-livemini') === '1', on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 24 * 3600000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
+  var LIVE = { mini: store('fs-livemini') === '1', on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 15 * 86400000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
   /* dead reckoning when the GPS is lost (Stuart 15 Nov 2026, 09:13: "quite an important feature"): on by default */
   function drOn() { return !$('drOn') || $('drOn').checked; }
   function drPct() { var v = $('drPct') ? +$('drPct').value : 10; return (v >= 5 && v <= 25 ? v : 10) / 100; }   /* Stuart 15 Nov H Q&A: the growth of the circle of doubt is a setting, 5 to 25% */
@@ -2321,7 +2321,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (f.acc > 150) { LIVE.calc = null; liveShow(); draw(); return; }   /* rough network position: no tail, no plan sums */
     /* the long tail: a point every 10 s (or 50 m), about 8 hours, kept on the phone so it survives closing Route */
     var lt = LIVE.trail[LIVE.trail.length - 1];
-    if (!lt || f.at - lt[2] >= 10000 || rhumb({ lat: lt[0], lon: lt[1] }, { lat: f.la, lon: f.lo }).nm > 0.027) { LIVE.trail.push([+f.la.toFixed(5), +f.lo.toFixed(5), f.at, f.sog != null ? +f.sog.toFixed(1) : null, f.cog != null ? Math.round(f.cog) : null]); if (LIVE.trail.length > 3000) LIVE.trail.shift();
+    if ((!lt || f.at - lt[2] >= 10000 || rhumb({ lat: lt[0], lon: lt[1] }, { lat: f.la, lon: f.lo }).nm > 0.027) && !tooFast(lt, f)) { LIVE.trail.push([+f.la.toFixed(5), +f.lo.toFixed(5), f.at, f.sog != null ? +f.sog.toFixed(1) : null, f.cog != null ? Math.round(f.cog) : null]); trailTrim(f.at);
       if (!LIVE.saved || f.at - LIVE.saved > 60000) { LIVE.saved = f.at; store('fs-livetrail', JSON.stringify(LIVE.trail)); } }
     try { LIVE.calc = liveCalc(f); } catch (e) { LIVE.calc = null; } liveShow(); followBoat(); draw();
   }
@@ -2435,7 +2435,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   /* start-line tools (Stuart 12 Nov): ping each end with the phone's GPS; distance to the line, time to it, time to burn, favoured end */
   function lineKey() { return 'fs-line-' + raceKey(); }
-  function lineGet() { try { var l = JSON.parse(store(lineKey()) || 'null'); if ((!l || (!l.boat && !l.pin)) && S.inshore) l = JSON.parse(store('fs-line-solent') || 'null'); return l || {}; } catch (e) { return {}; } }   /* Solent (18:40): the start line is kept from one course to the next */
+  function lineGet() { try { var l = JSON.parse(store(lineKey()) || 'null'); if ((!l || (!l.boat && !l.pin)) && S.inshore) l = JSON.parse(store('fs-line-solent') || 'null'); l = l || {}; ['boat', 'pin'].forEach(function (k) { if (farEnd(l[k])) delete l[k]; }); return l; } catch (e) { return {}; } }   /* Solent (18:40): the start line is kept from one course to the next */
   window.__fsSetLine = function (end, la, lo) { setTimeout(wzLineMark, 0); var l = lineGet(); if (la == null) delete l[end]; else l[end] = [+la.toFixed(6), +lo.toFixed(6), Date.now(), 0]; store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); try { if (LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {} draw(); };
   window.__fsLine = function () { return lineGet(); };
   window.__fsPing = function (end) { linePing(end === 'pin' ? 'pin' : 'boat'); };   /* for the start screen's own ping buttons */
@@ -2443,9 +2443,25 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* J3 (Stuart 15 Nov): the ping is where the bow is: the GPS position moved forward by the bow offset along the heading (the boat's
      compass in Route+, else the course over the ground when moving) */
   function bowPos(f) { var d = +(($('bowOff') || {}).value || 0); if (!d) return [f.la, f.lo, null];   /* F55: minus moves the ping aft */ var h = null; try { if (window.__navHdg) h = window.__navHdg(); } catch (e) {} if (h == null && f.sog > 0.5 && f.cog != null) h = f.cog; if (h == null) return [f.la, f.lo, 'no heading: GPS position used']; var n = d / 1852; return [f.la + n * Math.cos(h * R) / 60, f.lo + n * Math.sin(h * R) / (60 * Math.cos(f.la * R)), null]; }
+  /* The trail (Stuart 23 Nov 22:07 and 22:10, his flight still on the chart three days on; "What if a race lasts a week?"): during a race,
+     from the gun until Race ended, the whole race is kept, the last 8 hours every 10 s and older parts one point every 10 minutes (a week
+     is about 1,000 points); outside a race, the last 24 hours. Trimmed every minute too, so a page left open for days lets go of the old
+     trail. Nothing faster than 60 knots is kept: a flight or a car journey is not a boat. */
+  function raceGun() { var v = +$('startSel').value; return v > 0 && v * 1000 <= Date.now() && !S.cleared ? v * 1000 : null; }
+  function tooFast(lt, f) { if (f.sog != null && f.sog > 60) return true; if (!lt || !(f.at > lt[2])) return false; return rhumb({ lat: lt[0], lon: lt[1] }, { lat: f.la, lon: f.lo }).nm / ((f.at - lt[2]) / 3600000) > 60; }
+  function trailTrim(now) {
+    var g = raceGun(), from = g ? g - 900000 : now - 24 * 3600000, recent = now - 8 * 3600000, last = -Infinity;
+    LIVE.trail = LIVE.trail.filter(function (q) { if (!(q[2] >= from)) return false; if (q[2] >= recent) return true; if (q[2] - last < 600000) return false; last = q[2]; return true; });
+    if (LIVE.trail.length > 6000) LIVE.trail = LIVE.trail.slice(-6000);
+  }
+  setInterval(function () { try { var n = LIVE.trail.length; trailTrim(Date.now()); if (LIVE.trail.length !== n) { store('fs-livetrail', JSON.stringify(LIVE.trail)); draw(); } } catch (e) {} }, 60000);
+  /* a start line end more than 2 nm from the race's start is not this race's line (Stuart 23 Nov 22:07: an end pinged near Amsterdam
+     drew a line across the North Sea); offshore only, as an inshore line is wherever the committee lays it */
+  function farEnd(q) { try { var st = !S.inshore && meta && meta.course && meta.course.start; if (!q || !st) return false; return rhumb({ lat: st.lat, lon: st.lon }, { lat: q[0], lon: q[1] }).nm > 2; } catch (e) { return false; } }
   /* F44 cures (Stuart 18 Nov, iPhone): a ping with no GPS fix used to do nothing at all, and two ends in one place were accepted */
   function linePing(end) { var f = LIVE.fix, nm = end === 'pin' ? 'pin' : 'boat';
     if (!f || f.dr || Date.now() - (f.at || 0) > 15000) { busy('No GPS fix: the ' + nm + ' end was not saved. Wait for the GPS, then ping again.'); return; }
+    if (farEnd([f.la, f.lo])) { busy('More than 2 nm from the start of ' + (meta.course.name || 'this race') + ': the ' + nm + ' end was not saved. Ping it at the start line.'); return; }
     var l0 = lineGet(), oth = l0[end === 'pin' ? 'boat' : 'pin'];
     if (oth && !l0.transit) { var dm = Math.hypot((f.lo - oth[1]) * Math.cos(f.la * R) * 60, (f.la - oth[0]) * 60) * 1852; if (dm < 20) { busy('Only ' + Math.round(dm) + ' m from the other end: the ' + nm + ' end was not saved. Ping it where it is.'); return; } }
     var l = lineGet(), bp = bowPos(f); l[end] = [+bp[0].toFixed(6), +bp[1].toFixed(6), Date.now(), Math.round(f.acc || 0)]; if (bp[2]) busy('Bow offset not used: ' + bp[2] + '.'); store(lineKey(), JSON.stringify(l)); if (S.inshore) store('fs-line-solent', JSON.stringify(l)); LIVE.calc = liveCalc(f); liveShow(); draw(); }
