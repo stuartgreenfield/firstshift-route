@@ -23,4 +23,10 @@ const v = RT.dist(pB.la, pB.lo, pA.la, pA.lo) / (pA.t - pB.t);
 ok(Math.abs(v - 6) < 0.05, 'speed into the rounding point is the boat speed (no jump)', v.toFixed(2) + ' kn');
 const old = Math.ceil(tA * 6 - 1e-9) / 6;
 ok(run2.finish < old + 5 / 6 + 0.17, 'the finish follows on from the rounding time', run2.finish.toFixed(3) + ' h');
+/* 3. outside review, 23 Nov 2026: a 0.4 nm finish circle 6 nm away at 6 kn. Arrival used to be at the circle (56 min); the finish
+   time is now to the finish point itself, 60 minutes */
+const r3 = RT.route(Object.assign({}, base, { legs: [{ name: 'Finish', point: [50, east(6)], r: 0.4 }] }));
+ok(Math.abs(r3.finish * 60 - 60) < 1, 'finish 6 nm away, 0.4 nm circle, 6 kn: finish time 60 min, not 56', (r3.finish * 60).toFixed(1) + ' min');
+const e3 = r3.path[r3.path.length - 1];
+ok(RT.dist(e3.la, e3.lo, 50, east(6)) < 0.01, 'the route ends on the finish point', RT.dist(e3.la, e3.lo, 50, east(6)).toFixed(3) + ' nm');
 console.log(pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0);

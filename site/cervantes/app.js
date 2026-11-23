@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.108';
+  var VERSION = 'FirstShift Route v0.12.109';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -151,6 +151,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       for (var i = 0; i < r.path.length && i < 40; i++) { var q = r.path[i], dd = rhumb({ lat: p0.la, lon: p0.lo }, { lat: q.la, lon: q.lo }).nm; if (dd > 1.05) break; var z = P.depth.nearest('z', q.la, q.lo); if (z === z) low = Math.min(low, -z); }
       return low < safety ? ' Leaving the start the route crosses water about ' + Math.max(0, low).toFixed(1) + ' m deep on the chart, less than your safety depth of ' + safety.toFixed(1) + ' m: check the depth there on the tide.' : '';
     } catch (e) { return ''; } }
+  /* outside review, 23 Nov 2026 (Stuart 19:24 go): the button is a one-off planning trial; before, it changed the safety depth for every later route */
+  function trialTick() { if (S.trialArm) S.trialArm = false; else S.trialDepth = null; }   /* a trial depth lasts for one routing only */
+  function trialNote() { return S.trialDepth != null ? ' Trial route with a safety depth of ' + S.trialDepth.toFixed(1) + ' m, for planning only: your setting stays ' + (+$('depth').value).toFixed(1) + ' m and the next routing uses it.' : ''; }
   function depthOffer(e, sp) {
     var b = $('errDepth'); if (!b) return; b.hidden = true;
     if (!e || !/after 0 h/.test(e.message || '') || !sp) return;
@@ -164,7 +167,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     else if (wd === wd && wd < safety) { y = exitD >= 0 ? exitD : Math.max(0, Math.floor(wd * 2) / 2); msg = who + ' is in water about ' + wd.toFixed(1) + ' m deep on the chart, shallower than your safety depth of ' + safety.toFixed(1) + ' m, so no route can leave it.'; }
     else { y = exitD >= 0 ? exitD : null; msg = 'No way out from ' + who.toLowerCase() + ' with a safety depth of ' + safety.toFixed(1) + ' m: within a mile in every direction the chart shows shallower water.'; }
     $('errMsg').textContent = msg;
-    if (y != null && y < safety) { b.textContent = 'Route with ' + y.toFixed(1) + ' m'; b.hidden = false; b.onclick = function () { errHide(); depthSet(y); S.running = false; S.preBad = true; S.routes = []; run(); }; }
+    if (y != null && y < safety) { b.textContent = 'Trial route with ' + y.toFixed(1) + ' m (your setting stays ' + safety.toFixed(1) + ' m)'; b.hidden = false; b.onclick = function () { errHide(); S.trialDepth = y; S.trialArm = true; S.running = false; S.preBad = true; S.routes = []; run(); }; }
   }
   (function () { var b = $('errBox'); if (!b) return; $('errX').onclick = errHide; $('errRetry').onclick = function () { errHide(); S.running = false; S.preBad = true; S.routes = []; run(); }; })();
   setInterval(function () {   /* a route that has run for two minutes with nothing to show is stuck: say so */
@@ -388,7 +391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.108 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.109 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -714,7 +717,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function opts(models) {
     var spec = boatSpec(), b = FSBoat.resolve(spec), pol = b.pol;
     return { blend: store('nav-blend') === '1', models: models, tide: $('tideSel').value || null, wave: $('waveSel').value || null, tcc: +$('tcc').value || 1, polar: pol, polKey: JSON.stringify([spec.src, spec.type, spec.tcc, spec.src === 'polar' ? spec.text.length + ':' + spec.text.slice(-40) : '', spec.tune]),
-      sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: +$('depth').value, margin: +($('margin') ? $('margin').value : 1), nogo: nogoRings(), maxHours: HMAX() + 2, tackS: +$('tackS').value, gybeS: +$('gybeS').value, adj: adjVals(), tideWind: $('tideWind') ? $('tideWind').checked : true, polZ: polZ(), stab: $('stabOn') ? $('stabOn').checked : true };
+      sea: { up: +$('seaUp').value, reach: +$('seaReach').value, surf: +$('seaSurf').value, from: 0.5, surfFrom: 1.5 }, safety: S.trialDepth != null ? S.trialDepth : +$('depth').value, margin: +($('margin') ? $('margin').value : 1), nogo: nogoRings(), maxHours: HMAX() + 2, tackS: +$('tackS').value, gybeS: +$('gybeS').value, adj: adjVals(), tideWind: $('tideWind') ? $('tideWind').checked : true, polZ: polZ(), stab: $('stabOn') ? $('stabOn').checked : true };
   }
   /* the height the polar's wind speeds refer to: 10 m (ORC, designers, FirstShift and Route+'s learned polars) or the masthead (D, 14 Nov 2026) */
   function polZ() { var z = $('polZ') && $('polZ').value === 'mast' ? +$('mastZ').value : 10; return z > 0 ? z : 10; }
@@ -1522,7 +1525,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!ends.length) return '';
     var last = ends[0].end, ok = last >= fin, tight = ok && last < fin + est * 0.25;
     var rows = ends.map(function (e) { var cov = e.end - st, all = e.end >= fin; return '<li>' + short(e.id) + ': to ' + clockAbs(T0 + e.end * 3600) + ' ' + tzS1() + (all ? ', covers the race' : cov > 0 ? ', about the first ' + Math.round(cov) + ' h, then the longer forecasts take over' : ', ends before this start') + '</li>'; }).join('');
-    return '<div class="fit ' + (ok ? (tight ? 'tight' : 'ok') : 'no') + '"><b>' + (ok ? (tight ? 'Close: the race should just fit the forecasts.' : 'The forecasts cover the race.') : 'The race may not finish before the forecasts end.') + '</b> ' + nm + ' nm, roughly ' + Math.round(est) + ' h at your rating (a rough guide: upwind in a blow takes much longer), so a finish around ' + clockAbs(T0 + fin * 3600) + ' ' + tzS1() + '. The longest forecast runs to ' + clockAbs(T0 + last * 3600) + ' ' + tzS1() + '.' + (ok ? ' Route confirms it when it routes.' : ' Choose an earlier start, or wait for a later forecast run: Route will say if it cannot finish.') + '<details><summary>Each forecast</summary><ul>' + rows + '</ul><p class="note">Forecasts are published for 2 to 5 days ahead here; the global models go further and longer runs are coming.</p></details></div>';
+    return '<div class="fit ' + (ok ? (tight ? 'tight' : 'ok') : 'no') + '"><b>' + (ok ? (tight ? 'Close: the race should just fit the forecasts.' : 'The forecasts cover the race.') : 'The race may not finish before the forecasts end.') + '</b> ' + nm + ' nm, roughly ' + Math.round(est) + ' h at your rating (a rough guide: upwind in a blow takes much longer), so a finish around ' + clockAbs(T0 + fin * 3600) + ' ' + tzS1() + '. The longest forecast runs to ' + clockAbs(T0 + last * 3600) + ' ' + tzS1() + '.' + (ok ? ' Route confirms it when it routes.' : ' Route keeps your start: wait for a later forecast run, and Route shows each route as far as its forecast reaches.') + '<details><summary>Each forecast</summary><ul>' + rows + '</ul><p class="note">Forecasts are published for 2 to 5 days ahead here; the global models go further and longer runs are coming.</p></details></div>';
   }
   /* ---------- guided set-up: boat, race, start, fleet, check, route; in the order a navigator prepares a race ---------- */
   var WIZ = { on: false, step: 0 }, WIZN = ['Race and boat', 'Choose the race', 'The start', 'Boats you are racing', 'Check and route'], WIZD = [0, 1, 1, 2, 3, 4];   /* five screens, four steps: the race list is part of step 1 (Stuart 12 Nov: race and boat first, then the start) */
@@ -2207,10 +2210,13 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   document.addEventListener('change', function (e) { if (e.target && (e.target.matches('[data-m]') || e.target.id === 'startSel' || e.target.id === 'tcc')) coverRender(); });
   /* after routing: can you trust it? (Stuart 12 Nov) */
+  /* outside review, 23 Nov 2026 (Stuart 19:24 go): the finish is a position, not yet the line in the sailing instructions */
+  function finishNote(ck) { try { var fc = meta.course && meta.course.finish; if (fc && fc.name && !fc.line) ck.push([1, 'Finish times are to the finish position (' + fc.name.replace(/^Finish,\s*/, '') + '), sailed right to it; the line in the sailing instructions may differ a little']); } catch (e) {} }
   function checksRender() {
     var el = $('checks'); if (!el) return; if (!S.routes || !S.routes.length) { el.innerHTML = ''; return; }
     var ck = [], part = S.routes.filter(function (s) { return s.r.partial; }).length;
-    ck.push(part ? [0, 'The forecasts end before the finish on ' + (part === S.routes.length ? 'every route' : part + ' of ' + S.routes.length + ' routes') + ': choose an earlier start or longer models'] : [1, 'Every model used reaches the finish']);
+    ck.push(part ? [0, 'The forecasts end before the finish on ' + (part === S.routes.length ? 'every route' : part + ' of ' + S.routes.length + ' routes') + ': Route keeps your start, and each of those routes stops where its forecast ends, with the miles still to sail. Wait for the next forecast run, or add longer forecasts'] : [1, 'Every model used reaches the finish']);
+    finishNote(ck);
     var edge = edgeHit(); ck.push(edge ? [0, 'Routes run along the edge of the forecast area: the best route may lie outside it'] : [1, 'Course and routes inside the forecast area, clear of its edges']);
     var own = S.routes.filter(function (s) { return !s.r.partial && !s.combined && s.id !== 'chain'; }).map(function (s) { return s.r.finish; });
     if (own.length > 1) { var sp = Math.max.apply(null, own) - Math.min.apply(null, own), dur = Math.min.apply(null, own) - (S.start ? S.start.t : 0); ck.push(sp > Math.max(1, dur * 0.08) ? [0, 'Models disagree by ' + fmtH(sp) + ' on the finish: compare the routes before you commit'] : [1, 'Models agree within ' + fmtH(sp) + ' on the finish']); }
@@ -2924,7 +2930,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
     if (startGate()) { busy(''); if (S.card || ($('sheet') && !$('sheet').hidden) || !$('wiz').hidden) return; showCard(); return; }   /* never jump to the card while the boat, forecasts or start are being edited */   /* start not chosen: the set-up card says so */
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
-    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' ' + tzS1() + ' is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' ' + tzS1() + '. Route will work out the routes once the forecasts reach the start, about ten days before. Choose an earlier start to route now.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
+    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' ' + tzS1() + ' is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' ' + tzS1() + '. Route will work out the routes once the forecasts reach the start, about ten days before. Route keeps your start; until then there is nothing to route.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
     S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var sp = S.inshore && meta.course && meta.course.race && meta.course.race.solPlan;
@@ -2943,6 +2949,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; S.runSince = Date.now(); S.progAt = 0; S.progF = null; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
+    trialTick();
     var RD = rdSec();   /* Routing detail (Stuart 20 Nov 12:44, 12:50): 0 for Quick, else the finer pass's sectors */
     /* the routing checklist (Stuart 20 Nov 15:18, "a tick box list as routing works"): each stage ticks as it finishes, with its time */
     S.ck = [{ k: 'fc', t: ms.length + ' forecast' + (ms.length > 1 ? 's' : '') + ' in', s: 'done' }, { k: 'q', t: 'First routes', s: 'wait' }, { k: 'std', t: 'Standard (360)', s: 'wait' }].concat(RD ? [{ k: 'fin', t: 'Finer (' + RD + ')', s: 'wait' }] : []).concat([{ k: 'chk', t: 'Checked in every forecast', s: 'wait' }]);
@@ -2983,7 +2990,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           S.routes.forEach(function (s) { s.best = s === best; });
           S.sel = best; S.base = base; S.legs = legs; S.start = start;
           var part = S.routes.filter(function (x) { return x.r.partial; });
-          $('runNote').textContent = (quick ? 'Quick route in ' : finer ? 'Finer routes in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : !finer && RD ? '. Finer routes coming…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Choose an earlier start for a full route.' : '') + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
+          $('runNote').textContent = (quick ? 'Quick route in ' : finer ? 'Finer routes in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : !finer && RD ? '. Finer routes coming…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Route keeps your start: a later forecast run will reach further.' : '') + trialNote() + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
           /* E7 / F75 (20 Nov): the optimiser can be beaten. Each route is sailed in every forecast (the matrix); where another route's track is
              quicker in a model's own forecast than that model's own route, say so: the best known route in that forecast is that track */
           S.beaten = []; ms.forEach(function (m, j) { var i = -1; S.routes.forEach(function (x, k) { if (x.id === m) i = k; }); if (i < 0) return; var c = cols[j], bi = i; c.forEach(function (v, k) { if (v < c[bi]) bi = k; }); var d = (c[i] - c[bi]) * 60; if (bi !== i && d >= 0.5) S.beaten.push({ model: m, name: S.routes[i].name, by: S.routes[bi].name, byId: S.routes[bi].id, min: d }); });

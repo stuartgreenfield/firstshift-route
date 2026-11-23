@@ -502,7 +502,7 @@
       var path0 = trackBack(o, St.hist, St.pts.indexOf(n.p));
       return { arrivals: St.arrivals, path: path0, finish: path0[path0.length - 1].t, partial: { togo: Math.round(togo), leg: G.leg.name, end: St.t }, iso: St.iso };
     }
-    var e0 = new Error('The forecasts end ' + Math.round(St.t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + G.leg.name + '. Choose an earlier start, or wait for the next forecast run.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
+    var e0 = new Error('The forecasts end ' + Math.round(St.t - o.start.t) + ' h after this start, before the boat can finish: about ' + Math.round(togo) + ' nm still to sail, on the leg to ' + G.leg.name + '. Route keeps the race start: wait for the next forecast run, or add longer forecasts.'); e0.forecastEnd = true; e0.togo = togo; throw e0;
   }
   function noWay(S, St, G) {
     var pts = St.pts, mla = 0, mlo = 0; pts.forEach(function (q) { mla += q.la; mlo += q.lo; });
@@ -538,8 +538,16 @@
   function routeResult(o, St) {
     var hist = St.hist, last = hist[hist.length - 1].pts, fin = o.legs[o.legs.length - 1].point, k2 = 0;
     if (fin) { var bd = 1e9; last.forEach(function (c, i) { var d = dist(c.la, c.lo, fin[0], fin[1]); if (d < bd) { bd = d; k2 = i; } }); }
-    var arr = St.arrivals;
-    return { arrivals: arr, path: trackBack(o, hist, k2), finish: arr.length ? arr[arr.length - 1].t : null, iso: St.iso };
+    var arr = St.arrivals, path = trackBack(o, hist, k2), fl = o.legs[o.legs.length - 1];
+    /* Outside review, 23 Nov 2026 (Stuart 19:24 go): the finish is a point with a circle round it (0.4 nm on most races) and the route
+       arrived on entering the circle, so the finish time was early by the time to sail the rest of the way (4 minutes at 6 knots).
+       The last piece to the finish point itself is now sailed at the boat's speed over the ground on the step before. */
+    if (fin && fl.r > 0.1 && arr.length && path.length > 3) {   /* the arrival time is on the circle; the step's end point can lie inside it */
+      var pa = path[path.length - 3], pb = path[path.length - 2], pz = path[path.length - 1], dh = pb.t - pa.t, sog = dh > 0 ? dist(pa.la, pa.lo, pb.la, pb.lo) / dh : 0;
+      if (!(sog > 0.5) && pz.bsp > 0.5) sog = pz.bsp;
+      if (sog > 0.5) { var tf = pz.t + fl.r / sog, q = {}; for (var kk in pz) q[kk] = pz[kk]; q.la = fin[0]; q.lo = fin[1]; q.t = tf; path[path.length - 1] = q; arr = arr.slice(); arr[arr.length - 1] = { name: arr[arr.length - 1].name, t: tf }; }
+    }
+    return { arrivals: arr, path: path, finish: arr.length ? arr[arr.length - 1].t : null, iso: St.iso };
   }
   function route(o) {
     /* o: { start:{lat,lon,t}, legs:[{name, gate:{a,b}} | {name, point:[la,lo], r}], wind, tide, wave, speed, depth, safety (m), margin (depth squares, 0 to 3),
