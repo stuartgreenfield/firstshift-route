@@ -4,9 +4,11 @@ name: Forecasts
 # The areas are fetched side by side, one job each (12 Nov 2026: one after another took over three hours with seven areas).
 on:
   schedule:
-    - cron: '17 1,7,13,19 * * *'
+    # 23 Nov 2026 (Stuart 20:17): the forecast clock starts the runs at 01:45, 07:45, 13:45 and 19:45, after ECMWF's 00Z and 12Z land on
+    # the AWS copy (07:34 and 19:34 UTC); GitHub's own schedule is the back-up, an hour later, and stands down if the clock's run published
+    - cron: '17 2,8,14,20 * * *'
     # back-up: GitHub sometimes skips a scheduled run; these rebuild only if nothing was published for 5 hours
-    - cron: '47 1,7,13,19 * * *'
+    - cron: '47 2,8,14,20 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

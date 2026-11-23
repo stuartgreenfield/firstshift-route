@@ -5,7 +5,8 @@
    stop a second run from doing the work twice.
    Secrets (set by Stuart in Cloudflare, never in this file): GH_TOKEN, a fine-grained GitHub token for stuartgreenfield/firstshift-route
    with "Actions: Read and write" only.
-   Cron Triggers (Cloudflare, UTC): 20 1,7,13,19 * * *  and  32 1,7,13,19 * * *   (the planned start, then the ten-minute check). */
+   Cron Triggers (Cloudflare, UTC): 45 1,7,13,19 * * *  and  57 1,7,13,19 * * *   (the planned start, then the check). 23 Nov (Stuart 20:17):
+   moved from 20 and 32 past, which came 14 minutes before ECMWF's 00Z and 12Z reached the AWS copy (07:34 and 19:34 UTC). */
 const REPO = 'stuartgreenfield/firstshift-route', WF = 'forecast.yml';
 const gh = (env, path, init = {}) => fetch('https://api.github.com/repos/' + REPO + path, { ...init, headers: { authorization: 'Bearer ' + env.GH_TOKEN, accept: 'application/vnd.github+json', 'user-agent': 'firstshift-forecast-clock', 'x-github-api-version': '2022-11-28', ...(init.headers || {}) } });
 async function recentRun(env, mins) {
@@ -20,7 +21,7 @@ async function tick(env, why) {
   return r.status === 204 ? 'started a Forecasts run (' + why + ')' : 'could not start a run: GitHub said ' + r.status + ' ' + (await r.text()).slice(0, 200);
 }
 export default {
-  async scheduled(ev, env, ctx) { const why = new Date(ev.scheduledTime).getUTCMinutes() >= 30 ? 'check' : 'planned'; ctx.waitUntil(tick(env, why).then(m => console.log(m), e => console.log('error: ' + e.message))); },
+  async scheduled(ev, env, ctx) { const why = new Date(ev.scheduledTime).getUTCMinutes() >= 50 ? 'check' : 'planned'; ctx.waitUntil(tick(env, why).then(m => console.log(m), e => console.log('error: ' + e.message))); },
   async fetch(req, env) { const u = new URL(req.url); if (u.pathname !== '/status') return new Response('FirstShift forecast clock\n', { headers: { 'content-type': 'text/plain' } });
     try { const run = await recentRun(env, 360); return new Response((run ? 'last run ' + run.created_at + ' ' + run.status + ' ' + (run.conclusion || '') : 'no run in the last 6 hours') + '\n', { headers: { 'content-type': 'text/plain' } }); } catch (e) { return new Response('error ' + e.message + '\n', { status: 500 }); } }
 };
