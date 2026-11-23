@@ -121,7 +121,7 @@
     document.head.appendChild(s); }
   function open(show) {
     css(); var p = $('tgPop'); if (!p) { p = document.createElement('div'); p.id = 'tgPop'; p.className = 'tgpop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Tide gate'); p.innerHTML = '<button class="close" type="button" aria-label="Close the tide gate">×</button><h3>Tide gate</h3><div class="tgb"></div>'; (document.querySelector('.app>.chart') || document.body).appendChild(p); p.querySelector('.close').onclick = function () { open(false); }; p.hidden = true; }
-    var on = show == null ? p.hidden : !!show; p.hidden = !on; var b = $('tgBtn'); if (b) b.setAttribute('aria-pressed', String(on)); if (on) render();
+    var on = show == null ? p.hidden : !!show; p.hidden = !on; var b = $('tgBtn'); if (b) b.setAttribute('aria-pressed', String(on)); var b2 = $('tgBtnData'); if (b2) b2.setAttribute('aria-pressed', String(on)); if (on) render();
   }
   /* the strip on the deck screen, and the alarm */
   var beeped = 0;
@@ -146,7 +146,14 @@
   function button() {
     if ($('tgBtn')) return true; var plotB = $('fsPlotBtn') || [].filter.call(document.querySelectorAll('button'), function (b) { return b.textContent.trim() === 'PLOT' && !b.closest('#deckNums'); })[0]; if (!plotB) return false;
     var b = document.createElement('button'); b.type = 'button'; b.id = 'tgBtn'; b.className = plotB.className.replace(/\brplotb\b/, '') + ' tgb'; b.textContent = 'TIDE'; b.title = 'Tide gate: will we beat the tide to the mark?'; b.setAttribute('aria-pressed', 'false'); b.onclick = function () { open(); };
-    var after = $('fsDeckBtn') || plotB; after.parentNode.insertBefore(b, after.nextSibling); return true;
+    var after = $('fsDeckBtn') || plotB; after.parentNode.insertBefore(b, after.nextSibling); dataButton(); return true;
+  }
+  /* narrow phones (Stuart 23 Nov 07:00, "Fold TIDE into Data"): under 395 px wide the seven 44 px buttons leave no room for the plan
+     clock, so TIDE moves to the top of the Data tab there; CSS shows one or the other */
+  function dataButton() {
+    var d = $('t-data'); if (!d || $('tgBtnData')) return;
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'tgBtnData'; b.className = 'btn tgdata'; b.innerHTML = '<b>TIDE</b> Tide gate: will we beat the tide to the mark?'; b.setAttribute('aria-pressed', 'false'); b.onclick = function () { open(); };
+    d.insertBefore(b, d.firstChild);
   }
   function clearProg() { var st = $('tgStrip'); if (!st || st.hidden) return; st.style.bottom = ''; var pg = $('prog'); if (pg && !pg.hidden && pg.getClientRects().length) { var a = pg.getBoundingClientRect(), b = st.getBoundingClientRect(); if (a.width && !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom)) st.style.bottom = Math.round((parseFloat(getComputedStyle(st).bottom) || 0) + b.bottom - a.top + 6) + 'px'; } }   /* raised by the overlap, in the strip's own frame */
   function init() { if (!button()) return setTimeout(init, 1000); setInterval(tick, 30000); setInterval(clearProg, 2000); }

@@ -362,7 +362,7 @@ body::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background
 @media (max-width:899px) and (orientation:portrait), (max-width:899px) and (min-height:501px){.bar .clock{overflow:hidden}.clock{min-width:0;font-size:13px;line-height:1.2}.clock .ckd{display:block;font-size:11px;color:var(--muted)}.clock .ckt{font-size:16px}.clock small{font-size:10.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.clock .ckl{display:none}.clock .cks{display:inline}
   .now{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,4fr) minmax(0,3fr) minmax(0,6fr) minmax(0,4fr) minmax(0,4fr) minmax(0,3fr) minmax(0,4fr) minmax(0,3fr);gap:2px 5px;overflow:hidden}.now div{min-width:0}.now b{font-size:clamp(12px,3.6vw,16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.now span{font-size:10px;letter-spacing:0;white-space:nowrap;overflow:hidden}}
 @media (max-width:360px){.bar{gap:6px 6px}.pgrp{gap:3px}.mobbtn{padding:0 8px}}
-@media (max-width:400px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:44px}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
+@media (max-width:430px) and (orientation:portrait){.bar,.bar.fh{gap:6px 5px}.pgrp{gap:3px}.pgrp .spd,.pgrp .play{padding-left:4px;padding-right:4px;min-width:44px}.mobbtn{padding:0 6px}.pgrp .play{width:42px;flex:none}.bar .clock .ckd{display:none}.spl{display:none}.bar .clock .ckt{font-size:14px}.bar #fromHere{min-width:38px;padding:0 4px}.bar,.bar.fh{column-gap:4px}}   /* narrow phones (iPhone SE): smaller buttons so the GPS button fits beside the clock */
 @media (max-width:359px){.pgrp{gap:3px}.pgrp .spd,.pgrp .play{min-width:34px;width:34px;padding-left:1px;padding-right:1px;font-size:11px;flex:none}.mobbtn.mobbar{width:34px;height:34px;min-width:34px}.mobbtn.mobman svg{width:28px;height:28px}.mobbtn.mobman svg{width:20px;height:20px}#tzRow{gap:4px;font-size:11px}#tzRow .tzl button,#tzRow .tzl .btn{min-width:28px;width:28px;padding:0}}   /* F16 (Stuart 16 Nov 11:24 "Next run of updates fix it"): 320-wide phones, the TIDE button and Start fit */
 
 /* phone on its side: a short screen, so everything compact and the chart as big as possible */
@@ -511,6 +511,20 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 
 /* first use D (22 Nov): the clock beside TIDE showed "17:0" on an iPhone 13; it keeps its full width */
 @media (max-width:899px){.bar .clock{min-width:max-content}}
+/* Pixel 7 (Check, 23 Nov 03:03): from 401 to 560 px wide the clock also showed its date line, 66 px wide where 26 px were free, and ran off the screen; the date shows only where it fits, the time row below keeps the date */
+@media (max-width:560px) and (orientation:portrait){.bar .clock .ckd{display:none}}
+#tgBtnData{display:none;width:100%;justify-content:flex-start;gap:8px;margin:0 0 10px;min-height:44px;text-align:left}
+@media (max-width:364px) and (orientation:portrait){.bar #tgBtn{display:none}#tgBtnData{display:flex;align-items:center}}
+/* Stuart 23 Nov 07:25 (Mark, iPhone 14 Plus photo: TIME and "Start 0h 30" off the screen): "break the rule and make the finger buttons a
+   little bit smaller on all tools and for all screens". The time row's buttons go from 44 to 40 px, and if they still do not fit (Mark in a
+   race adds TIME and COURSE CHANGE) the row wraps onto a second line instead of running off the screen. */
+.bar .pgrp{flex-wrap:wrap;min-width:0}
+.bar .pgrp>button{min-width:40px;min-height:40px;height:40px}
+.bar .pgrp>.play{width:40px}
+/* on a phone held upright the buttons leave the clock its room (the time, 48 px, and the gap), and wrap before they push it off */
+@media (max-width:560px) and (orientation:portrait){.bar .pgrp{max-width:calc(100vw - var(--gut) - var(--gutR) - 62px)}}
+@media (max-width:430px) and (orientation:portrait){.bar .pgrp{max-width:calc(100vw - var(--gut) - var(--gutR) - 54px)}}
+@media (max-width:340px) and (orientation:portrait){.bar .pgrp{max-width:none}}
 
 /* fleet table (22 Nov 19:20): boat names read from the left; ahead or behind under the minutes, so five columns fit a phone */
 .lsol{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0 2px}.lsol .seg button{min-width:44px;min-height:32px}#fleet td:nth-child(2),#fleet th:nth-child(2){text-align:left}#fleet td:nth-child(n+3){white-space:nowrap}#fleet td,#fleet th{padding-left:6px;padding-right:6px}
@@ -696,7 +710,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="in" role="dialog" aria-label="Settings">
-    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.106</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
+    <div class="shead"><h2>Settings <span style="font:500 12px var(--f-data);color:var(--muted)">FirstShift Route v0.12.107</span></h2><span class="shtools"><button class="btn shbtn" data-help="1" aria-label="Help">? Help</button><button class="btn shbtn" type="button" id="setReload" aria-label="Reload: the newest app and forecasts, keeping your race, chart and GPS" title="The newest app and forecasts; your race, course, chart view and GPS stay as they are">↻ Reload</button><button class="btn shbtn" data-share="1" aria-label="Share with the crew">Share</button></span><button class="close" id="sheetX" aria-label="Close settings">×</button></div>
     <button class="btn primary setdone" id="setDone" hidden>Done: back to set-up</button>
     <div class="stabs" role="tablist">
       <button class="tab" data-s="boat" aria-selected="true">Boat</button>
