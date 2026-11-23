@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-23T14:06:26.537Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 214,
+   "note": "Finer routes in 118.3 s. Also worth knowing: in UKV wind, the Finest first route is 11 min faster than UKV’s own route. "
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 421,
+   "note": "Finer routes in 114.5 s. Also worth knowing: in UKV wind, the Finest first route is 32 min faster than UKV’s own route. "
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 629,
+   "note": "Finer routes in 115.1 s. Times: first routes 12.8 s, standard 92.5 s, finer 207.6 s. The faint line is the standard rout"
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 832,
+   "note": "Finer routes in 112.1 s. Times: first routes 12.4 s, standard 89.6 s, finer 201.7 s. The faint line is the standard rout"
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 1031,
+   "note": "Finer routes in 115.2 s. Times: first routes 12.5 s, standard 82.3 s, finer 197.6 s. The faint line is the standard rout"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 1204,
+   "note": "Finer routes in 113.4 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 0.9 min faster than ECMWF’s"
+  }
+ ]
+}

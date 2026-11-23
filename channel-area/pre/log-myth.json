@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-23T13:52:15.601Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 124,
+   "note": "Finer routes in 93.8 s. Also worth knowing: in UKV wind, the AROME route is 1.1 min faster than UKV’s own route; in GFS "
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 246,
+   "note": "Finer routes in 96.3 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 1.1 min faster than UKV’s own "
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 368,
+   "note": "Finer routes in 96.4 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 2.2 min faster than ECMWF’s "
+  }
+ ]
+}
