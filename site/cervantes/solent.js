@@ -973,12 +973,15 @@
   function seqLen() { return B.seq === 3 ? 3 : B.seq === 10 || B.seq === 104 ? 10 : 5; }
   function sqTone(long) { try { SQ.ac = SQ.ac || new (window.AudioContext || window.webkitAudioContext)(); var a = SQ.ac, o = a.createOscillator(), g = a.createGain(); o.frequency.value = long ? 880 : 1200; g.gain.value = 0.25; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + (long ? 0.9 : 0.15)); } catch (e) {} try { if (navigator.vibrate) navigator.vibrate(long ? [500] : [80]); } catch (e) {} }
   function sqGun(t) { SQ.setAt = Date.now(); B.startAt = Math.round(t); B.raced = null; saveB(); try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {} sqRender(); }
+  /* Outside review, 23 Nov 2026: the start screen opens by itself 10 minutes before the gun, but never over the course being edited,
+     the start line being set or another window of Mark's own; it opens when that is closed */
+  function editBusy() { try { var eb = $('editBar'); if (eb && !eb.hidden) return true; return [].some.call(document.querySelectorAll('.solpop, #races, #wiz, #solList, .sheet'), function (e) { return !e.hidden && e.getClientRects().length && e.id !== 'layers'; }); } catch (e) { return false; } }
   function sqOn() { var now = Date.now() / 1000; if (SQ.hide && SQ.hide === B.startAt) return false; if (B.pp) return true; if (SQ.force && SQ.force === B.startAt && now < B.startAt + 60) return true; var q0 = series(); return !!(B.startAt && now > B.startAt - barMin() * 60 - (q0.pos - 1) * q0.iv * 60 && now < B.startAt + 60); }   /* C (Stuart 20 Nov 13:58): the countdown bar from 1 hour before the gun offshore; Mark and Mark+ 15 minutes by default, 15, 30 or 60 on the start screen (14:02) */
   function barMin() { return B.barMin === 15 || B.barMin === 30 || B.barMin === 60 ? B.barMin : window.FS_MARK ? 15 : 60; }
   function sqRender() {
     if (SQ.wasBig && B.startAt && Date.now() / 1000 > B.startAt + 5) { SQ.wasBig = 0; if (SQ.gps === 2) { SQ.gps = 0; try { if (window.__fsLiveFold) window.__fsLiveFold(); } catch (x) {} } }   /* Stuart 20 Nov 16:22: after the gun the GPS window the start screen opened folds to its pill, so the chart buttons come back */
     var b = $('solSeq'), on = KIT && sqOn() && !($('solCard') && !$('solCard').hidden), ss = $('solStartScr');   /* the race menu sheet comes first */ if (!on) { if (b) b.hidden = true; if (ss) ss.hidden = true; return; } css();
-    var rem0 = B.startAt ? B.startAt - Date.now() / 1000 : null, mins = B.ssMin == null ? 10 : B.ssMin, big = !B.pp && rem0 != null && rem0 > -5 && (SQ.force === B.startAt || (mins > 0 && rem0 <= mins * 60 && !(SQ.small && Math.abs(SQ.small - B.startAt) < 900) && !document.body.classList.contains('fsdeck')));   /* F44: the start screen does not open by itself over the deck screen the crew chose */
+    var rem0 = B.startAt ? B.startAt - Date.now() / 1000 : null, mins = B.ssMin == null ? 10 : B.ssMin, big = !B.pp && rem0 != null && rem0 > -5 && (SQ.force === B.startAt || (mins > 0 && rem0 <= mins * 60 && !(SQ.small && Math.abs(SQ.small - B.startAt) < 900) && !document.body.classList.contains('fsdeck') && !editBusy()));   /* F44: the start screen does not open by itself over the deck screen the crew chose */
     if (big) { SQ.wasBig = 1; if (b) b.hidden = true; if (!SQ.gps) { SQ.gps = 1; try { if (window.__fsLiveOpen && !(window.__fsLiveFix && window.__fsLiveFix())) { window.__fsLiveOpen(); SQ.gps = 2; } } catch (x) {} } ssRender(rem0); return; }   /* M28: the start screen */
     if (ss) ss.hidden = true;
     if (!b) { b = document.createElement('div'); b.id = 'solSeq'; b.className = 'solseq'; b.setAttribute('role', 'timer'); document.body.appendChild(b);
@@ -1253,7 +1256,25 @@
     var bt = $('solentBuild'); if (bt) bt.onclick = function () { if (!C.on) setOn(true); openBuilder(); };
   }
   /* M12 (Stuart 17 Nov 05:30): at the gun the racing window opens by itself: the plotter, steering to the next mark (rhumb line) or along the route */
-  if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); toast('The gun: the racing window is open. Tap MARK or ROUTE in it to steer to the next mark or along the route.'); } catch (e) {} }, 1000);
+  if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); gunBar(); } catch (e) {} }, 1000);
+  /* Outside review, 23 Nov 2026, option A (Stuart 21:16): at the gun, a green bar under the gun box for 20 s says the race is on, the
+     next mark, the side to leave it and its bearing and distance. It replaces the grey tip, which could sit on top of another. */
+  function gunBar() {
+    var b = $('solGunBar'); if (!b) { b = document.createElement('div'); b.id = 'solGunBar'; b.className = 'solgunbar'; b.setAttribute('role', 'status'); document.body.appendChild(b);
+      var st = document.createElement('style'); st.textContent = '.solgunbar{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));z-index:40;max-width:560px;margin:0 auto;border-radius:14px;background:#15803d;color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,.4);font:700 16px/1.25 var(--f-body,system-ui)}.solgunbar b{display:block;font:800 13px var(--f-body,system-ui);letter-spacing:.08em;opacity:.9}.solgunbar .t{flex:1;min-width:0}.solgunbar button{min-height:44px;border-radius:10px;border:0;background:#fff;color:#15803d;font:800 15px var(--f-body,system-ui);padding:0 14px}html[data-night] .solgunbar{background:#3a0d08;color:#E8B0A8;border:1px solid #9A2A1A}html[data-night] .solgunbar button{background:#5A1410;color:#E8B0A8}'; document.head.appendChild(st);
+      b.onclick = function (e) { if (e.target.closest('button')) { b.hidden = true; b.dataset.until = '0'; } }; }
+    b.dataset.until = String(Date.now() + 20000); b.hidden = false; gunBarFill();
+  }
+  function gunBarFill() {
+    var b = $('solGunBar'); if (!b || b.hidden) return; var left = +b.dataset.until - Date.now(); if (left <= 0) { b.hidden = true; return; }
+    var o = null; try { var PL = window.__fsPlot || window.__navPlot; o = PL && PL.calc ? PL.calc() : null; } catch (e) {}
+    var next = gunNext(o && o.m), bd = gunBd(o);
+    b.innerHTML = '<div class="t"><b>GUN · RACING · ' + Math.ceil(left / 1000) + ' s</b>' + next + (bd ? '<br>' + bd : '') + '</div><button type="button">Hide</button>';
+    var sq = $('solSeq'); b.style.top = (sq && !sq.hidden && sq.getClientRects().length ? Math.round(sq.getBoundingClientRect().bottom + 8) : 120) + 'px';
+  }
+  function gunNext(m) { if (!m) return 'Racing: the next mark is in the racing window'; if (m.finish) return 'Next: the finish'; return 'Next: ' + esc(m.name || 'the next mark') + (m.side ? ' · leave to ' + (/^s/i.test(m.side) ? 'starboard' : 'port') : ''); }
+  function gunBd(o) { if (!o || !o.ok || o.btw == null) return ''; return ('00' + Math.round((o.btw % 360 + 360) % 360) % 360).slice(-3) + '°T · ' + (o.dtw < 10 ? o.dtw.toFixed(1) : Math.round(o.dtw)) + ' nm'; }
+  setInterval(gunBarFill, 1000);
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   /* A14: before any other label in the frame, Mark keeps the committee boat and the pin clear of labels, and the line's bias and wind
      labels take their places; biasDraw then draws them where they were placed */

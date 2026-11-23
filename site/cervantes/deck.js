@@ -92,7 +92,10 @@
       '.dkbox .dkl{position:absolute;top:5px;left:8px;font:700 11px var(--f-body,system-ui);letter-spacing:.06em;color:var(--muted)}.dkbox .dku{position:absolute;top:5px;right:8px;font:600 11px var(--f-body,system-ui);color:var(--muted)}' +
       '.dkbox .dkv{font:700 clamp(28px,min(42cqh,24cqw),160px)/1 var(--f-data,ui-monospace,monospace);font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}' +
       '.dkbox .dka{position:absolute;bottom:5px;left:8px;font:600 12px var(--f-data,monospace);color:var(--muted)}.dkbox .dkt{position:absolute;bottom:2px;right:8px;font:700 18px/1 var(--f-body,system-ui);color:var(--muted)}' +
-      '.dkbox .dkn{font:500 11px var(--f-body,system-ui);color:var(--muted);text-align:center;padding:0 8px}.dkbox.dkfc .dkl::after{content:" FORECAST";color:#b45309}' +
+      '.dkbox .dkn{font:500 11px var(--f-body,system-ui);color:var(--muted);text-align:center;padding:0 8px}.dkbox.dkfc .dkl::after{content:""}' +
+      '.dkbox .dkbr{position:absolute;bottom:5px;right:8px;display:flex;align-items:center;gap:6px}.dkbox .dkbr .dkt{position:static}.dkbox .dksrc{font:800 11px var(--f-body,system-ui);letter-spacing:.05em;padding:2px 6px;border-radius:5px;color:#fff;white-space:nowrap}' +
+      '.dksrc.s-boat{background:#15803d}.dksrc.s-prac{background:#2563eb}.dksrc.s-phone{background:#b45309}.dksrc.s-dr{background:#7c2d12}.dksrc.s-fc{background:#a16207}.dksrc.s-cog{background:#b45309}' +
+      '.dkbox.dklost{border-style:dashed;box-shadow:inset 0 0 0 3px #dc2626}.dkbox.dklost .dkv{opacity:.35}.dkbox .dklostt{position:absolute;left:50%;top:50%;transform:translate(-50%,calc(min(21cqh,12cqw) + 4px));background:#dc2626;color:#fff;font:800 13px var(--f-body,system-ui);padding:3px 8px;border-radius:6px;white-space:nowrap}' +
       '.dkbox.good{box-shadow:inset 0 0 0 3px #16a34a}.dkbox.warn{box-shadow:inset 0 0 0 3px #d97706}.dkbox.bad{box-shadow:inset 0 0 0 3px #dc2626}' +
       '.dkpick{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}.dkpick[hidden]{display:none}.dkpick .in{background:var(--panel);color:var(--ink);border-radius:14px;max-width:520px;width:100%;max-height:86vh;overflow:auto;padding:12px 14px}' +
       '.dkpick h3{margin:10px 0 6px;font-size:12px;letter-spacing:.06em;color:var(--muted)}.dkpick .g{display:flex;flex-wrap:wrap;gap:6px}.dkpick button{min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 13px var(--f-body,system-ui)}.dkpick button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}' +
@@ -104,7 +107,7 @@
     if (el) return; css(); var app = $('app'); if (!app) return;
     el = document.createElement('div'); el.id = 'deckNums'; el.setAttribute('aria-label', 'Deck screen numbers');
     el.innerHTML = '<div class="dkbar"><button type="button" class="dkview" id="dkView" aria-label="Change the view below"></button><span class="dkdots" id="dkDots" aria-hidden="true"></span><button type="button" id="dkMenu" aria-pressed="false" aria-label="Show the menus over the chart">MENU</button><button type="button" id="dkExit" aria-label="Leave the deck screen">CHART ×</button></div><div class="dkdr" id="dkDr" role="alert" hidden></div>' +
-      [0, 1, 2, 3].map(function (i) { return '<div class="dkbox" data-i="' + i + '" role="button" tabindex="0" aria-label="Figure ' + (i + 1) + ': tap to change"><span class="dkl"></span><span class="dku"></span><span class="dkv">--</span><span class="dka"></span><span class="dkt"></span></div>'; }).join('');
+      [0, 1, 2, 3].map(function (i) { return '<div class="dkbox" data-i="' + i + '" role="button" tabindex="0" aria-label="Figure ' + (i + 1) + ': tap to change"><span class="dkl"></span><span class="dku"></span><span class="dkv">--</span><span class="dka"></span><span class="dkbr"><span class="dkt"></span><span class="dksrc" hidden></span></span></div>'; }).join('');
     app.insertBefore(el, app.firstChild);
     $('dkView').onclick = function () { step(1); }; $('dkExit').onclick = function () { set(false); };
     /* the menus over the chart are hidden on the deck screen (Stuart 15 Nov Q&A: "Hide them, one Menu button"); MENU brings them back */
@@ -142,6 +145,40 @@
      default box is VMC to the mark, and a saved "% of polar" moves to VMC. Route+ and Mark+ (window.__navBoat) keep it. */
   var NOBOAT = null;
   function noBoatFix() { if (NOBOAT !== null) return; NOBOAT = !window.__navBoat; if (NOBOAT && C.boxes.indexOf('perf') >= 0 && C.boxes.indexOf('vmc') < 0) { C.boxes[C.boxes.indexOf('perf')] = 'vmc'; save(); } }
+  /* Outside review, 23 Nov 2026, option A (Stuart 20:52 "Agree A"): where each figure comes from, on the figure itself (Live boat,
+     Practice, Phone GPS, Dead reckoning, Forecast, or GPS COG standing in for a lost heading), and a figure whose feed has stopped stays
+     faded with how long it has been lost, instead of going blank. After 5 minutes it goes back to a dash. */
+  var BOATK = { bsp: 1, perf: 1, tgt: 1, vmg: 1, tvmg: 1, awa: 1, aws: 1, dpt: 1, tws: 1, twa: 1, twd: 1, hdg: 1 }, POSK = { spd: 1, cog: 1, dtw: 1, btw: 1, vmc: 1, eta: 1, xte: 1, lay: 1 };
+  var SRC = { boat: 'BOAT', prac: 'PRACTICE', phone: 'PHONE GPS', dr: 'DEAD RECKONING', fc: 'FORECAST', cog: 'GPS COG' };
+  function posSrc() {
+    var b = boat(), dr = null; try { dr = window.__fsDR ? window.__fsDR() : null; } catch (e) {}
+    if (dr && dr.active) return 'dr';
+    if (fresh(b, 'lat') || fresh(b, 'sog')) return b.practice ? 'prac' : 'boat';
+    return window.__navBoat ? 'phone' : null;   /* Route and Mark have only the phone's GPS: no tag needed */
+  }
+  function srcOf(k, fc) {
+    if (fc) return 'fc';
+    if (k === 'hdg' && bv('hdg') == null) return 'cog';
+    if (BOATK[k]) { var b = boat(); return b && b.practice ? 'prac' : 'boat'; }
+    return POSK[k] ? posSrc() : null;
+  }
+  var LAST = {};
+  function lostShow(b, i, k, f) {   /* true when the box shows a lost figure */
+    var L = LAST[i]; if (!L || L.k !== k) return false; var age = (Date.now() - L.at) / 1000; if (age > 300) { delete LAST[i]; return false; }
+    b.classList.add('dklost'); b.classList.remove('good', 'warn', 'bad'); b.querySelector('.dkv').textContent = L.s; b.querySelector('.dka').textContent = 'last value';
+    var t = b.querySelector('.dklostt'); if (!t) { t = document.createElement('span'); t.className = 'dklostt'; b.appendChild(t); } t.textContent = f.l + ' LOST ' + dur(age);
+    b.querySelector('.dkt').textContent = ''; return true;
+  }
+  function srcShow(b, k, v, fc) {
+    var sp = b.querySelector('.dksrc'), s = v == null ? null : srcOf(k, fc);
+    sp.hidden = !s; sp.className = 'dksrc' + (s ? ' s-' + s : ''); sp.textContent = s ? SRC[s] : '';
+    b.classList.remove('dklost'); var t = b.querySelector('.dklostt'); if (t) t.remove();
+  }
+  function blank(b, i, k, f) {   /* no figure: a lost one faded, or a dash and what it needs */
+    if (lostShow(b, i, k, f)) return;
+    b.querySelector('.dkv').textContent = '--'; b.querySelector('.dka').textContent = f.soon || (f.need === 'boat' ? 'Needs the boat link' : f.need === 'plot' ? 'Needs a position and a course' : ''); b.querySelector('.dkt').textContent = ''; b.classList.remove('good', 'warn', 'bad');
+  }
+  function remember(i, k, fc, s) { if (BOATK[k] && !fc && window.__navBoat) LAST[i] = { k: k, s: s, at: Date.now() }; else delete LAST[i]; }
   function tick() {
     noBoatFix();
     ORDER.forEach(function (k) { if (C.boxes.indexOf(k) < 0) return; var v = null; try { v = F[k].f(); } catch (e) {} if (!F[k].noavg) push(k, v); });
@@ -154,9 +191,10 @@
       var k = C.boxes[i], f = F[k], v = null; try { v = f.f(); } catch (e) {}
       b.querySelector('.dkl').textContent = f.l; b.querySelector('.dku').textContent = f.u;
       var fc = false; try { fc = !!(f.fc && v != null && f.fc()); } catch (e) {} b.classList.toggle('dkfc', fc);
-      var vs = b.querySelector('.dkv');
-      if (v == null) { vs.textContent = '--'; b.querySelector('.dka').textContent = f.soon || (f.need === 'boat' ? 'Needs the boat link' : f.need === 'plot' ? 'Needs a position and a course' : ''); b.querySelector('.dkt').textContent = ''; b.classList.remove('good', 'warn', 'bad'); return; }
+      var vs = b.querySelector('.dkv'); srcShow(b, k, v, fc);
+      if (v == null) { blank(b, i, k, f); return; }
       vs.textContent = f.show ? f.show(v) : v.toFixed(f.d == null ? 1 : f.d);
+      remember(i, k, fc, vs.textContent);
       var m = f.noavg ? null : mean(k, 0, 60000); b.querySelector('.dka').textContent = m == null ? '' : '1 min ' + (f.show ? f.show(m) : m.toFixed(f.d == null ? 1 : f.d));
       var tr = f.noavg ? 0 : trend(k); b.querySelector('.dkt').textContent = tr > 0 ? '▲' : tr < 0 ? '▼' : '';
       var r = f.tgt ? f.tgt(v) : null; b.classList.toggle('good', r != null && r >= 0.98); b.classList.toggle('warn', r != null && r < 0.98 && r >= 0.90); b.classList.toggle('bad', r != null && r < 0.90);   /* Stuart 15 Nov Q&A: green from 98%, red under 90% */
