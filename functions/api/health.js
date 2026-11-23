@@ -9,7 +9,7 @@
    built over 9 h ago. The phone fetches a model itself past 18 h (app.js omFallback), so STALE means crews are already on their own. */
 const AREAS = ['channel-area', 'solent-area', 'cervantes', 'fastnet', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area'];   // tasman-area (Sydney Hobart, 21 Nov) left out: it can be switched off (config/areas.json), and an area switched off would show as stale
 const REGIONAL = { ukv: 1, arome: 1, mog: 1 };
-const LIMIT = { global: 20, regional: 18, built: 9 };
+const LIMIT = { global: 20, regional: 18, built: 9, ecmwf: 22 };   /* ECMWF (23 Nov, Stuart 20:17): only its 00Z and 12Z runs reach the ten days Sydney Hobart needs, so it is taken twice a day, at 07:45 and 19:45; with the 50-minute build it is up to about 21 h old before the next lands */
 
 export function judge(packs, now) {   /* packs: { area: pack.json or null }; now: seconds */
   const bad = [], areas = {};
@@ -19,7 +19,7 @@ export function judge(packs, now) {   /* packs: { area: pack.json or null }; now
     if (built == null || built > LIMIT.built) bad.push(a + ' built ' + (built == null ? '?' : built.toFixed(1)) + ' h ago');
     for (const L of p.layers || []) {
       if (L.kind !== 'wind' || !L.run_t0) continue;
-      const age = (now - L.run_t0) / 3600, lim = REGIONAL[L.id] ? LIMIT.regional : LIMIT.global;
+      const age = (now - L.run_t0) / 3600, lim = REGIONAL[L.id] ? LIMIT.regional : L.id === 'ecmwf' ? LIMIT.ecmwf : LIMIT.global;
       models[L.id] = { age: Math.round(age * 10) / 10, limit: lim, older: L.latest === false };
       if (age > lim) bad.push(a + ' ' + L.id + ' ' + age.toFixed(1) + ' h');
     }

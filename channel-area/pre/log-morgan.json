@@ -1,23 +1,23 @@
 {
- "at": "2026-11-23T13:49:43.249Z",
+ "at": "2026-11-23T20:50:43.428Z",
  "log": [
   {
    "race": "morgan",
    "h": 0,
-   "s": 71,
-   "note": "Finer routes in 49.7 s. Also worth knowing: in UKV wind, the AROME route is 1.1 min faster than UKV’s own route; in ECMW"
+   "s": 43,
+   "note": "Finer routes in 29.9 s. Also worth knowing: in AIFS wind, the ECMWF route is 5.1 min faster than AIFS’s own route; in IC"
   },
   {
    "race": "morgan",
    "h": 1,
-   "s": 143,
-   "note": "Finer routes in 56.8 s. Also worth knowing: in AIFS wind, the ECMWF route is 4.0 min faster than AIFS’s own route. Gaps "
+   "s": 78,
+   "note": "Finer routes in 27.6 s. Also worth knowing: in ICON-EU wind, the ECMWF route is 5.0 min faster than ICON-EU’s own route."
   },
   {
    "race": "morgan",
    "h": 2,
-   "s": 213,
-   "note": "Finer routes in 54.5 s. Also worth knowing: in ECMWF wind, the AIFS route is 3.7 min faster than ECMWF’s own route. Gaps"
+   "s": 114,
+   "note": "Finer routes in 27.9 s. Also worth knowing: in UKV wind, the AROME route is 2.5 min faster than UKV’s own route; in GFS "
   }
  ]
 }
