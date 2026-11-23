@@ -1,0 +1,62 @@
+/* Portrait audit (Stuart 23 Nov 2026 09:19: "most tacticians will use their phone in a vertical portrait way as many of the waterproof
+   system with neck lanyards are in this format so portrait view has to be 100%"). Every tool, phones held upright at the size the page
+   really gets (the screen less the browser's bars), every race state: no button, card or box off the screen, and no button covered by
+   something else. Pictures of every state. node tests/portrait-audit.js [route|routeplus|mark|markplus ...]   (Route and Mark on 8779,
+   Route+ and Mark+ on 8778) */
+const { chromium } = require('playwright'); const fs = require('fs');
+const OUT = process.env.OUT || '/tmp/portrait'; fs.mkdirSync(OUT, { recursive: true });
+const PHONES = [['iPhone SE, Safari', 375, 553], ['iPhone 13, Safari', 390, 664], ['iPhone 14 Plus, Safari', 428, 746], ['Galaxy S8, Chrome', 360, 640], ['Pixel 7, Chrome', 412, 839], ['Android app', 412, 891]];
+const TOOLS = { route: ['http://localhost:8779', '/fastnet/'], routeplus: ['http://localhost:8778', '/fastnet/'], mark: ['http://localhost:8779', '/mark/'], markplus: ['http://localhost:8778', '/mark/'] };
+const want = process.argv.slice(2).filter(a => TOOLS[a]); const tools = want.length ? want : Object.keys(TOOLS);
+let pass = 0, fail = 0; const probs = [];
+const ok = (c, m, d) => { if (c) pass++; else { fail++; probs.push(m + (d ? ' | ' + d : '')); console.log('FAIL ' + m + (d ? ' | ' + d : '')); } };
+const scan = () => { const W = innerWidth, H = innerHeight, vis = e => { if (!e.getClientRects().length) return false; for (let f = e; f; f = f.parentElement) { const cs = getComputedStyle(f); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05) return false; } return true; };
+  const scroller = e => { for (let f = e.parentElement; f && f !== document.body; f = f.parentElement) { const cs = getComputedStyle(f); if (/(auto|scroll)/.test(cs.overflowY + cs.overflowX) && (f.scrollHeight > f.clientHeight + 1 || f.scrollWidth > f.clientWidth + 1)) return f; } return null; };
+  const name = e => (e.id ? '#' + e.id : '') || (e.getAttribute('aria-label') || e.textContent || e.className || e.tagName).toString().trim().replace(/\s+/g, ' ').slice(0, 24);
+  const els = [...document.querySelectorAll('button, select, input:not([type=hidden]), [role=button], .ssc')].filter(e => vis(e) && !e.closest('#map, .navgrip2, .fswtab, [aria-hidden=true]'));
+  const off = [], cov = [];
+  els.forEach(e => { const R = e.getBoundingClientRect(); if (R.width < 2 || R.height < 2) return; const sc = scroller(e);
+    if (R.right > W + 1 || R.bottom > H + 1 || R.left < -1 || R.top < -1) { if (!sc) off.push(name(e) + ' ' + Math.round(R.left) + ',' + Math.round(R.top) + '-' + Math.round(R.right) + ',' + Math.round(R.bottom)); return; }
+    if (e.classList.contains('ssc') || e.tagName === 'INPUT' && e.type === 'range') return;
+    const x = (R.left + R.right) / 2, y = (R.top + R.bottom) / 2, h = document.elementFromPoint(x, y);
+    if (h && !(h === e || e.contains(h) || h.contains(e)) && getComputedStyle(h).pointerEvents !== 'none' && !h.closest('#map')) cov.push(name(e) + ' under ' + name(h.closest('button,[role=button],.sheet,.pop,section,div') || h)); });
+  return { W, H, off, cov }; };
+async function look(p, label, file) { await p.waitForTimeout(700); const r = await p.evaluate(scan); ok(!r.off.length, label + ': nothing off the screen', r.off.slice(0, 6).join('; ')); ok(!r.cov.length, label + ': no button covered', r.cov.slice(0, 6).join('; ')); await p.screenshot({ path: OUT + '/' + file + '.jpg', type: 'jpeg', quality: 70 }); }
+const hideSheets = p => p.evaluate(() => { document.querySelectorAll('.sheet, .pop').forEach(e => { if (!e.hidden && !/^(layers)$/.test(e.id)) e.hidden = true; }); const sp = document.getElementById('splash'); if (sp) sp.hidden = true; });
+const click = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); if (e) e.click(); return !!e; }, sel);
+(async () => { const b = await chromium.launch();
+  for (const tool of tools) for (const [ph, w, h] of PHONES) {
+    const [base, path] = TOOLS[tool], tag = tool + '-' + w + 'x' + h, L = (s) => tool + ' · ' + ph + ' ' + w + 'x' + h + ' · ' + s;
+    const c = await b.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, serviceWorkers: 'block', geolocation: { latitude: 50.7745, longitude: -1.2990, accuracy: 5 }, permissions: ['geolocation'] });
+    await c.route(/open-meteo|googleapis|openseamap/, r => r.fulfill({ status: 200, body: '' }));
+    await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); localStorage.setItem('fs-wizdone', '1'); localStorage.setItem('fs-boatset', '1'); localStorage.setItem('fs-autostart', '1'); });
+    const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+    await p.goto(base + path, { waitUntil: 'domcontentloaded', timeout: 120000 });
+    if (tool.startsWith('mark')) {
+      await p.waitForFunction(() => window.FSSolent && FSSolent.marks && FSSolent.marks() && window.__navFc && window.__navFc().P && document.getElementById('solCardT'), null, { timeout: 300000 }); await p.waitForTimeout(800);
+      await look(p, L('first card'), tag + '-1card');
+      await p.click('#solCardT'); await p.waitForTimeout(3500); await look(p, L('test mode, start screen'), tag + '-2startscreen');
+      await p.evaluate(() => { const s = document.getElementById('solStartScr'); if (s) s.hidden = true; }); await p.waitForTimeout(300); await look(p, L('test mode, before the gun, chart'), tag + '-3pregun');
+      await p.evaluate(() => { const s = FSSolent.state(); s.startAt = Math.round(Date.now() / 1000 + 2); window.__fsGun(s.startAt); }); await p.waitForTimeout(6000); await hideSheets(p);
+      await look(p, L('racing, slider folded'), tag + '-4racing');
+      if (await click(p, '#mkTimeBtn')) { await look(p, L('racing, slider shown'), tag + '-5time'); await click(p, '#mkTimeBtn'); }
+      if (await click(p, '#fsPlotBtn')) { await look(p, L('racing, plotter'), tag + '-6plot'); }
+      if (await click(p, '#fsDeckBtn')) { await look(p, L('racing, 20/20'), tag + '-7twenty'); await click(p, '#fsDeckBtn'); }
+      await p.evaluate(() => { const t = document.querySelector('.tab[data-tab="fleet"]'); if (t) t.click(); }); await p.waitForTimeout(500); await click(p, '#mfDemo'); await look(p, L('Fleet, test fleet'), tag + '-8fleet');
+      await click(p, '#layersBtn'); await look(p, L('Layers'), tag + '-9layers'); await click(p, '#layersBtn');
+      await p.evaluate(() => { FSSolent.test(false); const s = document.getElementById('solCard'); if (s) s.hidden = true; FSSolent.chain(true); }); await p.waitForTimeout(1200);
+      if (await click(p, '#solChain [data-k="list"]')) { await p.waitForTimeout(1200); await look(p, L('All the buoys'), tag + '-10list'); }
+    } else {
+      await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running; }, null, { timeout: 300000 }).catch(() => {}); await p.waitForTimeout(800); await hideSheets(p);
+      await look(p, L('routes ready'), tag + '-1ready');
+      await click(p, '#liveBtn'); await p.waitForTimeout(2500); await click(p, '#fsPlotBtn') || await click(p, '#navPlotBtn'); await p.waitForTimeout(800); await hideSheets(p); await look(p, L('GPS and plotter'), tag + '-2plot');
+      if (await click(p, '#fsDeckBtn')) { await look(p, L('20/20'), tag + '-3twenty'); await click(p, '#fsDeckBtn'); }
+      if (await p.evaluate(() => { if (window.FSHelm) { window.FSHelm.open(); return true; } const n = document.querySelector('.navhelmb'); if (n) { n.click(); return true; } return false; })) { await look(p, L('HELM'), tag + '-4helm'); await p.evaluate(() => { if (window.FSHelm) window.FSHelm.close(); const x = document.getElementById('nhX'); if (x && x.offsetParent) x.click(); }); }
+      if (await click(p, '#tgBtn')) { await look(p, L('TIDE'), tag + '-5tide'); await click(p, '#tgBtn'); }
+      await p.evaluate(() => { const t = document.querySelector('.tab[data-tab="fleet"]'); if (t) t.click(); }); await p.waitForTimeout(500); await click(p, '#mfDemo'); await look(p, L('Fleet, test fleet'), tag + '-6fleet');
+      await click(p, '#layersBtn'); await look(p, L('Layers'), tag + '-7layers'); await click(p, '#layersBtn');
+      await click(p, '#setBtn'); await look(p, L('Settings'), tag + '-8settings');
+    }
+    ok(!errs.length, L('no script errors'), errs.slice(0, 2).join('; ')); await c.close(); }
+  fs.writeFileSync(OUT + '/report.txt', probs.join('\n') + '\n' + pass + ' passed, ' + fail + ' failed\n');
+  console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();
