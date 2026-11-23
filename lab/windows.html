@@ -1,0 +1,88 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Window trial</title>
+<style>
+:root{--sea:#0b2a45;--grid:rgba(255,255,255,.05);--card:#13283c;--line:#2b4a66;--ink:#e6edf2;--muted:#9fb3c4;--acc:#6FA9E0;--green:#34d399;--tab:#2E6FA7}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--sea);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+#sea{position:fixed;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:48px 48px}
+#land{position:fixed;left:-10%;top:58%;width:70%;height:30%;background:#3a3a2a;border-radius:40% 60% 50% 30%;opacity:.8}
+#bar{position:fixed;left:0;right:0;top:0;padding:max(8px,env(safe-area-inset-top)) 10px 8px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(5,17,28,.85);z-index:50;align-items:center}
+#bar b{margin-right:4px}
+.opt{border:1px solid var(--line);background:#102233;color:var(--ink);border-radius:8px;padding:6px 10px;font:600 13px system-ui;cursor:pointer}
+.opt[aria-pressed=true]{background:var(--acc);color:#04121f;border-color:var(--acc)}
+#hint{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:50;color:var(--muted);font-size:13px;background:rgba(5,17,28,.8);padding:8px 10px;border-radius:8px}
+.win{position:fixed;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.45);min-width:150px;transition:transform .25s ease,opacity .25s}
+.win.drag{transition:none;box-shadow:0 12px 32px rgba(0,0,0,.6);outline:2px solid var(--acc)}
+.grip{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);color:var(--muted);font:700 12px system-ui;letter-spacing:.06em;cursor:grab;touch-action:none}
+.grip i{font-style:normal;font-size:16px;letter-spacing:2px;grid-column:2}
+.body{padding:8px 12px 10px}
+.big{font:700 28px ui-monospace,Menlo,monospace}
+.row{display:flex;gap:14px}.row div{min-width:64px}
+.lbl{font-size:11px;color:var(--muted);letter-spacing:.06em}
+.locked .grip{cursor:default}.locked .grip i{opacity:.3}
+.tab{position:fixed;z-index:40;background:var(--tab);color:#fff;font:700 12px system-ui;border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.4);cursor:pointer}
+.tab.l{left:0;width:26px;height:64px;border-radius:0 10px 10px 0;writing-mode:vertical-rl}
+.tab.r{right:0;width:26px;height:64px;border-radius:10px 0 0 10px;writing-mode:vertical-rl}
+.tab.t{top:0;height:26px;width:84px;border-radius:0 0 10px 10px}
+.tab.b{bottom:0;height:26px;width:84px;border-radius:10px 10px 0 0}
+.guide{position:fixed;z-index:15;background:rgba(111,169,224,.55);pointer-events:none}
+</style></head><body>
+<div id="sea"></div><div id="land"></div>
+<div id="bar"><b>Window trial</b>
+<button class="opt" data-k="snap" aria-pressed="true">Snap to edges</button>
+<button class="opt" data-k="axis" aria-pressed="false">One direction at a time</button>
+<button class="opt" data-k="stash" aria-pressed="true">Slide off to stash</button>
+<button class="opt" data-k="flick" aria-pressed="true">Flick to stash</button>
+<button class="opt" data-k="lock" aria-pressed="false">Lock layout</button>
+<button class="opt" id="reset">Reset</button></div>
+
+<div class="win" id="gps" style="left:16px;top:120px"><div class="grip"><span>GPS</span><i>⋮⋮</i></div><div class="body">
+<div class="row"><div><div class="lbl">SOG</div><div class="big">6.4</div></div><div><div class="lbl">COG</div><div class="big">242°</div></div></div>
+<div class="row"><div><div class="lbl">TO 3F</div><div class="big">1.32</div></div><div><div class="lbl">BTW</div><div class="big">255°</div></div></div></div></div>
+
+<div class="win" id="start" style="right:16px;top:120px"><div class="grip"><span>START</span><i>⋮⋮</i></div><div class="body">
+<div class="big" style="font-size:34px">−2:41</div><div class="lbl">5-4-1-0 · Gun 15:00</div></div></div>
+
+<div class="win" id="course" style="left:16px;top:330px;max-width:260px"><div class="grip"><span>COURSE</span><i>⋮⋮</i></div><div class="body">
+<div>1 · 3F Markby <span style="color:#f87171">Port</span></div><div>2 · 2C Colten <span style="color:var(--green)">Stbd</span></div><div>3 · Finish</div></div></div>
+
+<div id="hint">Drag a window by its top strip. Drag it most of the way off any edge, or flick it quickly towards an edge, and it slides away leaving a tab; tap the tab to bring it back. The grip dots are in the middle so either hand works. Try the switches at the top.</div>
+<script>
+(function () {
+  var O = { snap: true, axis: false, stash: true, flick: true, lock: false }, KEY = 'fs-wintrial';
+  function key() { return KEY + (innerWidth > innerHeight ? '-land' : '-port'); }
+  function load() { try { return JSON.parse(localStorage.getItem(key()) || '{}'); } catch (e) { return {}; } }
+  function save(s) { try { localStorage.setItem(key(), JSON.stringify(s)); } catch (e) {} }
+  var S = load(), TOP = function () { return document.getElementById('bar').getBoundingClientRect().bottom + 6; };
+  var wins = [].slice.call(document.querySelectorAll('.win'));
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function place(w, x, y) { w.style.left = x + 'px'; w.style.top = y + 'px'; w.style.right = 'auto'; }
+  function guides(x, y, w, h) { [].slice.call(document.querySelectorAll('.guide')).forEach(function (g) { g.remove(); });
+    if (!O.snap) return; var W = innerWidth, H = innerHeight, add = function (css) { var g = document.createElement('div'); g.className = 'guide'; Object.assign(g.style, css); document.body.appendChild(g); };
+    if (x <= 12) add({ left: '8px', top: 0, bottom: 0, width: '2px' }); if (x + w >= W - 12) add({ right: '8px', top: 0, bottom: 0, width: '2px' });
+    if (y <= TOP() + 6) add({ top: TOP() + 'px', left: 0, right: 0, height: '2px' }); if (y + h >= H - 12) add({ bottom: '8px', left: 0, right: 0, height: '2px' }); }
+  function stash(w, edge) { var r = w.getBoundingClientRect(); w.style.opacity = '0'; w.hidden = true; S[w.id] = Object.assign(S[w.id] || {}, { stash: edge, at: edge === 'l' || edge === 'r' ? r.top : r.left }); save(S); tab(w); }
+  function tab(w) { var s = S[w.id]; if (!s || !s.stash) return; var t = document.createElement('button'); t.className = 'tab ' + s.stash; t.textContent = w.querySelector('.grip span').textContent; t.dataset.for = w.id;
+    if (s.stash === 'l' || s.stash === 'r') t.style.top = clamp(s.at, TOP(), innerHeight - 70) + 'px'; else t.style.left = clamp(s.at, 4, innerWidth - 90) + 'px';
+    t.onclick = function () { t.remove(); w.hidden = false; S[w.id].stash = null; save(S); var x = S[w.id].x, y = S[w.id].y; place(w, clamp(x == null ? 16 : x, 8, innerWidth - w.offsetWidth - 8), clamp(y == null ? TOP() + 20 : y, TOP(), innerHeight - w.offsetHeight - 8)); requestAnimationFrame(function () { w.style.opacity = '1'; }); };
+    document.body.appendChild(t); }
+  wins.forEach(function (w) { var s = S[w.id]; if (s && s.x != null) place(w, clamp(s.x, 8, innerWidth - 160), clamp(s.y, TOP(), innerHeight - 60)); if (s && s.stash) { w.hidden = true; tab(w); }
+    var g = w.querySelector('.grip'), d = null;
+    g.addEventListener('pointerdown', function (e) { if (O.lock) return; var r = w.getBoundingClientRect(); d = { x0: e.clientX, y0: e.clientY, l: r.left, t: r.top, ax: null, vx: 0, vy: 0, px: e.clientX, py: e.clientY, pt: performance.now() }; w.classList.add('drag'); g.setPointerCapture(e.pointerId); });
+    g.addEventListener('pointermove', function (e) { if (!d) return; var nt = performance.now(), dtm = Math.max(1, nt - d.pt); d.vx = 0.6 * d.vx + 0.4 * (e.clientX - d.px) / dtm; d.vy = 0.6 * d.vy + 0.4 * (e.clientY - d.py) / dtm; d.px = e.clientX; d.py = e.clientY; d.pt = nt; var dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+      if (O.axis) { if (!d.ax && Math.hypot(dx, dy) > 10) d.ax = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; if (d.ax === 'x') dy = 0; else if (d.ax === 'y') dx = 0; else { dx = 0; dy = 0; } }
+      var x = d.l + dx, y = d.t + dy, W = innerWidth, H = innerHeight, ww = w.offsetWidth, hh = w.offsetHeight;
+      if (!O.stash) { x = clamp(x, 0, W - ww); y = clamp(y, TOP(), H - hh); }
+      if (O.snap) { if (Math.abs(x - 8) < 18) x = 8; if (Math.abs(x + ww - (W - 8)) < 18) x = W - 8 - ww; if (Math.abs(y - TOP()) < 18) y = TOP(); if (Math.abs(y + hh - (H - 8)) < 18) y = H - 8 - hh; }
+      place(w, x, y); guides(x, y, ww, hh); });
+    var up = function () { if (!d) return; var fv = d; d = null; w.classList.remove('drag'); [].slice.call(document.querySelectorAll('.guide')).forEach(function (g) { g.remove(); }); var r = w.getBoundingClientRect(), W = innerWidth, H = innerHeight;
+      var off = { l: -r.left / r.width, r: (r.right - W) / r.width, t: (TOP() - r.top) / r.height, b: (r.bottom - H) / r.height }, edge = null, m = 0.45;
+      Object.keys(off).forEach(function (k) { if (off[k] > m) { m = off[k]; edge = k; } });
+      if (O.stash && O.flick && !edge && performance.now() - fv.pt < 120) { var sp = Math.hypot(fv.vx, fv.vy); if (sp > 0.9) edge = Math.abs(fv.vx) > Math.abs(fv.vy) ? (fv.vx > 0 ? 'r' : 'l') : (fv.vy > 0 ? 'b' : 't'); }
+      if (O.stash && edge) { stash(w, edge); return; }
+      var x = clamp(r.left, 8, W - r.width - 8), y = clamp(r.top, TOP(), H - r.height - 8); place(w, x, y); S[w.id] = { x: x, y: y }; save(S); };
+    g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up); });
+  [].slice.call(document.querySelectorAll('.opt[data-k]')).forEach(function (b) { b.onclick = function () { O[b.dataset.k] = !O[b.dataset.k]; b.setAttribute('aria-pressed', String(O[b.dataset.k])); document.body.classList.toggle('locked', O.lock); }; });
+  document.getElementById('reset').onclick = function () { try { localStorage.removeItem(key()); } catch (e) {} location.reload(); };
+})();
+</script></body></html>

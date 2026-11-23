@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-23T09:04:11.138Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 134,
+   "note": "Finer routes in 74.9 s. Times: first routes 9.8 s, standard 56.1 s, finer 131.0 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 267,
+   "note": "Finer routes in 75.1 s. Times: first routes 8.0 s, standard 57.4 s, finer 132.5 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 396,
+   "note": "Finer routes in 73.8 s. Times: first routes 8.0 s, standard 54.6 s, finer 128.5 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 518,
+   "note": "Finer routes in 70.4 s. Times: first routes 7.4 s, standard 50.5 s, finer 120.9 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 646,
+   "note": "Finer routes in 72.8 s. Also worth knowing: in AIFS wind, the Combined (6 models) route is 12 min faster than AIFS’s own"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 769,
+   "note": "Finer routes in 69.8 s. Also worth knowing: in AIFS wind, the Combined (6 models) route is 48 min faster than AIFS’s own"
+  }
+ ]
+}

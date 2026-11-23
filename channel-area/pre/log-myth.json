@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-23T08:54:23.974Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 67,
+   "note": "Finer routes in 50.0 s. Also worth knowing: in ECMWF wind, the ICON-EU route is 3.6 min faster than ECMWF’s own route. G"
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 126,
+   "note": "Finer routes in 46.7 s. Also worth knowing: in ECMWF wind, the ICON-EU route is 4.3 min faster than ECMWF’s own route. G"
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 184,
+   "note": "Finer routes in 46.3 s. Also worth knowing: in AIFS wind, the ICON-EU route is 2.8 min faster than AIFS’s own route. Gap"
+  }
+ ]
+}

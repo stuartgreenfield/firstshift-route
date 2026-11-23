@@ -1,0 +1,16 @@
+{
+ "id": "/route",
+ "name": "FirstShift Route",
+ "short_name": "Route",
+ "description": "Race routing for offshore sailors",
+ "start_url": "/channel-area/",
+ "scope": "/",
+ "display": "standalone",
+ "background_color": "#021630",
+ "theme_color": "#0B1B30",
+ "icons": [
+  {"src": "/brand/route-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+  {"src": "/brand/route-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+  {"src": "/brand/route-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+ ]
+}
