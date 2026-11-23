@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.111';
+  var VERSION = 'FirstShift Route v0.12.112';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -391,7 +391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.111 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.112 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2155,7 +2155,28 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     rows.push({ k: 'start', t: 'Start', ok: chosen && !fu, s: fu ? clockAbs(fu.ep) + ' ' + tzS1() + ': beyond the forecasts' : chosen && st ? clockAbs(st) + ' ' + tzS1() : 'Choose your class start (UTC)' });
     var ms = cardModels(), est = (st ? (st - T0) / 3600 : 0) + courseNm(c) / (5.5 * (+$('tcc').value || 1)), cover = ms.filter(function (id) { var L = layer(id), v = L && (L[S.loaded[id] || 'full'] || L.full), h = v && v.hours; return h && h.length && h[h.length - 1] >= est; }).length;
     rows.push({ k: 'fc', t: 'Forecasts', ok: ms.length > 0 && cover > 0, s: !ms.length ? 'Tick at least one forecast model' : ms.length + ' model' + (ms.length === 1 ? '' : 's') + ' · ' + (cover === ms.length ? 'all reach the finish' : cover ? cover + ' reach the finish, the rest hand over' : 'none reaches the finish') + (olderModels().length ? ' · ' + olderModels().length + ' on an older run' : '') });
+    offRow(rows);
     return rows;
+  }
+  /* Outside review, 23 Nov 2026, option A (Stuart 22:48 "only what is necessary", 22:50 "Chip only when something is missing"): a fifth
+     check, Offline (everything this race needs kept on the phone, from Ready for offline), and under the race name an amber chip only
+     when a check is not ready, naming it; a tap opens the set-up card. Nothing shows when all is ready. Instruments stay out: planning
+     works ashore. */
+  function offRow(rows) {
+    var st = S.offSt; if (!st || st.offline || !st.list) return;   /* not routed yet, or no signal to check: no row */
+    var ok = !st.miss.length; rows.push({ k: 'off', t: 'Offline', ok: ok, s: ok ? 'Kept on this phone' : 'Not all kept on this phone · ' + offMb(st.need) + ' to download' });
+  }
+  function offMb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
+  function offCheck() { try { if (!window.__navOff || !S.routes || !S.routes.length) return; window.__navOff.status().then(function (st) { S.offSt = st; try { setupRender(); } catch (e) {} }, function () {}); } catch (e) {} }
+  setInterval(offCheck, 60000); setTimeout(offCheck, 8000);
+  function chipAt(ch) { var rb = $('raceBtn'); if (!rb || !ch) return; var R = rb.getBoundingClientRect(); ch.style.left = Math.round(R.left + 6) + 'px'; ch.style.top = Math.round(R.bottom - 8) + 'px'; ch.style.display = R.width ? '' : 'none'; }
+  function readyChip(rows) {
+    var rb = $('raceBtn'); if (!rb || window.FS_MARK) return; var ch = $('readyChip'), miss = rows.filter(function (r) { return !r.ok; });
+    if (!miss.length) { if (ch) ch.hidden = true; return; }
+    if (!ch) { ch = document.createElement('span'); ch.id = 'readyChip'; ch.className = 'readychip'; ch.setAttribute('role', 'button'); ch.tabIndex = 0; document.body.appendChild(ch); window.addEventListener('resize', function () { chipAt(ch); });
+      var css = document.createElement('style'); css.textContent = '.readychip{position:fixed;z-index:30;padding:1px 7px;border-radius:999px;background:#d97706;color:#fff;font:800 10px/1.4 var(--f-body,system-ui);letter-spacing:.05em;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.4)}html[data-night] .readychip{background:#5A1410;color:#E8B0A8}'; document.head.appendChild(css);
+      ch.onclick = function (e) { e.stopPropagation(); S.suOpen = true; openTab('decision'); setupRender(); var c = $('setupCard'); if (c) c.scrollIntoView({ block: 'start' }); }; }
+    ch.hidden = false; chipAt(ch); ch.textContent = '! ' + miss.map(function (r) { return r.t.toUpperCase(); }).join(' · '); ch.title = 'Not ready: ' + miss.map(function (r) { return r.t; }).join(', ') + '. Tap to fix.';
   }
   /* the set-up card is the one place to set up a race (Stuart 12 Nov): the old steps open only for the single item tapped, then come back here */
   function showCard() {
@@ -2180,15 +2201,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function setupRender() { tccFresh(); setTimeout(boatWarn, 0);
     try { coverRender(); } catch (e) {}
     var el = $('setupCard'); if (!el || !meta) return; var rows; try { rows = setupRows(); } catch (e) { return; }
+    readyChip(rows);
     var ready = rows.filter(function (r) { return r.ok; }).length, all = ready === rows.length, has = S.routes && S.routes.length;
     var open = S.suOpen || !all || !has;   /* routed and all ready: one line, tap to open */
-    if (!open) { el.innerHTML = '<button class="srow" id="suOpen"><span class="sic">✓</span><span class="stx"><b>Set-up: all 4 ready</b><span>' + wizEsc(rows.map(function (r) { return r.s.split(' · ')[0]; }).join(' · ')) + '</span></span><span class="sgo">Show</span></button>'; $('suOpen').onclick = function () { S.suOpen = true; setupRender(); }; return; }
-    el.innerHTML = '<div class="shd"><b>Race set-up</b><span>' + ready + ' of 4 ready' + (all && has ? ' · <a href="#" id="suHide">Hide</a>' : '') + '</span></div>' + rows.map(function (r) { return '<button class="srow' + (r.ok ? '' : ' warn') + '" data-su="' + r.k + '"><span class="sic">' + (r.ok ? '✓' : '!') + '</span><span class="stx"><b>' + r.t + '</b><span>' + wizEsc(r.s) + '</span></span><span class="sgo">' + (r.ok ? 'Change' : 'Set') + '</span></button>'; }).join('') +
+    if (!open) { el.innerHTML = '<button class="srow" id="suOpen"><span class="sic">✓</span><span class="stx"><b>Set-up: all ' + rows.length + ' ready</b><span>' + wizEsc(rows.map(function (r) { return r.s.split(' · ')[0]; }).join(' · ')) + '</span></span><span class="sgo">Show</span></button>'; $('suOpen').onclick = function () { S.suOpen = true; setupRender(); }; return; }
+    el.innerHTML = '<div class="shd"><b>Race set-up</b><span>' + ready + ' of ' + rows.length + ' ready' + (all && has ? ' · <a href="#" id="suHide">Hide</a>' : '') + '</span></div>' + rows.map(function (r) { return '<button class="srow' + (r.ok ? '' : ' warn') + '" data-su="' + r.k + '"><span class="sic">' + (r.ok ? '✓' : '!') + '</span><span class="stx"><b>' + r.t + '</b><span>' + wizEsc(r.s) + '</span></span><span class="sgo">' + (r.ok ? 'Change' : 'Set') + '</span></button>'; }).join('') +
       '<button class="sroute" id="suRoute"' + (all ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : 'Route (' + rows.filter(function (r) { return !r.ok; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
     [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function (ev) { var k = b.dataset.su;
       if (k === 'course') { if (ev) ev.stopPropagation(); $('raceMenu').hidden = true; $('raceBtn').onclick({ stopPropagation: function () {} }); }   /* the tap must not reach the page, which closes the menu */
       else if (k === 'boat') cardSettings('boat');
       else if (k === 'start') cardStep(3);
+      else if (k === 'off') { if (window.__navOff) window.__navOff.ready().then(offCheck, offCheck); }
       else cardSettings('fc'); }; });
     $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); };
     if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
