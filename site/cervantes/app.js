@@ -634,6 +634,47 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      and a rough time left (Katie Sherwin, "Progress Indicators Make a Slow System Less Insufferable", 2014). */
   var PG = { t0: 0, est: 0 };
   function raceKey() { return (meta && meta.course && (meta.course.raceId || meta.course.name)) || 'x'; }
+  /* Follow a chosen model (Stuart 24 Nov 2026 10:34 to 10:40; built 20:10, test copy). Default stays as before: the quickest, or Combined when
+     Combined is quickest. A choice is kept per race in fs-followroute with the forecast runs it was made on; the followed route becomes the chosen
+     route (S.sel), so the line on the map, PLOT, HELM, the ETA and the gun bar all follow it. When newer runs arrive and the followed route is
+     no longer the quickest, the strip asks: keep following it, or follow the quickest. Until answered, the choice stands. */
+  var FOL = { ask: null };
+  function folRuns() { return ((meta && meta.layers) || []).filter(function (L) { return L.kind === 'wind'; }).map(function (L) { return L.id + ':' + (L.devRun || L.run_t0 || 0); }).join(','); }
+  function folAll() { try { return JSON.parse(store('fs-followroute') || '{}') || {}; } catch (e) { return {}; } }
+  function folGet() { return folAll()[raceKey()] || null; }
+  function folSet(id) { var a = folAll(), k = raceKey(); if (id) a[k] = { id: id, runs: folRuns() }; else delete a[k]; store('fs-followroute', JSON.stringify(a)); FOL.ask = null; }
+  function folIs(s) { var f = folGet(); return !!(s && f && f.id === s.id); }
+  function folPick(best) {
+    var f = folGet(); FOL.ask = null; if (!f) return best;
+    var s = S.routes.filter(function (x) { return x.id === f.id && !x.fixed; })[0]; if (!s) return best;   /* that model is not in this run: the quickest, choice kept for later */
+    if (f.runs !== folRuns()) { if (s !== best) FOL.ask = { id: s.id, best: best.id }; else folSet(s.id); }
+    return s;
+  }
+  function folBest() { return S.routes.filter(function (s) { return s.best; })[0] || S.routes[0]; }
+  function folTo(s) { S.sel = s; ghosts().then(function () { matrix(); plan(); fleetTable(); update(); }); }
+  function folToggle(id) { var f = folGet(); if (f && f.id === id) { folSet(null); folTo(folBest()); } else { folSet(id); folTo(S.routes.filter(function (x) { return x.id === id; })[0] || folBest()); } }
+  /* the strip sits under the top bar, and under the start sequence card or gun bar when one shows there; re-placed by the clock's
+     one-second tick, so no timer of its own */
+  function folPlace() { var box = $('folStrip'); if (!box || box.hidden) return; var y = 0; ['.top', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
+    var t = Math.round(y + 6) + 'px'; if (box.style.top !== t) box.style.top = t; }
+  function folName(s) { return s.combined ? 'Combined' : short(s.id); }
+  function folTime(s) { return s.r.partial ? s.r.partial.togo + ' nm to go' : fmtH(s.r.finish - (S.matrix ? S.matrix.start : 0)); }
+  function folHold(el, fn) { var t = null, fired = false; el.addEventListener('pointerdown', function () { fired = false; t = setTimeout(function () { fired = true; fn(); }, 600); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { el.addEventListener(ev, function () { clearTimeout(t); }); }); el.addEventListener('click', function (e) { if (fired) { e.preventDefault(); e.stopPropagation(); fired = false; } }, true); el.addEventListener('contextmenu', function (e) { e.preventDefault(); }); }
+  function folRender() {
+    var box = $('folStrip'); if (!box) return; var rs = (S.routes || []).filter(function (s) { return !s.hidden && !s.fixed; });
+    if (rs.length < 2 || !S.matrix) { box.hidden = true; box.innerHTML = ''; return; }
+    var f = folGet(), fs = f && S.routes.filter(function (x) { return x.id === f.id; })[0], h = '';
+    if (FOL.ask) { var a = S.routes.filter(function (x) { return x.id === FOL.ask.id; })[0], b = S.routes.filter(function (x) { return x.id === FOL.ask.best; })[0];
+      if (a && b) h += '<div class="folask" role="alertdialog" aria-label="New forecasts are in"><b>New forecasts are in</b><span>You are following ' + folName(a) + ': ' + folTime(a) + '. The quickest is now ' + folName(b) + ': ' + folTime(b) + '.</span><div><button type="button" class="btn primary" data-fk="keep">Keep following ' + folName(a) + '</button><button type="button" class="btn" data-fk="best">Follow the quickest (' + folName(b) + ')</button></div></div>'; }
+    if (fs) h += '<button type="button" class="folpill" data-fx="1" aria-label="Stop following ' + folName(fs) + ' and go back to the quickest">Following ' + folName(fs) + ' ✕</button>';
+    h += '<div class="folchips">' + rs.map(function (s) { var on = fs === s; return '<button type="button" class="folchip' + (on ? ' on' : '') + (s === S.sel ? ' sel' : '') + '" data-fc="' + s.id + '" title="Tap to show this route; long tap to follow it">' + folName(s) + ' ' + folTime(s) + (on ? ' · FOLLOWING' : '') + '</button>'; }).join('') + '</div>';
+    box.innerHTML = h; box.hidden = false;
+    folPlace();
+    [].forEach.call(box.querySelectorAll('[data-fc]'), function (b) { var id = b.dataset.fc; b.onclick = function () { folTo(S.routes.filter(function (x) { return x.id === id; })[0]); }; folHold(b, function () { folToggle(id); }); });
+    var x = box.querySelector('[data-fx]'); if (x) x.onclick = function () { folSet(null); folTo(folBest()); };
+    [].forEach.call(box.querySelectorAll('[data-fk]'), function (b) { b.onclick = function () { if (b.dataset.fk === 'keep') { folSet(FOL.ask.id); folRender(); } else { var id = FOL.ask.best; folSet(null); folTo(S.routes.filter(function (x) { return x.id === id; })[0] || folBest()); } }; });
+  }
   function ckSet(k, st, pct, secs) { if (!S.ck) return; S.ck.forEach(function (i) { if (i.k === k) { i.s = st; if (pct != null) i.p = pct; if (secs != null) i.sec = secs; } }); ckRender(); }
   function ckRender() { var p = $('prog'); if (!p) return; var L = $('pgCk'); if (!L) { L = document.createElement('ul'); L.id = 'pgCk'; L.className = 'pgck'; p.appendChild(L); }
     if (!S.ck || p.hidden) { L.innerHTML = ''; return; }
@@ -842,7 +883,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('courseNote').innerHTML = (r.custom ? 'Your own course' + (r.nm ? ', about ' + r.nm + ' nm' : '') + '. ' : (r.nm ? 'About ' + r.nm + ' nm' + (r.nmSource ? ' (' + r.nmSource + ')' : '') + '. ' : '') + (r.date2027 ? 'Start ' + new Date(r.date2027 + 'T12:00Z').toUTCString().slice(0, 16) + ' (' + r.dateSource + '). ' : (r.dateSource || '') + '. ') + '<a href="' + r.source + '" target="_blank" rel="noopener">Source</a>') + (issue ? '<br><b style="color:var(--warn)">' + issue + '</b>' : '');
     try { history.replaceState(null, '', location.pathname + (!r.custom && r.id !== HERE && r.page ? '?race=' + encodeURIComponent(r.id) : '')); } catch (e) {}   /* the address always matches what is on screen, so a reload reopens it */
     try { var fk = raceKey(); if (FIX.on && FIX.for && FIX.for !== fk && !window.FS_SOLENT) { FIX.on = false; fixSave(true); busy('Fixed wind is off for this new race: set it again from the wind on the water.'); setTimeout(function () { busy(''); }, 4000); } if (FIX.on && !FIX.for) { FIX.for = fk; store('fs-fix', JSON.stringify(FIX)); } } catch (e) {}   /* F17 (Stuart 17 Nov 09:01): Fixed wind turns off at the start of a new course or race, so it never makes odd routes */
-    if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if ($('finBox')) $('finBox').innerHTML = ''; if ($('runNote')) $('runNote').textContent = ''; if ($('fleet')) $('fleet').innerHTML = ''; if (W && !(r.solent || S.inshore)) fit(); draw();   /* 22 Nov (tests/races-sweep.js): the panel's route cards and note went with the old race too, not only its lines on the chart */   /* a Solent race keeps the chart where the user has it */
+    if (!r.custom) store('fs-race', r.id); lastSet(r.custom ? { my: S.myId || r.id } : { race: r.id }); S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; if ($('finBox')) $('finBox').innerHTML = ''; folRender(); if ($('runNote')) $('runNote').textContent = ''; if ($('fleet')) $('fleet').innerHTML = ''; if (W && !(r.solent || S.inshore)) fit(); draw();   /* 22 Nov (tests/races-sweep.js): the panel's route cards and note went with the old race too, not only its lines on the chart */   /* a Solent race keeps the chart where the user has it */
   }
   function loadRaces() {
     var d = meta.layers && meta.layers.filter(function (L) { return L.kind === 'depth'; })[0], f = d && (d.full || d);
@@ -1497,7 +1538,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var id = b.dataset.race, rr = RACES.filter(function (x) { return x.id === id; })[0], pg = (rr && rr.page) || id; if (READY[pg] && pg !== HERE) { try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + pg + '/?race=' + encodeURIComponent(id); return; }
       S.myId = null; applyRace(id); $('races').hidden = true;
         /* 22 Nov (found by tests/races-sweep.js): a race set on the day no longer keeps the last race's routes on screen under its name */
-        var iss = courseIssue(meta.course); if (iss) { S.gen = (S.gen || 0) + 1; S.running = false; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = ''; $('runNote').textContent = iss; draw(); }
+        var iss = courseIssue(meta.course); if (iss) { S.gen = (S.gen || 0) + 1; S.running = false; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = ''; folRender(); $('runNote').textContent = iss; draw(); }
         if (wizCourseChosen(false)) return; if (!iss) { S.from = null; run(); } };
     });
   }
@@ -1598,7 +1639,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     while (a.length) { try { localStorage.setItem('fs-oldroutes', JSON.stringify(a)); break; } catch (e) { a.pop(); } }   /* phone storage full: drop the oldest */
     S.gen = (S.gen || 0) + 1; S.running = false; prog(''); busy('');
     if ($('runNote')) $('runNote').textContent = '';
-    sessDrop(); S.routes = []; S.sel = null; S.matrix = null; S.ens = null; S.from = null; S.to = null; if ($('finBox')) $('finBox').innerHTML = ''; draw();
+    sessDrop(); S.routes = []; S.sel = null; S.matrix = null; S.ens = null; S.from = null; S.to = null; if ($('finBox')) $('finBox').innerHTML = ''; folRender(); draw();
     return o;
   }
   function openOld(id) {
@@ -2278,7 +2319,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var p2 = function (n) { return ('0' + n).slice(-2); }, hm = function (m) { m = Math.max(0, Math.floor(m)); return Math.floor(m / 60) + 'h ' + p2(m % 60); };
     function tick() {
       if (!$('tzUtc')) return; var now = Date.now(), d = new Date(now), l = new Date(now + off * 3600000);
-      $('tzUtc').textContent = p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()) + ':' + p2(d.getUTCSeconds());
+      folPlace(); $('tzUtc').textContent = p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()) + ':' + p2(d.getUTCSeconds());
       $('tzOff').textContent = 'UTC' + (off >= 0 ? '+' : '−') + Math.abs(off); $('tzLoc').textContent = p2(l.getUTCHours()) + ':' + p2(l.getUTCMinutes());
       var st = $('startSel') ? +$('startSel').value : 0, fu = null; try { fu = meta ? futureGet() : null; } catch (e) {} if (fu && fu.ep) st = fu.ep;
       if (!st) { $('tzRace').innerHTML = ''; return; }
@@ -2411,7 +2452,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* for the Solent race builder (solent.js, Stuart 15 Nov): route a built course as one of My races, the safety depth, and the
      forecast wind at a place and time (true, from), from the models the set-up card would use */
   window.__fsSolPlan = function (plan) { if (!meta || !meta.course || !meta.course.race) return; meta.course.race.solPlan = plan; if (S.myId) { var a = myRaces(); a.forEach(function (x) { if (x.id === S.myId && x.course) x.course.solPlan = plan; }); setMyRaces(a); } S.routes = []; S.sel = null; run(); };
-  window.__fsClearCourse = function () { S.gen = (S.gen || 0) + 1; S.running = false; busy(''); prog(''); LIVE.mk = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; S.cleared = true; sessDrop(); if ($('finBox')) $('finBox').innerHTML = ''; if ($('runNote')) $('runNote').textContent = ''; draw(); };   /* Solent: clear the chart for the next course; the course stays in Saved races */
+  window.__fsClearCourse = function () { S.gen = (S.gen || 0) + 1; S.running = false; busy(''); prog(''); LIVE.mk = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; S.cleared = true; sessDrop(); if ($('finBox')) $('finBox').innerHTML = ''; folRender(); if ($('runNote')) $('runNote').textContent = ''; draw(); };   /* Solent: clear the chart for the next course; the course stays in Saved races */
   window.__fsUseCourse = function (c) { archiveRoutes(); var a = myRaces(), rg = regionFor(c), rec = { id: 'r' + Date.now().toString(36), name: c.name, page: window.FS_SOLENT ? HERE : rg ? rg.id : HERE, course: c, settings: snapSettings(), savedAt: Date.now(), summary: '' };
     a.unshift(rec); setMyRaces(a); openMy(rec.id); return rec.id; };
   /* Inshore Solent racing (Stuart 16 Nov 08:00): "the top left name should change to Solent race and if any routing for an offshore race
@@ -2423,7 +2464,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (S.inshore) return true;
       var r = meta.course.race || null, prev = { race: r, course: meta.course, title: $('raceTitle').textContent, myId: S.myId, name: meta.course.name, short: $('raceShort').textContent || meta.course.name, startVal: $('startSel').value, sess: null };
       try { if (S.routes && S.routes.length) prev.sess = archiveRoutes(); } catch (e) {}
-      S.gen = (S.gen || 0) + 1; S.running = false; busy(''); prog(''); S.routes = []; S.sel = null; if ($('finBox')) $('finBox').innerHTML = '';
+      S.gen = (S.gen || 0) + 1; S.running = false; busy(''); prog(''); S.routes = []; S.sel = null; if ($('finBox')) $('finBox').innerHTML = ''; folRender();
       S.offPrev = prev; S.inshore = true; S.cleared = true; document.body.classList.add('inshore'); try { closePanel(); } catch (e) {}   /* the offshore set-up panel would offer Route for the race just put away */
       $('raceTitle').textContent = 'Solent race'; setShort('Solent race');
       try { followSet(false); } catch (e) {} view.la = 50.77; view.lo = -1.27; view.s = Math.max(320, Math.min(W || 400, 1400)) / 20 * 43;   /* the Solent, about 20 nm across */
@@ -2592,7 +2633,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var filed = false; try { if (window.FSTracks && tr0.length > 1) filed = FSTracks.file(tr0, tn); } catch (e) {}
     if (filed) { LIVE.trail = []; store('fs-livetrail', '[]'); }
     LIVE.mk = null; S.routes = []; S.sel = null; S.legs = null; S.ghosts = []; S.cleared = true;
-    try { liveStop(); } catch (e) {} try { $('finBox').innerHTML = ''; } catch (e) {}
+    try { liveStop(); } catch (e) {} try { $('finBox').innerHTML = ''; folRender(); } catch (e) {}
     busy('Race ended' + (el != null ? ': ' + hm(el) + ' from the gun' : '') + '. ' + (filed ? 'Track filed with the result. ' : '') + 'The race stays in Races, Saved routes; the chart is clear for the next one.'); setTimeout(function () { busy(''); }, 6000);
     draw();
   }
@@ -2989,12 +3030,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.running || S.wizHold || S.edit || QS0.get('new') && !S.newDone) return;   /* drawing a new course: nothing routes until it is saved */
     if (startGate()) { busy(''); if (S.card || ($('sheet') && !$('sheet').hidden) || !$('wiz').hidden) return; showCard(); return; }   /* never jump to the card while the boat, forecasts or start are being edited */   /* start not chosen: the set-up card says so */
     if (!$('startSel').value && $('startSel').options.length) $('startSel').selectedIndex = 0;   /* never route from 1 January 1970 */
-    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' ' + tzS1() + ' is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' ' + tzS1() + '. Route will work out the routes once the forecasts reach the start, about ten days before. Route keeps your start; until then there is nothing to route.'; if ($('finBox')) $('finBox').innerHTML = ''; draw(); return; } }
+    var fu = futureGet(); if (fu) { if (!beyond(fu.ep)) { futureDrop(); setStart(fu.ep); } else { S.routes = []; S.sel = null; busy(''); prog(''); openTab('decision'); $('runNote').textContent = 'Start ' + clockAbs(fu.ep) + ' ' + tzS1() + ' is beyond the forecasts, which reach ' + clockAbs(startRange()[1]) + ' ' + tzS1() + '. Route will work out the routes once the forecasts reach the start, about ten days before. Route keeps your start; until then there is nothing to route.'; if ($('finBox')) $('finBox').innerHTML = ''; folRender(); draw(); return; } }
     S.ens = null; if ($('ensOut')) $('ensOut').innerHTML = '';   /* an ensemble belongs to the routes it was run with */
     if (!S.from) S.to = null;   /* routing to a tapped point lasts until the next ordinary route */
     var sp = S.inshore && meta.course && meta.course.race && meta.course.race.solPlan;
     if (sp && !sp.route && !S.from && !S.to) {   /* a Solent race without routing (Stuart 16 Nov 18:30): the course and a list of bearings and distances, no forecasts */
-      S.gen = (S.gen || 0) + 1; S.routes = []; S.sel = null; S.ghosts = []; S.legs = legsFor(null); S.running = false; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = '';
+      S.gen = (S.gen || 0) + 1; S.routes = []; S.sel = null; S.ghosts = []; S.legs = legsFor(null); S.running = false; busy(''); prog(''); if ($('finBox')) $('finBox').innerHTML = ''; folRender();
       if ($('runNote')) $('runNote').textContent = 'Not routed: the course list shows the bearing and distance of each leg.'; try { if (window.FSSolent && FSSolent.showList) FSSolent.showList(true); } catch (e) {} draw(); return; }
     var ms = selectedModels(); if (sp && sp.route) { var pick = (sp.models && sp.models.length ? sp.models : sp.model ? [sp.model] : []).filter(function (m) { return ms.indexOf(m) >= 0; }); if (pick.length) ms = pick; }   /* FirstShift Mark routes on the models chosen, 1 to 6, plus Fixed wind (Stuart 16 Nov 19:35) */
     if (!ms.length) { openTab('decision'); $('runNote').textContent = 'Tick at least one downloaded wind model in Settings, Forecasts.'; return; }
@@ -3047,7 +3088,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           var rank = function (x) { return (x.fixed ? 2e6 : 0) + (x.r.partial ? 1e6 + x.r.partial.togo : x.mean); };   /* the Fixed wind route is shown, never picked as best */   /* a route cut short by the end of the forecasts ranks by distance still to sail */
           var best = S.routes.slice().sort(function (a, b) { return rank(a) - rank(b); })[0];
           S.routes.forEach(function (s) { s.best = s === best; });
-          S.sel = best; S.base = base; S.legs = legs; S.start = start;
+          S.sel = folPick(best); S.base = base; S.legs = legs; S.start = start;
           var part = S.routes.filter(function (x) { return x.r.partial; });
           $('runNote').textContent = (quick ? 'Quick route in ' : finer ? 'Finer routes in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : !finer && RD ? '. Finer routes coming…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Route keeps your start: a later forecast run will reach further.' : '') + trialNote() + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
           /* E7 / F75 (20 Nov): the optimiser can be beaten. Each route is sailed in every forecast (the matrix); where another route's track is
@@ -3189,7 +3230,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var best = S.routes.find(function (s) { return s.best; }), fins = S.routes.map(function (s) { return s.r.finish; }), spread = Math.max.apply(null, fins) - Math.min.apply(null, fins);
     var comb = S.routes.find(function (s) { return s.combined; });
     var fastT = Math.min.apply(null, S.routes.filter(function (s) { return !s.r.partial; }).map(function (s) { return s.r.finish; }).concat([Infinity]));
-    $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (fast ? ' fast' : '') + '" data-id="' + s.id + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + (fastT < Infinity ? '; other models carry on to the finish' : '') + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + (handOver(s) != null ? ' · ' + short(s.id) + ' to ' + clockH(handOver(s)).slice(0, 3) + ' ' + clockH(handOver(s)).slice(-5) + ', then the other models' : '') + '</em>') + '</div>'; }).join('');
+    $('finBox').innerHTML = S.routes.map(function (s) { var fast = !s.r.partial && s.r.finish === fastT; return '<div class="fin' + (s.combined ? ' comb' : '') + (folIs(s) ? ' fol' : '') + (fast ? ' fast' : '') + '" data-id="' + s.id + '"' + (fast ? ' title="Fastest model"' : '') + '>' + (fast ? '<i class="fastTag">❯❯ Fastest</i>' : '') + (folIs(s) ? '<i class="folTag">FOLLOWING</i>' : '') + swatch(s) + '<span>' + (s.combined ? 'Combined (all models)' : short(s.id)) + '</span>' + (s.r.partial ? '<b>' + s.r.partial.togo + ' nm to go</b><em>forecast ends ' + clockH(s.r.finish).slice(4) + (fastT < Infinity ? '; other models carry on to the finish' : '') + '</em>' : '<b>' + clockH(s.r.finish).slice(4) + '</b><em>' + fmtH(s.r.finish - M.start) + (handOver(s) != null ? ' · ' + short(s.id) + ' to ' + clockH(handOver(s)).slice(0, 3) + ' ' + clockH(handOver(s)).slice(-5) + ', then the other models' : '') + '</em>') + (s.fixed ? '' : '<button type="button" class="folb' + (folIs(s) ? ' on' : '') + '" data-fol="' + s.id + '">' + (folIs(s) ? 'Following ✓' : 'Follow') + '</button>') + '</div>'; }).join('');
+    [].forEach.call($('finBox').querySelectorAll('.fin[data-id]'), function (d) { var id = d.dataset.id; if (id === 'fixed') return; folHold(d, function () { folToggle(id); }); var b = d.querySelector('.folb'); if (b) b.onclick = function (e) { e.stopPropagation(); folToggle(id); }; });
+    folRender();
     try { checksRender(); setupRender(); } catch (e) {}
     try { liveAfterRoute(); if (LIVE.on && LIVE.fix) { LIVE.calc = liveCalc(LIVE.fix); liveShow(); } } catch (e) {}
     /* K3 (Mark review, 19 Nov 2026): with one forecast there is nothing to compare, so no claim that a route "loses least on average" and no spread */
@@ -3633,7 +3676,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.cur && S.sel && S.routes.length && S.cur.indexOf(S.sel) < 0) S.cur.forEach(function (s) { if (s.id === S.sel.id) line({ id: S.sel.id, combined: S.sel.combined, r: s.r }, 1.6, 0.35); });   /* drawn in the chosen route's own colour */   /* the standard route, faint, under the finer one (Stuart 20 Nov 11:22) */   /* first routes as they arrive (speed plan 2) */
     if (selOn) line(S.sel, 9, 0.35);
     S.routes.forEach(function (s) { if (!s.hidden && s !== S.sel) line(s, 2.2, 1); });
-    if (selOn) line(S.sel, 2.2, 1);
+    if (selOn) line(S.sel, folIs(S.sel) ? 4 : 2.2, 1);
     if (S.edit) { myMarksDraw(); editDraw(); }
     if (S.mob) mobDraw();
     if (!S.edit && !S.cleared && !building && S.show.legs && meta.course) { var lc = meta.course; legsDraw(courseFull(lc), false, 'label'); }
