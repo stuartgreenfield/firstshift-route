@@ -1,17 +1,17 @@
 {
- "at": "2026-11-24T13:12:17.132Z",
+ "at": "2026-11-24T14:27:34.061Z",
  "log": [
   {
    "race": "fastnet",
    "h": 4,
-   "s": 627,
-   "note": "Finer routes in 258.7 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 146 min faster than UKV’s own"
+   "s": 505,
+   "note": "Finer routes in 202.0 s. Times: first routes 7.8 s, standard 52.5 s, finer 254.5 s. The faint line is the standard route"
   },
   {
    "race": "fastnet",
    "h": 5,
-   "s": 959,
-   "note": "Finer routes in 264.2 s. Times: first routes 10.0 s, standard 65.8 s, finer 330.1 s. The faint line is the standard rout"
+   "s": 752,
+   "note": "Finer routes in 195.1 s. Times: first routes 7.5 s, standard 50.7 s, finer 245.9 s. The faint line is the standard route"
   }
  ]
 }

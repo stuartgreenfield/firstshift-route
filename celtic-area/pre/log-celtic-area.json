@@ -1,41 +1,41 @@
 {
- "at": "2026-11-24T13:16:39.374Z",
+ "at": "2026-11-24T14:37:07.053Z",
  "log": [
   {
    "race": "celtic-area",
    "h": 0,
-   "s": 197,
-   "note": "Finer routes in 101.3 s. Times: first routes 14.3 s, standard 90.5 s, finer 191.9 s. The faint line is the standard rout"
+   "s": 213,
+   "note": "Finer routes in 113.2 s. Times: first routes 16.4 s, standard 96.4 s, finer 209.7 s. The faint line is the standard rout"
   },
   {
    "race": "celtic-area",
    "h": 1,
-   "s": 383,
-   "note": "Finer routes in 102.5 s. Times: first routes 11.9 s, standard 82.4 s, finer 184.9 s. The faint line is the standard rout"
+   "s": 420,
+   "note": "Finer routes in 112.6 s. Times: first routes 13.3 s, standard 92.6 s, finer 205.3 s. The faint line is the standard rout"
   },
   {
    "race": "celtic-area",
    "h": 2,
-   "s": 571,
-   "note": "Finer routes in 102.0 s. Also worth knowing: in AROME HD wind, the Finest first route is 1.6 min faster than AROME HD’s "
+   "s": 705,
+   "note": "Finer routes in 193.3 s. The forecasts end before the finish on 1 routes: they show as far as the forecasts reach, with "
   },
   {
    "race": "celtic-area",
    "h": 3,
-   "s": 762,
-   "note": "Finer routes in 103.4 s. Times: first routes 12.5 s, standard 86.9 s, finer 190.4 s. The faint line is the standard rout"
+   "s": 913,
+   "note": "Finer routes in 115.7 s. Also worth knowing: in ECMWF wind, the UKV route is 38 min faster than ECMWF’s own route. Compa"
   },
   {
    "race": "celtic-area",
    "h": 4,
-   "s": 1027,
-   "note": "Finer routes in 178.4 s. The forecasts end before the finish on 1 routes: they show as far as the forecasts reach, with "
+   "s": 1128,
+   "note": "Finer routes in 121.5 s. Also worth knowing: in ECMWF wind, the GFS route is 56 min faster than ECMWF’s own route. Compa"
   },
   {
    "race": "celtic-area",
    "h": 5,
-   "s": 1227,
-   "note": "Finer routes in 115.0 s. Also worth knowing: in ECMWF wind, the GFS route is 31 min faster than ECMWF’s own route. Compa"
+   "s": 1348,
+   "note": "Finer routes in 129.4 s. Also worth knowing: in ECMWF wind, the GFS route is 47 min faster than ECMWF’s own route; in AR"
   }
  ]
 }
