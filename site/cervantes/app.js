@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.115';
+  var VERSION = 'FirstShift Route v0.12.116';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -345,12 +345,21 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       .then(function (r) { clearTimeout(tm); if (!r.ok) throw new Error('Open-Meteo answered ' + r.status); return r.json(); }, function (e) { clearTimeout(tm); throw e; }); }
   /* Stuart 22 Nov 07:55 (decided 08:05): Get newest on a finish box fetches that one model's newest run to this device, then routes again */
   window.__fsCanFetch = function (id) { return !!(OMN[id] && P && P.wind && P.wind[id]); };
+  /* Stuart 24 Nov 13:04 ("are you getting the models directly from the supplier ... does this confirm these are the latest gribs?"): Get newest
+     fetches from Open-Meteo, not the supplier, and did not know which run it got, so the card could not say. Open-Meteo publishes each
+     model's latest run (its model-updates metadata, last_run_initialisation_time); Get newest now asks first, fetches only when that run is
+     newer than the one already here, and the card shows the run it got */
+  var OMMETA = { ukv: 'ukmo_uk_deterministic_2km', arome: 'meteofrance_arome_france_hd', icon: 'dwd_icon_eu', ecmwf: 'ecmwf_ifs025', aifs: 'ecmwf_aifs025_single', gfs: 'ncep_gfs025', arpege: 'meteofrance_arpege_europe' }, OMRUN = {};
+  window.__fsOmRun = function (id) { var c = OMRUN[id]; if (c && Date.now() - c.at < 600000) return Promise.resolve(c.t); if (!OMMETA[id] || !navigator.onLine) return Promise.resolve(null);
+    return fetch('https://api.open-meteo.com/data/' + OMMETA[id] + '/static/meta.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { var t = j && +j.last_run_initialisation_time > 0 ? +j.last_run_initialisation_time : null; OMRUN[id] = { t: t, at: Date.now() }; return t; }, function () { return null; }); };
+  window.__fsOmNewer = function (id) { var L = (meta.layers || []).filter(function (x) { return x.id === id; })[0], c = OMRUN[id]; if (!c) { window.__fsOmRun(id); return null; } if (Date.now() - c.at > 600000) window.__fsOmRun(id); if (!c.t || !L) return null; var have = L.devRun || L.run_t0; return have ? c.t > have : null; };
   window.__fsGetNewest = function (id) {
     var L = (meta.layers || []).filter(function (x) { return x.id === id; })[0]; if (!L || !OMN[id] || !navigator.onLine) return Promise.resolve(false);
-    var G = omGrid(); return omFetch(G, OMN[id]).then(function (j) { var o = omLayer(G, j, id, L.name.replace(/ \(this device\)$/, '') + ' (this device)'); L.dev = o.full; L.name = o.spec.name; L.device = true; L.devAt = Date.now(); FSRouter.addLayer(P, o.spec, o.buf); S.loaded[id] = 'dev';
-      S.omNote = 'Fetched on this device from Open-Meteo: ' + short(id) + ' (its newest run).'; var copy = o.buf.slice(0);
+    return window.__fsOmRun(id).then(function (run) { var have = L.devRun || L.run_t0; if (run && have && run <= have) { S.omNote = short(id) + ': no newer run yet. Open-Meteo\u2019s newest is the ' + ('0' + new Date(run * 1000).getUTCHours()).slice(-2) + 'Z run, the one already here.'; return 'same'; }
+    var G = omGrid(); return omFetch(G, OMN[id]).then(function (j) { var o = omLayer(G, j, id, L.name.replace(/ \(this device\)$/, '') + ' (this device)'); L.dev = o.full; L.name = o.spec.name; L.device = true; L.devAt = Date.now(); L.devRun = run || null; FSRouter.addLayer(P, o.spec, o.buf); S.loaded[id] = 'dev';
+      S.omNote = 'Fetched on this device from Open-Meteo: ' + short(id) + (run ? ', the ' + ('0' + new Date(run * 1000).getUTCHours()).slice(-2) + 'Z run of ' + new Date(run * 1000).getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(run * 1000).getUTCMonth()] : ' (its newest run)') + '.'; var copy = o.buf.slice(0);
       return all(function () { return { msg: { type: 'layer', L: o.spec, buf: copy }, tr: [copy] }; }); })
-      .then(function () { try { modelsList(); selects(); dataTable(); chip(); } catch (e) {} S.key = null; S.from = null; userRun(); return true; }, function (e) { L.devErr = e && e.message; return false; }); };
+      .then(function () { try { modelsList(); selects(); dataTable(); chip(); } catch (e) {} S.key = null; S.from = null; userRun(); return true; }, function (e) { L.devErr = e && e.message; return false; }); }); };
   function omFallback() {
     var age = (Date.now() / 1000 - meta.t0) / 3600, none = !Object.keys(P.wind).length;
     if (navigator.onLine && !none) { var nowS = Date.now() / 1000, stale = meta.layers.filter(function (L) { return L.kind === 'wind' && OMN[L.id] && P.wind[L.id] && !L.device && L.run_t0 && (nowS - L.run_t0) / 3600 > 18; });
@@ -391,7 +400,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.115 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.116 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2028,7 +2037,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsLiveReroute = function () { if (LIVE.on && LIVE.fix) { liveReroute(); return true; } return false; };
   window.__fsRouteNow = function () { var b = $('run'); if (b) b.click(); };
   window.__fsFleetAdd = function (n, t, m) { return mfAdd(n, t, m); };
-  window.__fsFleetOpen = function () { var t = document.querySelector('.tab[data-tab="fleet"]'); if (t) t.click(); };
+  window.__fsFleetOpen = function () { openTab('fleet', false); var p = $('panel'); if (p) p.classList.remove('collapsed'); setTimeout(resizeDraw, 0); return wide(); };   /* Stuart 24 Nov 13:06: from the tide gates, the Fleet tab opens (never toggled shut) */
   window.__fsPlan = function () { if (!S.sel || !S.sel.r) return null; var p = S.sel.r.path; return { T0: T0, name: S.sel.name, path: p.map(function (q) { return [q.la, q.lo, q.leg || 0]; }), ts: tsOf(p) }; };   /* for the automatic tests */
   window.__fsLine = function () { return LIVE.calc && LIVE.calc.pre ? LIVE.calc.pre.line : null; };   /* for the automatic tests */
   window.__fsScr = function (la, lo) { var r = $('map').getBoundingClientRect(), x = X(lo), y = Y(la); if (ORI.ang) { var a = -ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; x = ORI.cx + dx * Math.cos(a) - dy * Math.sin(a); y = ORI.cy + dx * Math.sin(a) + dy * Math.cos(a); } return [r.left + x, r.top + y, ORI.mode, Math.round(ORI.ang)]; };   /* for the automatic tests: where a position shows on a turned chart */

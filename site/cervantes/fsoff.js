@@ -121,11 +121,11 @@
     [].forEach.call(document.querySelectorAll('#finBox .fin[data-id]'), function (d) {
       var id = d.dataset.id, t0 = R[id], L = layerOf(id); var e = d.querySelector('.navage'), g = d.querySelector('.navgn'); if (!t0) { if (e) e.remove(); if (g) g.remove(); return; }
       if (!e) { e = document.createElement('small'); e.className = 'navage'; d.appendChild(e); }
-      var dev = !!(L && L.device), h = ageH(t0), txt = dev ? 'Fresh copy on this device, fetched ' + hm(L.devAt || Date.now()) : ageTxt(t0) + (L && L.latest === false ? ' · older run' : '');
+      var dev = !!(L && L.device), h = ageH(t0), txt = dev ? (L.devRun ? ageTxt(L.devRun) + ' · from Open-Meteo to this device' : 'Fresh copy on this device, fetched ' + hm(L.devAt || Date.now())) : ageTxt(t0) + (L && L.latest === false ? ' · older run' : '');   /* 24 Nov: the run it fetched, not only when */
       if (e.textContent !== txt) e.textContent = txt; e.classList.toggle('old', !dev && !!lim && h > lim); e.classList.toggle('amber', !dev && h > 12 && h <= 18); e.classList.toggle('red', !dev && h > 18); e.classList.toggle('fresh', dev);
-      var can = !dev && (h > 12 || (L && L.latest === false)) && navigator.onLine && window.__fsCanFetch && window.__fsCanFetch(id);
+      var nw = window.__fsOmNewer ? window.__fsOmNewer(id) : null, can = (nw === true || (nw === null && !dev && (h > 12 || (L && L.latest === false)))) && !(L && L.sameAt && Date.now() - L.sameAt < 600000) && navigator.onLine && window.__fsCanFetch && window.__fsCanFetch(id);   /* 24 Nov: shown when Open-Meteo has a newer run than the one here (or, before it answers, the old 12 h rule) */
       if (can && !g) { g = document.createElement('button'); g.type = 'button'; g.className = 'navgn'; g.textContent = 'Get newest'; g.title = 'Fetch the newest run of this model to this device and route again';
-        g.onclick = function (ev) { ev.stopPropagation(); if (g.disabled) return; g.disabled = true; g.textContent = 'Fetching…'; window.__fsGetNewest(id).then(function (ok) { g.textContent = ok ? 'Fetched: routing' : 'Could not fetch'; if (!ok) setTimeout(function () { g.disabled = false; g.textContent = 'Get newest'; }, 4000); }); };
+        g.onclick = function (ev) { ev.stopPropagation(); if (g.disabled) return; g.disabled = true; g.textContent = 'Fetching…'; window.__fsGetNewest(id).then(function (ok) { if (ok === 'same') { if (L) L.sameAt = Date.now(); g.textContent = 'Already the newest'; setTimeout(function () { g.remove(); }, 4000); return; } g.textContent = ok ? 'Fetched: routing' : 'Could not fetch'; if (!ok) setTimeout(function () { g.disabled = false; g.textContent = 'Get newest'; }, 4000); }); };
         d.appendChild(g); }
       else if (!can && g && !g.disabled) g.remove();
     });

@@ -136,6 +136,9 @@
     if (!d || !d.legs.length) { bx.innerHTML = '<p>The tide gates use your route: the time you reach each mark, sailing at your polars in the forecast wind and tide.</p><p><button class="btn tgroute" type="button" id="tgRoute">Route now</button></p>'; var rb = $('tgRoute'); if (rb) rb.onclick = function () { if (window.__fsRouteNow) window.__fsRouteNow(); }; return; }
     if (!window.__fsTideAt || !window.__fsTideAt(d.legs[0].lat, d.legs[0].lon, Date.now() / 1000)) { bx.innerHTML = '<p>No tide model here: choose one in Settings, Forecasts (Tide).</p>'; return; }
     var P = legsPlan(d); if (!P.legs.length) { bx.innerHTML = '<p>The route has no marks left to reach.</p>'; return; }
+    /* Stuart 24 Nov 13:05 (his screenshot: 'Next: Finish', ETA Mon 23:16, 27 h behind): the start was yesterday, so every time on the
+       route is past. Say so, and offer the two ways on, instead of a gate in the past */
+    if (P.legs[P.legs.length - 1].eta < Date.now()) { bx.innerHTML = '<p class="tgv bad">This route finished ' + dayHm(P.legs[P.legs.length - 1].eta) + ': its start, ' + dayHm(d.T0 * 1000 + d.ts[0] * 3600000) + ', has passed, so it has no tide gates ahead.</p><p>Choose a later start in Race set-up, or reroute from where the boat is now.</p><p><button class="btn" type="button" id="tgRe">Reroute from here</button></p>'; wire(p, d, P); return; }
     /* Stuart 24 Nov 12:52, "yes shrink for solent races": on an inshore course (under 40 nm, the app's own rule) each chart runs a third of
        the race left either side of the ETA, between 15 min and 1 h; offshore it stays 3 h */
     var o0 = d.from || d.start, cn = 0; [o0].concat(d.legs).forEach(function (q, k, a) { if (k && a[k - 1]) cn += dist(a[k - 1], q); });
@@ -159,7 +162,7 @@
   }
   function wire(p, d, P) {
     var re = $('tgRe'); if (re) re.onclick = function () { if (window.__fsLiveReroute && !window.__fsLiveReroute()) alarm('Reroute needs the boat position: Live GPS or the boat link.'); };
-    var fl = $('tgFleet'); if (fl) fl.onclick = function () { open(false); if (window.__fsFleetOpen) window.__fsFleetOpen(); };
+    var fl = $('tgFleet'); if (fl) fl.onclick = function () { var wideScreen = window.__fsFleetOpen ? window.__fsFleetOpen() : false; if (!wideScreen) open(false); };   /* on a phone the Fleet tab takes the screen, so the tide gates close; beside the panel they stay */
     [].forEach.call(p.querySelectorAll('.tgfold,.tgovm'), function (b) { b.onclick = function () { OPEN[b.getAttribute('data-l')] = 1; render(); var e = p.querySelector('.tgmk[data-l="' + b.getAttribute('data-l') + '"]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); }; });
     var al = $('tgAlarm'); if (al) al.onchange = function () { C.alarm = al.checked; save(); };
     var sv = p.querySelector('.tgmk.next .tgsv'), tip = $('tgTip'); if (!sv || !tip) return; var g = P.legs[0];
