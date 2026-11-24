@@ -1,0 +1,14 @@
+/* House style (Stuart 24 Nov 2026): the three typefaces come from the app itself, in the three weights, with no request to Google Fonts,
+   so the apps look the same with no signal. Run: node tests/fonts-offline.js <base> [path] */
+const { chromium } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779', PATH = process.argv[3] || '/channel-area/';
+let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m + (d !== undefined ? ' | ' + JSON.stringify(d) : '')); };
+(async () => { const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); const g = [];
+  await c.route(/open-meteo|openseamap/, r => r.fulfill({ status: 200, body: '' })); await c.route(/fonts\.(googleapis|gstatic)\.com/, r => { g.push(r.request().url()); r.abort(); });
+  await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); ['fs-wizdone', 'fs-boatset', 'fs-autostart'].forEach(k => localStorage.setItem(k, '1')); });
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); await p.goto(BASE + PATH); await p.waitForTimeout(6000);
+  const f = await p.evaluate(async () => { await document.fonts.ready; const want = ['400 14px Inter', '600 14px Inter', '700 14px Inter', '600 14px "Space Grotesk"', '400 14px "JetBrains Mono"', '700 14px "JetBrains Mono"']; const out = {}; for (const w of want) { await document.fonts.load(w); out[w] = [...document.fonts].some(ff => ff.status === 'loaded' && w.indexOf(ff.family.replace(/"/g, '')) >= 0 && w.startsWith(ff.weight)); } return out; });
+  ok(Object.values(f).every(Boolean), 'all six faces load from the app', f);
+  ok(!g.length, 'no request to Google Fonts', g.slice(0, 2));
+  const w = await p.evaluate(() => { const s = new Set(); document.querySelectorAll('body *').forEach(e => { if (e.getClientRects().length) s.add(getComputedStyle(e).fontWeight); }); return [...s].sort(); });
+  ok(w.every(x => ['400', '600', '700'].includes(x)), 'only weights 400, 600 and 700 on the screen', w); if (process.env.WHO) console.log(await p.evaluate(() => [...document.querySelectorAll('body *')].filter(e => e.getClientRects().length && getComputedStyle(e).fontWeight === '900').slice(0, 6).map(e => e.tagName + '#' + e.id + '.' + e.className + ' ' + (e.textContent || '').slice(0, 20))));
+  ok(!errs.length, 'no script errors', errs.slice(0, 2)); console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

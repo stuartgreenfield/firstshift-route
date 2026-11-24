@@ -48,23 +48,23 @@
       /* Mark's tabs inside Route's panel */
       '.mkbody{padding:12px 14px}.mkbody>*+*{margin-top:12px}.mkbody .row>*{max-width:100%;box-sizing:border-box}.mkbody .row>label:first-child{min-width:84px}.mkbody .btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}.mkbody .btn.mkred{background:#dc2626;border-color:#dc2626;color:#fff}.mkbody .btn{white-space:normal;line-height:1.15}' +
       '#panel .tab.mkwait{opacity:.55}' +
-      '.mkin{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:40px;color:var(--ink);font:14px var(--f-data);box-sizing:border-box;width:6.5em}.mkin.wide{flex:1 1 140px;min-width:0;width:auto}' +
+      '.mkin{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:8px 9px;min-height:40px;color:var(--ink);font:14px var(--f-data);box-sizing:border-box;width:6.5em}.mkin.wide{flex:1 1 140px;min-width:0;width:auto}' +
       '.mkbig{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}' +
       '.mkbig>div{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:6px 10px;display:grid;align-content:start}.mkbig small{font:600 11px var(--f-head);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}' +
       '.mkbig b{font:600 28px/1.1 var(--f-data);color:var(--ink)}.mkbig b.ok{color:#16a34a}.mkbig b.bad{color:#dc2626}.mkbig span{font:12px var(--f-body);color:var(--muted)}' +
       '.mklegs{width:100%;border-collapse:collapse;font:13px var(--f-data)}.mklegs td{padding:6px 4px;border-top:1px solid var(--line);vertical-align:top}.mklegs small{color:var(--muted);font-family:var(--f-body)}' +
-      '.mkmk{display:flex;flex-wrap:wrap;gap:6px}.mkmk .mkchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:0 2px 0 10px;min-height:40px;font:600 14px var(--f-data)}' +
-      '.mkchip button{min-width:40px;min-height:40px;border:0;background:none;color:var(--ink);font:600 13px var(--f-head);cursor:pointer;border-radius:8px}' +
+      '.mkmk{display:flex;flex-wrap:wrap;gap:6px}.mkmk .mkchip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:0 2px 0 10px;min-height:40px;font:600 14px var(--f-data)}' +
+      '.mkchip button{min-width:40px;min-height:40px;border:0;background:none;color:var(--ink);font:600 13px var(--f-head);cursor:pointer;border-radius:10px}' +
       '.mklist{display:grid;gap:4px}.mkli{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:4px 0;min-width:0}.mkli b{font:600 15px var(--f-data);min-width:3.2em}.mkli span{flex:1 1 auto;min-width:0;font-size:13px}.mkli i{color:var(--brand);font-style:normal}.mkli .mklia{flex:none;display:flex;gap:4px}' +
       '.mkbias{cursor:pointer;border-color:var(--brand)!important}.mkbias small{color:var(--brand)!important}' +
       '.mkwarn{border:2px solid #dc2626;border-radius:10px;padding:8px 10px;font:600 15px var(--f-head);color:#dc2626}' +
       /* the tap-on-the-chart prompt and the test mode bar, under Route's top bar */
-      '.mkpick{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--mkTB,60px) + 8px);z-index:21;background:var(--panel);border:1px solid var(--brand);color:var(--ink);border-radius:12px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:600 13.5px var(--f-body);max-width:calc(100% - 24px);box-sizing:border-box;box-shadow:0 4px 18px rgba(0,0,0,.35)}' +
+      '.mkpick{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--mkTB,60px) + 8px);z-index:21;background:var(--panel);border:1px solid var(--brand);color:var(--ink);border-radius:14px;padding:6px 6px 6px 14px;display:flex;gap:10px;align-items:center;font:600 13.5px var(--f-body);max-width:calc(100% - 24px);box-sizing:border-box;box-shadow:0 4px 18px rgba(0,0,0,.35)}' +
       'html.mktest .mkpick{top:calc(var(--mkTB,60px) + 64px)}.mktestbar{border-color:#F2B233}.mktestbar b{color:#F2B233}' +
       '.mkset{display:grid;gap:8px}' +
       /* big buttons (Settings) and sunlight */
       'html.mkbigui .mkbody .btn,html.mkbigui #panel .tab{min-height:56px;font-size:16px}html.mkbigui .mkin{min-height:56px;font-size:18px}html.mkbigui .mkbig b{font-size:36px}' +
-      'html.mksun{--ink:#000;--muted:#222;--panel:#fff;--bg:#fff;--line:#000}html.mksun .mkbig b{font-weight:800}';
+      'html.mksun{--ink:#000;--muted:#222;--panel:#fff;--bg:#fff;--line:#000}html.mksun .mkbig b{font-weight:700}';
     document.head.appendChild(s);
   }
   var top, panel;

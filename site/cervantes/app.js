@@ -711,7 +711,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function drawIso() {
     var s = S.sel; if (!S.show.iso || !s) return; if (!s.iso) { isoFetch(); return; }
-    ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = css['--muted'] || '#8899aa'; ctx.font = '500 10px var(--f-data), monospace'; ctx.fillStyle = ctx.strokeStyle;
+    ctx.save(); ctx.lineWidth = 1; ctx.strokeStyle = css['--muted'] || '#8899aa'; ctx.font = '400 10px var(--f-data), monospace'; ctx.fillStyle = ctx.strokeStyle;
     var near = null, bd = 1e9; s.iso.forEach(function (f) { var d = Math.abs(f.t - S.t); if (d < bd) { bd = d; near = f; } });
     s.iso.forEach(function (f) {
       var now = f === near && bd < 0.6; ctx.globalAlpha = now ? 0.95 : 0.35; ctx.lineWidth = now ? 2 : 1;
@@ -1898,7 +1898,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     busy('Saved to My marks: ' + nm); setTimeout(function () { busy(''); }, 1800); return true;
   }
   function myMarksDraw() {
-    var vb = viewBox(), used = S.edit.pts; ctx.save(); ctx.font = '500 10.5px Inter, sans-serif';
+    var vb = viewBox(), used = S.edit.pts; ctx.save(); ctx.font = '400 10.5px Inter, sans-serif';
     myMarks().forEach(function (m) {
       if (m.lat < vb.s || m.lat > vb.n || m.lon < vb.w || m.lon > vb.e) return;
       if (used.some(function (q) { return Math.abs(q.lat - m.lat) < 1e-4 && Math.abs(q.lon - m.lon) < 1e-4; })) return;
@@ -2194,7 +2194,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var rb = $('raceBtn'); if (!rb || window.FS_MARK) return; var ch = $('readyChip'), miss = rows.filter(function (r) { return !r.ok; });
     if (!miss.length) { if (ch) ch.hidden = true; return; }
     if (!ch) { ch = document.createElement('span'); ch.id = 'readyChip'; ch.className = 'readychip'; ch.setAttribute('role', 'button'); ch.tabIndex = 0; document.body.appendChild(ch); window.addEventListener('resize', function () { chipAt(ch); });
-      var css = document.createElement('style'); css.textContent = '.readychip{position:fixed;z-index:30;padding:1px 7px;border-radius:999px;background:#d97706;color:#fff;font:800 10px/1.4 var(--f-body,system-ui);letter-spacing:.05em;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.4)}html[data-night] .readychip{background:#5A1410;color:#E8B0A8}'; document.head.appendChild(css);
+      var css = document.createElement('style'); css.textContent = '.readychip{position:fixed;z-index:30;padding:1px 7px;border-radius:999px;background:#d97706;color:#fff;font:700 10px/1.4 var(--f-body,system-ui);letter-spacing:.05em;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.4)}html[data-night] .readychip{background:#5A1410;color:#E8B0A8}'; document.head.appendChild(css);
       ch.onclick = function (e) { e.stopPropagation(); S.suOpen = true; openTab('decision'); setupRender(); var c = $('setupCard'); if (c) c.scrollIntoView({ block: 'start' }); }; }
     ch.hidden = false; chipAt(ch); ch.textContent = '! ' + miss.map(function (r) { return r.t.toUpperCase(); }).join(' · '); ch.title = 'Not ready: ' + miss.map(function (r) { return r.t; }).join(', ') + '. Tap to fix.';
   }
