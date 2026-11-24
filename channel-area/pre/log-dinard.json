@@ -1,23 +1,23 @@
 {
- "at": "2026-11-23T20:51:47.549Z",
+ "at": "2026-11-24T08:30:08.972Z",
  "log": [
   {
    "race": "dinard",
    "h": 0,
-   "s": 65,
-   "note": "Finer routes in 47.4 s. Also worth knowing: in ECMWF wind, the AIFS route is 2.7 min faster than ECMWF’s own route. Gaps"
+   "s": 52,
+   "note": "Finer routes in 37.2 s. Also worth knowing: in GFS wind, the AIFS route is 3.4 min faster than GFS’s own route. Gaps thi"
   },
   {
    "race": "dinard",
    "h": 1,
-   "s": 122,
-   "note": "Finer routes in 44.6 s. Also worth knowing: in ECMWF wind, the AIFS route is 2.7 min faster than ECMWF’s own route; in G"
+   "s": 95,
+   "note": "Finer routes in 33.8 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 0.7 min faster than ECMWF’s "
   },
   {
    "race": "dinard",
    "h": 2,
-   "s": 179,
-   "note": "Finer routes in 44.9 s. Times: first routes 1.9 s, standard 11.4 s, finer 56.3 s. The faint line is the standard route. "
+   "s": 137,
+   "note": "Finer routes in 32.8 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 3.5 min faster than UKV’s own "
   }
  ]
 }

@@ -1,23 +1,23 @@
 {
- "at": "2026-11-23T20:55:13.944Z",
+ "at": "2026-11-24T08:26:42.411Z",
  "log": [
   {
    "race": "myth",
    "h": 0,
-   "s": 107,
-   "note": "Finer routes in 80.6 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 8.2 min faster than GFS’s own "
+   "s": 113,
+   "note": "Finer routes in 85.6 s. Times: first routes 4.7 s, standard 24.9 s, finer 110.5 s. The faint line is the standard route."
   },
   {
    "race": "myth",
    "h": 1,
-   "s": 208,
-   "note": "Finer routes in 79.8 s. Also worth knowing: in ECMWF wind, the UKV route is 4.0 min faster than ECMWF’s own route; in GF"
+   "s": 215,
+   "note": "Finer routes in 81.6 s. Times: first routes 2.9 s, standard 20.2 s, finer 101.8 s. The faint line is the standard route."
   },
   {
    "race": "myth",
    "h": 2,
-   "s": 310,
-   "note": "Finer routes in 81.4 s. Also worth knowing: in ICON-EU wind, the UKV route is 5.3 min faster than ICON-EU’s own route. C"
+   "s": 334,
+   "note": "Finer routes in 81.7 s. Times: first routes 2.7 s, standard 36.4 s, finer 118.2 s. The faint line is the standard route."
   }
  ]
 }

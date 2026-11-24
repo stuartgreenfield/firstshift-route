@@ -1,41 +1,41 @@
 {
- "at": "2026-11-23T20:54:58.475Z",
+ "at": "2026-11-24T08:31:00.912Z",
  "log": [
   {
    "race": "cervantes",
    "h": 0,
-   "s": 66,
-   "note": "Finer routes in 51.1 s. Times: first routes 2.5 s, standard 13.8 s, finer 64.9 s. The faint line is the standard route. "
+   "s": 110,
+   "note": "Finer routes in 82.5 s. Times: first routes 4.4 s, standard 24.8 s, finer 107.3 s. The faint line is the standard route."
   },
   {
    "race": "cervantes",
    "h": 1,
-   "s": 128,
-   "note": "Finer routes in 48.8 s. Times: first routes 2.1 s, standard 12.6 s, finer 61.4 s. The faint line is the standard route. "
+   "s": 209,
+   "note": "Finer routes in 77.7 s. Times: first routes 3.0 s, standard 20.9 s, finer 98.7 s. The faint line is the standard route. "
   },
   {
    "race": "cervantes",
    "h": 2,
-   "s": 186,
-   "note": "Finer routes in 46.5 s. Times: first routes 1.8 s, standard 12.1 s, finer 58.6 s. The faint line is the standard route. "
+   "s": 306,
+   "note": "Finer routes in 77.1 s. Times: first routes 3.0 s, standard 19.3 s, finer 96.4 s. The faint line is the standard route. "
   },
   {
    "race": "cervantes",
    "h": 3,
-   "s": 242,
-   "note": "Finer routes in 43.1 s. Times: first routes 1.9 s, standard 11.8 s, finer 55.0 s. The faint line is the standard route. "
+   "s": 401,
+   "note": "Finer routes in 75.4 s. Times: first routes 2.9 s, standard 19.6 s, finer 95.0 s. The faint line is the standard route. "
   },
   {
    "race": "cervantes",
    "h": 4,
-   "s": 297,
-   "note": "Finer routes in 43.8 s. Times: first routes 1.9 s, standard 11.5 s, finer 55.3 s. The faint line is the standard route. "
+   "s": 496,
+   "note": "Finer routes in 76.7 s. Times: first routes 2.8 s, standard 18.3 s, finer 95.0 s. The faint line is the standard route. "
   },
   {
    "race": "cervantes",
    "h": 5,
-   "s": 359,
-   "note": "Finer routes in 48.6 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 2.0 min faster than GFS’s own "
+   "s": 592,
+   "note": "Finer routes in 76.4 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 0.6 min faster than ECMWF’s "
   }
  ]
 }
