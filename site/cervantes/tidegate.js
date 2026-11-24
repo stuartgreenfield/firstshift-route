@@ -189,18 +189,28 @@
   }
   /* the strip on the deck screen, and the alarm */
   var beeped = 0;
+  /* the strip on the deck screen and the alarm, from the same route as the window (Stuart 24 Nov 13:22: "what does ETA refer to?" on
+     'TIDE SLACK · turns 13:46 · ETA 04:35 · -3769 min': the old strip timed the leg at the speed made good, here 0.2 kn at home, so
+     the ETA was a day away and the margin meaningless). Now: the tide on the leg to the next mark now, when it next turns, the ETA
+     at the mark from the route, and the tide there on arrival */
+  function stripData() {
+    var d = window.__fsTgData ? window.__fsTgData() : null; if (!d || !d.legs.length) return null; var P = legsPlan(d); if (!P.legs.length) return null;
+    var g = P.legs[0], now = Date.now(); if (g.eta < now || !(window.__fsTideAt && window.__fsTideAt(g.m.lat, g.m.lon, now / 1000))) return null;
+    var B = bandsAt(g.m, g.bIn, now, Math.max(g.eta, now) + 6 * 3600000), cur = stAt(B, now), arr = stAt(B, g.eta), nx = cur && cur[1] < now + 6 * 3600000 ? stAt(B, cur[1] + 1) : null;
+    return { g: g, cur: cur ? cur[2] : 'slack', turnAt: nx ? cur[1] : null, turnTo: nx ? nx[2] : null, arr: arr ? arr[2] : 'slack' };
+  }
   function tick() {
     var deck = document.body.classList.contains('fsdeck'), st = $('tgStrip'); render();
     if (!deck && !C.alarm) { if (st) st.hidden = true; return; }
-    var r = work(); if (r.why || !r.T1 || !r.T1.t) { if (st) st.hidden = true; return; }
+    var x = stripData(); if (!x) { if (st) st.hidden = true; return; }
     if (deck) { css(); if (!st) { st = document.createElement('div'); st.id = 'tgStrip'; st.className = 'tgstrip'; st.onclick = function () { open(true); }; (document.querySelector('.app>.chart') || document.body).appendChild(st); }
-      st.hidden = false; var miss = r.T1.now === 'fair' && r.margin < 0; st.className = 'tgstrip ' + (miss || atEta(r) === 'foul' ? 'bad' : 'ok');
-      st.textContent = 'TIDE ' + r.T1.now.toUpperCase() + ' · turns ' + hm(r.T1.t) + ' · ETA ' + hm(r.L1.eta) + ' · ' + (r.margin >= 0 ? '+' : '') + Math.round(r.margin) + ' min';
-      /* F116 (Stuart's 16:45 photo, 21 Nov): the Routing box sat on the tide line; the line moves up clear of it while it shows */
+      st.hidden = false; st.className = 'tgstrip ' + (x.arr === 'foul' ? 'bad' : 'ok');
+      st.textContent = 'TIDE ' + x.cur.toUpperCase() + (x.turnAt ? ' \u00b7 turns ' + x.turnTo + ' ' + hm(x.turnAt) : '') + ' \u00b7 ' + String(x.g.m.name).split(',')[0].toUpperCase() + ' ETA ' + dayHm(x.g.eta) + ' \u00b7 ' + x.arr.toUpperCase() + ' THERE';
+      st.title = 'Tide along the leg to ' + x.g.m.name + ': ' + x.cur + ' now' + (x.turnAt ? ', turns ' + x.turnTo + ' at ' + hm(x.turnAt) : '') + '. You reach the mark at ' + dayHm(x.g.eta) + ' on your route; the tide there is ' + x.arr + '. Tap for the tide gates.';
       clearProg(); }
     else if (st) st.hidden = true;
-    var closesIn = (r.T1.t - Date.now()) / 60000;
-    if (C.alarm && r.T1.now === 'fair' && r.margin < 0 && closesIn <= 15 && closesIn > 0 && Date.now() - beeped > 600000) { beeped = Date.now(); alarm('Tide gate closes in ' + Math.round(closesIn) + ' min: at this speed we miss it by ' + Math.round(-r.margin) + ' min.' + (r.need ? ' Need ' + r.need.toFixed(1) + ' kn.' : '')); }
+    var closesIn = x.turnAt ? (x.turnAt - Date.now()) / 60000 : null;   /* the gate closes: fair now, foul by the time we arrive */
+    if (C.alarm && x.cur === 'fair' && x.arr === 'foul' && closesIn != null && closesIn <= 15 && closesIn > 0 && Date.now() - beeped > 600000) { beeped = Date.now(); alarm('Tide gate closes in ' + Math.round(closesIn) + ' min: the tide to ' + x.g.m.name + ' turns before you get there (ETA ' + dayHm(x.g.eta) + ').'); }
   }
   function alarm(t) {
     try { if (window.NavToast) window.NavToast(t); else { var b = $('busy'); if (b) { b.textContent = t; b.hidden = false; setTimeout(function () { if (b.textContent === t) { b.textContent = ''; b.hidden = true; } }, 8000); } } } catch (e) {}
