@@ -10,7 +10,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
   await p.waitForFunction(() => window.__navFc && window.__navFc().P && navigator.serviceWorker && navigator.serviceWorker.controller, null, { timeout: 300000 }).catch(() => {});
   await p.reload(); await p.waitForFunction(() => window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(8000);   /* a second visit so everything it loads is kept */
   ok(await p.evaluate(() => !!(navigator.serviceWorker && navigator.serviceWorker.controller)), 'kept on the device (offline mode running)');
-  await c.setOffline(true); await p.reload().catch(() => {}); await p.waitForFunction(() => window.__navFc && window.__navFc().P, null, { timeout: 120000 }).catch(() => {});
+  await c.setOffline(true); await p.reload().catch(() => {}); await p.waitForFunction(() => window.__navFc && window.__navFc().P && Object.keys(window.__navFc().P.wind || {}).length > 0, null, { timeout: 120000 }).catch(() => {});   /* 24 Nov 20:00: wait for the saved forecasts themselves, not just the page (the page is there at once, its forecasts a few seconds later) */
   const s = await p.evaluate(async () => { await document.fonts.ready; const P = window.__navFc && window.__navFc().P; return { app: !!P, wind: P ? Object.keys(P.wind || {}).length : 0, tide: P ? Object.keys(P.tide || {}).length : 0, font: document.fonts.check('600 14px Inter'), help: !!document.getElementById('helpBtn'), online: navigator.onLine }; });
   ok(!s.online && s.app, 'with no signal the tool opens', s);
   ok(s.wind > 0, 'the forecasts it had are there', s.wind);
