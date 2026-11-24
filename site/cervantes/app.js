@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.114';
+  var VERSION = 'FirstShift Route v0.12.115';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -391,7 +391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.114 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.115 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -2018,6 +2018,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsNear = function (la, lo, r) { var s = S.routes && S.routes[0]; if (!s) return null; return s.r.path.map(function (q, i) { return [i, +q.la.toFixed(3), +q.lo.toFixed(3), q.leg, q.t ? new Date(q.t * 1000).toISOString().slice(5, 16) : '']; }).filter(function (q) { return Math.abs(q[1] - la) < r && Math.abs(q[2] - lo) < r * 1.6; }); };
   window.__fsXY = function (la, lo) { var r = $('map').getBoundingClientRect(); return [r.left + X(lo), r.top + Y(la)]; };   /* for the automatic tests */
   window.__fsLive = function () { return LIVE.calc ? { plan: LIVE.calc.plan, xte: LIVE.calc.xte, ahead: LIVE.calc.ahead, rejoin: LIVE.calc.rejoin } : null; };   /* for the automatic tests */
+  /* the tide gates window (Stuart 24 Nov 11:38 to 12:14): the followed route with its legs and times, our start and TCC, the fleet ghosts
+     (each Fleet boat sailed along this route on our polar x its TCC from its own start), and the live off-plan figures */
+  window.__fsTgData = function () { var s = S.sel; if (!s || !s.r || !s.r.path || !s.r.path.length) return null; var p = s.r.path;
+    return { T0: T0, name: s.name || '', path: p, ts: tsOf(p), legs: (S.legs || []).map(function (l) { var a = l.at || l.point || [0, 0]; return { name: l.name || 'Mark', lat: a[0], lon: a[1] }; }),
+      start: S.start ? { lat: S.start.lat, lon: S.start.lon, t: S.start.t } : null, from: S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : null, tcc: +$('tcc').value || 1,
+      ghosts: (S.ghosts || []).filter(function (g) { return g.ts && g.ts.length === p.length; }).map(function (g) { return { name: g.name, tcc: g.tcc, ts: g.ts }; }),
+      live: LIVE.on && LIVE.calc && LIVE.calc.xte ? { d: LIVE.calc.xte.d, side: LIVE.calc.xte.side, ahead: LIVE.calc.ahead } : null }; };
+  window.__fsLiveReroute = function () { if (LIVE.on && LIVE.fix) { liveReroute(); return true; } return false; };
+  window.__fsRouteNow = function () { var b = $('run'); if (b) b.click(); };
+  window.__fsFleetAdd = function (n, t, m) { return mfAdd(n, t, m); };
+  window.__fsFleetOpen = function () { var t = document.querySelector('.tab[data-tab="fleet"]'); if (t) t.click(); };
   window.__fsPlan = function () { if (!S.sel || !S.sel.r) return null; var p = S.sel.r.path; return { T0: T0, name: S.sel.name, path: p.map(function (q) { return [q.la, q.lo, q.leg || 0]; }), ts: tsOf(p) }; };   /* for the automatic tests */
   window.__fsLine = function () { return LIVE.calc && LIVE.calc.pre ? LIVE.calc.pre.line : null; };   /* for the automatic tests */
   window.__fsScr = function (la, lo) { var r = $('map').getBoundingClientRect(), x = X(lo), y = Y(la); if (ORI.ang) { var a = -ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; x = ORI.cx + dx * Math.cos(a) - dy * Math.sin(a); y = ORI.cy + dx * Math.sin(a) + dy * Math.cos(a); } return [r.left + x, r.top + y, ORI.mode, Math.round(ORI.ang)]; };   /* for the automatic tests: where a position shows on a turned chart */
@@ -2924,7 +2935,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     S.pre = null;
     if (window.FS_MARK) return Promise.resolve();   /* Mark: no offshore pre-made routes */ return fetch('pre/routes.json?b=' + encodeURIComponent(meta.built || meta.t0)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.built === (meta.built || meta.t0)) S.pre = j; }).catch(function () {});
   }
-  function startPt() { return S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 }; }
+  function startPt() { var sv = +$('startSel').value; return S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: ((sv > 0 ? sv : Date.now() / 1000) - T0) / 3600 }; }   /* 24 Nov race test: with no start time yet (a new Mark course) the route started on 1 Jan 1970 and every time on it was wrong; it starts now until a start is chosen */
   function liteKey(base, st) { return JSON.stringify([base.polKey, Math.round(st.t * 100), st.lat.toFixed(4), st.lon.toFixed(4), meta.course.raceId || '', meta.course.marks.map(function (m) { return (m.side || '') + m.lat.toFixed(3) + m.lon.toFixed(3); }), meta.course.finish.lat.toFixed(3) + meta.course.finish.lon.toFixed(3), base.tackS, base.gybeS, base.safety, base.margin, base.sea.up, base.sea.reach, base.sea.surf, base.adj].concat(base.tideWind === false ? ['ground wind'] : [], base.polZ !== 10 ? ['z' + base.polZ + (base.stab ? 's' : '')] : [])); }
   function fullKey(base, st) { return JSON.stringify([liteKey(base, st), base.models.slice().sort(), base.tide, base.wave, base.nogo.length]); }
   function preEntry(full) {
@@ -2998,7 +3009,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         $('runNote').textContent += (RD ? ' Times: first routes ' + S.quickS + ' s, standard ' + S.stdS + ' s, finer ' + S.finS + ' s. The faint line is the standard route.' : '') + ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); draw(); })
     .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
     function pass(mode, rsec) { var quick = mode === 0, finer = mode === 2;
-    var start = S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
+    var start = startPt();   /* one start, as startPt (24 Nov) */
       var legs = legsFor(S.from), base = opts(ms), t0 = Date.now(); if (!quick) S.lastReq = { base: base, start: start, legs: legs };
       if (!quick) { try { var e7 = JSON.parse(store('fs-e7full') || 'null'); if (e7 && typeof e7 === 'object') Object.assign(base, e7); } catch (e) {} }   /* E7 full-search check: finer steps for the refined pass, set only by the automatic tests */
       if (finer) Object.assign(base, { sectors: rsec, secCap: 2 * rsec });   /* the finer pass (Routing detail) */
@@ -3837,7 +3848,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     ctx.beginPath(); ctx.moveTo(x + dx * size, y + dy * size); ctx.lineTo(x - dx * size * 0.7 - dy * size * 0.62, y - dy * size * 0.7 + dx * size * 0.62); ctx.lineTo(x - dx * size * 0.7 + dy * size * 0.62, y - dy * size * 0.7 - dx * size * 0.62); ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1.5; ctx.lineJoin = 'round'; ctx.stroke(); }
   }
-  function hdgAt(path, k) { var i = Math.max(0, Math.min(path.length - 2, Math.floor(k))), a = path[i], b = path[i + 1]; return (Math.atan2((b.lo - a.lo) * K, b.la - a.la) / R + 360) % 360; }
+  function hdgAt(path, k) { if (!path || path.length < 2) return 0; var i = Math.max(0, Math.min(path.length - 2, Math.floor(k))), a = path[i], b = path[i + 1]; return (Math.atan2((b.lo - a.lo) * K, b.la - a.la) / R + 360) % 360; }
   function dot(la, lo, r, fill, stroke) { ctx.beginPath(); ctx.arc(X(lo), Y(la), r, 0, 7); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = stroke; ctx.stroke(); }
   function line(s, w, a) {
     ctx.globalAlpha = a * (S.edit && S.edit.changed ? 0.3 : 1);   /* course changed: the routes are out of date */ ctx.strokeStyle = col(s); ctx.lineWidth = w; ctx.lineJoin = 'round'; ctx.setLineDash(s.combined || s === S.sel ? [] : STYLE[s.id][1]);

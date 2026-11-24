@@ -6,8 +6,7 @@
    - the turn: the next time the tide along the leg changes sign at the mark (slack under 0.3 kn);
    - will we make it: ETA at the present speed made good, against the turn; minutes in hand or short;
    - if not: the speed needed to make it, and what a late arrival costs (the leg 30 minutes later);
-   - rivals: boats you add by name and TCC, and AIS boats you give a TCC, side by side (their AIS speed, and our polar speed scaled
-     by their TCC): when each reaches the mark, whether they make the gate, and the gain or loss on us, elapsed and corrected;
+   - (24 Nov) the window itself now works from the followed route, every mark of the course, with the Fleet boats: see render();
    - an alarm 15 minutes before the gate closes while we would miss it (on or off);
    - a strip on the deck screen, a bar along the leg and a clock ring.
    Speed made good: Route+'s VMC from the instruments, else the GPS speed towards the mark, else 5 kn, which the crew can override. */
@@ -26,7 +25,7 @@
   function tideAt(la, lo, t) { return window.__fsTideAt ? window.__fsTideAt(la, lo, t / 1000) : null; }
   /* sail a leg from A towards B at speed s (kn through the water along the leg) starting at t0 (ms): minute steps, the tide along the leg added */
   function sail(A, B, s, t0) {
-    var D = dist(A, B), b = brg(A, B), done = 0, t = t0, sumA = 0, n = 0, cap = t0 + 24 * 3600000, gotTide = false;
+    var D = dist(A, B), b = brg(A, B), done = 0, t = t0, sumA = 0, n = 0, cap = t0 + 96 * 3600000, gotTide = false;
     while (done < D && t < cap) { var f = done / D, la = A.lat + (B.lat - A.lat) * f, lo = A.lon + (B.lon - A.lon) * f, td = tideAt(la, lo, t); if (td) gotTide = true; var a = along(td, b); sumA += a; n++; done += Math.max(0.5, s + a) / 60; t += 60000; }
     return { eta: t, mins: (t - t0) / 60000, factor: n ? sumA / n : 0, pct: n && s > 0 ? 100 * (sumA / n) / s : 0, nm: D, brg: b, tide: gotTide };
   }
@@ -53,74 +52,130 @@
        plus the tide must lie along the leg, so sin(H - B) = -cross / s, the cross-tide positive to starboard of the line */
     var tdN = tideAt(here.lat, here.lon, now); if (tdN) { var bb = L1.brg * R, cross = tdN[0] * Math.cos(bb) - tdN[1] * Math.sin(bb); if (Math.abs(cross) < sp.s * 0.95) r.cts = { h: (L1.brg - Math.asin(cross / sp.s) / R + 360) % 360, cross: cross }; }
     if (P.m2) { r.L2 = sail(P.m1, P.m2, sp.s, L1.eta); r.T2 = turn(P.m2, r.L2.brg, L1.eta); }
-    r.rivals = rivals(r, o);
     return r;
-  }
-  function rivals(r, o) {
-    var tcc = window.__fsTcc ? window.__fsTcc() : 1, st = window.__fsStartAt ? window.__fsStartAt() : null, start = st ? st * 1000 : null, out = [];
-    var corr = function (eta, t) { return start ? (eta - start) / 60000 * t : null; }, ours = { eta: r.L1.eta, c: corr(r.L1.eta, tcc) };
-    var row = function (name, t, pos, sogVmc, src) {
-      var sPol = r.sp.s * t / tcc, a = sail(pos, r.m1, sPol, r.now), b = sogVmc > 0.3 ? sail(pos, r.m1, sogVmc, r.now) : null;
-      var use = b || a, made = r.T1.t ? (use.eta <= r.T1.t ? r.T1.now : r.T1.to) : r.T1.now;   /* the tide along the leg at the mark when they get there */
-      out.push({ name: name, tcc: t, src: src, etaPol: a.eta, etaAis: b ? b.eta : null, made: made, el: (use.eta - ours.eta) / 60000, co: start && ours.c != null ? corr(use.eta, t) - ours.c : null });
-    };
-    C.rivals.forEach(function (q) { if (q.tcc > 0) row(q.name, q.tcc, r.here, 0, 'here, our polar × TCC'); });
-    var ais = window.__fsAisList ? window.__fsAisList() : [];
-    ais.forEach(function (x) { var t = C.ais[x.mmsi]; if (!(t > 0)) return; var bb = brg({ lat: x.lat, lon: x.lon }, r.m1), v = x.sog != null && x.cog != null ? x.sog * Math.cos((x.cog - bb) * R) : 0; row(x.name || ('MMSI ' + x.mmsi), t, { lat: x.lat, lon: x.lon }, v, 'AIS'); });
-    [-0.05, -0.02, 0.02, 0.05].forEach(function (d) { row('Rated ' + (d > 0 ? '+' : '') + d.toFixed(2), +(tcc + d).toFixed(3), r.here, 0, 'band, here'); });
-    return out;
   }
   /* ---- drawing ---- */
   function atEta(r) { return !r.T1.t || r.L1.eta <= r.T1.t ? r.T1.now : r.T1.to; }   /* the tide at the mark when we get there */
-  function ring(r) {
-    if (!r.T1 || !r.T1.t) return ''; var tot = Math.max(r.T1.t, r.L1.eta) - r.now, f1 = (r.L1.eta - r.now) / tot, f2 = (r.T1.t - r.now) / tot, arc = function (f, rad) { var a = f * 2 * Math.PI - Math.PI / 2; return (50 + rad * Math.cos(a)).toFixed(1) + ' ' + (50 + rad * Math.sin(a)).toFixed(1); };
-    return '<svg viewBox="0 0 100 100" width="96" height="96" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--line)" stroke-width="8"/><path d="M50 10 A40 40 0 ' + (f2 > 0.5 ? 1 : 0) + ' 1 ' + arc(Math.min(f2, 0.999), 40) + '" fill="none" stroke="' + (atEta(r) === 'foul' ? '#dc2626' : '#16a34a') + '" stroke-width="8"/><circle cx="' + arc(f1, 40).split(' ')[0] + '" cy="' + arc(f1, 40).split(' ')[1] + '" r="6" fill="var(--ink)"/><text x="50" y="47" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">' + (r.margin >= 0 ? '+' : '') + Math.round(r.margin) + '</text><text x="50" y="61" text-anchor="middle" font-size="9" fill="currentColor">min</text></svg>';
-  }
-  function bar(r) {
-    if (!r.T1 || !r.T1.t) return ''; var D = r.L1.nm, at = Math.min(1, Math.max(0, (r.T1.t - r.now) / (r.L1.eta - r.now)));
-    return '<svg viewBox="0 0 300 30" width="100%" height="30" aria-label="The leg: the boat, where she will be when the tide turns, and the mark"><line x1="10" x2="290" y1="15" y2="15" stroke="var(--line)" stroke-width="6" stroke-linecap="round"/><line x1="10" x2="' + (10 + 280 * at) + '" y1="15" y2="15" stroke="' + (r.T1.now === 'fair' ? '#16a34a' : '#dc2626') + '" stroke-width="6" stroke-linecap="round"/><circle cx="10" cy="15" r="6" fill="var(--ink)"/><line x1="' + (10 + 280 * at) + '" x2="' + (10 + 280 * at) + '" y1="3" y2="27" stroke="#f59e0b" stroke-width="3"/><path d="M286 5 L296 15 L286 25z" fill="var(--ink)"/></svg><small>' + (at < 1 ? 'The tide turns ' + (D * at).toFixed(1) + ' nm along, ' + (D * (1 - at)).toFixed(1) + ' nm short of the mark.' : 'The boat reaches the mark before the tide turns.') + '</small>';
-  }
   function verdict(r) {
     if (!r.T1.t) return 'Tide along the leg ' + r.T1.now + ', no turn in the next 12 hours.';
     var foulNow = r.T1.now === 'foul';
     if (foulNow) return 'Foul now; it turns fair at ' + hm(r.T1.t) + ' (in ' + mins((r.T1.t - r.now) / 60000) + '). ETA ' + hm(r.L1.eta) + ': ' + (r.margin < 0 ? 'the tide will have turned before you arrive.' : 'still foul when you arrive.');
     return r.margin >= 0 ? 'Gate: the tide at the mark turns ' + r.T1.to + ' at ' + hm(r.T1.t) + '. ETA ' + hm(r.L1.eta) + ': ' + mins(r.margin) + ' in hand.' : 'Gate: the tide at the mark turns ' + r.T1.to + ' at ' + hm(r.T1.t) + '. ETA ' + hm(r.L1.eta) + ': ' + mins(-r.margin) + ' short.';
   }
-  function render() {
-    var p = $('tgPop'); if (!p || p.hidden) return; var r = work();
-    if (r.why) { p.querySelector('.tgb').innerHTML = '<p>' + esc(r.why) + '</p>'; return; }
-    var L1 = r.L1, h = '<div class="tgtop">' + ring(r) + '<div><b>' + esc(r.m1.name || 'Next mark') + '</b><span>' + L1.nm.toFixed(1) + ' nm, ' + ('00' + Math.round(L1.brg)).slice(-3) + '°T, ' + mins(L1.mins) + ' at ' + r.sp.s.toFixed(1) + ' kn (' + r.sp.src + ')</span><span>Tide along the leg: ' + (L1.factor >= 0 ? '+' : '') + L1.factor.toFixed(1) + ' kn, ' + (L1.pct >= 0 ? '+' : '') + Math.round(L1.pct) + '% of boat speed</span></div></div>' +
-      '<p class="tgv ' + (r.margin >= 0 || r.T1.now === 'foul' ? 'ok' : 'bad') + '">' + verdict(r) + '</p>' + bar(r);
-    if (r.cts && Math.abs(r.cts.cross) >= 0.1) h += '<p class="tgn"><b>Steer ' + ('00' + Math.round(r.cts.h)).slice(-3) + '°T</b> to hold the line to the mark: the tide here sets ' + Math.abs(r.cts.cross).toFixed(1) + ' kn to ' + (r.cts.cross > 0 ? 'starboard' : 'port') + ' of it. On a beat or a run, take the tack or gybe that keeps you in the fairer tide.</p>';
-    if (r.need) h += '<p class="tgv bad">To make it: ' + r.need.toFixed(1) + ' kn speed made good, now ' + r.sp.s.toFixed(1) + ': ' + (r.need - r.sp.s).toFixed(1) + ' kn more.</p>';
-    else if (r.margin < 0 && r.T1.now === 'fair') h += '<p class="tgv bad">Not reachable before the turn at any speed.</p>';
-    h += '<p class="tgn">Arriving 30 minutes later would take ' + (r.late >= 0 ? mins(r.late) + ' longer' : mins(-r.late) + ' less') + ' on this leg.</p>';
-    if (r.L2) h += '<h4>Next leg: ' + esc(r.m2.name || 'mark') + '</h4><p class="tgn">' + r.L2.nm.toFixed(1) + ' nm, ' + mins(r.L2.mins) + ', tide along ' + (r.L2.factor >= 0 ? '+' : '') + r.L2.factor.toFixed(1) + ' kn (' + Math.round(r.L2.pct) + '%). ' + (r.T2 && r.T2.t ? 'At that mark the tide turns ' + r.T2.to + ' at ' + hm(r.T2.t) + ', ETA ' + hm(r.L2.eta) + ' (' + mins(Math.abs(r.T2.t - r.L2.eta) / 60000) + (r.T2.t >= r.L2.eta ? ' in hand' : ' after the turn') + ').' : 'No turn there in the next 12 hours.') + '</p>';
-    h += '<h4>Rivals at the mark</h4><div class="tgtw"><table class="tgt"><tr><th>Boat</th><th>TCC</th><th>ETA</th><th>Tide there</th><th>Elapsed</th><th>Corrected</th></tr>' + r.rivals.map(function (q) { return '<tr><td>' + esc(q.name) + '<small>' + esc(q.src) + '</small></td><td>' + q.tcc.toFixed(3) + '</td><td>' + hm(q.etaAis || q.etaPol) + (q.etaAis ? '<small>polar ' + hm(q.etaPol) + '</small>' : '') + '</td><td>' + esc(q.made || '--') + '</td><td>' + (q.el >= 0 ? '+' : '') + Math.round(q.el) + ' min</td><td>' + (q.co == null ? '--' : (q.co >= 0 ? '+' : '') + Math.round(q.co) + ' min') + '</td></tr>'; }).join('') + '</table></div><p class="tgn">+ means they reach the mark after us (we gain); corrected uses the start time and each TCC. Bands and typed boats are placed where we are now.</p>' +
-      '<div class="tgadd"><input id="tgName" placeholder="Boat name" maxlength="30"><input id="tgTcc" type="number" step="0.001" min="0.8" max="1.8" placeholder="TCC"><button class="btn" id="tgAdd">Add</button></div><details class="tgn"><summary>Paste an entry list</summary><textarea id="tgList" rows="4" style="width:100%;margin-top:4px" placeholder="One boat a line with its TCC, for example: Jolly Jack 1.012 (copied from the published entry list)"></textarea><button class="btn" id="tgListGo">Add these boats</button><span id="tgListN"></span></details>' + (C.rivals.length ? '<p class="tgn">' + C.rivals.map(function (q, i) { return esc(q.name) + ' ' + q.tcc.toFixed(3) + ' <button class="linkbtn" data-rm="' + i + '">remove</button>'; }).join(' · ') + '</p>' : '') + aisRows() +
-      '<div class="tgset"><label>Our speed made good <input id="tgSpd" type="number" step="0.1" min="0" max="30" value="' + (C.spd || '') + '" placeholder="' + r.sp.s.toFixed(1) + '" style="width:70px"> kn (blank: VMC or SOG)</label><label><input type="checkbox" id="tgAlarm"' + (C.alarm ? ' checked' : '') + '> Alarm 15 minutes before the gate closes while we would miss it</label></div>';
-    p.querySelector('.tgb').innerHTML = h; wire(p);
+  /* ---- the tide gates window (Stuart 24 Nov 11:38 to 12:14; mock-ups 3 and 4 in docs/) ----
+     Times come from the followed route: the time the boat rounds each mark sailing at its polars in the forecast wind and tide.
+     At each mark: the tide along the leg in and along the leg out, fair (with you, 0.3 kn or more), foul (against) or slack (under
+     0.3 kn), from 3 h before our ETA to 3 h after. Rivals: the Fleet boats, each sailed along our route on our polar x its TCC from its
+     own start (the app's fleet ghosts); the nearest five on corrected time at the mark. With no route, it asks for one. */
+  var OPEN = {}, HW = 3;
+  function dayHm(ms) { var d = new Date(ms), n = new Date(); return (d.toDateString() === n.toDateString() ? '' : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ') + hm(ms); }
+  function state(a) { return a >= SLACK ? 'fair' : a <= -SLACK ? 'foul' : 'slack'; }
+  function legsPlan(d) {
+    var p = d.path, ts = d.ts, n = p.length, nowH = (Date.now() / 1000 - d.T0) / 3600, k = 0;
+    while (k < n - 1 && ts[k + 1] <= nowH) k++;
+    var cur = p[k].leg || 0, round = [];   /* round[L]: the path index where leg L ends (the mark is rounded) */
+    for (var i = 1; i < n; i++) { var lg = p[i].leg || 0, lp = p[i - 1].leg || 0; if (lg > lp) for (var L = lp; L < lg; L++) round[L] = i; }
+    round[d.legs.length - 1] = n - 1;
+    var origin = d.from || d.start, out = [];
+    for (var L2 = 0; L2 < d.legs.length; L2++) {
+      var m = d.legs[L2], prev = L2 ? d.legs[L2 - 1] : origin, next = d.legs[L2 + 1] || null, ri = round[L2];
+      if (ri == null || L2 < cur) continue;
+      out.push({ L: L2, m: m, ri: ri, eta: d.T0 * 1000 + ts[ri] * 3600000, bIn: prev ? brg(prev, m) : null, bOut: next ? brg(m, next) : null, next: next, nextRi: next ? round[L2 + 1] : null });
+    }
+    return { legs: out, nowH: nowH, k: k };
   }
-  function aisRows() { var a = window.__fsAisList ? window.__fsAisList().slice(0, 12) : []; if (!a.length) return ''; return '<p class="tgn">AIS boats: give one a TCC to put it in the table.</p>' + a.map(function (x) { return '<div class="tgadd"><span>' + esc(x.name || 'MMSI ' + x.mmsi) + '</span><input type="number" step="0.001" min="0.8" max="1.8" data-ais="' + x.mmsi + '" value="' + (C.ais[x.mmsi] || '') + '" placeholder="TCC"></div>'; }).join(''); }
+  function bandsAt(m, b, t0, t1) { var a = [], st = null, s0 = t0; if (b == null) return a; for (var t = t0; t <= t1 + 1; t += 300000) { var v = state(along(tideAt(m.lat, m.lon, Math.min(t, t1)), b)); if (st !== v) { if (st) a.push([s0, t, st]); st = v; s0 = t; } } if (st) a.push([s0, t1, st]); return a; }
+  function stAt(B, t) { for (var i = 0; i < B.length; i++) if (t >= B[i][0] && t <= B[i][1]) return B[i]; return null; }
+  function gateLine(g) {
+    var B = g.bandsIn, at = stAt(B, g.eta), s1 = at ? at[2] : 'slack', h = 'Arrive ' + dayHm(g.eta) + ': ' + s1 + ' on the leg in';
+    if (at && at[1] < g.eta + HW * 3600000 - 1) { var nx = stAt(B, at[1] + 1); if (nx) h += '; it turns ' + nx[2] + ' at ' + hm(at[1]) + ', ' + mins((at[1] - g.eta) / 60000) + ' after you'; }
+    if (g.bOut != null) { var o = stAt(g.bandsOut, g.eta); if (o) h += '. ' + o[2].charAt(0).toUpperCase() + o[2].slice(1) + ' on the leg out' + (o[1] < g.eta + HW * 3600000 - 1 ? ' until ' + hm(o[1]) : ''); }
+    return { text: h + '.', cls: s1 === 'foul' ? 'bad' : s1 === 'fair' ? 'ok' : '' };
+  }
+  var BOAT = function (x, y, f, k) { return '<path transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + k + ')" d="M0 -9 C5 -4 5 4 3 8 L-3 8 C-5 4 -5 -4 0 -9z" fill="' + f + '" stroke="#0b1626" stroke-width="1.2"/>'; };
+  function chart(g, rv, big) {
+    var W = 340, L0 = 34, t0 = g.eta - HW * 3600000, t1 = g.eta + HW * 3600000, X = function (t) { return L0 + (t - t0) / (t1 - t0) * (W - L0 - 6); };
+    var top = big ? 40 : 22, hh = big ? 16 : 12, gap = 3, H = top + 2 * hh + gap + 22, s = '<svg class="tgsv" viewBox="0 0 ' + W + ' ' + (H + 12) + '" data-t0="' + t0 + '" data-t1="' + t1 + '" data-l0="' + L0 + '">';
+    s += '<defs><pattern id="tgH' + g.L + '" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#000" stroke-opacity=".35" stroke-width="2"/></pattern></defs>';
+    var band = function (B, y) { B.forEach(function (q) { var x1 = X(q[0]), w = Math.max(1, X(q[1]) - x1 - 1), c = q[2] === 'fair' ? '#16a34a' : q[2] === 'foul' ? '#dc2626' : '#64748b'; s += '<rect x="' + x1.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="' + hh + '" rx="2" fill="' + c + '"/>'; if (q[2] === 'foul') s += '<rect x="' + x1.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="' + hh + '" rx="2" fill="url(#tgH' + g.L + ')"/>'; if (w > 40 && q[2] !== 'slack') s += '<text x="' + (x1 + w / 2).toFixed(1) + '" y="' + (y + hh / 2 + 4) + '" fill="#fff" font-size="10.5" font-weight="700" text-anchor="middle">' + (q[2] === 'fair' ? 'FAIR ›' : '‹ FOUL') + '</text>'; }); };
+    s += '<text x="0" y="' + (top + hh - 4) + '" fill="currentColor" font-size="10.5" font-weight="700">IN</text>'; band(g.bandsIn, top);
+    if (g.bOut != null) { s += '<text x="0" y="' + (top + 2 * hh + gap - 4) + '" fill="currentColor" font-size="10.5" font-weight="700">OUT</text>'; band(g.bandsOut, top + hh + gap); }
+    /* boats within 12 px of each other share one boat and one label ('A B C'), so letters never sit on top of each other */
+    var cl = []; rv.filter(function (r) { return r.at != null && r.tm >= t0 && r.tm <= t1; }).sort(function (a, b) { return a.tm - b.tm; }).forEach(function (r) { var x = X(r.tm), g0 = cl[cl.length - 1]; if (g0 && x - g0.x1 < 12) { g0.ids.push(r.id); g0.x1 = x; } else cl.push({ x: x, x1: x, ids: [r.id] }); });
+    cl.forEach(function (g0, k) { var x = (g0.x + g0.x1) / 2, ly = big ? top - 4 - (k % 2) * 13 : top - 6; s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (ly + 2) + '" y2="' + (top + 2 * hh + gap) + '" stroke="currentColor" stroke-width="1" opacity=".55"/>' + BOAT(x, ly - 4, '#cbd5e1', big ? 0.75 : 0.6); if (big) s += '<text x="' + (x + 6).toFixed(1) + '" y="' + (ly - 2) + '" fill="currentColor" font-size="10" font-weight="700">' + g0.ids.join(' ') + '</text>'; });
+    var x = X(g.eta), yb = top + 2 * hh + gap + 11; s += '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (top - 2) + '" y2="' + (yb - 6) + '" stroke="#facc15" stroke-width="2"/>' + BOAT(x, yb, '#facc15', big ? 1 : 0.8) + '<text x="' + (x + 8).toFixed(1) + '" y="' + (yb + 4) + '" fill="#ca8a04" font-size="10.5" font-weight="800">YOU</text>';
+    for (var hr = Math.ceil(t0 / 3600000) * 3600000; hr <= t1; hr += 3600000) { if (Math.abs(X(hr) - x) < 14) continue; if (((hr / 3600000) % 2) && HW >= 3) continue; s += '<text x="' + X(hr).toFixed(1) + '" y="' + (H + 10) + '" fill="currentColor" opacity=".7" font-size="10" text-anchor="middle">' + hm(hr) + '</text>'; }
+    if (big) s += '<line class="tgcur" x1="-9" x2="-9" y1="' + (top - 34) + '" y2="' + (top + 2 * hh + gap + 4) + '" stroke="#60a5fa" stroke-width="2" stroke-dasharray="3 2"/>';
+    return s + '</svg>';
+  }
+  function overview(gs) {
+    if (gs.length < 2) return ''; var W = 340, a = Date.now(), b = gs[gs.length - 1].eta, Lm = 14, Y = 40, X = function (t) { return Lm + (t - a) / (b - a || 1) * (W - 30); };
+    var s = '<div class="tgovt">The race from here</div><svg class="tgov" viewBox="0 0 ' + W + ' 84"><defs><pattern id="tgHo" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="#000" stroke-opacity=".35" stroke-width="2"/></pattern></defs><line x1="' + X(a) + '" x2="' + X(b) + '" y1="' + Y + '" y2="' + Y + '" stroke="currentColor" opacity=".25" stroke-width="6" stroke-linecap="round"/>';
+    var EU = -99, ED = 30;   /* the right edge of the last label above and below the line (NOW sits below at the left) */
+    gs.forEach(function (g, i) { var at = stAt(g.bandsIn, g.eta), c = at ? at[2] : 'slack', col = c === 'fair' ? '#16a34a' : c === 'foul' ? '#dc2626' : '#64748b', x = X(g.eta), up = i % 2 === 0, last = i === gs.length - 1, an = last ? 'end' : 'middle', tx = last ? x + 11 : x;
+      s += '<g class="tgovm" data-l="' + g.L + '" style="cursor:pointer"><circle cx="' + x.toFixed(1) + '" cy="' + Y + '" r="11" fill="' + col + '" stroke="#e6edf6" stroke-width="1.5"/>' + (c === 'foul' ? '<circle cx="' + x.toFixed(1) + '" cy="' + Y + '" r="11" fill="url(#tgHo)"/>' : '') + '<text x="' + x.toFixed(1) + '" y="' + (Y + 4) + '" fill="#fff" font-size="12" font-weight="800" text-anchor="middle">' + (c === 'fair' ? '›' : c === 'foul' ? '‹' : '–') + '</text>';
+      var nm = short(g.m.name), tl = dayHm(g.eta) + ' \u00b7 ' + c, wd = Math.max(nm.length * 6, tl.length * 5.2), lo = last ? x + 11 - wd : x - wd / 2, hi = lo + wd, side = null;
+      [up, !up].some(function (u) { if (lo > (u ? EU : ED) + 4) { side = u; return true; } return false; });
+      if (side === null) { side = up; tl = ''; } if (side) EU = hi; else ED = hi;
+      s += '<text x="' + tx.toFixed(1) + '" y="' + (side ? 12 : Y + 28) + '" fill="currentColor" font-size="10.5" font-weight="700" text-anchor="' + an + '">' + esc(nm) + '</text>' + (tl ? '<text x="' + tx.toFixed(1) + '" y="' + (side ? 24 : Y + 40) + '" fill="currentColor" opacity=".7" font-size="10" text-anchor="' + an + '">' + tl + '</text>' : '') + '</g>'; });
+    s += BOAT(X(a), Y, '#facc15', 1).replace('scale(1)', 'scale(1) rotate(90)') + '<text x="' + (X(a) - 8) + '" y="' + (Y + 28) + '" fill="#ca8a04" font-size="10" font-weight="800">NOW</text></svg>';
+    return s + '<p class="tgn">Each mark shows the tide on the leg in when you get there. Tap a mark for its chart.</p>';
+  }
+  function short(n) { n = String(n || 'Mark'); if (/^Finish/.test(n)) return 'Finish'; n = n.split(',')[0].replace(/\s+(buoy|mark)$/i, ''); return n.length > 13 ? n.slice(0, 12) + '\u2026' : n; }
+  function rivalsAt(d, g) {
+    var ts = d.ts, me0 = d.start ? d.start.t : ts[0], tcc = d.tcc, cor = function (t, s0, k) { return (t - s0) * k * 60; };
+    var meAt = cor(ts[g.ri], me0, tcc), meNx = g.nextRi != null ? cor(ts[g.nextRi], me0, tcc) : null;
+    return d.ghosts.map(function (b) { var s0 = b.ts[0], at = cor(b.ts[g.ri], s0, b.tcc) - meAt, nx = meNx != null ? cor(b.ts[g.nextRi], s0, b.tcc) - meNx : null; return { name: b.name, tcc: b.tcc, tm: d.T0 * 1000 + b.ts[g.ri] * 3600000, at: at, nx: nx, gain: nx != null ? nx - at : null }; })
+      .filter(function (r) { return isFinite(r.at); }).sort(function (a, b) { return Math.abs(a.at) - Math.abs(b.at); });
+  }
+  function sgn(v) { v = Math.round(v); return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v); }
+  function render() {
+    var p = $('tgPop'); if (!p || p.hidden) return; var bx = p.querySelector('.tgb'), d = window.__fsTgData ? window.__fsTgData() : null;
+    if (!d || !d.legs.length) { bx.innerHTML = '<p>The tide gates use your route: the time you reach each mark, sailing at your polars in the forecast wind and tide.</p><p><button class="btn tgroute" type="button" id="tgRoute">Route now</button></p>'; var rb = $('tgRoute'); if (rb) rb.onclick = function () { if (window.__fsRouteNow) window.__fsRouteNow(); }; return; }
+    if (!window.__fsTideAt || !window.__fsTideAt(d.legs[0].lat, d.legs[0].lon, Date.now() / 1000)) { bx.innerHTML = '<p>No tide model here: choose one in Settings, Forecasts (Tide).</p>'; return; }
+    var P = legsPlan(d); if (!P.legs.length) { bx.innerHTML = '<p>The route has no marks left to reach.</p>'; return; }
+    P.legs.forEach(function (g) { g.bandsIn = bandsAt(g.m, g.bIn, g.eta - HW * 3600000, g.eta + HW * 3600000); g.bandsOut = bandsAt(g.m, g.bOut, g.eta - HW * 3600000, g.eta + HW * 3600000); });
+    var h = '<p class="tgn">Following: ' + esc(d.name || 'your route') + '</p>';
+    if (d.live && (d.live.d >= 0.2 || Math.abs(d.live.ahead) >= 5)) h += '<div class="tgoff"><div><b>Off the plan:</b> ' + d.live.d.toFixed(1) + ' nm ' + esc(d.live.side || '') + ' of the route, ' + mins(Math.abs(d.live.ahead)) + (d.live.ahead < 0 ? ' behind' : ' ahead of') + ' it. The times below are from the route.</div><button class="btn" type="button" id="tgRe">Reroute from here</button></div>';
+    h += overview(P.legs);
+    P.legs.forEach(function (g, i) {
+      var open = i < 2 || OPEN[g.L], rv = rivalsAt(d, g).slice(0, 5); rv.forEach(function (r, k) { r.id = 'ABCDE'.charAt(k); });
+      if (!open) { var at = stAt(g.bandsIn, g.eta); h += '<button type="button" class="tgfold" data-l="' + g.L + '"><span>' + esc(g.m.name) + ' · ' + (at ? at[2] : 'slack') + ' in</span><span>ETA ' + dayHm(g.eta) + ' ›</span></button>'; return; }
+      var v = gateLine(g); h += '<div class="tgmk' + (i ? '' : ' next') + '" data-l="' + g.L + '"><div class="tgt1"><b>' + (i ? 'Then ' : 'Next: ') + esc(g.m.name) + '</b><span>ETA ' + dayHm(g.eta) + '</span></div><p class="tgv ' + v.cls + '">' + v.text + '</p>' + chart(g, rv, !i);
+      if (!i) h += '<div class="tgtip" id="tgTip">Put a finger or the mouse on the chart for the time, the distance to the mark and the tide.</div><p class="tgn"><b>IN</b>: the tide along your leg to this mark. <b>OUT</b>: along the next leg, after you round. <b>FAIR</b> with you, <b>FOUL</b> against (hatched), grey <b>slack</b>: under 0.3 kn along the leg, about to turn. Lettered boats are in the table. The chart runs 3 hours either side of your ETA.</p>';
+      if (!i) { if (rv.length) { h += '<div class="tgtw"><table class="tgt"><tr><th>Boat</th><th>ETA</th><th class="r">At mark</th>' + (g.bOut != null ? '<th class="r">After next leg</th><th class="r">You gain</th>' : '') + '</tr>' + rv.map(function (r) { return '<tr><td><span class="tgbd">' + r.id + '</span>' + esc(r.name) + '<small>TCC ' + r.tcc.toFixed(3) + '</small></td><td>' + dayHm(r.tm) + '</td><td class="r">' + sgn(r.at) + ' min</td>' + (g.bOut != null ? '<td class="r">' + (r.nx != null ? sgn(r.nx) + ' min' : '--') + '</td><td class="r ' + (r.gain > 0.5 ? 'ok' : r.gain < -0.5 ? 'bad' : '') + '">' + (r.gain != null ? sgn(r.gain) : '--') + '</td>' : '') + '</tr>'; }).join('') + '</table></div>';
+          var more = d.ghosts.length - rv.length; h += (more > 0 ? '<button type="button" class="tglink" id="tgFleet">' + more + ' more boat' + (more > 1 ? 's' : '') + ' on the Fleet page ›</button>' : '') + '<p class="tgn">Corrected time against you: − ahead of you, + behind. At mark: when each rounds. After next leg: once both have sailed the leg out, each in the tide it meets. You gain: the change between the two, + you gain on that boat, − you lose; mostly the tide, and the forecast wind at their different times. Each boat sails your route on your polar × its TCC from its own start.</p>'; }
+        else h += '<p class="tgn">No boats to compare: add the boats you are racing on the Fleet page. <button type="button" class="tglink" id="tgFleet">Fleet ›</button></p>'; }
+      h += '</div>';
+    });
+    h += '<div class="tgset"><label><input type="checkbox" id="tgAlarm"' + (C.alarm ? ' checked' : '') + '> Alarm 15 minutes before the gate closes while we would miss it</label></div>';
+    bx.innerHTML = h; wire(p, d, P);
+  }
+  function wire(p, d, P) {
+    var re = $('tgRe'); if (re) re.onclick = function () { if (window.__fsLiveReroute && !window.__fsLiveReroute()) alarm('Reroute needs the boat position: Live GPS or the boat link.'); };
+    var fl = $('tgFleet'); if (fl) fl.onclick = function () { open(false); if (window.__fsFleetOpen) window.__fsFleetOpen(); };
+    [].forEach.call(p.querySelectorAll('.tgfold,.tgovm'), function (b) { b.onclick = function () { OPEN[b.getAttribute('data-l')] = 1; render(); var e = p.querySelector('.tgmk[data-l="' + b.getAttribute('data-l') + '"]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); }; });
+    var al = $('tgAlarm'); if (al) al.onchange = function () { C.alarm = al.checked; save(); };
+    var sv = p.querySelector('.tgmk.next .tgsv'), tip = $('tgTip'); if (!sv || !tip) return; var g = P.legs[0];
+    var move = function (e) { var r = sv.getBoundingClientRect(), pt = e.touches ? e.touches[0] : e, vb = sv.viewBox.baseVal, xv = (pt.clientX - r.left) / r.width * vb.width, l0 = +sv.dataset.l0, t0 = +sv.dataset.t0, t1 = +sv.dataset.t1;
+      if (xv < l0) return; var t = t0 + (xv - l0) / (vb.width - l0 - 6) * (t1 - t0), c = sv.querySelector('.tgcur'); if (c) { c.setAttribute('x1', xv); c.setAttribute('x2', xv); }
+      var th = (t / 1000 - d.T0) / 3600, ts = d.ts, i = 0; while (i < ts.length - 2 && ts[i + 1] < th) i++; var f = Math.max(0, Math.min(1, (th - ts[i]) / ((ts[i + 1] - ts[i]) || 1))), q = d.path[i], q2 = d.path[i + 1] || q, pos = { lat: q.la + (q2.la - q.la) * f, lon: q.lo + (q2.lo - q.lo) * f };
+      var ti = along(tideAt(g.m.lat, g.m.lon, t), g.bIn), to = g.bOut != null ? along(tideAt(g.m.lat, g.m.lon, t), g.bOut) : null, left = (g.eta - t) / 60000;
+      tip.innerHTML = '<b>' + dayHm(t) + '</b> · ' + (left > 0 ? '<b>DTW ' + dist(pos, g.m).toFixed(1) + ' nm</b> · ' + mins(left) + ' to the mark' : 'past the mark by ' + mins(-left)) + ' · at the mark: IN ' + state(ti) + ' ' + Math.abs(ti).toFixed(1) + ' kn' + (to != null ? ' · OUT ' + state(to) + ' ' + Math.abs(to).toFixed(1) + ' kn' : ''); };
+    sv.addEventListener('mousemove', move); sv.addEventListener('touchstart', move, { passive: true }); sv.addEventListener('touchmove', move, { passive: true }); sv.addEventListener('click', move);
+  }
   /* a pasted entry list: each line with a TCC (0.800 to 1.800); the name is the rest of the line, sail numbers and classes kept as written */
   function parseList(t) { var out = []; String(t || '').split(/\r?\n/).forEach(function (l) { var m = l.match(/(^|[\s,;\t])([01]\.\d{3})(?=$|[\s,;\t])/); if (!m) return; var v = +m[2]; if (!(v >= 0.8 && v <= 1.8)) return; var n = (l.slice(0, m.index) + ' ' + l.slice(m.index + m[0].length)).replace(/[\t,;]+/g, ' ').replace(/\s+/g, ' ').trim(); if (n) out.push({ name: n.slice(0, 40), tcc: v }); }); return out; }
-  function wire(p) {
-    var lg = $('tgListGo'); if (lg) lg.onclick = function () { var a = parseList($('tgList').value), have = {}; C.rivals.forEach(function (q) { have[q.name.toLowerCase()] = 1; }); var n = 0; a.forEach(function (q) { if (have[q.name.toLowerCase()]) return; C.rivals.push(q); n++; }); save(); render(); var e = $('tgListN'); if (e) e.textContent = ' ' + n + ' added.'; };
-    var a = $('tgAdd'); if (a) a.onclick = function () { var n = $('tgName').value.trim(), t = +$('tgTcc').value; if (!n || !(t > 0.5)) return; C.rivals.push({ name: n, tcc: t }); save(); render(); };
-    [].forEach.call(p.querySelectorAll('[data-rm]'), function (b) { b.onclick = function () { C.rivals.splice(+b.dataset.rm, 1); save(); render(); }; });
-    [].forEach.call(p.querySelectorAll('[data-ais]'), function (i) { i.onchange = function () { var v = +i.value; if (v > 0) C.ais[i.dataset.ais] = v; else delete C.ais[i.dataset.ais]; save(); render(); }; });
-    var s = $('tgSpd'); if (s) s.onchange = function () { C.spd = +s.value > 0 ? +s.value : 0; save(); render(); };
-    var al = $('tgAlarm'); if (al) al.onchange = function () { C.alarm = al.checked; save(); };
-  }
   function css() { if ($('tgCss')) return; var s = document.createElement('style'); s.id = 'tgCss';
-    s.textContent = '.tgpop{position:absolute;left:max(8px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 58px);z-index:9;width:min(calc(100% - 16px),440px);max-height:calc(100% - 130px);overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:13px}.tgpop[hidden]{display:none}.tgpop h3{margin:0 0 6px;font-size:16px}.tgpop h4{margin:10px 0 4px;font-size:13px}.tgpop .close{position:absolute;right:8px;top:6px}' +
+    s.textContent = '.tgpop{position:fixed;left:max(8px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 58px);z-index:30;width:min(calc(100vw - 16px),440px);max-height:calc(100vh - 140px);max-height:calc(100dvh - 140px);overscroll-behavior:contain;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:13px}.tgpop[hidden]{display:none}.tgpop h3{margin:0 0 6px;font-size:16px}.tgpop h4{margin:10px 0 4px;font-size:13px}.tgpop .close{position:absolute;right:8px;top:6px}' +
       '.tgtop{display:flex;gap:12px;align-items:center}.tgtop div{display:flex;flex-direction:column;gap:2px}.tgtop span{font-size:12px;color:var(--muted)}.tgv{margin:8px 0 4px;font-weight:600}.tgv.ok{color:#16a34a}.tgv.bad{color:#dc2626}.tgn{margin:4px 0;font-size:12px;color:var(--muted)}' +
       '.tgtw{overflow-x:auto}.tgt{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}.tgt th{text-align:left;color:var(--muted);font-weight:600;padding:2px 6px 2px 0}.tgt td{padding:3px 6px 3px 0;border-top:1px solid var(--line);vertical-align:top}.tgt small{display:block;color:var(--muted);font-size:10px}' +
       '.tgadd{display:flex;gap:6px;align-items:center;margin:4px 0}.tgadd input{min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:0 8px;min-width:0}.tgadd input:first-child{flex:1}.tgadd span{flex:1}.tgset{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:12px}' +
+      '.tgsv,.tgov{width:100%;display:block;margin:4px 0;touch-action:pan-y}.tgovt{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:8px}.tgoff{display:flex;gap:8px;align-items:center;border:1px solid #dc2626;border-radius:10px;padding:8px;margin:6px 0;font-size:12px}.tgoff b{color:#dc2626}.tgmk{border-top:1px solid var(--line);padding:8px 0 4px}.tgt1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.tgt1 b{font-size:14px}.tgmk.next .tgt1 b{font-size:16px}.tgt1 span{color:var(--muted);font-size:12px;white-space:nowrap}.tgtip{border:1px solid #60a5fa;border-radius:10px;padding:6px 8px;font-size:12px;margin:2px 0 6px}.tgbd{display:inline-block;width:16px;height:16px;border-radius:50%;background:#cbd5e1;color:#0b1626;font:700 11px system-ui,sans-serif;text-align:center;line-height:16px;margin-right:5px}.tgt td.r,.tgt th.r{text-align:right}.tgt td.ok{color:#16a34a}.tgt td.bad{color:#dc2626}.tgfold{display:flex;justify-content:space-between;gap:8px;width:100%;background:none;border:0;border-top:1px solid var(--line);color:var(--muted);font:inherit;font-size:12px;padding:8px 0;text-align:left;cursor:pointer;min-height:40px}.tglink{background:none;border:0;color:#3b82f6;font:inherit;font-size:13px;padding:6px 0;cursor:pointer;min-height:36px}' +
       '.tgstrip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);z-index:6;background:var(--glass,var(--panel));color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:4px 12px;font:700 12px var(--f-data);white-space:nowrap;cursor:pointer}.tgstrip[hidden]{display:none}.tgstrip.bad{border-color:#dc2626;color:#dc2626}.tgstrip.ok{border-color:#16a34a}';
     document.head.appendChild(s); }
   function open(show) {
-    css(); var p = $('tgPop'); if (!p) { p = document.createElement('div'); p.id = 'tgPop'; p.className = 'tgpop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Tide gate'); p.innerHTML = '<button class="close" type="button" aria-label="Close the tide gate">×</button><h3>Tide gate</h3><div class="tgb"></div>'; (document.querySelector('.app>.chart') || document.body).appendChild(p); p.querySelector('.close').onclick = function () { open(false); }; p.hidden = true; }
+    css(); var p = $('tgPop'); if (!p) { p = document.createElement('div'); p.id = 'tgPop'; p.className = 'tgpop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Tide gates'); p.innerHTML = '<button class="close" type="button" aria-label="Close the tide gates">×</button><h3>Tide gates</h3><div class="tgb"></div>'; (document.querySelector('.app>.chart') || document.body).appendChild(p); p.querySelector('.close').onclick = function () { open(false); }; p.hidden = true; }
     var on = show == null ? p.hidden : !!show; p.hidden = !on; var b = $('tgBtn'); if (b) b.setAttribute('aria-pressed', String(on)); var b2 = $('tgBtnData'); if (b2) b2.setAttribute('aria-pressed', String(on)); if (on) render();
   }
   /* the strip on the deck screen, and the alarm */
@@ -156,7 +211,9 @@
     d.insertBefore(b, d.firstChild);
   }
   function clearProg() { var st = $('tgStrip'); if (!st || st.hidden) return; st.style.bottom = ''; var pg = $('prog'); if (pg && !pg.hidden && pg.getClientRects().length) { var a = pg.getBoundingClientRect(), b = st.getBoundingClientRect(); if (a.width && !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom)) st.style.bottom = Math.round((parseFloat(getComputedStyle(st).bottom) || 0) + b.bottom - a.top + 6) + 'px'; } }   /* raised by the overlap, in the strip's own frame */
-  function init() { if (!button()) return setTimeout(init, 1000); setInterval(tick, 30000); setInterval(clearProg, 2000); }
+  /* the tide gate's own boat list (before 24 Nov) moves into the Fleet page once: one list of boats (Stuart 24 Nov 11:38) */
+  function migrate() { if (!C.rivals.length || !window.__fsFleetAdd) return; C.rivals.forEach(function (q) { try { window.__fsFleetAdd(q.name, q.tcc); } catch (e) {} }); C.rivals = []; save(); }
+  function init() { if (!button()) return setTimeout(init, 1000); setTimeout(migrate, 3000); setInterval(tick, 30000); setInterval(clearProg, 2000); }
   window.FSTideGate = { parseList: parseList, open: open, work: work, sail: sail, turn: turn, need: need, C: C, tick: tick, along: along };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else setTimeout(init, 500);
 })();
