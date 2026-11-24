@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.112';
+  var VERSION = 'FirstShift Route v0.12.113';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -391,7 +391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.112 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.113 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -3005,7 +3005,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (quick) Object.assign(base, { dt: 1200, hstep: 10, sectors: 180, fine: false });   /* quick first pass: about a sixth of the work; the sectors stay coarse near marks too (fine: false, speed plan 1, Stuart 20 Nov 06:45): the first route is always replaced by the refined one, which keeps E2's full search */
       var sets = ms.map(function (m) { return { id: m, name: layer(m).name, models: [m] }; });
       if (ms.length > 1) sets.push({ id: 'all', name: 'Combined (' + ms.length + ' models)', models: ms, combined: true });
-      var FINE = ['ukv', 'arome', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends */
+      var FINE = ['arome', 'ukv', 'icon', 'arpege', 'ecmwf', 'mog', 'om', 'gfs', 'aifs'], chain = FINE.filter(function (m) { return ms.indexOf(m) >= 0; });   /* finest first: each model where it is sharpest, handing over as it ends; AROME (0.01 deg, about 1.1 km) leads from 24 Nov (Stuart 08:25: "Add arome to system as priority"), UKV (2 km) next */
       if (chain.length > 1) sets.push({ id: 'chain', name: 'Finest first (' + chain.map(short).join(', ') + ')', models: ['chain'].concat(chain) });
       if (fixOn() && !S.to) sets.push({ id: 'fixed', name: 'Fixed wind ' + FIX.tws + ' kn from ' + ('00' + Math.round(FIX.twd)).slice(-3) + '°', models: [ms[0]], fixed: true, adj: fixAdj(base.adj) });
       var jobs = sets.length + ms.length, done = 0, title = quick ? 'Step 1 of ' + (RD ? 3 : 2) + ': first routes' : finer ? 'Step 3 of 3: finer routes' : 'Step 2 of ' + (RD ? 3 : 2) + ': refining the routes';
@@ -3726,6 +3726,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (r >= 5) { if (pos === 0) pos = 4.5; bx = ex - ux * pos; by = ey - uy * pos; l.moveTo(bx, by); l.lineTo(bx + px * fl / 2 + ux * 2, by + py * fl / 2 + uy * 2); }
     if (own) { ctx.lineWidth = 1.6; ctx.stroke(l); ctx.fill(f); }
   }
+  /* where a wind or tide symbol may go: over water by the depth chart (Stuart 24 Nov 07:42: the coarse coast outline counted most of the Solent as
+     land, so wind was missing there); without a depth chart, the coast outline as before */
+  function seaAt(la, lo) { if (P.depth) return P.depth.nearest('z', la, lo) < 0; return !coastLand(la, lo); }
+  function arrowAt(la, lo, iy, ix, y0, x0, h2) {
+    if (!seaAt(la, lo)) return false;
+    if (iy % 2 === 0 && ix % 2 === 0) return true;
+    return !seaAt(LA(y0 + (iy - iy % 2) * h2), LO(x0 + (ix - ix % 2) * h2));
+  }
   function arrows(kind) {
     var A0 = ctx.globalAlpha;   /* the brightness slider; symbols' own transparency multiplies it */
     var f = kind === 'wind' ? P.wind[$('windShow').value] : P.tide[$('tideSel').value]; if (!f) return;
@@ -3735,10 +3743,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var now = performance.now();
     if (kind === 'wind' && (sym === 'W2' || sym === 'W6')) BB = { l: new Path2D(), f: new Path2D() };
     var off = kind === 'tide' ? sp / 2 : 0;
-    for (var y = 80 + off - ORI.pad; y < H + ORI.pad; y += sp) for (var x = sp / 2 + off - ORI.pad; x < W + ORI.pad; x += sp) {
+    /* Stuart 24 Nov 07:42 (St Malo race, no wind or tide in the Solent): the grid runs at half spacing; a half step is drawn only where the
+       full grid point beside it is on land, so narrow water (the Solent, Spithead, Southampton Water) gets symbols and open water is no busier */
+    var h2 = sp / 2, y0 = 80 + off - ORI.pad, x0 = sp / 2 + off - ORI.pad;
+    for (var iy = 0, y = y0; y < H + ORI.pad; iy++, y = y0 + iy * h2) for (var ix = 0, x = x0; x < W + ORI.pad; ix++, x = x0 + ix * h2) {
       var la = LA(y), lo = LO(x);
-      if (kind === 'tide') { if (!P.depth || !(P.depth.nearest('z', la, lo) < 0)) continue; }
-      else if (coastLand(la, lo)) continue;   /* wind symbols only over the sea */
+      if (!arrowAt(la, lo, iy, ix, y0, x0, h2)) continue;
       var tq = kind === 'tide' ? S.t - tideShiftH() : S.t, u = f.sample('u', la, lo, tq), v = f.sample('v', la, lo, tq); if (!(u === u) || !(v === v)) continue;
       var s = Math.hypot(u, v) / KN; if (s < (kind === 'wind' ? 0.5 : 0.15)) continue;
       var dx = u / Math.hypot(u, v), dy = -v / Math.hypot(u, v), lbl = kind === 'wind' || (Math.round(x / sp) + Math.round(y / sp)) % 2 === 0;
