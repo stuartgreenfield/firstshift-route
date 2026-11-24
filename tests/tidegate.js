@@ -17,10 +17,10 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(Math.abs(m.turnIn - 90) <= 5 && m.to === 'foul' && m.nowS === 'fair', 'the turn at the mark is found when the tide along the leg changes sign (within 5 min)', m.turnIn + ' min, fair to ' + m.to);
   ok(m.need > 2 && m.needEta <= 90.5, 'the speed needed to reach the mark by the turn', m.need.toFixed(2) + ' kn, ETA ' + m.needEta + ' min');
   await p.evaluate(() => window.__navPractice && window.__navPractice(true, 20)); await p.waitForTimeout(8000);
-  await p.evaluate(() => { FSTideGate.C.rivals = [{ name: 'Rival One', tcc: 1.05 }]; }); await p.click('#tgBtn'); await p.waitForTimeout(2500);
-  const r = await p.evaluate(() => { const e = document.getElementById('tgPop'); return { open: !e.hidden, txt: e.textContent.slice(0, 600), rows: e.querySelectorAll('.tgt tr').length, ring: !!e.querySelector('svg circle') }; });
-  ok(r.open && (/Tide along the leg/.test(r.txt) || /Needs|No tide|No next|Waiting/.test(r.txt)), 'TIDE opens the panel: the next mark, tide along the leg and the gate (or what it needs)', r.txt.slice(0, 160));
-  ok(r.rows >= 6 || /Needs|No tide|Waiting/.test(r.txt), 'the rivals table: a typed boat and the rating bands, elapsed and corrected', r.rows + ' rows');
+  /* 24 Nov: the window works from the route (tests/races-logic.js and tests/inshore-logic.js check it race by race) */
+  await p.click('#tgBtn'); await p.waitForTimeout(2500);
+  const r = await p.evaluate(() => { const e = document.getElementById('tgPop'); return { open: !e.hidden, txt: e.textContent.slice(0, 600), chart: !!e.querySelector('.tgsv') }; });
+  ok(r.open && (r.chart || /Route now|No tide/.test(r.txt)), 'TIDE opens the tide gates: a chart for the next mark (or Route now)', r.txt.slice(0, 160));
   await p.evaluate(() => { const d = document.getElementById('fsDeckBtn'); if (d) d.click(); FSTideGate.tick(); }); await p.waitForTimeout(800);
   const st = await p.evaluate(() => { const s = document.getElementById('tgStrip'); return s ? { shown: !s.hidden, t: s.textContent } : null; });
   ok(!st || !st.shown || /^TIDE (FAIR|FOUL|SLACK) · turns \d\d:\d\d · ETA \d\d:\d\d · [+-]\d+ min$/.test(st.t), 'on the deck screen the strip gives the gate in one line', st && st.t);
