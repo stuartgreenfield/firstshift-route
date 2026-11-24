@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-24T12:58:23.155Z",
+ "log": [
+  {
+   "race": "irishsea-area",
+   "h": 0,
+   "s": 29,
+   "note": "Finer routes in 20.8 s. Times: first routes 1.6 s, standard 5.7 s, finer 26.5 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 1,
+   "s": 52,
+   "note": "Finer routes in 18.5 s. Also worth knowing: in ECMWF wind, the GFS route is 5.1 min faster than ECMWF’s own route. Compa"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 2,
+   "s": 72,
+   "note": "Finer routes in 16.1 s. Also worth knowing: in ECMWF wind, the GFS route is 4.3 min faster than ECMWF’s own route. Gaps "
+  },
+  {
+   "race": "irishsea-area",
+   "h": 3,
+   "s": 91,
+   "note": "Finer routes in 15.6 s. Also worth knowing: in ECMWF wind, the GFS route is 6.3 min faster than ECMWF’s own route. Compa"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 4,
+   "s": 111,
+   "note": "Finer routes in 15.6 s. Also worth knowing: in ECMWF wind, the GFS route is 2.1 min faster than ECMWF’s own route. Gaps "
+  },
+  {
+   "race": "irishsea-area",
+   "h": 5,
+   "s": 129,
+   "note": "Finer routes in 14.5 s. Also worth knowing: in ECMWF wind, the GFS route is 1.5 min faster than ECMWF’s own route. Gaps "
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-24T12:59:35.141Z",
+ "log": [
+  {
+   "race": "dinard",
+   "h": 0,
+   "s": 69,
+   "note": "Finer routes in 48.3 s. Also worth knowing: in ECMWF wind, the UKV route is 8.6 min faster than ECMWF’s own route; in GF"
+  },
+  {
+   "race": "dinard",
+   "h": 1,
+   "s": 133,
+   "note": "Finer routes in 49.2 s. Also worth knowing: in ECMWF wind, the UKV route is 5.2 min faster than ECMWF’s own route; in GF"
+  },
+  {
+   "race": "dinard",
+   "h": 2,
+   "s": 201,
+   "note": "Finer routes in 53.8 s. Also worth knowing: in UKV wind, the ICON-EU route is 5.0 min faster than UKV’s own route; in EC"
+  }
+ ]
+}
