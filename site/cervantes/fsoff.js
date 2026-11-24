@@ -1,4 +1,4 @@
-/* FirstShift Route: Ready for offline (Stuart 13 Nov 2026).
+/* FirstShift Route and Route+ (one file since 24 Nov 2026; Route+ had its own copy, navoff.js): Ready for offline (Stuart 13 Nov 2026).
    One button keeps everything this race needs on the device: every forecast in the chosen plan, the coast and depth,
    the overview, the course and the chart data, so Route works with no signal at sea. the offline store
    (fscore.js) does the keeping: every file fetched from the Route server goes into it.
@@ -7,7 +7,8 @@
    because a phone on mobile data at sea can run up a bill. Never during a MOB, and never while routing. */
 (function () {
   'use strict';
-  var STORE = 'fs-offline-v1', AUTO_MB = 20;
+  var PLUS = !!window.FS_PLUS, NAME = PLUS ? 'Route+' : 'Route';   /* Route+ keeps its own store name, so nothing already on a phone is lost */
+  var STORE = PLUS ? 'nav-offline-v1' : 'fs-offline-v1', AUTO_MB = 20;
   function $(id) { return document.getElementById(id); }
   function mb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
   function fc() { try { return window.__navFc && window.__navFc(); } catch (e) { return null; } }
@@ -53,19 +54,19 @@
     if (S.busy) return Promise.resolve();
     S.busy = true; S.note = 'Checking…'; paint();
     return status().then(function (st) {
-      if (!st) { S.note = 'Route first: Route needs the race and the forecast plan.'; return; }
+      if (!st) { S.note = 'Route first: ' + NAME + ' needs the race and the forecast plan.'; return; }
       if (st.offline) { S.note = 'No signal now. What is already on the device is used; try again when there is signal.'; return; }
       if (!st.miss.length) { S.note = 'Already ready: everything for this race is on the device.'; return; }
       return get(st.miss, function (d, n) { S.note = 'Downloading ' + d + ' of ' + n + '…'; paint(); }).then(function (bad) {
         S.note = bad.length ? 'Not downloaded: ' + bad.join(', ') + '. Try again with a better signal.' : 'Ready for offline: ' + mb(st.tot) + ' on this device.';
-        try { localStorage.setItem('fs-offline-at', String(Date.now())); } catch (e) {}
+        try { localStorage.setItem(PLUS ? 'nav-offline-at' : 'fs-offline-at', String(Date.now())); } catch (e) {}
       });
     }).then(function () { S.busy = false; return status(); }).then(paint, function () { S.busy = false; paint(); });
   }
   function paint() {
     var box = $('navOffBody'); if (!box) return; var st = S.last, h = '';
     if (!st) h += '<p class="note">Route first, then this shows what is on the device.</p>';
-    else if (st.offline) h += '<p class="note"><b>No signal.</b> Route is using what is on the device.</p>';
+    else if (st.offline) h += '<p class="note"><b>No signal.</b> ' + NAME + ' is using what is on the device.</p>';
     else if (!st.miss.length) h += '<p class="nook">✓ Ready for offline. All ' + st.list.length + ' files for this race, ' + mb(st.tot) + ', forecasts from the ' + st.run + ' run.</p>';
     else h += '<p class="note"><b>Not ready.</b> ' + st.miss.length + ' of ' + st.list.length + ' files to download, ' + mb(st.need) + '.</p>';
     h += '<div class="xrow"><button class="btn primary" id="navOffGo" type="button"' + (S.busy ? ' disabled' : '') + '>' + (st && !st.offline && !st.miss.length ? 'Check again' : 'Make ready for offline') + '</button></div>';
@@ -74,10 +75,10 @@
     box.innerHTML = h; $('navOffGo').onclick = function () { ready(); };
   }
   function build() {
-    var pr = $('navPrefs'), link = $('s-mine'); if (!link || $('navOff')) return !!$('navOff');
+    var pr = $('navPrefs'), link = $(PLUS ? 'navSetLink' : 's-mine'); if (!link || $('navOff')) return !!$('navOff');
     var d = document.createElement('details'); d.className = 'navprefs navoff'; d.id = 'navOff';
     d.innerHTML = '<summary><b>Ready for offline</b><small id="navOffSum">Keep this race’s forecasts and charts on the device</small></summary><div class="npbody" id="navOffBody"></div>';
-    if (pr) pr.parentNode.insertBefore(d, pr.nextSibling); else link.appendChild(d);
+    if (pr) pr.parentNode.insertBefore(d, pr.nextSibling); else if (PLUS) link.parentNode.insertBefore(d, link.nextSibling); else link.appendChild(d);
     d.addEventListener('toggle', function () { if (d.open) status().then(paint, paint); });
     paint(); return true;
   }
