@@ -27,7 +27,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, vis = e => { if (!e.
     if (R.right > W + 1 || R.bottom > H + 1 || R.left < -1 || R.top < -1) { if (!sc) off.push(name(e) + ' ' + Math.round(R.left) + ',' + Math.round(R.top) + '-' + Math.round(R.right) + ',' + Math.round(R.bottom)); return; }
     if (e.classList.contains('ssc') || e.tagName === 'INPUT' && e.type === 'range') return;
     const x = (R.left + R.right) / 2, y = (R.top + R.bottom) / 2, h = document.elementFromPoint(x, y);
-    const LAYER = '.sheet, .pop, #panel, [role=dialog], .solss, #help, #fsTour, #liveBig, #navHelm, #fhHelm, .solpop, #races, #solList, #layers, .fstpop';
+    const LAYER = '.sheet, .pop, #panel, [role=dialog], .solss, #help, #fsTour, #liveBig, #navHelm, #fhHelm, .solpop, #races, #solList, #layers, .fstpop, #tgPop, #fsHelm, #deckNums, #dkView';   /* 24 Nov 20:40: the Tide gates window, Route's HELM view and the 20/20 deck are windows the user opens over the chart (item 21) */
     const lay = h && h.closest && h.closest(LAYER);   /* an open panel, sheet or window lying over the chart is meant to cover what is under it */
     if (lay && !lay.contains(e) && !(e.closest(LAYER) && e.closest(LAYER).contains(lay)) && !(e.closest(LAYER) && getComputedStyle(lay).zIndex !== 'auto' && getComputedStyle(e.closest(LAYER)).zIndex !== 'auto' && +getComputedStyle(lay).zIndex > +getComputedStyle(e.closest(LAYER)).zIndex && !e.closest('#layers'))) return;
     if (h && !(h === e || e.contains(h) || h.contains(e)) && getComputedStyle(h).pointerEvents !== 'none' && !h.closest('#map')) cov.push(name(e) + ' under ' + name(h.closest('button,[role=button],.sheet,.pop,section,div') || h)); });
