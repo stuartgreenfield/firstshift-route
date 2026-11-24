@@ -22,7 +22,7 @@ const init = () => { document.addEventListener('DOMContentLoaded', () => { const
   ok(await p.evaluate(() => document.getElementById('panel').classList.contains('collapsed')), 'Route\'s panel folds away');
   const shown = await p.evaluate(() => ['.fabhelp', '#prog', '#cbanner', '#liveBox', '#navStrip'].filter(q => [...document.querySelectorAll(q)].some(e => e.getClientRects().length && getComputedStyle(e).display !== 'none')));
   ok(shown.length === 0, 'chart buttons, routing progress, course banner and GPS window step aside', shown);
-  const back = await p.evaluate(() => ['.ssnum', '.sqrow'].map(q => getComputedStyle(document.querySelector('#solStartScr ' + q)).backgroundColor));
+  const back = await p.evaluate(() => ['.ssnum', '.sqrow'].map(q => { let e = document.querySelector('#solStartScr ' + q); while (e && /rgba\(0, 0, 0, 0\)|transparent/.test(getComputedStyle(e).backgroundColor) && e.id !== 'solStartScr') e = e.parentElement; return getComputedStyle(e).backgroundColor; }));   /* 24 Nov: on the picture (now first) the start screen itself is the solid backing */
   ok(back.every(c => !/rgba\(0, 0, 0, 0\)|transparent/.test(c)), 'the boxes sit on a solid backing', back);
   const mob = await p.evaluate(() => { const m = document.getElementById('mobBtn'), r = m.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), n = document.querySelector('#solStartScr .ssnum').getBoundingClientRect(); return { top: m.contains(t), above: r.bottom <= n.top + 1 }; });
   ok(mob.top && mob.above, 'man overboard is on top, can be tapped, and sits on the chart above the boxes', mob);
