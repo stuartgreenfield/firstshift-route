@@ -329,11 +329,6 @@
   "t": "VMG and VMC",
   "sec": 79.0
  },
- "the-start-screen-ce6a5af5": {
-  "f": "the-start-screen-ce6a5af5.mp3",
-  "t": "The start screen",
-  "sec": 42.5
- },
  "move-a-window-80948e82": {
   "f": "move-a-window-80948e82.mp3",
   "t": "Move a window",
@@ -433,5 +428,10 @@
   "f": "sync-and-the-minute-buttons-f8e021c3.mp3",
   "t": "Sync and the minute buttons",
   "sec": 17.8
+ },
+ "the-start-screen-7d990328": {
+  "f": "the-start-screen-7d990328.mp3",
+  "t": "The start screen",
+  "sec": 151.3
  }
 }
