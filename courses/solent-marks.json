@@ -1,0 +1,1419 @@
+{
+"source": "JOG / SCRA Solent Area Mark Codes 2026, list dated 23 February 2026 (2026solentracemarkslist.pdf)",
+"note": "Lat N, long W as printed. # marks are for passing and keeping boats out of the channel, not for ordinary rounding. 5Q Outer Spit only with prior consent of KHM. 50 and 51 on Sundays: SBSC only except Cowes Week. Most yellow race marks are seasonal March to November. E&OE.",
+"marks": [
+{
+"id": "1A",
+"name": "Peveril Ledge",
+"col": "R",
+"lat": 50.606833,
+"lon": -1.935,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1B",
+"name": "Poole Bar No 1",
+"col": "G",
+"lat": 50.654833,
+"lon": -1.919,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1C",
+"name": "Stoneways Marine",
+"col": "Y",
+"lat": 50.671833,
+"lon": -1.900333,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1D",
+"name": "The Rig Shop",
+"col": "Y",
+"lat": 50.684667,
+"lon": -1.904333,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1E",
+"name": "Ledge Buoy",
+"col": "Y",
+"lat": 50.691667,
+"lon": -1.693333,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1F",
+"name": "Needles Fairway",
+"col": "RW",
+"lat": 50.637333,
+"lon": -1.649667,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1G",
+"name": "South West Shingles",
+"col": "R",
+"lat": 50.654833,
+"lon": -1.625333,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1H",
+"name": "Bridge",
+"col": "YBY",
+"lat": 50.6605,
+"lon": -1.614667,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1J",
+"name": "Shingles Elbow",
+"col": "R",
+"lat": 50.672833,
+"lon": -1.600833,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1K",
+"name": "North Head",
+"col": "G",
+"lat": 50.7115,
+"lon": -1.592,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1L",
+"name": "Needles Lighthouse",
+"col": "RW",
+"lat": 50.662167,
+"lon": -1.591667,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1M",
+"name": "Warden",
+"col": "G",
+"lat": 50.691333,
+"lon": -1.559167,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "1N",
+"name": "North East Shingles",
+"col": "BYB",
+"lat": 50.699333,
+"lon": -1.556833,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "11",
+"name": "East Hook",
+"col": "R",
+"lat": 50.676333,
+"lon": -1.9205,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "12",
+"name": "Mid Bay Buoy",
+"col": "Y",
+"lat": 50.71,
+"lon": -1.68,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "13",
+"name": "Parkstone YC",
+"col": "Y",
+"lat": 50.660167,
+"lon": -1.92,
+"zone": "Western Approaches",
+"flag": null
+},
+{
+"id": "2A",
+"name": "Hill Robinson",
+"col": "Y",
+"lat": 50.712833,
+"lon": -1.5405,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2B",
+"name": "Dunford Construction",
+"col": "Y",
+"lat": 50.723,
+"lon": -1.525667,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2C",
+"name": "Colten",
+"col": "Y",
+"lat": 50.7305,
+"lon": -1.514333,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2D",
+"name": "Lymington Yacht Haven",
+"col": "Y",
+"lat": 50.737333,
+"lon": -1.498333,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2E",
+"name": "Circle Marine Insurance",
+"col": "Y",
+"lat": 50.7415,
+"lon": -1.488667,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2F",
+"name": "Berthon",
+"col": "Y",
+"lat": 50.736667,
+"lon": -1.487,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2G",
+"name": "Bridgeworks WAN Acceleration",
+"col": "Y",
+"lat": 50.7465,
+"lon": -1.4745,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2H",
+"name": "Draycott Chartered Surveyors",
+"col": "Y",
+"lat": 50.738333,
+"lon": -1.469333,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2J",
+"name": "Zwerver",
+"col": "Y",
+"lat": 50.751833,
+"lon": -1.455667,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2K",
+"name": "Greenings Fintech",
+"col": "Y",
+"lat": 50.747167,
+"lon": -1.434833,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2L",
+"name": "Royal Lymington YC",
+"col": "Y",
+"lat": 50.719,
+"lon": -1.5325,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2R",
+"name": "Powder Byrne",
+"col": "Y",
+"lat": 50.757167,
+"lon": -1.4315,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2T",
+"name": "Lymington Bank",
+"col": "R",
+"lat": 50.718333,
+"lon": -1.514167,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2U",
+"name": "Tuakana Construction",
+"col": "Y",
+"lat": 50.727833,
+"lon": -1.491667,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "2X",
+"name": "Solent Bank",
+"col": "R",
+"lat": 50.737167,
+"lon": -1.456167,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "20",
+"name": "Sconce",
+"col": "BY",
+"lat": 50.708833,
+"lon": -1.523833,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "21",
+"name": "Black Rock",
+"col": "G",
+"lat": 50.7095,
+"lon": -1.509833,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "22",
+"name": "Raymond James Charles Stanley",
+"col": "Y",
+"lat": 50.714333,
+"lon": -1.49,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "24",
+"name": "BDM CX",
+"col": "Y",
+"lat": 50.714333,
+"lon": -1.473667,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "25",
+"name": "Contessa 26 Association",
+"col": "Y",
+"lat": 50.719167,
+"lon": -1.458167,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "26",
+"name": "Hamstead Ledge",
+"col": "G",
+"lat": 50.731167,
+"lon": -1.436333,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "27",
+"name": "Adam Harding-Domeney",
+"col": "Y",
+"lat": 50.716167,
+"lon": -1.469333,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "28",
+"name": "Harwoods",
+"col": "Y",
+"lat": 50.712167,
+"lon": -1.478167,
+"zone": "West Solent",
+"flag": null
+},
+{
+"id": "3A",
+"name": "West Lepe",
+"col": "R",
+"lat": 50.754,
+"lon": -1.4015,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3B",
+"name": "Newtown East",
+"col": "Y",
+"lat": 50.739333,
+"lon": -1.396667,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3C",
+"name": "Basher",
+"col": "Y",
+"lat": 50.760667,
+"lon": -1.385333,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3D",
+"name": "Salt Mead",
+"col": "G",
+"lat": 50.741833,
+"lon": -1.384,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3E",
+"name": "The Boss",
+"col": "Y",
+"lat": 50.768833,
+"lon": -1.369833,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3F",
+"name": "Markby",
+"col": "Y",
+"lat": 50.745333,
+"lon": -1.365833,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3G",
+"name": "Cowes Week 200",
+"col": "Y",
+"lat": 50.776333,
+"lon": -1.357667,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3H",
+"name": "East Lepe",
+"col": "R",
+"lat": 50.7655,
+"lon": -1.351167,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3K",
+"name": "Lepe Spit",
+"col": "YB",
+"lat": 50.779667,
+"lon": -1.344,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3L",
+"name": "Gurnard Ledge",
+"col": "G",
+"lat": 50.7585,
+"lon": -1.343167,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3N",
+"name": "MDL Marinas",
+"col": "Y",
+"lat": 50.7845,
+"lon": -1.331333,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3P",
+"name": "Cowes Yacht Haven",
+"col": "Y",
+"lat": 50.761333,
+"lon": -1.333,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3Q",
+"name": "Polly's Challenge",
+"col": "Y",
+"lat": 50.766167,
+"lon": -1.324167,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3R",
+"name": "North East Gurnard",
+"col": "R",
+"lat": 50.784333,
+"lon": -1.323667,
+"zone": "Mid Solent (W)",
+"flag": "pass"
+},
+{
+"id": "3S",
+"name": "SCRA.ORG.UK",
+"col": "Y",
+"lat": 50.796833,
+"lon": -1.320833,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3T",
+"name": "CHS",
+"col": "Y",
+"lat": 50.768333,
+"lon": -1.3145,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3U",
+"name": "Gurnard",
+"col": "BY",
+"lat": 50.770333,
+"lon": -1.314,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3V",
+"name": "West Bramble",
+"col": "YBY",
+"lat": 50.786667,
+"lon": -1.310833,
+"zone": "Mid Solent (W)",
+"flag": "pass"
+},
+{
+"id": "3W",
+"name": "Williams Shipping",
+"col": "Y",
+"lat": 50.786667,
+"lon": -1.309167,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3X",
+"name": "Island Sailing Club",
+"col": "Y",
+"lat": 50.768333,
+"lon": -1.307167,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3Y",
+"name": "West Knoll",
+"col": "Y",
+"lat": 50.7905,
+"lon": -1.297333,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "3Z",
+"name": "Trinity House Buoy",
+"col": "Y",
+"lat": 50.771833,
+"lon": -1.295833,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "30",
+"name": "RORC",
+"col": "Y",
+"lat": 50.785333,
+"lon": -1.295333,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "31",
+"name": "South Bramble",
+"col": "G",
+"lat": 50.783,
+"lon": -1.295333,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "33",
+"name": "Prince Consort",
+"col": "BY",
+"lat": 50.7735,
+"lon": -1.292667,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "34",
+"name": "Cowes Corinthian",
+"col": "Y",
+"lat": 50.769167,
+"lon": -1.286667,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "39",
+"name": "Snowden",
+"col": "Y",
+"lat": 50.77,
+"lon": -1.295833,
+"zone": "Mid Solent (W)",
+"flag": null
+},
+{
+"id": "4A",
+"name": "Reach",
+"col": "G",
+"lat": 50.8175,
+"lon": -1.294167,
+"zone": "Mid Solent (E)",
+"flag": "pass"
+},
+{
+"id": "4B",
+"name": "Coronation",
+"col": "Y",
+"lat": 50.825833,
+"lon": -1.293667,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4C",
+"name": "Fumesy",
+"col": "Y",
+"lat": 50.820167,
+"lon": -1.291,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4D",
+"name": "Calshot",
+"col": "BY",
+"lat": 50.807333,
+"lon": -1.283833,
+"zone": "Mid Solent (E)",
+"flag": "pass"
+},
+{
+"id": "4E",
+"name": "Andy Cassell",
+"col": "Y",
+"lat": 50.7945,
+"lon": -1.283333,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4F",
+"name": "Royal Thames",
+"col": "Y",
+"lat": 50.786667,
+"lon": -1.283333,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4G",
+"name": "Chieftain Training",
+"col": "Y",
+"lat": 50.824167,
+"lon": -1.281833,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4H",
+"name": "East Knoll",
+"col": "G",
+"lat": 50.799333,
+"lon": -1.2805,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4J",
+"name": "hamblewinterseries.com",
+"col": "Y",
+"lat": 50.8105,
+"lon": -1.276,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4K",
+"name": "Royal London",
+"col": "Y",
+"lat": 50.769167,
+"lon": -1.2775,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4L",
+"name": "Jane",
+"col": "Y",
+"lat": 50.817167,
+"lon": -1.274833,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4M",
+"name": "Hill Head",
+"col": "R",
+"lat": 50.801167,
+"lon": -1.266667,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4N",
+"name": "Ben F Wood",
+"col": "Y",
+"lat": 50.787833,
+"lon": -1.265,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4P",
+"name": "West Ryde Middle",
+"col": "YBY",
+"lat": 50.774667,
+"lon": -1.263167,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4Q",
+"name": "John Fisher",
+"col": "Y",
+"lat": 50.807667,
+"lon": -1.262,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4R",
+"name": "Darling Buoy",
+"col": "Y",
+"lat": 50.819667,
+"lon": -1.261833,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4S",
+"name": "Royal Southern",
+"col": "Y",
+"lat": 50.814333,
+"lon": -1.257167,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4T",
+"name": "Norris",
+"col": "R",
+"lat": 50.766167,
+"lon": -1.2585,
+"zone": "Mid Solent (E)",
+"flag": "pass"
+},
+{
+"id": "4U",
+"name": "Goodall Roofing",
+"col": "Y",
+"lat": 50.773833,
+"lon": -1.2515,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4V",
+"name": "Hamble Yacht Services",
+"col": "Y",
+"lat": 50.802167,
+"lon": -1.244,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4W",
+"name": "Ancasta",
+"col": "Y",
+"lat": 50.788833,
+"lon": -1.243167,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4X",
+"name": "Colette",
+"col": "Y",
+"lat": 50.758833,
+"lon": -1.239833,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4Y",
+"name": "North Ryde Middle",
+"col": "R",
+"lat": 50.776833,
+"lon": -1.2385,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "4Z",
+"name": "South Ryde Middle",
+"col": "G",
+"lat": 50.768833,
+"lon": -1.236,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "40",
+"name": "Haven Knox Johnston Specialist",
+"col": "Y",
+"lat": 50.794333,
+"lon": -1.2275,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "41",
+"name": "East Bramble",
+"col": "BYB",
+"lat": 50.787167,
+"lon": -1.227333,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "42",
+"name": "Peel Bank",
+"col": "R",
+"lat": 50.758167,
+"lon": -1.2225,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "43",
+"name": "Little Ship Club",
+"col": "Y",
+"lat": 50.769333,
+"lon": -1.218167,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "44",
+"name": "Royal Yacht Squadron",
+"col": "Y",
+"lat": 50.7885,
+"lon": -1.201667,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "45",
+"name": "South East Ryde Middle",
+"col": "YB",
+"lat": 50.7655,
+"lon": -1.201667,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "46",
+"name": "North East Ryde Middle",
+"col": "R",
+"lat": 50.770167,
+"lon": -1.198,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "47",
+"name": "Contessa 32 Class",
+"col": "Y",
+"lat": 50.795,
+"lon": -1.254167,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "48",
+"name": "Paul Heys",
+"col": "Y",
+"lat": 50.8035,
+"lon": -1.278,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "49",
+"name": "250th Anniversary",
+"col": "Y",
+"lat": 50.773333,
+"lon": -1.226333,
+"zone": "Mid Solent (E)",
+"flag": null
+},
+{
+"id": "5A",
+"name": "Quarr",
+"col": "Y",
+"lat": 50.7505,
+"lon": -1.198167,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5B",
+"name": "Mother Bank",
+"col": "R",
+"lat": 50.758167,
+"lon": -1.186833,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5C",
+"name": "Browndown",
+"col": "G",
+"lat": 50.776167,
+"lon": -1.1825,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5D",
+"name": "Kemps Quay",
+"col": "Y",
+"lat": 50.753,
+"lon": -1.160833,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5E",
+"name": "Stokes Bay East",
+"col": "Y",
+"lat": 50.771,
+"lon": -1.146,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5F",
+"name": "North Sturbridge",
+"col": "BY",
+"lat": 50.7555,
+"lon": -1.137167,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5G",
+"name": "Baker Trayte Marine",
+"col": "Y",
+"lat": 50.773667,
+"lon": -1.131667,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5H",
+"name": "Portsmouth SC",
+"col": "Y",
+"lat": 50.780333,
+"lon": -1.1225,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5J",
+"name": "KB Dry Stack",
+"col": "Y",
+"lat": 50.776833,
+"lon": -1.1215,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5K",
+"name": "Naomi House & Jacksplace",
+"col": "Y",
+"lat": 50.784667,
+"lon": -1.113,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5M",
+"name": "Gleeds",
+"col": "Y",
+"lat": 50.7685,
+"lon": -1.108667,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5P",
+"name": "www.victoryclass.org.uk",
+"col": "Y",
+"lat": 50.772667,
+"lon": -1.101333,
+"zone": "East Solent",
+"flag": null
+},
+{
+"id": "5Q",
+"name": "Outer Spit",
+"col": "YB",
+"lat": 50.757333,
+"lon": -1.091,
+"zone": "East Solent",
+"flag": "consent"
+},
+{
+"id": "50",
+"name": "Fairhall West",
+"col": "Y",
+"lat": 50.780167,
+"lon": -1.173333,
+"zone": "East Solent",
+"flag": "sunday"
+},
+{
+"id": "51",
+"name": "SBSC Central",
+"col": "Y",
+"lat": 50.776667,
+"lon": -1.164167,
+"zone": "East Solent",
+"flag": "sunday"
+},
+{
+"id": "6A",
+"name": "No Man's Land Fort",
+"col": "B",
+"lat": 50.74,
+"lon": -1.095,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6B",
+"name": "Horse Sand Fort",
+"col": "B",
+"lat": 50.750167,
+"lon": -1.072333,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6C",
+"name": "Warner",
+"col": "R",
+"lat": 50.731167,
+"lon": -1.0665,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6D",
+"name": "Horse Elbow",
+"col": "G",
+"lat": 50.737667,
+"lon": -1.064667,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6E",
+"name": "West Princessa",
+"col": "YBY",
+"lat": 50.669333,
+"lon": -1.060833,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6F",
+"name": "Bembridge Ledge Buoy",
+"col": "BYB",
+"lat": 50.685833,
+"lon": -1.046833,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6G",
+"name": "St Helens Buoy",
+"col": "R",
+"lat": 50.722667,
+"lon": -1.040167,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6H",
+"name": "Dean Elbow",
+"col": "G",
+"lat": 50.728167,
+"lon": -1.031333,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6J",
+"name": "Nab East",
+"col": "R",
+"lat": 50.714333,
+"lon": -1.013333,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6K",
+"name": "Horse Tail",
+"col": "G",
+"lat": 50.7205,
+"lon": -1.003833,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6L",
+"name": "Winner",
+"col": "YB",
+"lat": 50.751667,
+"lon": -1.001667,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6M",
+"name": "Nab End",
+"col": "R",
+"lat": 50.7105,
+"lon": -0.9915,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6N",
+"name": "Dean Tail",
+"col": "G",
+"lat": 50.7165,
+"lon": -0.986167,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6P",
+"name": "New Grounds",
+"col": "BYB",
+"lat": 50.697333,
+"lon": -0.974833,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6R",
+"name": "Nab Tower",
+"col": "B",
+"lat": 50.668,
+"lon": -0.9525,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "6S",
+"name": "Outer Nab No 2",
+"col": "BYB",
+"lat": 50.6405,
+"lon": -0.961667,
+"zone": "Eastern Approaches",
+"flag": null
+},
+{
+"id": "7A",
+"name": "Gymp",
+"col": "R",
+"lat": 50.8845,
+"lon": -1.402667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7B",
+"name": "Hythe Knock",
+"col": "R",
+"lat": 50.8805,
+"lon": -1.396833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7C",
+"name": "No 1 Swinging",
+"col": "G",
+"lat": 50.883333,
+"lon": -1.390667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7D",
+"name": "Weston Shelf",
+"col": "G",
+"lat": 50.8785,
+"lon": -1.387667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7H",
+"name": "Moorhead",
+"col": "G",
+"lat": 50.875833,
+"lon": -1.381667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7J",
+"name": "Deans Elbow",
+"col": "R",
+"lat": 50.87,
+"lon": -1.380833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7K",
+"name": "NW Netley",
+"col": "G",
+"lat": 50.871833,
+"lon": -1.378833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7L",
+"name": "Hovercraft 4",
+"col": "Y",
+"lat": 50.877667,
+"lon": -1.373667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7N",
+"name": "SWSA/HSC",
+"col": "Y",
+"lat": 50.862667,
+"lon": -1.371333,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7P",
+"name": "Hovercraft 3",
+"col": "Y",
+"lat": 50.873833,
+"lon": -1.366833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7Q",
+"name": "Netley",
+"col": "G",
+"lat": 50.867167,
+"lon": -1.3635,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7R",
+"name": "Lains Lake",
+"col": "R",
+"lat": 50.859833,
+"lon": -1.360833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7S",
+"name": "Deans Lake",
+"col": "R",
+"lat": 50.856667,
+"lon": -1.359833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7T",
+"name": "Hovercraft 2",
+"col": "Y",
+"lat": 50.870167,
+"lon": -1.359667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7U",
+"name": "Hound",
+"col": "G",
+"lat": 50.861333,
+"lon": -1.358667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7V",
+"name": "Hovercraft 1",
+"col": "Y",
+"lat": 50.8665,
+"lon": -1.352667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7W",
+"name": "After Barn",
+"col": "G",
+"lat": 50.858833,
+"lon": -1.347,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7Y",
+"name": "Cadland",
+"col": "R",
+"lat": 50.850333,
+"lon": -1.342333,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "7Z",
+"name": "Greenland",
+"col": "G",
+"lat": 50.851833,
+"lon": -1.339667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "70",
+"name": "Warsash Sailing Club",
+"col": "Y",
+"lat": 50.8435,
+"lon": -1.320667,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "72",
+"name": "Hamble Point",
+"col": "YB",
+"lat": 50.835833,
+"lon": -1.311,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "73",
+"name": "Bald Head",
+"col": "G",
+"lat": 50.83,
+"lon": -1.301167,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "74",
+"name": "William",
+"col": "Y",
+"lat": 50.827667,
+"lon": -1.293167,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "76",
+"name": "Test",
+"col": "R",
+"lat": 50.8765,
+"lon": -1.390833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "77",
+"name": "Fawley Deep",
+"col": "G",
+"lat": 50.840333,
+"lon": -1.319833,
+"zone": "Southampton Water",
+"flag": null
+},
+{
+"id": "78",
+"name": "Hook",
+"col": "G",
+"lat": 50.825333,
+"lon": -1.305,
+"zone": "Southampton Water",
+"flag": "pass"
+}
+]
+}
