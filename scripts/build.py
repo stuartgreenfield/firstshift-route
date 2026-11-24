@@ -10,7 +10,7 @@ REGIONAL = {'ukv', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'mar
 # 24 Nov 2026 (Stuart 10:02, "add server run"; 07:52, the newest runs delivered at once): hours after the run time from which a model's
 # files are complete, checked on the providers' servers on 24 Nov for the 00Z run: AROME 0.01 deg all hours by 01:55 (Meteo-France bucket),
 # ICON-EU all hours by 03:27 (DWD open data). Everything else keeps the 7 hours used since 12 Nov until its timing is checked.
-LAG = {'arome': 3, 'icon': 4}
+LAG = {'arome': 3, 'icon': 4, 'gfs': 5}   # 24 Nov 19:10 (Stuart 19:06 "Go"): GFS 0.25 is expected out within 5 h of its run (to be confirmed by the new-run watcher's log); at 7 h a 16:00 build still took 06Z
 def cycles(lag_h=7, n=4):
     """Latest 00/06/12/18 UTC cycles that should be published by now, newest first."""
     t = time.time() - lag_h * 3600; t -= t % (6 * 3600)
