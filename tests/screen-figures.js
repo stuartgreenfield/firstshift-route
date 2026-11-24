@@ -25,11 +25,12 @@ let pass = 0, fail = 0, known = 0; const ok = (c, m, d, isKnown) => { if (c) pas
     ok(Math.abs(num(R['Boat speed']) - q.bsp) < 0.051, tag + ': Boat speed = the route point', R['Boat speed'] + ' vs ' + q.bsp.toFixed(2));
     ok(R.Heading.indexOf(String(Math.round(q.hdg) % 360).padStart(3, '0')) === 0 || R.Heading.indexOf(String(Math.round(q.hdg)).padStart(3, '0')) === 0, tag + ': Heading = the route point', R.Heading + ' vs ' + q.hdg.toFixed(1));
     ok(new RegExp('TWA ' + Math.abs(Math.round(q.twa)) + '°').test(R.Heading), tag + ': TWA = the route point', R.Heading + ' vs ' + q.twa.toFixed(1));
-    ok(Math.abs(num(R['True wind']) - q.tws) < 0.051, tag + ': True wind speed = the route point', R['True wind'] + ' vs ' + q.tws.toFixed(2));
+    const sk = R['Over the water (sailed)'] != null ? 'Over the water (sailed)' : 'Sailed in'; ok(Math.abs(num(R[sk]) - q.tws) < 0.051, tag + ': the wind sailed = the route point', R[sk] + ' vs ' + q.tws.toFixed(2));
     /* the forecast rows on the same card: same time, place and model as the route point (C1) */
-    const exp = await p.evaluate(([q, model]) => { const P = window.__navFc().P, f = P.wind[model], KN = 1852 / 3600; if (!f) return null; const u = f.sample('u', q.la, q.lo, q.t), v = f.sample('v', q.la, q.lo, q.t); return { tws: Math.hypot(u, v) / KN, twd: (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360 }; }, [q, pt.model]);
-    const windKey = Object.keys(R).find(k => /^Wind /.test(k));
-    if (exp && windKey) { const got = num(R[windKey]); ok(Math.abs(got - exp.tws) < 0.6, tag + ': the card\'s "' + windKey + '" row is the route\'s model at the route point\'s time and place', R[windKey] + ' vs ' + exp.tws.toFixed(1) + ' kn from ' + Math.round(exp.twd) + '° (' + pt.model + ')', true); }
+    const exp = await p.evaluate((q) => { const F = window.__navFc(), w = FSRouter.windSampler(F.P, F.sel.models, localStorage.getItem('nav-blend') === '1')(q.la, q.lo, q.t); return { tws: w[0], twd: w[1], models: F.sel.models.join(',') }; }, q);
+    const gk = 'Over the ground (forecast)';
+    ok(R[gk] != null && Math.abs(num(R[gk]) - exp.tws) < 0.051, tag + ': the forecast wind on the card is the route\'s own model(s) at the route point\'s time and place (C1)', (R[gk] || 'missing') + ' vs ' + exp.tws.toFixed(2) + ' kn from ' + Math.round(exp.twd) + '° (' + exp.models + ')');
+    ok(!Object.keys(R).some(k => /^Wind /.test(k)), tag + ': no wind row from another model or time on the route card', Object.keys(R));
   }
   ok(!errs.length, 'no script errors', errs.slice(0, 3));
-  console.log(pass + ' passed, ' + fail + ' failed, ' + known + ' known (waiting for fix C1)'); await b.close(); process.exit(fail ? 1 : 0); })();
+  console.log(pass + ' passed, ' + fail + ' failed' + (known ? ', ' + known + ' known' : '')); await b.close(); process.exit(fail ? 1 : 0); })();

@@ -4137,7 +4137,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (pos && !pos.done && pos.la != null) S.from = { lat: pos.la, lon: pos.lo, t: S.t }; else S.from = { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
     S.to = { lat: la, lon: lo }; $('tip').hidden = true; busy('Routing to your point…'); run();
   }
-  function hover(x, y, docked, tapped) {
+  function hover(x, y, docked, tapped, force) {   /* force: { s, p } shows that route point (C2 steps), whatever is under the pointer */
     if (!meta) return;
     if (S.edit) { $('tip').hidden = true; return; }   /* editing a course: no info boxes over the marks */
     if (LIVE.trail.length) { var bt = null, bd = 12; LIVE.trail.forEach(function (q) { var d = Math.hypot(X(q[1]) - x, Y(q[0]) - y); if (d < bd) { bd = d; bt = q; } });   /* the boat's own track: time, SOG, COG at that point (Stuart 12 Nov) */
@@ -4147,9 +4147,20 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var pu = ovField('u')(gy, gx), pv = ovField('v')(gy, gx); $('tipBody').innerHTML = '<b>' + dm(LA(y), 'NS') + ' ' + dm(LO(x), 'EW') + '</b>' + r2('Pressure', ovField('msl')(gy, gx).toFixed(0) + ' hPa') + r2('Wind', (Math.hypot(pu, pv) / KN).toFixed(0) + ' kn from ' + pad(Math.atan2(-pu, -pv) / R) + '°');
       $('tip').hidden = false; $('tip').classList.toggle('docked', !!docked); if (!docked) { $('tip').style.left = Math.min(W - 230, x + 14) + 'px'; $('tip').style.top = Math.max(64, y + 14) + 'px'; } return; }
     var la = LA(y), lo = LO(x), t = S.t, rows = [], tip = $('tip');
+    /* boat figures only when the pointer is on a route: open water has no boat */
+    var best = null, bs = null, bd2 = docked ? 26 : 16;
+    if (force) { best = force.p; bs = force.s; }
+    else S.routes.forEach(function (s) { if (s.hidden) return; s.r.path.forEach(function (p) { if (p.bsp == null) return; var d = Math.hypot(X(p.lo) - x, Y(p.la) - y) - (s === S.sel ? 3 : 0); if (d < bd2) { bd2 = d; best = p; bs = s; } }); });
+    /* C1 (Stuart 24 Nov 17:18 and 23:08, "Build C1 and C2"): on a route, every row on the card is for one time, one place and one model:
+       the route point's time and position and the route's own model(s). Off a route, the rows are at the pointer and the slider time, and
+       the card says so. Before, the forecast rows were at the slider time, at the pointer and in the Layers model (SCREEN-FIGURES.md). */
+    var onR = !!(best && S.legs && S.legs.length);
+    if (onR) { la = best.la; lo = best.lo; t = best.t; }
     var z = P.depth ? P.depth.nearest('z', la, lo) : NaN;
-    rows.push('<b>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + '</b>');
-    rows.push(r2('Depth', z === z ? (z > 0 ? 'land' : z <= -99 ? 'over 20 m' : (-z).toFixed(1) + ' m') : 'outside forecast band'));
+    if (!onR) rows.push('<b>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + '</b><div class="tiphere">Here at ' + clockH(t).slice(-5) + ' ' + tzS1() + ' (the time slider)</div>');
+    var depthTxt = z === z ? (z > 0 ? 'land' : z <= -99 ? 'over 20 m' : (-z).toFixed(1) + ' m') : 'outside forecast band';
+    if (!onR) {
+    rows.push(r2('Depth', depthTxt));
     var wm = $('windShow').value || (S.sel ? S.sel.models[0] : Object.keys(P.wind)[0]), wf = P.wind[wm], tws = 0, twd = 0;
     if (wf) { var u = wf.sample('u', la, lo, t), v = wf.sample('v', la, lo, t); tws = Math.hypot(u, v) / KN; twd = (Math.atan2(-u, -v) / R + 360) % 360; rows.push(r2('Wind ' + short(wm), tws === tws ? tws.toFixed(1) + ' kn from ' + pad(twd) + '°' : 'no forecast here')); }
     var tf = P.tide[$('tideSel').value];
@@ -4158,10 +4169,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (wv) { hsv = wv.sample('hs', la, lo, t); wdv = wv.sampleDir(la, lo, t); var tp = wv.sample('tp', la, lo, t); if (hsv === hsv) rows.push(r2('Sea', hsv.toFixed(1) + ' m from ' + pad(wdv) + '°' + (tp === tp ? ', ' + tp.toFixed(0) + ' s' : ''))); else hsv = 0; }
     if (metField()) MET.forEach(function (m) { if (!S.show[m[0]]) return; var v = metAt(m[2], la, lo, t); if (!(v === v)) return;
       rows.push(r2(m[1].replace(' (isobars)', ''), m[2] === 'gust' ? Math.round(v / KN) + ' kn' : m[2] === 'msl' ? v.toFixed(0) + ' hPa' : m[2] === 'rain' ? v.toFixed(1) + ' mm an hour' : m[2] === 'cape' ? (v < 300 ? 'low' : v < 1000 ? 'some' : v < 2500 ? 'high' : 'very high') + ' (' + Math.round(v) + ' J/kg)' : m[2] === 'cloud' ? Math.round(v) + '%' : Math.round(v) + '°C')); });
-    // boat figures only when the pointer is on a route: open water has no boat
-    var best = null, bs = null, bd2 = docked ? 26 : 16;
-    S.routes.forEach(function (s) { if (s.hidden) return; s.r.path.forEach(function (p) { if (p.bsp == null) return; var d = Math.hypot(X(p.lo) - x, Y(p.la) - y) - (s === S.sel ? 3 : 0); if (d < bd2) { bd2 = d; best = p; bs = s; } }); });
-    if (best && S.legs && S.legs.length) {
+    }
+    if (onR) {
       var lg = S.legs[Math.min(best.leg, S.legs.length - 1)], tg = lg.point || lg.gate.a, o = opts(bs.models), spd = speedFn(o);
       var tgt = spd(best.tws, best.twa), sf = FSRouter.seaFactor(best.hs, best.wd, best.hdg, o.sea);
       var bu = FSRouter.bestVmg(spd, best.tws, true), bdn = FSRouter.bestVmg(spd, best.tws, false);
@@ -4172,11 +4181,25 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var gx = best.bsp * Math.sin(best.hdg * R) + (best.cu || 0), gy = best.bsp * Math.cos(best.hdg * R) + (best.cv || 0);   /* over the ground: boat speed through the water plus the tide */
       rows.push(r2('VMC to mark', (Math.hypot(gx, gy) * Math.cos((Math.atan2(gx, gy) / R - FSRouter.brg(best.la, best.lo, tg[0], tg[1])) * R)).toFixed(1) + ' kn over the ground'));   /* 20 Nov VMG/VMC review: this is VMC (speed over the ground towards the mark, SOG x cos(COG - bearing)), not VMG; it was labelled VMG and used boat speed and heading, so it left the tide out and disagreed with the VMC in the strip */
       rows.push(r2('Over the ground', 'SOG ' + Math.hypot(gx, gy).toFixed(1) + ' kn · COG ' + pad((Math.atan2(gx, gy) / R + 360) % 360) + '\u00b0'));
-      if (best.cu != null && Math.hypot(best.cu, best.cv) >= 0.1) rows.push(r2('Tide on the route', Math.hypot(best.cu, best.cv).toFixed(1) + ' kn to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '\u00b0'));
-      rows.push(r2('True wind', best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '\u00b0'));
       rows.push(r2(Math.abs(best.twa) < 90 ? 'Upwind target' : 'Downwind target', Math.abs(best.twa) < 90 ? bu[0] + '\u00b0 · ' + bu[1].toFixed(1) + ' kn · VMG ' + bu[2].toFixed(1) + ' towards the wind' : bdn[0] + '\u00b0 · ' + bdn[1].toFixed(1) + ' kn · VMG ' + bdn[2].toFixed(1) + ' away from the wind'));
       var sl = FSRouter.sailFor(best, sailsList()), rf = reefOf(best); if (sl || rf) rows.push(r2('Sail', (sl || '-') + (rf ? ', ' + rf.toLowerCase() : '')));
       if (best.tack) rows.push(r2('Manoeuvre', Math.abs(best.twa) > 90 ? 'gybe' : 'tack'));
+      var hhm = clockH(best.t).slice(-5), nM = bs.models.filter(function (m) { return m !== 'chain'; }).length;
+      var gw = null; try { gw = FSRouter.windSampler(P, bs.models, o.blend)(la, lo, t); } catch (e) {}
+      var wOver = o.tide && o.tideWind !== false, wMast = o.polZ && o.polZ !== 10;
+      rows.push('<div class="tipsec">Wind here at ' + hhm + '</div>');
+      rows.push(r2(wOver ? 'Over the water (sailed)' : 'Sailed in', best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '\u00b0' + (wMast ? ' at ' + o.polZ + ' m' : '')));
+      rows.push(r2('Over the ground (forecast)', gw && gw[0] === gw[0] ? gw[0].toFixed(1) + ' kn from ' + pad(gw[1]) + '\u00b0' : 'no forecast here'));
+      rows.push(r2('Model', bs.models[0] === 'chain' ? 'finest first (' + nM + ' models)' : nM > 1 ? 'mean of ' + nM + ' models' : short(bs.models[0])));
+      rows.push('<div class="tipsec">Sea and tide here at ' + hhm + '</div>');
+      rows.push(r2('Tide', best.cu != null ? Math.hypot(best.cu, best.cv).toFixed(1) + ' kn to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '\u00b0' : 'none in this route'));
+      var wvR = o.wave && P.wave[o.wave]; if (wvR) { var hsR = wvR.sample('hs', la, lo, t), wdR = wvR.sampleDir(la, lo, t), tpR = wvR.sample('tp', la, lo, t); if (hsR === hsR) rows.push(r2('Sea', hsR.toFixed(1) + ' m from ' + pad(wdR) + '\u00b0' + (tpR === tpR ? ', ' + tpR.toFixed(0) + ' s' : ''))); }
+      rows.push(r2('Depth', depthTxt));
+      if (metField()) MET.forEach(function (m) { if (!S.show[m[0]]) return; var v = metAt(m[2], la, lo, t); if (!(v === v)) return;
+        rows.push(r2(m[1].replace(' (isobars)', ''), m[2] === 'gust' ? Math.round(v / KN) + ' kn' : m[2] === 'msl' ? v.toFixed(0) + ' hPa' : m[2] === 'rain' ? v.toFixed(1) + ' mm an hour' : m[2] === 'cape' ? (v < 300 ? 'low' : v < 1000 ? 'some' : v < 2500 ? 'high' : 'very high') + ' (' + Math.round(v) + ' J/kg)' : m[2] === 'cloud' ? Math.round(v) + '%' : Math.round(v) + '°C')); });
+      rows.push(r2('Position', dm(la, 'NS') + ' ' + dm(lo, 'EW')));
+      /* C2: a tap pins the card to this point, puts the boat there (the time slider moves to it) and steps along the route */
+      if (tapped) rows.splice(rStart + 1, 0, '<div class="xrow tipstep"><button class="btn" id="tipBack" type="button">\u25c0 1 h</button><button class="btn" id="tipFwd" type="button">1 h \u25b6</button><button class="btn primary" id="tipNext" type="button">Next mark</button></div>');
       rows = rows.splice(rStart).concat(rows);
     }
     cv.style.cursor = best ? 'default' : '';
@@ -4190,6 +4213,15 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}
     if (tapped && window.__fsTipGate) try { window.__fsTipGate($('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */   /* waypoints.js: Save as waypoint, Measure from here */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
+    if (tapped && onR) {
+      var pth = bs.r.path, ix = pth.indexOf(best), go = function (k) { var q = pth[Math.max(0, Math.min(pth.length - 1, k))]; while (q && q.bsp == null && k < pth.length - 1) q = pth[++k]; if (q) hover(X(q.lo), Y(q.la), true, true, { s: bs, p: q }); };
+      var at = function (tt) { var k = 0, bd = 1e9; pth.forEach(function (q, j) { var d = Math.abs(q.t - tt); if (q.bsp != null && d < bd) { bd = d; k = j; } }); return k; };
+      if ($('tipBack')) $('tipBack').onclick = function (e) { e.stopPropagation(); go(at(best.t - 1)); };
+      if ($('tipFwd')) $('tipFwd').onclick = function (e) { e.stopPropagation(); go(at(best.t + 1)); };
+      if ($('tipNext')) $('tipNext').onclick = function (e) { e.stopPropagation(); var k = ix; while (k < pth.length - 1 && (pth[k].leg || 0) === (best.leg || 0)) k++; go(k); };
+      S.pin = { id: bs.id, t: best.t };
+      if (bs !== S.sel && !S.running) { S.sel = bs; ghosts().then(function () { matrix(); plan(); fleetTable(); setTime(best.t); }); } else setTime(best.t);   /* the boat goes there: the slider moves to the point's time, so the chart's arrows are for then */
+    }
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
     else { tip.style.left = ''; tip.style.top = ''; dot(la, lo, 5, 'transparent', css['--ink']); }
