@@ -45,7 +45,7 @@ def one(src):
 def arome_raw():
     """AROME 0.01 deg (Stuart 24 Nov 08:21): download each hour once and keep only its 10 m wind messages in work/_shared, where every
     area job's fetch.py finds them (aromehd_<run>_h<hour>_10u.grib2) and cuts its own box. Tries the run the areas will try first."""
-    t1 = time.time(); c = cycles()[0]
+    t1 = time.time(); c = cycles(3)[0]   # the run the areas try first for AROME (build.py LAG)
     env = dict(os.environ, FS_DATA=os.path.join(OUT, 'arome_raw'), FS_BOX='35,62,-15.5,12.5', FS_HOURS='51', FS_RUN=c, FS_RAW_ONLY='1')
     os.makedirs(env['FS_DATA'], exist_ok=True)
     try: r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), 'arome'], env=env, capture_output=True, text=True, timeout=max(60, min(1200, T_END - t1)))

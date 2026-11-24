@@ -59,4 +59,4 @@ jobs:
         with:
           name: check-report
           path: check-out
-          retention-days: 14
+          retention-days: 3   # 24 Nov 2026 (Stuart 10:02, storage): was 14

@@ -9,6 +9,9 @@ on:
     - cron: '17 2,8,14,20 * * *'
     # back-up: GitHub sometimes skips a scheduled run; these rebuild only if nothing was published for 5 hours
     - cron: '47 2,8,14,20 * * *'
+    # 24 Nov 2026 (Stuart 10:02, "add server run"): an early-morning run for the 00Z runs that are out by then (AROME HD, ICON-EU), so phones
+    # have them before most starts; the forecast clock starts it at 04:45 (Cloudflare cron 45 4 * * *), this is its back-up
+    - cron: '47 5 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

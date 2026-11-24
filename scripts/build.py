@@ -7,6 +7,10 @@ SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nws
 # models that cover only European waters, and the global one used instead where they do not reach (21 Nov 2026, Sydney Hobart, F114)
 REGIONAL = {'ukv', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'mars'}; GLOBAL_ONLY = {'glocur'}
 
+# 24 Nov 2026 (Stuart 10:02, "add server run"; 07:52, the newest runs delivered at once): hours after the run time from which a model's
+# files are complete, checked on the providers' servers on 24 Nov for the 00Z run: AROME 0.01 deg all hours by 01:55 (Meteo-France bucket),
+# ICON-EU all hours by 03:27 (DWD open data). Everything else keeps the 7 hours used since 12 Nov until its timing is checked.
+LAG = {'arome': 3, 'icon': 4}
 def cycles(lag_h=7, n=4):
     """Latest 00/06/12/18 UTC cycles that should be published by now, newest first."""
     t = time.time() - lag_h * 3600; t -= t % (6 * 3600)
@@ -61,12 +65,13 @@ for race in RACES:
         first = None
         sh = SHARED_INFO.get(src) or {}
         if sh.get('run'):   # the shared download, if it is the run this area would take first
-            want = [c for i, c in enumerate(cyc) if not (src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2)][:1]
+            want = [c for i, c in enumerate(cycles(LAG.get(src, 7)) if src in LAG else cyc) if not (src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2)][:1]
             t1 = time.time()
             if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), 30):
                 log[f'{race}:{src}'] = f"{sh['run']} shared ({sh.get('secs', '?')}s once for all areas, cut here in {time.time() - t1:.0f}s)"; recv[src] = dict(run=sh['run'], at=sh['at'], latest=sh['latest'], newest=sh['newest'])
                 print(src, log[f'{race}:{src}'], flush=True); return
-        for i, c in enumerate(cyc):
+        cyc_s = cycles(LAG.get(src, 7)) if src in LAG else cyc   # 24 Nov: models known to publish sooner are tried sooner (LAG)
+        for i, c in enumerate(cyc_s):
             if src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             if first is None: first = c   # the newest run this model should have by now
             out = os.path.join(data, src + '.npz')
