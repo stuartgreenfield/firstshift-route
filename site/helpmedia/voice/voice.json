@@ -19,11 +19,6 @@
   "t": "My set-up",
   "sec": 24.6
  },
- "find-a-setting-c22680b8": {
-  "f": "find-a-setting-c22680b8.mp3",
-  "t": "Find a setting",
-  "sec": 14.1
- },
  "what-route-does-ab079315": {
   "f": "what-route-does-ab079315.mp3",
   "t": "What Route does",
@@ -103,11 +98,6 @@
   "f": "new-forecasts-163ab1e2.mp3",
   "t": "New forecasts",
   "sec": 17.9
- },
- "forecast-models-and-resolution-7af1ba30": {
-  "f": "forecast-models-and-resolution-7af1ba30.mp3",
-  "t": "Forecast models and resolution",
-  "sec": 212.7
  },
  "ask-route-7842283b": {
   "f": "ask-route-7842283b.mp3",
@@ -224,11 +214,6 @@
   "t": "The start sequence",
   "sec": 25.6
  },
- "sync-and-the-minute-buttons-f8e021c3": {
-  "f": "sync-and-the-minute-buttons-f8e021c3.mp3",
-  "t": "Sync and the minute buttons",
-  "sec": 17.8
- },
  "a-series-of-starts-b8ae50b0": {
   "f": "a-series-of-starts-b8ae50b0.mp3",
   "t": "A series of starts",
@@ -314,20 +299,10 @@
   "t": "If you think the forecast is wrong",
   "sec": 35.8
  },
- "ais-d01fcf2b": {
-  "f": "ais-d01fcf2b.mp3",
-  "t": "AIS",
-  "sec": 30.3
- },
  "routing-detail-d5546d9f": {
   "f": "routing-detail-d5546d9f.mp3",
   "t": "Routing detail",
   "sec": 69.6
- },
- "cpa-to-the-mark-and-to-other-boats-568d4bcf": {
-  "f": "cpa-to-the-mark-and-to-other-boats-568d4bcf.mp3",
-  "t": "CPA: to the mark and to other boats",
-  "sec": 44.9
  },
  "family-and-friends-c89434ca": {
   "f": "family-and-friends-c89434ca.mp3",
@@ -424,14 +399,39 @@
   "t": "HELM: the helmsman\u2019s screen",
   "sec": 60.0
  },
+ "cpa-to-the-mark-and-to-other-boats-568d4bcf": {
+  "f": "cpa-to-the-mark-and-to-other-boats-568d4bcf.mp3",
+  "t": "CPA: to the mark and to other boats",
+  "sec": 45.0
+ },
+ "find-a-setting-c22680b8": {
+  "f": "find-a-setting-c22680b8.mp3",
+  "t": "Find a setting",
+  "sec": 14.3
+ },
  "tide-gate-7d540e56": {
   "f": "tide-gate-7d540e56.mp3",
   "t": "Tide gate",
-  "sec": 38.4
+  "sec": 38.5
  },
- "fleet-13680e24": {
-  "f": "fleet-13680e24.mp3",
+ "forecast-models-and-resolution-790ca72c": {
+  "f": "forecast-models-and-resolution-790ca72c.mp3",
+  "t": "Forecast models and resolution",
+  "sec": 240.0
+ },
+ "ais-d01fcf2b": {
+  "f": "ais-d01fcf2b.mp3",
+  "t": "AIS",
+  "sec": 31.0
+ },
+ "fleet-353bb090": {
+  "f": "fleet-353bb090.mp3",
   "t": "Fleet",
-  "sec": 84.5
+  "sec": 113.6
+ },
+ "sync-and-the-minute-buttons-f8e021c3": {
+  "f": "sync-and-the-minute-buttons-f8e021c3.mp3",
+  "t": "Sync and the minute buttons",
+  "sec": 17.8
  }
 }
