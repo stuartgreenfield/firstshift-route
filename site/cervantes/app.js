@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.117';
+  var VERSION = 'FirstShift Route v0.12.118';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -400,7 +400,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.117 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.118 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -3662,6 +3662,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* ---------- traffic separation schemes, keep-out areas, lighthouses and buoys (not for navigation) ---------- */
   var ZONES = [], LIGHTS = [], hatchPat = null;
   function loadChartExtras() {
+    window.__fsZones = function () { return ZONES; };   /* tidegate.js: no tide gate inside a TSS */
     fetch('../zones/tss.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { ZONES = j.zones || []; draw(); } }).catch(function () {});
     fetch('../zones/marks.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { LIGHTS = j.marks || []; draw(); } }).catch(function () {});
   }
@@ -4143,7 +4144,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
     if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.splice(rows.length ? 1 : 0, 0, '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>');
     $('tipBody').innerHTML = rows.join(''); tip.hidden = false; tip.classList.toggle('docked', !!docked);
-    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}   /* waypoints.js: Save as waypoint, Measure from here */
+    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}
+    if (tapped && window.__fsTipGate) try { window.__fsTipGate($('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */   /* waypoints.js: Save as waypoint, Measure from here */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }

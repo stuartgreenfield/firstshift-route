@@ -13,7 +13,7 @@
 (function () {
   'use strict';
   var KEY = 'fs-tidegate', R = Math.PI / 180, SLACK = 0.3;
-  var C = (function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } })(); C.rivals = C.rivals || []; C.ais = C.ais || {}; if (C.alarm == null) C.alarm = true;
+  var C = (function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } })(); C.rivals = C.rivals || []; C.ais = C.ais || {}; C.pts = C.pts || {}; if (C.alarm == null) C.alarm = true;
   function save() { try { localStorage.setItem(KEY, JSON.stringify(C)); } catch (e) {} }
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]; }); }
@@ -84,12 +84,44 @@
     }
     return { legs: out, nowH: nowH, k: k };
   }
+  /* ---- tide gates at any point (Stuart 24 Nov 14:25 and 14:40: "click on the chart ... give you the tide situation at that point as if it
+     was a tide gate"; "tide at the exact spot; not on land, TSS or shallow area; saved list, before the start as long as the start time
+     has been set; in course order; can type a name otherwise GATE 1 / 2"; go 15:24). A point is saved with the race (keyed by its
+     marks), timed from the route's nearest point to it, so it moves with every reroute; the tide is taken at the point itself, along the
+     route's own heading into and out of that spot; the Fleet boats are compared there exactly as at a mark. */
+  function raceKey(d) { return d.legs.map(function (m) { return m.lat.toFixed(3) + ',' + m.lon.toFixed(3); }).join(';'); }
+  function ptList(d) { var k = raceKey(d); return C.pts[k] || (C.pts[k] = []); }
+  function ptsPlan(d, P) {
+    var p = d.path, ts = d.ts, n = p.length, round = []; for (var i = 1; i < n; i++) { var lg = p[i].leg || 0, lp = p[i - 1].leg || 0; if (lg > lp) for (var L = lp; L < lg; L++) round[L] = i; } round[d.legs.length - 1] = n - 1;
+    return ptList(d).map(function (q, j) {
+      var bi = 0, bd = 1e9; for (var i2 = 0; i2 < n; i2++) { var dd = dist({ lat: p[i2].la, lon: p[i2].lo }, q); if (dd < bd) { bd = dd; bi = i2; } }
+      if (bi <= P.k) return null;   /* already passed */
+      var a = p[Math.max(0, bi - 3)], b = p[Math.min(n - 1, bi + 3)], here = { lat: p[bi].la, lon: p[bi].lo }, L3 = p[bi].leg || 0, nextRi = null;
+      for (var L4 = L3; L4 < d.legs.length; L4++) if (round[L4] != null && round[L4] > bi) { nextRi = round[L4]; break; }
+      return { L: 'p' + j, pt: j, m: { name: q.name, lat: q.lat, lon: q.lon }, ri: bi, off: bd, eta: d.T0 * 1000 + ts[bi] * 3600000,
+        bIn: bi > 0 ? brg({ lat: a.la, lon: a.lo }, here) : null, bOut: bi < n - 1 ? brg(here, { lat: b.la, lon: b.lo }) : null, next: nextRi != null ? d.legs[p[nextRi].leg || 0] : null, nextRi: nextRi };
+    }).filter(Boolean);
+  }
+  function inPoly(poly, la, lo) { var c = false; for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) { var a = poly[i], b = poly[j]; if ((a[0] > la) !== (b[0] > la) && lo < (b[1] - a[1]) * (la - a[0]) / (b[0] - a[0]) + a[1]) c = !c; } return c; }
+  /* the tap box on the chart: a 'Tide gate here' button and a name, or why not here */
+  window.__fsTipGate = function (body, la, lo, o) {
+    var d = window.__fsTgData ? window.__fsTgData() : null, box = document.createElement('div'); box.className = 'tgtap';
+    if (!d || !d.legs.length) { box.innerHTML = '<p class="tgn">Tide gate here: set the start time and route the race first.</p>'; body.appendChild(box); return; }
+    var why = o && o.z > 0 ? 'on land' : o && o.z === o.z && o.z > -o.nogo ? 'shallower than your no-go depth (' + o.nogo + ' m)' : null, zs = window.__fsZones ? window.__fsZones() : [];
+    if (!why && zs.some(function (z) { return (z.kind === 'lane' || z.kind === 'zone') && inPoly(z.poly, la, lo); })) why = 'inside a traffic separation scheme';
+    if (why) { box.innerHTML = '<p class="tgno">Not a tide gate here: ' + why + '.</p>'; body.appendChild(box); return; }
+    var L = ptList(d), nm = 'GATE ' + (L.reduce(function (m, q) { var k = /^GATE (\d+)$/.exec(q.name); return k ? Math.max(m, +k[1]) : m; }, 0) + 1);
+    box.innerHTML = '<button class="btn tgadd1" type="button" id="tgPtAdd">◎ Tide gate here</button><label class="tgname">Name <input id="tgPtName" type="text" maxlength="24" placeholder="' + nm + '"></label>';
+    body.appendChild(box);
+    $('tgPtAdd').onclick = function (e) { e.stopPropagation(); var v = ($('tgPtName').value || '').trim() || nm; L.push({ name: v.slice(0, 24), lat: la, lon: lo }); save(); var t = $('tip'); if (t) t.hidden = true; open(true); var c = document.querySelector('#tgPop .tgmk[data-l="p' + (L.length - 1) + '"]'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest' }); };
+    $('tgPtName').onclick = function (e) { e.stopPropagation(); };
+  };
   function bandsAt(m, b, t0, t1) { var a = [], st = null, s0 = t0; if (b == null) return a; for (var t = t0; t <= t1 + 1; t += 300000) { var v = state(along(tideAt(m.lat, m.lon, Math.min(t, t1)), b)); if (st !== v) { if (st) a.push([s0, t, st]); st = v; s0 = t; } } if (st) a.push([s0, t1, st]); return a; }
   function stAt(B, t) { for (var i = 0; i < B.length; i++) if (t >= B[i][0] && t <= B[i][1]) return B[i]; return null; }
   function gateLine(g) {
-    var B = g.bandsIn, at = stAt(B, g.eta), s1 = at ? at[2] : 'slack', h = 'Arrive ' + dayHm(g.eta) + ': ' + s1 + ' on the leg in';
+    var B = g.bandsIn, at = stAt(B, g.eta), s1 = at ? at[2] : 'slack', h = 'Arrive ' + dayHm(g.eta) + ': ' + s1 + (g.pt != null ? ' along your course here' : ' on the leg in');
     if (at && at[1] < g.eta + HW * 3600000 - 1) { var nx = stAt(B, at[1] + 1); if (nx) h += '; it turns ' + nx[2] + ' at ' + hm(at[1]) + ', ' + mins((at[1] - g.eta) / 60000) + ' after you'; }
-    if (g.bOut != null) { var o = stAt(g.bandsOut, g.eta); if (o) h += '. ' + o[2].charAt(0).toUpperCase() + o[2].slice(1) + ' on the leg out' + (o[1] < g.eta + HW * 3600000 - 1 ? ' until ' + hm(o[1]) : ''); }
+    if (g.bOut != null) { var o = stAt(g.bandsOut, g.eta); if (o) h += '. ' + o[2].charAt(0).toUpperCase() + o[2].slice(1) + (g.pt != null ? ' on the course after it' : ' on the leg out') + (o[1] < g.eta + HW * 3600000 - 1 ? ' until ' + hm(o[1]) : ''); }
     return { text: h + '.', cls: s1 === 'foul' ? 'bad' : s1 === 'fair' ? 'ok' : '' };
   }
   var BOAT = function (x, y, f, k) { return '<path transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + k + ')" d="M0 -9 C5 -4 5 4 3 8 L-3 8 C-5 4 -5 -4 0 -9z" fill="' + f + '" stroke="#0b1626" stroke-width="1.2"/>'; };
@@ -143,20 +175,22 @@
        the race left either side of the ETA, between 15 min and 1 h; offshore it stays 3 h */
     var o0 = d.from || d.start, cn = 0; [o0].concat(d.legs).forEach(function (q, k, a) { if (k && a[k - 1]) cn += dist(a[k - 1], q); });
     var left = (P.legs[P.legs.length - 1].eta - Date.now()) / 3600000; HW = cn < 40 ? Math.max(0.25, Math.min(1, (left > 0 ? left : (P.legs[P.legs.length - 1].eta - P.legs[0].eta) / 3600000 + 0.5) / 3)) : 3;
+    var marksLeft = P.legs.length; P.legs = P.legs.concat(ptsPlan(d, P)).sort(function (a, b) { return a.ri - b.ri || (a.pt == null ? -1 : 1); });   /* points in course order among the marks */
     P.legs.forEach(function (g) { g.bandsIn = bandsAt(g.m, g.bIn, g.eta - HW * 3600000, g.eta + HW * 3600000); g.bandsOut = bandsAt(g.m, g.bOut, g.eta - HW * 3600000, g.eta + HW * 3600000); });
     var h = '<p class="tgn">Following: ' + esc(d.name || 'your route') + '</p>';
     if (d.live && (d.live.d >= 0.2 || Math.abs(d.live.ahead) >= 5)) h += '<div class="tgoff"><div><b>Off the plan:</b> ' + d.live.d.toFixed(1) + ' nm ' + esc(d.live.side || '') + ' of the route, ' + mins(Math.abs(d.live.ahead)) + (d.live.ahead < 0 ? ' behind' : ' ahead of') + ' it. The times below are from the route.</div><button class="btn" type="button" id="tgRe">Reroute from here</button></div>';
     h += overview(P.legs);
     P.legs.forEach(function (g, i) {
       var open = i < 2 || OPEN[g.L], rv = rivalsAt(d, g).slice(0, 5); rv.forEach(function (r, k) { r.id = 'ABCDE'.charAt(k); });
-      if (!open) { var at = stAt(g.bandsIn, g.eta); h += '<button type="button" class="tgfold" data-l="' + g.L + '"><span>' + esc(g.m.name) + ' · ' + (at ? at[2] : 'slack') + ' in</span><span>ETA ' + dayHm(g.eta) + ' ›</span></button>'; return; }
-      var v = gateLine(g); h += '<div class="tgmk' + (i ? '' : ' next') + '" data-l="' + g.L + '"><div class="tgt1"><b>' + (i ? 'Then ' : 'Next: ') + esc(g.m.name) + '</b><span>ETA ' + dayHm(g.eta) + '</span></div><p class="tgv ' + v.cls + '">' + v.text + '</p>' + chart(g, rv, !i);
+      if (!open) { var at = stAt(g.bandsIn, g.eta); h += '<button type="button" class="tgfold" data-l="' + g.L + '"><span>' + (g.pt != null ? '◎ ' : '') + esc(g.m.name) + ' · ' + (at ? at[2] : 'slack') + ' in</span><span>ETA ' + dayHm(g.eta) + ' ›</span></button>'; return; }
+      var v = gateLine(g); h += '<div class="tgmk' + (i ? '' : ' next') + (g.pt != null ? ' tgpt' : '') + '" data-l="' + g.L + '"><div class="tgt1"><b>' + (i ? 'Then ' : 'Next: ') + (g.pt != null && !/^GATE \d+$/.test(g.m.name) ? '<span class="tgtag">◎ GATE</span>' : g.pt != null ? '<span class="tgtag">◎</span>' : '') + esc(g.m.name) + '</b><span>ETA ' + dayHm(g.eta) + '</span></div>' + (g.pt != null ? '<p class="tgn">Your point: tide at this spot; your route passes ' + (g.off < 0.05 ? 'over it' : g.off.toFixed(1) + ' nm off') + '. <button type="button" class="tglink tgren" data-p="' + g.pt + '">Rename</button> · <button type="button" class="tglink tgdel" data-p="' + g.pt + '">Remove</button></p>' : '') + '<p class="tgv ' + v.cls + '">' + v.text + '</p>' + chart(g, rv, !i);
       if (!i) h += '<div class="tgtip" id="tgTip">Put a finger or the mouse on the chart for the time, the distance to the mark and the tide.</div><p class="tgn"><b>IN</b>: the tide along your leg to this mark. <b>OUT</b>: along the next leg, after you round. <b>FAIR</b> with you, <b>FOUL</b> against (hatched), grey <b>slack</b>: under 0.3 kn along the leg, about to turn. Lettered boats are in the table. The chart runs ' + (HW >= 1 ? HW + ' hour' + (HW > 1 ? 's' : '') : Math.round(HW * 60) + ' minutes') + ' either side of your ETA.</p>';
-      if (!i) { if (rv.length) { h += '<div class="tgtw"><table class="tgt"><tr><th>Boat</th><th>ETA</th><th class="r">At mark</th>' + (g.bOut != null ? '<th class="r">After next leg</th><th class="r">You gain</th>' : '') + '</tr>' + rv.map(function (r) { return '<tr><td><span class="tgbd">' + r.id + '</span>' + esc(r.name) + '<small>TCC ' + r.tcc.toFixed(3) + '</small></td><td>' + dayHm(r.tm) + '</td><td class="r">' + gap(r.at, 1) + '</td>' + (g.bOut != null ? '<td class="r">' + (r.nx != null ? gap(r.nx, 1) : '--') + '</td><td class="r ' + (r.gain > (HW < 3 ? 0.05 : 0.5) ? 'ok' : r.gain < -(HW < 3 ? 0.05 : 0.5) ? 'bad' : '') + '">' + (r.gain != null ? gap(r.gain) : '--') + '</td>' : '') + '</tr>'; }).join('') + '</table></div>';
+      if (!i) { if (rv.length) { h += '<div class="tgtw"><table class="tgt"><tr><th>Boat</th><th>ETA</th><th class="r">' + (g.pt != null ? 'At gate' : 'At mark') + '</th>' + (g.bOut != null ? '<th class="r">After next leg</th><th class="r">You gain</th>' : '') + '</tr>' + rv.map(function (r) { return '<tr><td><span class="tgbd">' + r.id + '</span>' + esc(r.name) + '<small>TCC ' + r.tcc.toFixed(3) + '</small></td><td>' + dayHm(r.tm) + '</td><td class="r">' + gap(r.at, 1) + '</td>' + (g.bOut != null ? '<td class="r">' + (r.nx != null ? gap(r.nx, 1) : '--') + '</td><td class="r ' + (r.gain > (HW < 3 ? 0.05 : 0.5) ? 'ok' : r.gain < -(HW < 3 ? 0.05 : 0.5) ? 'bad' : '') + '">' + (r.gain != null ? gap(r.gain) : '--') + '</td>' : '') + '</tr>'; }).join('') + '</table></div>';
           var more = d.ghosts.length - rv.length; h += (more > 0 ? '<button type="button" class="tglink" id="tgFleet">' + more + ' more boat' + (more > 1 ? 's' : '') + ' on the Fleet page ›</button>' : '') + '<p class="tgn">Corrected time against you: − ahead of you, + behind. At mark: when each rounds. After next leg: once both have sailed the leg out, each in the tide it meets. You gain: the change between the two, + you gain on that boat, − you lose; mostly the tide, and the forecast wind at their different times. Each boat sails your route on your polar × its TCC from its own start.</p>'; }
         else h += '<p class="tgn">No boats to compare: add the boats you are racing on the Fleet page. <button type="button" class="tglink" id="tgFleet">Fleet ›</button></p>'; }
       h += '</div>';
     });
+    h += '<p class="tgn">To add a tide gate anywhere on the course, a headland or a lighthouse, tap the chart there and choose <b>Tide gate here</b>.</p>';
     h += '<div class="tgset"><label><input type="checkbox" id="tgAlarm"' + (C.alarm ? ' checked' : '') + '> Alarm 15 minutes before the gate closes while we would miss it</label></div>';
     bx.innerHTML = h; wire(p, d, P);
   }
@@ -164,6 +198,9 @@
     var re = $('tgRe'); if (re) re.onclick = function () { if (window.__fsLiveReroute && !window.__fsLiveReroute()) alarm('Reroute needs the boat position: Live GPS or the boat link.'); };
     var fl = $('tgFleet'); if (fl) fl.onclick = function () { var wideScreen = window.__fsFleetOpen ? window.__fsFleetOpen() : false; if (!wideScreen) open(false); };   /* on a phone the Fleet tab takes the screen, so the tide gates close; beside the panel they stay */
     [].forEach.call(p.querySelectorAll('.tgfold,.tgovm'), function (b) { b.onclick = function () { OPEN[b.getAttribute('data-l')] = 1; render(); var e = p.querySelector('.tgmk[data-l="' + b.getAttribute('data-l') + '"]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); }; });
+    var PL = ptList(d);
+    [].forEach.call(p.querySelectorAll('.tgdel'), function (b) { b.onclick = function () { PL.splice(+b.dataset.p, 1); save(); render(); }; });
+    [].forEach.call(p.querySelectorAll('.tgren'), function (b) { b.onclick = function () { var j = +b.dataset.p, card = b.closest('.tgmk'), t1 = card.querySelector('.tgt1 b'); t1.innerHTML = '<input class="tgrin" type="text" maxlength="24" value="' + esc(PL[j].name) + '"> <button type="button" class="btn tgrok">OK</button>'; var inp = t1.querySelector('input'); inp.focus(); var ok = function () { var v = inp.value.trim(); if (v) { PL[j].name = v.slice(0, 24); save(); } render(); }; t1.querySelector('.tgrok').onclick = ok; inp.onkeydown = function (e) { if (e.key === 'Enter') ok(); }; }; });
     var al = $('tgAlarm'); if (al) al.onchange = function () { C.alarm = al.checked; save(); };
     var sv = p.querySelector('.tgmk.next .tgsv'), tip = $('tgTip'); if (!sv || !tip) return; var g = P.legs[0];
     var move = function (e) { var r = sv.getBoundingClientRect(), pt = e.touches ? e.touches[0] : e, vb = sv.viewBox.baseVal, xv = (pt.clientX - r.left) / r.width * vb.width, l0 = +sv.dataset.l0, t0 = +sv.dataset.t0, t1 = +sv.dataset.t1;
@@ -181,7 +218,7 @@
       '.tgtw{overflow-x:auto}.tgt{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}.tgt th{text-align:left;color:var(--muted);font-weight:600;padding:2px 6px 2px 0}.tgt td{padding:3px 6px 3px 0;border-top:1px solid var(--line);vertical-align:top}.tgt small{display:block;color:var(--muted);font-size:10px}' +
       '.tgadd{display:flex;gap:6px;align-items:center;margin:4px 0}.tgadd input{min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:0 8px;min-width:0}.tgadd input:first-child{flex:1}.tgadd span{flex:1}.tgset{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:12px}' +
       '.tgsv,.tgov{width:100%;display:block;margin:4px 0;touch-action:pan-y}.tgovt{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:8px}.tgoff{display:flex;gap:8px;align-items:center;border:1px solid #dc2626;border-radius:10px;padding:8px;margin:6px 0;font-size:12px}.tgoff b{color:#dc2626}.tgmk{border-top:1px solid var(--line);padding:8px 0 4px}.tgt1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.tgt1 b{font-size:14px}.tgmk.next .tgt1 b{font-size:16px}.tgt1 span{color:var(--muted);font-size:12px;white-space:nowrap}.tgtip{border:1px solid #60a5fa;border-radius:10px;padding:6px 8px;font-size:12px;margin:2px 0 6px}.tgbd{display:inline-block;width:16px;height:16px;border-radius:50%;background:#cbd5e1;color:#0b1626;font:700 11px system-ui,sans-serif;text-align:center;line-height:16px;margin-right:5px}.tgt td.r,.tgt th.r{text-align:right}.tgt td.ok{color:#16a34a}.tgt td.bad{color:#dc2626}.tgfold{display:flex;justify-content:space-between;gap:8px;width:100%;background:none;border:0;border-top:1px solid var(--line);color:var(--muted);font:inherit;font-size:12px;padding:8px 0;text-align:left;cursor:pointer;min-height:40px}.tglink{background:none;border:0;color:#3b82f6;font:inherit;font-size:13px;padding:6px 0;cursor:pointer;min-height:36px}' +
-      '.tgstrip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);z-index:6;background:var(--glass,var(--panel));color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:4px 12px;font:700 12px var(--f-data);white-space:nowrap;cursor:pointer}.tgstrip[hidden]{display:none}.tgstrip.bad{border-color:#dc2626;color:#dc2626}.tgstrip.ok{border-color:#16a34a}';
+      '.tgtag{display:inline-block;background:#14b8a6;color:#0b1626;font-size:10px;font-weight:800;border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:2px}.tgmk.tgpt{border-left:3px solid #14b8a6;padding-left:8px}.tgtap{margin-top:8px;display:flex;flex-direction:column;gap:6px}.tgadd1{background:#0f766e;border-color:#14b8a6;color:#fff}.tgname{display:flex;gap:6px;align-items:center;font-size:12px}.tgname input,.tgrin{flex:1;min-width:0;min-height:34px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);padding:0 8px;font:inherit}.tgno{margin:6px 0 0;color:#dc2626;font-weight:600;font-size:12px}.tgstrip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);z-index:6;background:var(--glass,var(--panel));color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:4px 12px;font:700 12px var(--f-data);white-space:nowrap;cursor:pointer}.tgstrip[hidden]{display:none}.tgstrip.bad{border-color:#dc2626;color:#dc2626}.tgstrip.ok{border-color:#16a34a}';
     document.head.appendChild(s); }
   function open(show) {
     css(); var p = $('tgPop'); if (!p) { p = document.createElement('div'); p.id = 'tgPop'; p.className = 'tgpop'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Tide gates'); p.innerHTML = '<button class="close" type="button" aria-label="Close the tide gates">×</button><h3>Tide gates</h3><div class="tgb"></div>'; (document.querySelector('.app>.chart') || document.body).appendChild(p); p.querySelector('.close').onclick = function () { open(false); }; p.hidden = true; }
