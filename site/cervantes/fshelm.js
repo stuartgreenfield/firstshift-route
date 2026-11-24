@@ -53,7 +53,7 @@
     F.slice(0, k).forEach(function (x, i) { var cell = g.children[i]; cell.querySelector('b').textContent = x[2](f, c, p); cell.querySelector('i').textContent = x[3](f, c, p); });
   }
   var tick = null;
-  function open() { if (!el) build(); el.hidden = false; draw(); if (!tick) tick = setInterval(draw, 1000); try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {} }
-  function close() { if (el) el.hidden = true; clearInterval(tick); tick = null; }
+  function open() { if (!el) build(); el.hidden = false; draw(); if (!tick) tick = FSBeat.set(draw, 1000); try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {} }
+  function close() { if (el) el.hidden = true; FSBeat.clear(tick); tick = null; }
   window.FSHelm = { open: open, close: close, draw: draw };
 })();

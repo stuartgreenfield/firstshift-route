@@ -84,8 +84,8 @@
     sec.addEventListener('click', act); sec.addEventListener('change', change); sec.addEventListener('input', function (e) { if (e.target.id === 'mkFind') { var fl = $('mkList'); if (fl) fl.innerHTML = listRows(e.target.value); } });
     /* Route's logo box, with the colour line running round it (Stuart 05:07) */
     var lb = document.querySelector('.top .logobox'); if (lb) lb.classList.add('mkring');
-    applyLook(); showMark(M.tab); render(); setInterval(tick, 1000);
-    setInterval(function () { var t = document.querySelector('.top'); if (t) document.documentElement.style.setProperty('--mkTB', Math.round(t.getBoundingClientRect().bottom) + 'px'); }, 500);
+    applyLook(); showMark(M.tab); render(); FSBeat.set(tick, 1000, true);
+    FSBeat.set(function () { var t = document.querySelector('.top'); if (t) document.documentElement.style.setProperty('--mkTB', Math.round(t.getBoundingClientRect().bottom) + 'px'); }, 500);
   }
   function tabClick(t) {
     /* the Racing view opens at the gun; before it, with a tap once the wind is known (Stuart 17 Nov 05:28) */
@@ -536,7 +536,7 @@
     var l = window.__fsLine(); if (!(l.boat && l.pin)) { var st = SOL().start; window.__fsSetLine('boat', st.lat, st.lon - 0.0028); window.__fsSetLine('pin', st.lat, st.lon + 0.0028); }
     if (!M.wind || M.wind.twd == null) M.wind = { twd: 230, tws: 12 };
     M.gun = Math.round(Date.now() / 1000 + 150); M.flag = 'P'; M.seq = 5; M.finAt = null; M.tab = 'start'; save(); SIM.on = true; useCourse(false); gunToEngine();
-    window.__fsSim(true); SIM.i = 0; SIM.pos = null; testBar(true); render(); SIM.t = setInterval(simStep, 1000); simStep();
+    window.__fsSim(true); SIM.i = 0; SIM.pos = null; testBar(true); render(); SIM.t = FSBeat.set(simStep, 1000, true); simStep();
   }
   function simStep() {
     if (!SIM.on) return; var l = window.__fsLine(), c = window.__navCourse && window.__navCourse(); if (!l.boat || !l.pin || !c) return;
@@ -547,12 +547,12 @@
     else { if (!SIM.pos) SIM.pos = at(mid, up, 10); var tgt = pts[SIM.i]; if (!tgt) return; var r = rh(SIM.pos, tgt), step = 6 * 0.514 * 8;   /* 6 knots, eight times quicker than life */
       var wob = Math.sin(now / 25) * 7; cog = (r.brg + wob + 360) % 360;
       if (r.nm * 1852 <= step) { SIM.pos = { lat: tgt.lat, lon: tgt.lon }; SIM.i++; try { if (window.__fsPlot && window.__fsPlot.setMark) window.__fsPlot.setMark(Math.min(SIM.i, pts.length - 1)); } catch (e) {}
-        if (SIM.i >= pts.length) { M.finAt = Math.round(now); M.tab = 'after'; save(); render(); toast('Test mode: finished. Stop test mode puts your own race back.'); clearInterval(SIM.t); } }
+        if (SIM.i >= pts.length) { M.finAt = Math.round(now); M.tab = 'after'; save(); render(); toast('Test mode: finished. Stop test mode puts your own race back.'); FSBeat.clear(SIM.t); } }
       else SIM.pos = at(SIM.pos, cog, step); p = SIM.pos; }
     window.__fsSimFix(p.lat, p.lon, kn, cog);
   }
   function stopTest() {
-    if (!SIM.on) return; clearInterval(SIM.t); SIM.on = false; window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
+    if (!SIM.on) return; FSBeat.clear(SIM.t); SIM.on = false; window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
     ['tab', 'gun', 'flag', 'seq', 'finAt', 'wind', 'tide'].forEach(function (q) { if (sv0.M) M[q] = sv0.M[q]; }); if (M.tab === 'after' || M.tab === 'race') M.tab = 'course'; save();
     if (sv0.B) solSet(sv0.B); ['boat', 'pin'].forEach(function (e) { var a = sv0.line && sv0.line[e]; window.__fsSetLine(e, a ? a[0] : null, a ? a[1] : null); });
     try { if (window.__fsClearCourse) window.__fsClearCourse(); var c = FSSolent.build(); if (c && !c.err) useCourse(false); } catch (e) {} gunToEngine(); render(); toast('Test mode stopped: your own race is back.');
@@ -621,7 +621,7 @@
   function syncInit() {
     try { var q = new URLSearchParams(location.search).get('boat'); if (q && /^[A-HJ-NP-Z2-9]{6}$/i.test(q) && q.toUpperCase() !== SY.code()) SY.setCode(q.toUpperCase()); } catch (e) {}
     setTimeout(function () { noteLocal(); SY.dirty = false; SY.pull(true); }, 2500);
-    setInterval(syncTick, 1000); setInterval(function () { if (!document.hidden) SY.pull(false); }, 5000);
+    FSBeat.set(syncTick, 1000, true); FSBeat.set(function () { if (!document.hidden) SY.pull(false); }, 5000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) SY.pull(false); }); window.addEventListener('online', function () { SY.pull(false); });
   }
   window.__mkSync = SY;
@@ -629,7 +629,7 @@
      taking taps on the chart and adding buoys while racing (Stuart's photo, 17 Nov 05:39) */
   function oldOff() { try { if (!window.FSSolent) return; if (!FSSolent.__mk) { FSSolent.__mk = 1; FSSolent.start = function () { showMark('course'); }; FSSolent.chain = function () {}; FSSolent.step = (function (f) { return function (n) { if (!n) f(0); }; })(FSSolent.step); FSSolent.open = function () {}; }
       if (FSSolent.stepState && FSSolent.stepState().on) FSSolent.step(0); } catch (e) {} }
-  function boot() { if (!document.body) return setTimeout(boot, 50); oldOff(); setInterval(oldOff, 1000); splash(); build(); hook(); syncInit(); setTimeout(tourSetup, 1500); try { if (window.FSSolent && FSSolent.load) FSSolent.load(); if (window.FSSolent && FSSolent.on) FSSolent.on(true); } catch (e) {} }
+  function boot() { if (!document.body) return setTimeout(boot, 50); oldOff(); FSBeat.set(oldOff, 1000); splash(); build(); hook(); syncInit(); setTimeout(tourSetup, 1500); try { if (window.FSSolent && FSSolent.load) FSSolent.load(); if (window.FSSolent && FSSolent.on) FSSolent.on(true); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   window.FSMark = { state: function () { return M; }, render: render, stage: stage, set: function (o) { Object.assign(M, o); save(); applyLook(); if (o.tab && ['course', 'start', 'race', 'after', 'help', 'share', 'list'].indexOf(o.tab) >= 0) showMark(); else render(); renderSet(); }, show: showMark, settings: function (t) { openSettings(t || 'mark'); }, closeSettings: closeSettings };
 })();

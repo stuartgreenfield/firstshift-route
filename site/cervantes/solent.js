@@ -361,11 +361,11 @@
   function ccBtn() { var b = $('solCC'); if (!raceOn()) { if (b) b.hidden = true; return; } css();
     if (!b) { b = document.createElement('button'); b.id = 'solCC'; b.className = 'solcc'; b.type = 'button'; b.textContent = 'COURSE CHANGE'; b.title = 'The committee changed the course: open the course, leg by leg, to change it'; var g = $('bar') && $('bar').querySelector('.pgrp'); if (g) g.appendChild(b); else { b.classList.add('solccfx'); document.body.appendChild(b); } b.onclick = function () { showList(); }; }   /* Stuart 17 Nov 14:54: it floated over the nav window; now it sits in the bottom bar after TIME, where nothing floats */
     b.hidden = !!($('solLegs') && !$('solLegs').hidden) || !!($('solCE') && !$('solCE').hidden); }
-  if (window.FS_MARK) setInterval(ccBtn, 1000);
+  if (window.FS_MARK) FSBeat.set(ccBtn, 1000);
   /* Stuart 17 Nov 14:19: "mark first action screen after landing page should open with the start new race box in view". Once the landing
      page has gone, the Start new race card shows, unless a race is under way, a course is being set or test mode is on */
-  if (window.FS_MARK) (function () { var n = 0, t = setInterval(function () { n++; var sp = document.getElementById('splash'), up = !sp || sp.hidden || getComputedStyle(sp).display === 'none';
-    if (n > 240) { clearInterval(t); BOOT = false; return; } if (!up || !MK && n < 40) return; clearInterval(t); BOOT = false;
+  if (window.FS_MARK) (function () { var n = 0, t = FSBeat.set(function () { n++; var sp = document.getElementById('splash'), up = !sp || sp.hidden || getComputedStyle(sp).display === 'none';
+    if (n > 240) { FSBeat.clear(t); BOOT = false; return; } if (!up || !MK && n < 40) return; FSBeat.clear(t); BOOT = false;
       if (WZ.on || SIM.on || ($('solCard') && !$('solCard').hidden)) return; var lg = $('solLegs');
       if (B.shown && earlier() && !(B.ended > (B.startAt ? B.startAt * 1000 : B.shown))) { if (lg) lg.hidden = true; try { oldCard(); } catch (e) {} return; }   /* not one already ended with New race or Stop race */   /* a race from an earlier day: carry on or new */
       if (raceOn()) { try { if ((!lg || lg.hidden) && window.__navCourse && window.__navCourse()) showList(); } catch (e) {} return; }   /* a race under way: its course card */
@@ -395,7 +395,7 @@
   /* Stuart 22 Nov 16:51: with the time row folded away, a small UTC clock stays on show beside TIME */
   function utcClock(tb, fold) { var u = $('mkUtc'); if (!u) { u = document.createElement('span'); u.id = 'mkUtc'; u.className = 'mkutc'; u.setAttribute('aria-label', 'UTC time now'); var mob = $('mobBtn'), at = mob && mob.parentNode ? mob : tb; at.parentNode.insertBefore(u, at.nextSibling); }   /* beside MOB, in the row the slider leaves empty */
     u.hidden = !fold; if (fold) u.innerHTML = '<small>UTC</small>' + new Date().toISOString().slice(11, 19); }
-  if (window.FS_MARK) setInterval(timeFold, 1000);
+  if (window.FS_MARK) FSBeat.set(timeFold, 1000);
   /* Stuart 19 Nov 18:23 (photo): at start-up the course card slid over the Start new race card. One window only: the course card opened by
      itself (auto) gives way to a card already open, and a race from an earlier day asks first (oldCard) */
   function earlier() { var t = B.startAt || (B.shown ? B.shown / 1000 : 0); if (!t) return false; var d = new Date(t * 1000), n = new Date(); return t < n.getTime() / 1000 && d.toDateString() !== n.toDateString(); }
@@ -412,8 +412,8 @@
        GPS window opens a moment after the card, and the card steps up out of its way, sometimes twice. In the first seconds the card now waits,
        unseen, until the GPS window has kept still for about a second, and then appears once, in its place. */
     var byHand = !!(navigator.userActivation && navigator.userActivation.isActive);   /* opened by a tap: shown at once (only the card opening by itself at start-up waits) */
-    if (!byHand && performance.now() < 8000 && !c.dataset.settling) { c.dataset.settling = '1'; c.style.visibility = 'hidden'; var sig = null, same = 0, tk = setInterval(function () { var lb = $('liveBox'), g = lb && !lb.hidden && lb.getClientRects().length ? Math.round(lb.getBoundingClientRect().top) + ' ' + lb.className : 'off'; if (g === sig) same++; else { sig = g; same = 0; } legsPlace();
-      if (same >= 3 || performance.now() > 9000 || c.hidden) { clearInterval(tk); legsPlace(); c.style.visibility = ''; delete c.dataset.settling; } }, 300); }
+    if (!byHand && performance.now() < 8000 && !c.dataset.settling) { c.dataset.settling = '1'; c.style.visibility = 'hidden'; var sig = null, same = 0, tk = FSBeat.set(function () { var lb = $('liveBox'), g = lb && !lb.hidden && lb.getClientRects().length ? Math.round(lb.getBoundingClientRect().top) + ' ' + lb.className : 'off'; if (g === sig) same++; else { sig = g; same = 0; } legsPlace();
+      if (same >= 3 || performance.now() > 9000 || c.hidden) { FSBeat.clear(tk); legsPlace(); c.style.visibility = ''; delete c.dataset.settling; } }, 300); }
     /* 13:12: the card never runs off the screen: it starts on the screen and scrolls inside when long (a phone, with the Next part) */
 
     c.onclick = function (e) { var b = e.target.closest('[data-k]'); if (!b) return; var k = b.dataset.k;
@@ -473,7 +473,7 @@
     c.addEventListener('pointermove', function (e) { if (!d || e.pointerId !== d.id) return; c.classList.add('dragged'); c.style.left = (e.clientX - d.dx) + 'px'; c.style.top = (e.clientY - d.dy) + 'px'; c.style.bottom = 'auto'; });
     var end = function (e) { if (!d || e.pointerId !== d.id) return; d = null; var r = c.getBoundingClientRect(); sv('fs-sollegs-pos', { x: r.left, y: r.top }); legsPlace(); };
     c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end); c.addEventListener('dblclick', function (e) { if (e.target.closest('.solgrip')) { try { localStorage.removeItem('fs-sollegs-pos'); } catch (x) {} legsPlace(); } }); }
-  setInterval(legsPlace, 700); window.addEventListener('resize', legsPlace);
+  FSBeat.set(legsPlace, 700); window.addEventListener('resize', legsPlace);
   /* clear down for the next race (18:40): the course stays in Saved races, the track is filed if one was sailed; the marks go, the start line and the wind stay */
   /* M30 (Stuart 17 Nov 09:18): Stop race ends the race and files its track; the course stays in Stored races */
   function stopRace() { SQ.hide = B.startAt; B.pp = false; ['solLegs', 'solAfter', 'solSeq', 'solStartScr'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; }); B.ended = Date.now(); B.shown = null; saveB(); try { if (window.__fsEndRace) window.__fsEndRace(); else if (window.__fsClearCourse) window.__fsClearCourse(); } catch (e) {} try { var PL = window.__fsPlot || window.__navPlot; if (PL && PL.C.on) PL.toggle(false); } catch (e) {} toast('Race stopped. It is kept in Stored races.'); }
@@ -892,7 +892,7 @@
       B.sk = 'line'; B.start = lineStart(); B.plan = 'list'; B.startAt = Math.round(Date.now() / 1000 + 150); saveB(); go(true); B.shown = Date.now(); B.raced = null; saveB();
     } finally { QUIET = false; }
     try { if (window.__fsGun) window.__fsGun(B.startAt); } catch (e) {}
-    var lg = $('solLegs'); if (lg) lg.hidden = true; EM = { t: 0, x: 1, shift: 0, log: [], i: 0, base: SIM.base || { twd: 230, tws: 12 } }; try { if (window.__navPracticeOn && window.__navPracticeOn()) window.__navPractice(false); } catch (e) {} window.__fsSim(true); SIM.on = true; SIM.i = 0; SIM.pos = null; testBar(true); SIM.t = setInterval(simStep, 1000); simStep(); toast('Test mode: the gun is in two and a half minutes.');
+    var lg = $('solLegs'); if (lg) lg.hidden = true; EM = { t: 0, x: 1, shift: 0, log: [], i: 0, base: SIM.base || { twd: 230, tws: 12 } }; try { if (window.__navPracticeOn && window.__navPracticeOn()) window.__navPractice(false); } catch (e) {} window.__fsSim(true); SIM.on = true; SIM.i = 0; SIM.pos = null; testBar(true); SIM.t = FSBeat.set(simStep, 1000, true); simStep(); toast('Test mode: the gun is in two and a half minutes.');
   }
   /* ---- The race emulator (Stuart 17 Nov 13:31, Mark+ photo: "why is boat sailing away from mark. Can we build a tool to test mark and
      mark+ in test mode please"). The old test boat went straight at each mark, even dead upwind, and on Mark+ Route+'s own practice boat
@@ -950,7 +950,7 @@
        time it makes no way through the water and only the tide carries it */
     var side = st.twa < 0 ? -1 : 1; if (EM.side && side !== EM.side) { var kd = Math.abs(st.twa) > 90 ? 'gybe' : 'tack', ts = turnSecs(kd, bsp); EM.lose = (EM.lose || 0) + (ts ? ts.s : 0); EM.log.push([kd, Math.round(EM.t), ts ? ts.s : 0]); } EM.side = side;
     var lose = Math.min(dt, EM.lose || 0); EM.lose = (EM.lose || 0) - lose; var Tt = emTide(), d = gr.sog * 0.514 * (dt - lose);
-    if (r.nm * 1852 <= Math.max(25, d)) { EM.p = { lat: tgt.lat, lon: tgt.lon }; EM.i++; SIM.i = EM.i; EM.log.push(['round', EM.i, Math.round(EM.t)]); try { var PL2 = window.__fsPlot || window.__navPlot; if (PL2 && PL2.setMark) PL2.setMark(Math.min(EM.i, pts.length - 1)); } catch (e) {} if (EM.i >= pts.length) { clearInterval(SIM.t); toast('Test mode: finished. Stop test mode puts your own race back.'); } }
+    if (r.nm * 1852 <= Math.max(25, d)) { EM.p = { lat: tgt.lat, lon: tgt.lon }; EM.i++; SIM.i = EM.i; EM.log.push(['round', EM.i, Math.round(EM.t)]); try { var PL2 = window.__fsPlot || window.__navPlot; if (PL2 && PL2.setMark) PL2.setMark(Math.min(EM.i, pts.length - 1)); } catch (e) {} if (EM.i >= pts.length) { FSBeat.clear(SIM.t); toast('Test mode: finished. Stop test mode puts your own race back.'); } }
     else { EM.p = at(EM.p, gr.cog, d); if (lose > 0 && (Tt[0] || Tt[1])) EM.p = at(EM.p, n360(Math.atan2(Tt[0], Tt[1]) / R), Math.hypot(Tt[0], Tt[1]) * 0.514 * lose); }
     EM.log.push(['p', Math.round(EM.t), EM.i, Math.round(r.nm * 1852), Math.round(st.hdg), Math.round(gr.cog), +bsp.toFixed(1)]); if (EM.log.length > 4000) EM.log.splice(0, 1000);
     emFeed(EM.p.lat, EM.p.lon, st.hdg, bsp, gr.sog, gr.cog, st.twa); testBar(true);
@@ -960,7 +960,7 @@
     var cand = MK.filter(function (m) { return m.id !== m0.code && rh(m0, m).nm < 2 && rh(m0, m).nm > 0.3; }).sort(function (a, b) { return rh(m0, a).nm - rh(m0, b).nm; })[0]; if (!cand) return;
     B.marks[i] = { code: cand.id, name: cand.id + ' ' + cand.name, lat: cand.lat, lon: cand.lon, side: m0.side }; saveB(); go(true); redraw(); toast('Test mode: the committee has changed the course. Mark ' + (i + 1) + ' is now ' + cand.id + ' instead of ' + (m0.code || m0.name) + '. Tap COURSE CHANGE to see it, or to put it back.'); }
   function testStop() {
-    if (!SIM.on) return; clearInterval(SIM.t); SIM.on = false; try { localStorage.removeItem('fs-solent-testsave'); } catch (e) {} window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
+    if (!SIM.on) return; FSBeat.clear(SIM.t); SIM.on = false; try { localStorage.removeItem('fs-solent-testsave'); } catch (e) {} window.__fsSim(false); testBar(false); var sv0 = SIM.saved || {};
     QUIET = true; try { if (sv0.B) { B = sv0.B; sv(BKEY, B); } ['boat', 'pin'].forEach(function (e) { var a = sv0.line && sv0.line[e]; window.__fsSetLine(e, a ? a[0] : null, a ? a[1] : null); }); if (window.__fsClearCourse) window.__fsClearCourse(); var c0 = build(); if (B.shown && c0 && !c0.err) go(true); } catch (e) {} finally { QUIET = false; }
     if (SIM.push) window.__fsBcPush = SIM.push; try { var PL3 = window.__fsPlot || window.__navPlot; if (PL3 && PL3.C.on) PL3.toggle(false); } catch (e) {} redraw(); toast('Test mode stopped: your own race is back.'); }
   /* ---- The start sequence (Stuart 16 Nov 12:46 "the usual start sequence with count down"; 17 Nov 05:04 sounds and vibration on).
@@ -1254,15 +1254,15 @@
     e.hidden = false; e.classList.toggle('sqlast', rem <= 60 && rem > 0); ssDraw(e.querySelector('.sscv'), lc, rem);
   }
   function clk(t) { var z = (window.__fsTZ ? window.__fsTZ() : { sh: 0, label: 'UTC' }), d = new Date((t + z.sh) * 1000); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2) + (d.getUTCSeconds() ? ':' + ('0' + d.getUTCSeconds()).slice(-2) : '') + ' ' + z.label; }   /* the gun in the chosen time, Local or UTC (Stuart 20 Nov 16:03); it was the device's own clock */
-  if (KIT) setInterval(function () { try { var sl = window.__fsLoa && window.__fsLoa(); if (sl > 3 && sl !== B.loa) { B.loa = sl; saveB(); } } catch (e) {} }, 2000);   /* F55: the boat length from Settings */
-  if (KIT) setInterval(function () { var tn = Date.now(); if (!SS.lastNote || tn - SS.lastNote > 1000) { SS.lastNote = tn; try { var fq = window.__fsLiveFix && window.__fsLiveFix(); if (fq && (!SS.sp.length || SS.sp[SS.sp.length - 1][0] < tn - 900)) spdNote(fq); learnTick(fq); } catch (e) {} }   /* M36: speeds kept all the time, not only while the start screen shows */
+  if (KIT) FSBeat.set(function () { try { var sl = window.__fsLoa && window.__fsLoa(); if (sl > 3 && sl !== B.loa) { B.loa = sl; saveB(); } } catch (e) {} }, 2000);   /* F55: the boat length from Settings */
+  if (KIT) FSBeat.set(function () { var tn = Date.now(); if (!SS.lastNote || tn - SS.lastNote > 1000) { SS.lastNote = tn; try { var fq = window.__fsLiveFix && window.__fsLiveFix(); if (fq && (!SS.sp.length || SS.sp[SS.sp.length - 1][0] < tn - 900)) spdNote(fq); learnTick(fq); } catch (e) {} }   /* M36: speeds kept all the time, not only while the start screen shows */
     sqRender(); var ssv = $('solStartScr'); var ssOn = !!(ssv && !ssv.hidden); if (ssOn && !document.body.classList.contains('fsss')) { if (window.__fsPanelClose && innerWidth < 900) window.__fsPanelClose(); setTimeout(ssFit, 1500); }   /* and the chart is fitted again once the boxes have filled (the real site showed the line slipping under them) */ document.body.classList.toggle('fsss', ssOn); tbPlace();   /* M80 (Stuart 18 Nov 22:25, 22:27): Route's panel folds away as the start screen opens, as it does for the course builder */
     if (B.ssPic == null) B.ssPic = true;   /* 24 Nov: the approved wind-up picture opens first; See chart still one tap */
     if (ssv) { ssv.classList.toggle('ssthru', !B.ssPic); var vb = ssv.querySelector('[data-q="ssview"]'); if (vb) vb.textContent = B.ssPic ? 'See chart' : 'Picture'; }
     var mobB = $('mobBtn'); if (mobB && ssv) { if (ssOn && mobB.parentNode !== ssv) { SS.mobHome = [mobB.parentNode, mobB.nextSibling]; ssv.appendChild(mobB); } else if (!ssOn && mobB.parentNode === ssv && SS.mobHome) { SS.mobHome[0].insertBefore(mobB, SS.mobHome[1] && SS.mobHome[1].parentNode === SS.mobHome[0] ? SS.mobHome[1] : null); } }   /* man overboard always on top of the start screen picture, and can be tapped (M80; picture first since 24 Nov) */
     window.__fsNorthHold = ssOn && !B.ssPic; if (ssOn && !SS.wasOn && !B.ssPic) setTimeout(ssFit, 120); SS.wasOn = ssOn;   /* Stuart's iPhone 18 Nov 19:44: the GPS window lay over the start screen; the screen has the same figures */
     if (B.pp && B.warnAt && Date.now() / 1000 >= B.warnAt) { var wa = B.warnAt; B.pp = false; B.warnAt = null; sqGun(wa + seqLen() * 60); toast('Warning signal: gun at ' + clk(B.startAt) + '.'); sqTone(true); }   /* the warning signal 1 minute after AP comes down (RRS race signals) */
-    if (!B.startAt || B.pp) return; var rem = Math.round(B.startAt - Date.now() / 1000); if (rem === SQ.last) return; SQ.last = rem; if (sqSignals().indexOf(rem) >= 0) sqTone(true); else if (rem > 0 && rem <= 10) sqTone(false); }, 250);
+    if (!B.startAt || B.pp) return; var rem = Math.round(B.startAt - Date.now() / 1000); if (rem === SQ.last) return; SQ.last = rem; if (sqSignals().indexOf(rem) >= 0) sqTone(true); else if (rem > 0 && rem <= 10) sqTone(false); }, 250, true);
   /* M2 (Stuart 17 Nov 05:04): laylines to the next mark when it is upwind, from the typed wind (Mark) or the boat's wind (Mark+) */
   function laylines(ctx, X, Y) {
     var w = windRef(), nw = null; try { nw = window.__navWind ? window.__navWind() : null; } catch (e) {} var twd = nw && nw[1] != null ? nw[1] : w && w.twd != null ? w.twd : null; if (twd == null) return;
@@ -1299,7 +1299,7 @@
     var bt = $('solentBuild'); if (bt) bt.onclick = function () { if (!C.on) setOn(true); openBuilder(); };
   }
   /* M12 (Stuart 17 Nov 05:30): at the gun the racing window opens by itself: the plotter, steering to the next mark (rhumb line) or along the route */
-  if (window.FS_MARK) setInterval(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); gunBar(); } catch (e) {} }, 1000);
+  if (window.FS_MARK) FSBeat.set(function () { var now = Date.now() / 1000; if (!B.shown || !B.startAt || B.raced === B.startAt || now < B.startAt || now > B.startAt + 600) return; B.raced = B.startAt; saveB(); try { var PL = window.__fsPlot || window.__navPlot; if (PL && !PL.C.on) PL.toggle(true); gunBar(); } catch (e) {} }, 1000, true);
   /* Outside review, 23 Nov 2026, option A (Stuart 21:16): at the gun, a green bar under the gun box for 20 s says the race is on, the
      next mark, the side to leave it and its bearing and distance. It replaces the grey tip, which could sit on top of another. */
   function gunBar() {
@@ -1317,7 +1317,7 @@
   }
   function gunNext(m) { if (!m) return 'Racing: the next mark is in the racing window'; if (m.finish) return 'Next: the finish'; return 'Next: ' + esc(m.name || 'the next mark') + (m.side ? ' · leave to ' + (/^s/i.test(m.side) ? 'starboard' : 'port') : ''); }
   function gunBd(o) { if (!o || !o.ok || o.btw == null) return ''; return ('00' + Math.round((o.btw % 360 + 360) % 360) % 360).slice(-3) + '°T · ' + (o.dtw < 10 ? o.dtw.toFixed(1) : Math.round(o.dtw)) + ' nm'; }
-  setInterval(gunBarFill, 1000);
+  FSBeat.set(gunBarFill, 1000, true);
   (window.__fsOverlays = window.__fsOverlays || []).push(overlay);
   /* A14: before any other label in the frame, Mark keeps the committee boat and the pin clear of labels, and the line's bias and wind
      labels take their places; biasDraw then draws them where they were placed */
@@ -1369,7 +1369,7 @@
     var sqb = $('solSeq'); if (pr && sqb && !sqb.hidden && sqb.getClientRects().length && sqb.getBoundingClientRect().bottom > top - 4) { RB.el.hidden = true; return; }   /* D: a phone with the panel open and the countdown bar showing: no room for them, and the bar has its own Start screen button */
     RB.el.style.top = Math.round(top) + 'px';
   }
-  setInterval(rbRender, 1000);
+  FSBeat.set(rbRender, 1000, true);
   (function () { var st = document.createElement('style'); st.textContent = 'body.fsdeck #solSeq{display:none}' /* F44: the deck screen has its own GUN box; the bar covered its MENU button */ + '.solrb{position:fixed;z-index:56;left:50%;translate:-50% 0;display:flex;gap:8px;pointer-events:none}.solrb .btn{pointer-events:auto;font:700 13px/1 var(--f-body,system-ui);letter-spacing:.06em;padding:11px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}.solrb .solrbseq{background:#6FA9E0;color:#042D5E;border:1px solid #042D5E}.solrb .solrbstop{background:#C8372D;color:#fff;border:1px solid #7a1c16}.solrb .solrbstop.armed{background:#fff;color:#C8372D;border:2px solid #C8372D}'; document.head.appendChild(st); })();
   window.FSSolent = { windNow: function () { return windRef(); }, accInfo: function () { var V = fullV(), q = accNow(), e = exitNow().e; return { tackLoss: q ? Math.round(q.s * Math.pow(1 - e, 2) / 2 * 100) / 100 : null, tackBack: q ? Math.round(q.s * (1 - e) * 10) / 10 : null, exit: exitNow(), tws: twsNow(), size: sizeNow(), V: V, polar: polarV(twsNow()), good: vGood(), acc: accNow(), tack: turnSecs('tack', V), gybe: turnSecs('gybe', V) }; },   /* M53 tests */
     accSet: function (o) { Object.keys(o).forEach(function (k) { B[k] = o[k]; }); saveB(); }, ss: function () { return SS; }, ssHold: function (on) { if (on) { SQ.small = B.startAt; SQ.force = 0; var s0 = $('solStartScr'); if (s0) s0.hidden = true; } else SQ.small = 0; sqRender(); }, em: function () { return EM; }, tideReset: function () { B.tide = { mode: 'model' }; saveB(); try { wzRender(); } catch (e) {} var lg = $('solLegs'); if (lg && !lg.hidden) showList(); }, test: function (on) { if (on === false) testStop(); else testStart(); }, testing: function () { return SIM.on; }, share: share, applyRemote: applyRemote, showList: showList, newCourse: newCourse, windRef: windRef, legType: legType, start: startCard, chain: chain, step: wzOpen, stepState: function () { return { on: WZ.on, n: WZ.n, key: WZ.on ? wzKey() : null }; }, go: go, list: list, on: setOn, isOn: function () { return !!C.on; }, open: openBuilder, marks: function () { return MK; }, startNow: function () { if (!B.startAt || B.pp) return null; var rem = B.startAt - Date.now() / 1000, lc = null, f = null, sm = null; try { lc = window.__fsLineCalc ? window.__fsLineCalc(B.startAt) : null; } catch (e) {} try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} try { sm = startMaths(lc, f, rem); } catch (e) {} return { rem: rem, burn: sm && sm.burn != null ? sm.burn : lc && lc.burn != null ? lc.burn : null, d: lc && lc.d != null ? lc.d * 1852 : null, over: !!(lc && lc.over), sog: f && f.sog != null ? f.sog : null }; }, load: load, board: parseBoard, build: build, state: function () { return B; }, set: function (o) { Object.assign(B, o); saveB(); render(); redraw(); }, tap: tapHook };
@@ -1377,7 +1377,7 @@
     var full = window.FSSolent; window.FSSolent = { kit: true, isOn: function () { return false; }, stepState: function () { return { on: false }; }, marks: function () { return null; }, on: function () {}, step: function () {}, start: function () {}, windRef: function () { return null; }, ss: full.ss, state: full.state, startNow: full.startNow, area: function () { return areaOn() && !!MK; } };   /* area: the Solent buoys on the chart (20 Nov) */
     B.shown = B.shown || 1; B.type = 'route'; C.on = false;
     var gunSync = function () { var g = null; try { g = window.__fsGunAt ? window.__fsGunAt() : null; } catch (e) {} if (!g) { if (B.startAt && !(SQ.setAt && Date.now() - SQ.setAt < 3000)) { B.startAt = null; saveB(); } return; } if (Math.abs(g - (B.startAt || 0)) > 1 && !(SQ.setAt && Date.now() - SQ.setAt < 3000)) { B.startAt = g; B.ended = null; SQ.hide = 0; saveB(); if (SQ.want && Date.now() - SQ.want < 600000) { SQ.want = 0; SQ.small = 0; SQ.force = B.startAt; sqRender(); rbRender(); } } };   /* B: asked for the start screen before the time was set */
-    gunSync(); setInterval(gunSync, 1000);
+    gunSync(); FSBeat.set(gunSync, 1000, true);
     /* F44 (Stuart 18 Nov 15:25): the start line five ways in Route: ping (the GPS window), shore transit (the GPS window), typed latitude and
        longitude from the sailing instructions, bearing and length from one end, or two taps on the chart; and the RYS line preset. */
     var RYS = { boat: [50.766733, -1.300917], brg: 346, m: 2290 };   /* Rolex Fastnet Race 2025 SIs 14.1 to 14.2; RYS SIs give the transit as about 346 T */

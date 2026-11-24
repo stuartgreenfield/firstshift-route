@@ -20,6 +20,6 @@
     document.getElementById('fsSaver').addEventListener('change', function () { try { localStorage.setItem(KEY, this.checked ? '1' : '0'); } catch (e) {} apply(); });
     apply(); return true;
   }
-  var k = 0, t = setInterval(function () { if (mount() || ++k > 60) clearInterval(t); }, 500);
+  var k = 0, t = FSBeat.set(function () { if (mount() || ++k > 60) FSBeat.clear(t); }, 500);
   window.FSSaver = { on: on, set: function (v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} apply(); } };
 })();

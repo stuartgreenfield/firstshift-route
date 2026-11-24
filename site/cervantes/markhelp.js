@@ -114,7 +114,7 @@
     setTimeout(function () { try { build(); window.FSHelpFind && window.FSHelpFind.open(slug); } catch (e) {} }, 350);
   }
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('.mkq'); if (!b) return; e.preventDefault(); e.stopPropagation(); openTopic(b.dataset.mkq); }, true);
-  setInterval(qTick, 800);
+  FSBeat.set(qTick, 800);
   window.FSMarkHelpOpen = openTopic;
 
   /* "Your first race" checklist on the Start new race card (Stuart 17 Nov 17:20, "Yes"): ticks as each step is done; goes once all are done */
@@ -137,7 +137,7 @@
     st.textContent = '.mkfirst{margin-top:12px;padding:10px 12px;border:1px solid var(--line,#456);border-radius:14px}.mkfirst>b{font-size:15px}.mkfirst>span{color:var(--muted,#9ab);font-size:13px;margin-left:6px}.mkfirst ul{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:4px}.mkfirst li{display:flex;align-items:center;gap:8px;font-size:14px}.mkfirst li>span{width:22px;height:22px;border-radius:50%;border:1px solid var(--line,#456);display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:#22c55e;flex:none}.mkfirst li.done{color:var(--muted,#9ab)}.mkfirst li.done>span{border-color:#22c55e}.mkqs{width:26px;height:26px;font-size:13px;margin-left:auto}';
     document.head.appendChild(st); }
   document.addEventListener('click', function (e) { var x = e.target.closest && e.target.closest('[data-mkfx]'); if (!x) return; var F = fGet(); F.hide = 1; fSet(F); fTick(); }, true);
-  setInterval(function () { try { fCss(); fTick(); } catch (e) {} }, 1000);
+  FSBeat.set(function () { try { fCss(); fTick(); } catch (e) {} }, 1000);
 
   /* The button tour for Mark (Stuart 17 Nov 17:20: "Both solutions would be best so guided button tour and Emma tutorial"): Route's tour,
      with Mark's buttons. Mark has Level 1; Mark+ adds Route+'s Connect to the boat and Polars levels after it. */
@@ -195,6 +195,6 @@
     window.FSTourLevels = [{ n: 1, name: 'Race the cans', note: 'Course, line, start and the race', steps: MARK1 }]   /* Stuart 18 Nov 19:55: Emma's practice race is taken out to be rebuilt from scratch (COACH kept for the rebuild) */.concat(PLUS && base && base.length > 1 ? base.slice(1).map(function (L, i) { return Object.assign({}, L, { n: i + 3 }); }) : []); }
   /* 17 Nov 20:30 (Stuart's photo: Mark+ showed Route+'s levels): set the levels as soon as every script has run (Route+'s navtour.js sets its own after this file), not 2.5 s later, so a quick Yes to Show me round still gets Mark's levels */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tourLevels); else setTimeout(tourLevels, 0);
-  var n = 0, t = setInterval(function () { if (build() || ++n > 60) clearInterval(t); }, 500);
+  var n = 0, t = FSBeat.set(function () { if (build() || ++n > 60) FSBeat.clear(t); }, 500);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) build(); }, true);
 })();

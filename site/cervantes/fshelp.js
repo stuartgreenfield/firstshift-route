@@ -55,7 +55,7 @@
     if (loading) return; loading = true;
     var sc = document.createElement('script'); sc.src = 'fshelpimg.js'; sc.onload = fill; sc.onerror = function () { loading = false; }; document.head.appendChild(sc);
   }
-  var n = 0, t = setInterval(function () { if (build() || ++n > 60) clearInterval(t); }, 500);
+  var n = 0, t = FSBeat.set(function () { if (build() || ++n > 60) FSBeat.clear(t); }, 500);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) setTimeout(function () { build(); pics(); }, 50); }, true);
   window.FSHelp = { topics: T.map(function (x) { return x[0]; }), pics: pics };
 })();

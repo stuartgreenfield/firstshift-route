@@ -223,7 +223,7 @@
     var b = document.createElement('button'); b.type = 'button'; b.id = 'fsDeckBtn'; b.className = plotB.className + ' fsdeckb'; b.textContent = '20/20';   /* Stuart 22 Nov 08:55: 20/20, so it is not confused with the plotter's DECK and NAV views */  b.title = '20/20: four big numbers over the chart or a panel'; b.setAttribute('aria-pressed', 'false');
     b.onclick = function () { set(!on); }; plotB.parentNode.insertBefore(b, plotB.nextSibling); return true;
   }
-  function boot() { var n = 0, t = setInterval(function () { n++; if (button() !== false || n > 60) { clearInterval(t); if (C.on) set(true); } }, 500); timer = setInterval(tick, 1000); }
+  function boot() { var n = 0, t = FSBeat.set(function () { n++; if (button() !== false || n > 60) { FSBeat.clear(t); if (C.on) set(true); } }, 500); timer = FSBeat.set(tick, 1000); }
   window.FSDeck = { set: set, on: function () { return on; }, step: step, view: function (v) { if (v) { C.view = v; save(); applyView(); } return C.view; }, boxes: function (a) { if (a) { C.boxes = a.slice(0, 4); save(); tick(); } return C.boxes.slice(); }, figures: function () { return ORDER.slice(); }, value: function (k) { try { return F[k].f(); } catch (e) { return null; } }, pick: pick, tick: tick };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

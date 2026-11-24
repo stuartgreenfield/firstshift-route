@@ -419,7 +419,7 @@ else window.SunCalc = SunCalc;
   }
   /* on a phone the top bar is full: Astro sits at the top of Layers instead (16 Nov) */
   function inLayers() { var L = $('layers'); if (!L || L.hidden || $('astroLay')) return; var b = document.createElement('button'); b.type = 'button'; b.id = 'astroLay'; b.className = 'btn astrolay'; b.innerHTML = '<span>☀ ☾ Astro: sun and moon</span><span>›</span>'; b.onclick = function () { L.hidden = true; var lb = $('layersBtn'); if (lb) lb.setAttribute('aria-expanded', 'false'); open(true); }; L.insertBefore(b, L.firstChild); }
-  function init() { css(); if (!btn()) return setTimeout(init, 800); line(); setInterval(line, 60000); var L = $('layers'); if (L) new MutationObserver(function () { setTimeout(inLayers, 0); }).observe(L, { attributes: true, childList: true, attributeFilter: ['hidden'] }); }
+  function init() { css(); if (!btn()) return setTimeout(init, 800); line(); FSBeat.set(line, 60000); var L = $('layers'); if (L) new MutationObserver(function () { setTimeout(inLayers, 0); }).observe(L, { attributes: true, childList: true, attributeFilter: ['hidden'] }); }
   window.FSAstro = { open: open, day: day, line: line, render: render };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

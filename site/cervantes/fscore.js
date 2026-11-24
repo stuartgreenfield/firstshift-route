@@ -61,7 +61,7 @@
       OFF.reloading = true; try { if (window.__navResume) window.__navResume.save(); } catch (e) {} clearToast('Signal back: fetching the latest forecasts…'); setTimeout(function () { location.reload(); }, 2500); };
     x.send();
   }
-  setInterval(signalBack, 5000); window.addEventListener('online', function () { offChk = 0; signalBack(); });
+  FSBeat.set(signalBack, 5000); window.addEventListener('online', function () { offChk = 0; signalBack(); });
   var offShown = false;
   function offNote() {
     if (offShown) return; offShown = true;
@@ -139,14 +139,14 @@
     var mk = lb && (lb.querySelector('svg.mk-s') || lb.querySelector('svg') || lb.querySelector('img')); if (mk) bg.appendChild(mk.cloneNode(true)); else bg.textContent = 'FS';
     bg.insertAdjacentHTML('afterbegin', '<span class="mkdisc" aria-hidden="true"></span>');   /* the turning line, drawn on the graphics side (17 Nov 22:55) */
     document.body.appendChild(bg); bg.onclick = function () { clearPeek(); };
-    var tint = function () { if (!lb) return; var cs = getComputedStyle(lb); ['--mk-navy', '--mk-blue', '--mk-ink', '--mk-dot'].forEach(function (v) { var x = cs.getPropertyValue(v); if (x) bg.style.setProperty(v, x.trim()); }); bg.style.color = cs.color; }; tint(); setInterval(tint, 3000);   /* the logo's own colours, light or dark, as in the top bar */
+    var tint = function () { if (!lb) return; var cs = getComputedStyle(lb); ['--mk-navy', '--mk-blue', '--mk-ink', '--mk-dot'].forEach(function (v) { var x = cs.getPropertyValue(v); if (x) bg.style.setProperty(v, x.trim()); }); bg.style.color = cs.color; }; tint(); FSBeat.set(tint, 3000);   /* the logo's own colours, light or dark, as in the top bar */
     /* F49 (Stuart 18 Nov 07:55): the logo's line turns while GPS fixes are arriving, and stands still and grey when none are; the same
        in the top bar and on the clear-screen badge, in all four tools. "Arriving" is a real GPS fix (phone or boat, not dead reckoning)
        in the last 5 seconds, or, on Route+ and Mark+, any data from the boat's instruments (window.__navRx). It used to follow
        whether the phone was online, which said nothing about the GPS. */
     if (lb && !lb.querySelector('.mkdisc')) { lb.classList.add('mkring'); lb.insertAdjacentHTML('afterbegin', '<span class="mkdisc" aria-hidden="true"></span>'); }
     var rxOn = function () { var f = null, boat = false; try { f = window.__fsLiveFix && window.__fsLiveFix(); } catch (e) {} try { boat = !!(window.__navRx && window.__navRx()); } catch (e) {} return !!(f && !f.dr && Date.now() - (f.at || 0) < 5000) || boat; };
-    var live = function () { var on = rxOn(); bg.classList.toggle('off', !on); if (lb) { lb.classList.toggle('rx', on); lb.title = on ? 'GPS arriving' : 'No GPS arriving'; } bg.title = (on ? 'GPS arriving' : 'No GPS arriving') + '. Tap for the menus.'; }; live(); setInterval(live, 1000);
+    var live = function () { var on = rxOn(); bg.classList.toggle('off', !on); if (lb) { lb.classList.toggle('rx', on); lb.title = on ? 'GPS arriving' : 'No GPS arriving'; } bg.title = (on ? 'GPS arriving' : 'No GPS arriving') + '. Tap for the menus.'; }; live(); FSBeat.set(live, 1000);
     if (window.MutationObserver && lb) new MutationObserver(function () { var n = lb.querySelector('svg.mk-s') || lb.querySelector('svg'); if (n && !bg.querySelector('svg')) { bg.textContent = ''; bg.appendChild(n.cloneNode(true)); } else if (n && bg.firstChild && n.outerHTML !== bg.firstChild.outerHTML) { bg.replaceChild(n.cloneNode(true), bg.firstChild); } }).observe(lb, { childList: true, subtree: true });
     if (C.clear) { C.clear = false; save(); }   /* Stuart 17 Nov 14:19: every tool opens with all its menus showing; clear screen is chosen each time */
     /* the GPS pill steps aside while the chart's information box is open (Stuart 13 Nov) */
@@ -158,7 +158,7 @@
         if (!tip.hidden && lb && !lb.hidden) { var a = tip.getBoundingClientRect(), r = lb.getBoundingClientRect();
           if (over(a, r)) { if (tip.classList.contains('docked')) hide = true; else { var pr = tip.offsetParent ? tip.offsetParent.getBoundingClientRect() : { top: 0 }; busy = true; tip.style.top = Math.max(4, r.top - pr.top - a.height - 10) + 'px'; busy = false; } } }
         document.body.classList.toggle('navtip', hide); };
-      if (window.MutationObserver) new MutationObserver(chk).observe(tip, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] }); setInterval(chk, 500); })();
+      if (window.MutationObserver) new MutationObserver(chk).observe(tip, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] }); FSBeat.set(chk, 500); })();
   }
   var RES = 'fs-resume', resumed = false, resumeAt = 0;
   function resumeSave() {
@@ -178,10 +178,10 @@
   }
   window.__navQuiet = function () { try { var o = JSON.parse(localStorage.getItem(RES) || 'null'); return !!(o && o.gps && o.gps.on); } catch (e) { return false; } };
   function resumeWhenReady() {
-    var n = 0, t = setInterval(function () { n++; var ready = false; try { ready = !!(window.__navCourse && window.__navCourse() && window.__navViewGet); } catch (e) {}
-      if (ready || n > 120) { clearInterval(t); setTimeout(resumeLoad, 800); } }, 500);
+    var n = 0, t = FSBeat.set(function () { n++; var ready = false; try { ready = !!(window.__navCourse && window.__navCourse() && window.__navViewGet); } catch (e) {}
+      if (ready || n > 120) { FSBeat.clear(t); setTimeout(resumeLoad, 800); } }, 500);
   }
-  setInterval(resumeSave, 2000);
+  FSBeat.set(resumeSave, 2000);
   document.addEventListener('visibilitychange', function () { if (document.hidden) resumeSave(); });
   window.addEventListener('pagehide', resumeSave);
   window.__navResume = { save: resumeSave, load: resumeLoad, state: function () { try { return JSON.parse(localStorage.getItem(RES) || 'null'); } catch (e) { return null; } } };

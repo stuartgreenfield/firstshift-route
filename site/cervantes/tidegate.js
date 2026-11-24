@@ -269,7 +269,7 @@
   function clearProg() { var st = $('tgStrip'); if (!st || st.hidden) return; st.style.bottom = ''; var pg = $('prog'); if (pg && !pg.hidden && pg.getClientRects().length) { var a = pg.getBoundingClientRect(), b = st.getBoundingClientRect(); if (a.width && !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom)) st.style.bottom = Math.round((parseFloat(getComputedStyle(st).bottom) || 0) + b.bottom - a.top + 6) + 'px'; } }   /* raised by the overlap, in the strip's own frame */
   /* the tide gate's own boat list (before 24 Nov) moves into the Fleet page once: one list of boats (Stuart 24 Nov 11:38) */
   function migrate() { if (!C.rivals.length || !window.__fsFleetAdd) return; C.rivals.forEach(function (q) { try { window.__fsFleetAdd(q.name, q.tcc); } catch (e) {} }); C.rivals = []; save(); }
-  function init() { if (!button()) return setTimeout(init, 1000); setTimeout(migrate, 3000); setInterval(tick, 30000); setInterval(clearProg, 2000); }
+  function init() { if (!button()) return setTimeout(init, 1000); setTimeout(migrate, 3000); FSBeat.set(tick, 30000); FSBeat.set(clearProg, 2000); }
   window.FSTideGate = { parseList: parseList, open: open, work: work, sail: sail, turn: turn, need: need, C: C, tick: tick, along: along };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else setTimeout(init, 500);
 })();

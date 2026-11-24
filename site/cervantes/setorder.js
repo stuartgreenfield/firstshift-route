@@ -49,11 +49,11 @@
         var st0 = function () { try { return window.FSSolent && FSSolent.state ? FSSolent.state() : null; } catch (e) { return null; } };
         var sync = function () { var s = st0(); if (!s) return; [['startTk', 'tackS'], ['startGy', 'gybeS']].forEach(function (q) { var e = $(q[0]); if (e && document.activeElement !== e) e.value = s[q[1]] || ''; }); };
         [['startTk', 'tackS'], ['startGy', 'gybeS']].forEach(function (q) { $(q[0]).addEventListener('change', function () { var s = st0(), v = this.value; if (!s) return; s[q[1]] = v === '' ? null : Math.max(0, Math.min(60, Math.round(+v))); try { localStorage.setItem(window.FS_SOLENT ? 'fs-solent-b' : 'fs-route-start', JSON.stringify(s)); } catch (e) {} }); });
-        sync(); setInterval(sync, 3000); }
+        sync(); FSBeat.set(sync, 3000); }
       done.turns = true; } }
   }
   (function () { var st = document.createElement('style'); st.textContent = 'details.f51more{margin:10px 0;border:1px solid var(--line);border-radius:10px;padding:6px 10px}details.f51more>summary{cursor:pointer;font-weight:600;padding:4px 0}'; document.head.appendChild(st); })();
-  var n = 0, t = setInterval(function () { try { run(); } catch (e) {} if (++n > 30) clearInterval(t); }, 1000);
+  var n = 0, t = FSBeat.set(function () { try { run(); } catch (e) {} if (++n > 30) FSBeat.clear(t); }, 1000);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#setBtn')) setTimeout(function () { try { run(); } catch (x) {} }, 300); }, true);
   window.FSSetOrder = { run: run, done: function () { return done; } };
 })();

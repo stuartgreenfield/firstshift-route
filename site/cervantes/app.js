@@ -170,7 +170,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (y != null && y < safety) { b.textContent = 'Trial route with ' + y.toFixed(1) + ' m (your setting stays ' + safety.toFixed(1) + ' m)'; b.hidden = false; b.onclick = function () { errHide(); S.trialDepth = y; S.trialArm = true; S.running = false; S.preBad = true; S.routes = []; run(); }; }
   }
   (function () { var b = $('errBox'); if (!b) return; $('errX').onclick = errHide; $('errRetry').onclick = function () { errHide(); S.running = false; S.preBad = true; S.routes = []; run(); }; })();
-  setInterval(function () {   /* a route that has run for two minutes with nothing to show is stuck: say so */
+  FSBeat.set(function () {   /* a route that has run for two minutes with nothing to show is stuck: say so */
     if (S.running) { S.runSince = S.runSince || Date.now(); var still = Date.now() - Math.max(S.runSince, S.progAt || 0); if (still > 120000 && !(S.routes && S.routes.length) && $('errBox') && $('errBox').hidden)   /* 17 Nov (Stuart's tablet photo at 2%): only when nothing has moved for two minutes; a new run starts the clock again */ errShow('Routing is taking far longer than usual. Try again, or choose fewer wind models in Settings, Forecasts.'); }
     else S.runSince = 0;
   }, 5000);
@@ -210,7 +210,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var nextMeta = null;
   function watchForNew() {
     if (!meta.live) return;
-    setInterval(function () {
+    FSBeat.set(function () {
       fetch((window.FS_PACK || 'pack/') + 'pack.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (m) {
         if ((m.built || m.t0) === (meta.built || meta.t0) || (nextMeta && (nextMeta.built || nextMeta.t0) === (m.built || m.t0))) return;
         nextMeta = m;
@@ -395,7 +395,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         return all(function () { return { msg: { type: 'layer', L: spec, buf: copy }, tr: [copy] }; }).then(function () { prog(''); modelsList(); selects(); dataTable(); chip(); var cb = document.querySelector('[data-m="om"]'); if (cb && !cb.checked) cb.checked = true; });
       }).catch(function (e) { clearTimeout(tm); prog(''); S.omNote = 'Could not fetch fresh wind from Open-Meteo: ' + e.message; });
   }
-  setInterval(function () { if (meta) { chip(); dataTable(); } }, 60000);
+  FSBeat.set(function () { if (meta) { chip(); dataTable(); } }, 60000);
   function chip() {
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
@@ -461,7 +461,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var lastKey = '';
       function sendRoute() { if (!cb.checked || !BC.code || !S.sel || !S.sel.r) return; var p = S.sel.r.path, key = S.sel.id + p.length + (S.sel.r.finish || 0); if (key === lastKey) return; var step = Math.max(1, Math.floor(p.length / 600)), path = p.filter(function (q2, i) { return i % step === 0 || i === p.length - 1; }).map(function (q2) { return [q2.la, q2.lo]; });
         post({ route: { name: meta.course.name, path: path, finish: S.sel.r.partial ? null : T0 + S.sel.r.finish * 3600 } }).then(function () { lastKey = key; }, function () {}); }
-      setInterval(send, 900000); setInterval(sendRoute, 60000); setInterval(flush, 60000); window.addEventListener('online', function () { flush(); sendRoute(); });
+      FSBeat.set(send, 900000, true); FSBeat.set(sendRoute, 60000, true); FSBeat.set(flush, 60000, true); window.addEventListener('online', function () { flush(); sendRoute(); });
       window.__fsTrackQ = function () { return q().length; }; window.__fsTrackSend = send;   /* for the automatic tests */
       $('shareLink').onclick = function () { if (!BC.code) { $('shareNote').textContent = 'Make or join a boat code first: tap the race name, then Boat code.'; return; }
         var go = function (f) { var link = pubOrigin() + '/follow/?f=' + f, t = 'Follow ' + ($('boatName').value || 'the boat') + ' on FirstShift Route: ' + link; if (sendOut('Follow the boat', t)) $('shareNote').textContent = 'Follow link: ' + link; else (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('shareNote').textContent = 'Link copied: ' + link; }, function () { $('shareNote').textContent = link; }); };
@@ -472,7 +472,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     (function () {
       var sel = $('autoFrom'), v = store('fs-autofrom'); if (v != null) sel.value = v; sel.onchange = function () { store('fs-autofrom', sel.value); };
       var last = 0;
-      setInterval(function () {
+      FSBeat.set(function () {
         var mins = +sel.value; if (!mins || !S.from || !S.from.gps || S.running || document.hidden || !navigator.geolocation) return;
         if (Date.now() - last < mins * 60000) return; last = Date.now();
         navigator.geolocation.getCurrentPosition(function (g) {
@@ -644,10 +644,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function folGet() { return folAll()[raceKey()] || null; }
   function folSet(id) { var a = folAll(), k = raceKey(); if (id) a[k] = { id: id, runs: folRuns() }; else delete a[k]; store('fs-followroute', JSON.stringify(a)); FOL.ask = null; }
   function folIs(s) { var f = folGet(); return !!(s && f && f.id === s.id); }
-  function folPick(best) {
+  function folPick(best, final) {   /* final: the last pass of this routing (not the quick one before the finer routes) */
     var f = folGet(); FOL.ask = null; if (!f) return best;
     var s = S.routes.filter(function (x) { return x.id === f.id && !x.fixed; })[0]; if (!s) return best;   /* that model is not in this run: the quickest, choice kept for later */
-    if (f.runs !== folRuns()) { if (s !== best) FOL.ask = { id: s.id, best: best.id }; else folSet(s.id); }
+    if (f.runs !== folRuns()) { if (s !== best) FOL.ask = { id: s.id, best: best.id }; else if (final) folSet(s.id); }   /* a quick pass never settles the question: the finer routes may rank differently */
     return s;
   }
   function folBest() { return S.routes.filter(function (s) { return s.best; })[0] || S.routes[0]; }
@@ -655,7 +655,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function folToggle(id) { var f = folGet(); if (f && f.id === id) { folSet(null); folTo(folBest()); } else { folSet(id); folTo(S.routes.filter(function (x) { return x.id === id; })[0] || folBest()); } }
   /* the strip sits under the top bar, and under the start sequence card or gun bar when one shows there; re-placed by the clock's
      one-second tick, so no timer of its own */
-  function folPlace() { var box = $('folStrip'); if (!box || box.hidden) return; var y = 0; ['.top', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
+  function folPlace() { var box = $('folStrip'); if (!box || box.hidden) return; var y = 0; ['.top', '#cbanner', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' || q === '#cbanner' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
     var t = Math.round(y + 6) + 'px'; if (box.style.top !== t) box.style.top = t; }
   function folName(s) { return s.combined ? 'Combined' : short(s.id); }
   function folTime(s) { return s.r.partial ? s.r.partial.togo + ' nm to go' : fmtH(s.r.finish - (S.matrix ? S.matrix.start : 0)); }
@@ -953,7 +953,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (navigator.geolocation && mobWatch == null) mobWatch = navigator.geolocation.watchPosition(function (g) { me = { lat: g.coords.latitude, lon: g.coords.longitude, sog: g.coords.speed, cog: g.coords.heading, at: Date.now() }; mobTick(); }, function () {}, { enableHighAccuracy: true, maximumAge: 2000 });
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { mobLock = l; }).catch(function () {}); } catch (e) {}
     var tn = (Date.now() / 1000 - T0) / 3600; if (S.tmin != null && tn >= S.tmin && tn <= S.tmax) setTime(tn);   // chart arrows at the time now
-    if (!S.mobTimer) S.mobTimer = setInterval(mobTick, 1000); mobTick();
+    if (!S.mobTimer) S.mobTimer = FSBeat.set(mobTick, 1000, true); mobTick();
   }
   function mobLine(label, from, to) {
     var d = FSRouter.dist(from.lat, from.lon, to.lat, to.lon), b = FSRouter.brg(from.lat, from.lon, to.lat, to.lon);
@@ -968,7 +968,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (dr) { var dd = FSRouter.dist(m.lat, m.lon, dr.lat, dr.lon); h += '<p class="note">Tide has probably carried them ' + (dd < 0.5 ? Math.round(dd * 1852) + ' m' : dd.toFixed(2) + ' nm') + ' towards ' + pad(FSRouter.brg(m.lat, m.lon, dr.lat, dr.lon)) + '° T (tide model, not wind drift).</p>'; }
     $('mobTxt').innerHTML = h; S.mob = m; S.mobDr = dr; draw();
   }
-  function mobEnd() { store('fs-mob', ''); S.mob = null; S.mobDr = null; $('mob').hidden = true; clearInterval(S.mobTimer); S.mobTimer = null; if (mobWatch != null) navigator.geolocation.clearWatch(mobWatch); mobWatch = null; try { if (mobLock) mobLock.release(); } catch (e) {} draw(); }
+  function mobEnd() { store('fs-mob', ''); S.mob = null; S.mobDr = null; $('mob').hidden = true; FSBeat.clear(S.mobTimer); S.mobTimer = null; if (mobWatch != null) navigator.geolocation.clearWatch(mobWatch); mobWatch = null; try { if (mobLock) mobLock.release(); } catch (e) {} draw(); }
   function mobDraw() {
     var m = S.mob; if (!m) return; var x = X(m.lon), y = Y(m.lat);
     ctx.save(); ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 9, y - 9); ctx.lineTo(x + 9, y + 9); ctx.moveTo(x + 9, y - 9); ctx.lineTo(x - 9, y + 9); ctx.stroke();
@@ -1175,8 +1175,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('aisSrc').onchange = function () { AIS.src = this.value; store('fs-aisSrc', this.value); AIS.tg = new FSAIS.Targets(); AIS.fleet = null; AIS.lines = 0; AIS.liveAt = 0; AIS.forceTable = true; aisUpdate(); draw(); };
     AIS.src = $('aisSrc').value;
     if ($('aisShow')) $('aisShow').onchange = function () { store('fs-aisShow', this.value); AIS.forceTable = true; aisUpdate(); draw(); };
-    setInterval(aisLive, 5000);
-    setInterval(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000);
+    FSBeat.set(aisLive, 5000, true);
+    FSBeat.set(function () { if (AIS.src !== 'off') { aisUpdate(); if (Object.keys(AIS.warned).length) draw(); } }, 1000, true);
   }
   /* replay speed: the button beside Play steps through the speeds in Settings, Display */
   function spdLabel() { if ($('speed').selectedIndex < 0) $('speed').value = '1'; var v = +$('speed').value; $('spdBtn').innerHTML = '<span class="spl">speed</span>' + (v < 1 ? Math.round(v * 60) + 'm/s' : v + 'h/s'); var sp = $('speed'); if (sp.selectedIndex < 0) sp.value = '1'; var so = sp.options[sp.selectedIndex]; $('spdBtn').title = 'Replay speed: ' + (so ? so.textContent : '1 hour a second') + '. Tap to change.'; }   /* 17 Nov: on Stuart's iPhone the list had nothing chosen and this stopped the forecasts loading */
@@ -1404,7 +1404,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var sx = $('sheetX').onclick; $('sheetX').onclick = function () { sx(); push(); };
     var bs = $('boatSave'); if (bs) bs.addEventListener('click', push);
     BC.push = push; window.__fsBcPush = function () { if (BC.code) bcPush(); }; window.__fsBcPull = function () { return bcPull(false); }; window.__fsBcCode = function () { return BC.code || ''; };
-    if (window.FS_SOLENT) setInterval(function () { if (BC.code && !document.hidden) bcPull(false); }, 10000);   /* Mark: the crew's course and line arrive within seconds */
+    if (window.FS_SOLENT) FSBeat.set(function () { if (BC.code && !document.hidden) bcPull(false); }, 10000);   /* Mark: the crew's course and line arrive within seconds */
     /* crew moments: the navigator sends a snapshot to every device on the boat code; the others see it within two minutes */
     var dev = store('fs-dev'); if (!dev) { dev = bcNew() + bcNew(); store('fs-dev', dev); } BC.dev = dev;
     var seen = +(store('fs-moment-seen') || 0);
@@ -1413,7 +1413,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       $('momentOpen').onclick = function () { $('momentBox').hidden = true; seen = m.at; store('fs-moment-seen', String(m.at)); if (m.link) location.href = m.link; };
       $('momentX').onclick = function () { $('momentBox').hidden = true; seen = m.at; store('fs-moment-seen', String(m.at)); };
     }
-    setInterval(function () {
+    FSBeat.set(function () {
       if (!BC.code || !navigator.onLine || document.hidden) return;
       fetch('/api/boat/' + BC.code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) { var m = j.data && j.data.moment; if (m && (!BC.moment || m.at > BC.moment.at)) BC.moment = m; if (m && m.at > seen && m.dev !== BC.dev) showMoment(m); }).catch(function () {});
     }, 120000);
@@ -1820,7 +1820,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if ($('rmOther')) $('rmOther').onclick = function () { $('raceMenu').hidden = true; racesSheet('other'); $('races').hidden = false; };
     if ($('rmSolent')) $('rmSolent').onclick = function () { $('raceMenu').hidden = true; window.__fsInshore(true); if (window.FSSolent) { FSSolent.on(true); FSSolent.start(); } };
     if ($('rmOffshore')) $('rmOffshore').onclick = function () { $('raceMenu').hidden = true; window.__fsInshore(false); };
-    setInterval(function () { var b = $('rmOffshore'); if (b) { b.hidden = !S.offPrev; if (S.offPrev) b.textContent = '⚓ Back to ' + (S.offPrev.short || S.offPrev.name); } }, 500);   /* J3 (Stuart 15 Nov 17:32): Solent races below RORC and JOG */
+    FSBeat.set(function () { var b = $('rmOffshore'); if (b) { b.hidden = !S.offPrev; if (S.offPrev) b.textContent = '⚓ Back to ' + (S.offPrev.short || S.offPrev.name); } }, 500);   /* J3 (Stuart 15 Nov 17:32): Solent races below RORC and JOG */
     $('rmEdit').onclick = function () { $('raceMenu').hidden = true; startEdit(courseCopy()); };
     $('dataChip').addEventListener('click', function (e) { e.stopPropagation(); });
     $('racesX').onclick = function () { $('races').hidden = true; if (S.edit) { $('editBar').hidden = false; editPrompt(); draw(); } };   /* closing the course list mid-edit goes back to the edit on the chart, never to a hidden edit that stops routing (Stuart 12 Nov) */
@@ -2097,7 +2097,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsMob = function () { mobStart(); };
   window.__fsAisWarn = function () { return { warned: Object.keys(AIS.warned || {}), own: AIS.own || null }; };   /* F53 test hook */
   /* Mark's test mode (Stuart 17 Nov 05:13): a practice boat feeds the GPS instead of the phone's own; nothing is sent anywhere */
-  window.__fsSim = function (on) { if (on) { if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; LIVE.on = true; LIVE.sim = true; LIVE.fix = null; } else if (LIVE.sim) { LIVE.sim = false; liveStop(); } };
+  window.__fsSim = function (on) { if (on) { if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; FSBeat.clear(LIVE.timer); LIVE.timer = null; LIVE.on = true; LIVE.sim = true; LIVE.fix = null; } else if (LIVE.sim) { LIVE.sim = false; liveStop(); } };
   window.__fsSimFix = function (la, lo, kn, cog) { if (!LIVE.sim) return; liveFix({ coords: { latitude: la, longitude: lo, accuracy: 4, speed: kn / 1.94384, heading: cog } }); };
   window.__fsOnLand = function (la, lo) { try { return !!(P && P.depth) && !FSRouter.clearLine(P.depth, 0, la, lo, la, lo); } catch (e) { return false; } };   /* Mark (21:33): a tapped or pinged mark on land is refused */
   window.__fsCog = function () { var t = (LIVE.pbuf || []).filter(function (q) { return Date.now() - q[2] < 15000; }); if (!LIVE.on || t.length < 3) return null; var a = t[0], b = t[t.length - 1], r = rhumb({ lat: a[0], lon: a[1] }, { lat: b[0], lon: b[1] }); return r.nm > 0.008 ? r.brg : null; };   /* the course made good over the last 15 seconds, for setting the wind from each tack */
@@ -2229,7 +2229,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function offMb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
   function offCheck() { try { if (!window.__navOff || !S.routes || !S.routes.length) return; window.__navOff.status().then(function (st) { S.offSt = st; try { setupRender(); } catch (e) {} }, function () {}); } catch (e) {} }
-  setInterval(offCheck, 60000); setTimeout(offCheck, 8000);
+  FSBeat.set(offCheck, 60000); setTimeout(offCheck, 8000);
   function chipAt(ch) { var rb = $('raceBtn'); if (!rb || !ch) return; var R = rb.getBoundingClientRect(); ch.style.left = Math.round(R.left + 6) + 'px'; ch.style.top = Math.round(R.bottom - 8) + 'px'; ch.style.display = R.width ? '' : 'none'; }
   function readyChip(rows) {
     var rb = $('raceBtn'); if (!rb || window.FS_MARK) return; var ch = $('readyChip'), miss = rows.filter(function (r) { return !r.ok; });
@@ -2330,7 +2330,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     function set(v) { off = Math.max(-12, Math.min(14, v)); store('fs-tz', String(off)); tick(); }
     if ($('tzMinus')) { $('tzMinus').onclick = function () { set(off - 1); }; $('tzPlus').onclick = function () { set(off + 1); }; }
-    tick(); setInterval(tick, 1000);
+    tick(); FSBeat.set(tick, 1000);
   })();
   /* ---------- Live GPS (Stuart 12 Nov): the boat from this phone's GPS against the chosen route; how far off, ahead or behind, the way back ---------- */
   var LIVE = { mini: store('fs-livemini') === '1', on: false, watch: null, timer: null, fix: null, trail: (function () { try { var a = JSON.parse(store('fs-livetrail') || '[]'); return a.filter(function (q) { return Date.now() - q[2] < 15 * 86400000; }); } catch (e) { return []; } })(), wake: null, big: false, alarm: false, calc: null };
@@ -2361,7 +2361,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       $('battYes').onclick = function () { n.hidden = true; var gm = $('gpsMode'); if (gm) { gm.value = 'battery'; gm.dispatchEvent(new Event('change', { bubbles: true })); } store('fs-keepon', 'off'); if ($('keepOn')) $('keepOn').value = 'off'; keepApply(); try { if (window.FSSaver) FSSaver.set(true); } catch (e) {} if (LIVE.on) { liveStop(); liveStart(); } try { window.NavToast('Saving battery: GPS every 20 seconds. Change it back in Settings.'); } catch (e) {} };
       clearTimeout(n._t); n._t = setTimeout(function () { n.hidden = true; }, 60000); };
     navigator.getBattery().then(function (bt) { var chk = function () { var rx = false; try { rx = !!(window.__navRx && window.__navRx()); } catch (e) {} if (bt.charging || !(bt.level <= 0.2) || !(LIVE.on || rx) || Date.now() - told < 3600000) return; if ($('gpsMode') && $('gpsMode').value === 'battery') return; told = Date.now(); offer(Math.round(bt.level * 100)); };
-      ['levelchange', 'chargingchange'].forEach(function (k) { bt.addEventListener(k, chk); }); setInterval(chk, 60000); chk(); }).catch(function () {}); })();
+      ['levelchange', 'chargingchange'].forEach(function (k) { bt.addEventListener(k, chk); }); FSBeat.set(chk, 60000); chk(); }).catch(function () {}); })();
   ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, function () { if (!LIVE.wake && keepMode() !== 'off') keepApply(); }, { passive: true }); });   /* a browser grants the wake lock after a tap */
   (function () { var k = $('keepOn'); if (k) { k.value = keepMode(); k.onchange = function () { store('fs-keepon', k.value); keepApply(); }; } setTimeout(keepApply, 500); })();
   function liveWake() { keepApply(); }   /* F102 (21 Nov, found by tests/battery.js): one place holds the screen on; liveWake also asked for its own wake lock, so with the GPS on the screen was held twice and letting it sleep released only one */
@@ -2373,7 +2373,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     try { if (!LIVE.ac && (window.AudioContext || window.webkitAudioContext)) LIVE.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}   /* made on the tap, so the alert can sound later */
     var ok = function (g) { liveFix(g); }, bad = function (e) { if ($('liveBox').hidden) return; if (!(e && e.code === 1) && LIVE.fix && !LIVE.fix.dr && Date.now() - LIVE.fix.at < 30000) return;   /* Stuart 17 Nov 05:20, the green GPS pill flashing: a passing GPS error between good fixes no longer replaces the figures; lost only after 30 s without a fix */ var msg = e && e.code === 1 ? 'Location is not allowed for Route. Allow it for this site in the browser or phone settings, then tap GPS again.' : LIVE.fix ? 'GPS fix lost. Trying again.' : (/Mobi|Android|iPhone|iPad/.test(navigator.userAgent) ? 'No GPS fix yet. Offshore the first fix can take a minute or two. Trying again.' : 'This computer cannot find its position. A computer without GPS works out where it is from nearby Wi-Fi, which is not there at sea. Use Live GPS on a phone or tablet with GPS.');
       $('liveBox').innerHTML = '<div class="lvl lvwarn">' + msg + '</div><div class="lvx"><button class="btn" id="lvStop">Stop GPS</button></div>'; $('lvStop').onclick = function () { liveStop(); }; LIVE.err = msg; stripShow(); };
-    if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = setInterval(poll, 20000); }
+    if ($('gpsMode').value === 'battery') { var poll = function () { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); }; poll(); LIVE.timer = FSBeat.set(poll, 20000, true); }
     else LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
     /* Stuart 17 Nov 14:53, Mark+: "gps lozenge does not appear unless you turn GPS off and on". Turned back on as the app opens, the first
        request can go in before the phone has granted location, and then no fix ever comes. With no fix 8 s on, ask again, as turning the GPS
@@ -2382,7 +2382,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       try { if (LIVE.watch != null) { navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }); } else navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }); } catch (e) {}
       LIVE.kick = setTimeout(kick, 8000); };
     LIVE.kick = setTimeout(kick, 8000);
-    clearInterval(LIVE.drTimer); LIVE.drTimer = setInterval(drTick, 1000);
+    FSBeat.clear(LIVE.drTimer); LIVE.drTimer = FSBeat.set(drTick, 1000, true);
     /* reopened at sea (Stuart 15 Nov, I): the last good fix was kept on the phone, so if the GPS does not answer the reckoning carries
        on from it, counting from when it was taken. Only within DR_KEEP of that fix, so a phone opened ashore next day starts clean. */
     if (!LIVE.real) try { var kr = JSON.parse(store('fs-livereal') || 'null'); if (kr && kr.la === kr.la && Date.now() - kr.at < DR_KEEP && Date.now() >= kr.at) { kr.kept = true; LIVE.real = kr; } } catch (e) {}
@@ -2391,7 +2391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function realKeep() { var f = LIVE.real; if (LIVE.on && f && !f.kept) store('fs-livereal', JSON.stringify({ la: f.la, lo: f.lo, at: f.at, acc: f.acc, sog: f.sog, cog: f.cog })); }
   document.addEventListener('visibilitychange', function () { if (document.hidden) realKeep(); }); window.addEventListener('pagehide', realKeep);   /* closing keeps the very last fix */
   function liveStop(keep) { clearTimeout(LIVE.kick);
-    if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; clearInterval(LIVE.timer); LIVE.timer = null; clearInterval(LIVE.drTimer); LIVE.drTimer = null; LIVE.real = null; LIVE.drTrack = [];
+    if (LIVE.watch != null) navigator.geolocation.clearWatch(LIVE.watch); LIVE.watch = null; FSBeat.clear(LIVE.timer); LIVE.timer = null; FSBeat.clear(LIVE.drTimer); LIVE.drTimer = null; LIVE.real = null; LIVE.drTrack = [];
     if (LIVE.wake) { try { LIVE.wake.release(); } catch (e) {} LIVE.wake = null; }
     if (keep) return; store('fs-livereal', ''); LIVE.on = false; LIVE.fix = null;   /* GPS stopped on purpose: no reckoning from that fix later */ LIVE.big = false; $('liveBtn').setAttribute('aria-pressed', 'false'); $('liveBox').hidden = true; $('liveBig').hidden = true; LIVE.err = null; if ($('gpsMenu')) $('gpsMenu').hidden = true; stripShow(); draw();
   }
@@ -2538,7 +2538,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     LIVE.trail = LIVE.trail.filter(function (q) { if (!(q[2] >= from)) return false; if (q[2] >= recent) return true; if (q[2] - last < 600000) return false; last = q[2]; return true; });
     if (LIVE.trail.length > 6000) LIVE.trail = LIVE.trail.slice(-6000);
   }
-  setInterval(function () { try { var n = LIVE.trail.length; trailTrim(Date.now()); if (LIVE.trail.length !== n) { store('fs-livetrail', JSON.stringify(LIVE.trail)); draw(); } } catch (e) {} }, 60000);
+  FSBeat.set(function () { try { var n = LIVE.trail.length; trailTrim(Date.now()); if (LIVE.trail.length !== n) { store('fs-livetrail', JSON.stringify(LIVE.trail)); draw(); } } catch (e) {} }, 60000, true);
   /* a start line end more than 2 nm from the race's start is not this race's line (Stuart 23 Nov 22:07: an end pinged near Amsterdam
      drew a line across the North Sea); offshore only, as an inshore line is wherever the committee lays it */
   function farEnd(q) { try { var st = !S.inshore && meta && meta.course && meta.course.start; if (!q || !st) return false; return rhumb({ lat: st.lat, lon: st.lon }, { lat: q[0], lon: q[1] }).nm > 2; } catch (e) { return false; } }
@@ -3088,7 +3088,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
           var rank = function (x) { return (x.fixed ? 2e6 : 0) + (x.r.partial ? 1e6 + x.r.partial.togo : x.mean); };   /* the Fixed wind route is shown, never picked as best */   /* a route cut short by the end of the forecasts ranks by distance still to sail */
           var best = S.routes.slice().sort(function (a, b) { return rank(a) - rank(b); })[0];
           S.routes.forEach(function (s) { s.best = s === best; });
-          S.sel = folPick(best); S.base = base; S.legs = legs; S.start = start;
+          S.sel = folPick(best, !quick && !(!finer && RD)); S.base = base; S.legs = legs; S.start = start;
           var part = S.routes.filter(function (x) { return x.r.partial; });
           $('runNote').textContent = (quick ? 'Quick route in ' : finer ? 'Finer routes in ' : 'Routed in ') + ((Date.now() - t0) / 1000).toFixed(1) + ' s' + (quick ? '. Refining…' : !finer && RD ? '. Finer routes coming…' : '') + (errs.length ? '. ' + errs.map(function (e) { return e.name + ': ' + e.err; }).join(' ') : '.') + (part.length ? ' The forecasts end before the finish on ' + (part.length === S.routes.length ? 'every route' : part.length + ' routes') + ': they show as far as the forecasts reach, with the distance still to sail. Route keeps your start: a later forecast run will reach further.' : '') + trialNote() + (S.to ? ' These routes go from the boat to the point you tapped. Route again goes back to the course.' : '');
           /* E7 / F75 (20 Nov): the optimiser can be beaten. Each route is sailed in every forecast (the matrix); where another route's track is
@@ -3333,7 +3333,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
        landing page or start-up question on the way back. The update bar uses the same reload. */
     window.__fsReload = function () { try { sessSave(); } catch (e) {} try { if (window.__navResume) window.__navResume.save(); } catch (e) {} try { sessionStorage.setItem('fs-keep', '1'); } catch (e) {} location.reload(); };
     if ($('setReload')) $('setReload').onclick = function () { window.__fsReload(); };
-    if ($('updBar')) { $('updBar').onclick = function () { window.__fsReload(); }; setTimeout(updCheck, 8000); setInterval(updCheck, 5 * 60000); document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(updCheck, 1500); }); }
+    if ($('updBar')) { $('updBar').onclick = function () { window.__fsReload(); }; setTimeout(updCheck, 8000); FSBeat.set(updCheck, 5 * 60000); document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(updCheck, 1500); }); }
     if ($('editFab')) $('editFab').onclick = function () { startEdit(courseCopy()); };   /* drag the marks straight on the chart; Done re-routes */
     var suT = 0; document.addEventListener('change', function () { clearTimeout(suT); suT = setTimeout(function () { try { setupRender(); } catch (e) {} }, 300); }, true);   /* the set-up card follows every change */
     /* Help is a round ? on the chart, bottom right, the same on every screen (Stuart 12 Nov) */
@@ -4335,7 +4335,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (window.MutationObserver) { mo = new MutationObserver(function (rs) { for (var i = 0; i < rs.length; i++) { var t = rs[i].target; if (t && t.nodeType !== 1) t = t.parentNode; if (t && t.closest && t.closest('#now,#clock,#dataChip,#pgP,#pgT,.rpgrid,.rprest,.npbody,.navtoast,#tip,#tzRow')) continue; if (rs[i].type === 'attributes' && rs[i].target.getAttribute && rs[i].target.getAttribute(rs[i].attributeName) === rs[i].oldValue) continue; soon(); return; } });
       mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['hidden', 'class', 'style'] }); }
     window.addEventListener('resize', soon); window.addEventListener('orientationchange', soon); document.addEventListener('scroll', soon, true);
-    setInterval(function () { if (!document.hidden) tick(); }, window.__fsSaver ? 6000 : 3000); }
+    FSBeat.set(function () { if (!document.hidden) tick(); }, window.__fsSaver ? 6000 : 3000); }
   window.__fsFabsTick = tick;
   /* The phone's own keyboard (Stuart 16 Nov 22:29: the device's menus must not overlay ours): while a field in a window placed over the
      chart has the keyboard, the window lifts so the field and the window's top stay in view above the keyboard and its bar; it goes

@@ -102,7 +102,7 @@
       if (b.bottom + gap + ch < innerHeight - 8) y = b.bottom + gap; else if (b.top - gap - ch > 8) y = b.top - gap - ch; else { y = Math.max(8, Math.min(innerHeight - ch - 8, b.top)); x = b.right + gap + cw < innerWidth ? b.right + gap : Math.max(12, b.left - gap - cw); } }
     card.style.left = x + 'px'; card.style.top = y + 'px'; }
   function centre() { var card = T.root.querySelector('.fst-card'); blocks(innerWidth / 2, innerHeight / 2, 0, 0); T.at = null; card.style.left = Math.max(12, (innerWidth - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(12, (innerHeight - card.offsetHeight) / 2) + 'px'; }
-  setInterval(function () { if (!T.on || T.paused || !T.at || !T.lv) return; var s = steps()[T.i]; if (!s) return; var el = target(s); if (!el) return; var b = el.getBoundingClientRect();
+  FSBeat.set(function () { if (!T.on || T.paused || !T.at || !T.lv) return; var s = steps()[T.i]; if (!s) return; var el = target(s); if (!el) return; var b = el.getBoundingClientRect();
     if (Math.abs(b.left - T.at[0]) + Math.abs(b.top - T.at[1]) + Math.abs(b.width - T.at[2]) + Math.abs(b.height - T.at[3]) > 4) { holeAt(b); cardAt(b); } }, 400);
   function place() {
     var s = steps()[T.i]; if (!s) return; var el = target(s), r = T.root, hole = r.querySelector('.fst-hole'), card = r.querySelector('.fst-card');
@@ -151,7 +151,7 @@
     try { if (window.FSTourSound && T.lv.voice) FSTourSound.stop(); } catch (e) {}
     if (s.more) { try { s.more(); } catch (e) {} }
     else { var hb = $('helpBtn'); if (hb) hb.click(); setTimeout(function () { var d = helpTopic(s.help); if (d) { d.scrollIntoView({ block: 'start' }); d.classList.remove('fst-flash'); void d.offsetWidth; d.classList.add('fst-flash'); } }, 250); }
-    var w = setInterval(function () { var open = s.moreOpen ? s.moreOpen() : $('help') && !$('help').hidden; if (!open) { clearInterval(w); if (T.on && T.paused) { T.paused = false; T.root.hidden = false; place(); } } }, 400);
+    var w = FSBeat.set(function () { var open = s.moreOpen ? s.moreOpen() : $('help') && !$('help').hidden; if (!open) { FSBeat.clear(w); if (T.on && T.paused) { T.paused = false; T.root.hidden = false; place(); } } }, 400);
   }
   window.FSTour = { start: chooser, level: startLevel, end: end, levels: levels };
 
@@ -203,13 +203,13 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
   /* start once the splash, the set-up and any race list are out of the way */
-  var tries = 0, wt = setInterval(function () {
-    if (++tries > 600) { clearInterval(wt); return; }
+  var tries = 0, wt = FSBeat.set(function () {
+    if (++tries > 600) { FSBeat.clear(wt); return; }
     if (!want) return;
     /* F7 (Stuart 15 Nov: "Nothing to point at" on first opening Route): also wait for the first routes (up to 60 s), whose panels move the
        buttons about while they arrive; and try three times before saying there is nothing to point at */
     var sp = $('splash'), busy = (sp && !sp.hidden) || ['wiz', 'races', 'errBox'].some(function (id) { var e = $(id); return e && !e.hidden; });
     if (busy) return;
-    clearInterval(wt); want = false; setTimeout(chooser, 400);
+    FSBeat.clear(wt); want = false; setTimeout(chooser, 400);
   }, 500);
 })();

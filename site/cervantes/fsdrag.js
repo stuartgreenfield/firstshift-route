@@ -211,13 +211,13 @@
     '.fswtab.l{left:env(safe-area-inset-left,0px);border-radius:0 10px 10px 0}.fswtab.r{right:env(safe-area-inset-right,0px);border-radius:10px 0 0 10px}.fswtab[hidden]{display:none}';
   var st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
-  var pk = 0; setInterval(function () { wireButtons(); if (window.__fsSaver && !M.el && (pk++ % 2)) return; if (!M.drag) place(); }, 500);   /* Battery saver: every second instead of every half second */
+  var pk = 0; FSBeat.set(function () { wireButtons(); if (window.__fsSaver && !M.el && (pk++ % 2)) return; if (!M.drag) place(); }, 500);   /* Battery saver: every second instead of every half second */
   var rt = 0; window.addEventListener('resize', function () { if (M.drag) return; clearTimeout(rt); rt = setTimeout(apply, 250); });
-  var n = 0, w = setInterval(function () { apply(); if (++n > 40) clearInterval(w); }, 500);   /* panels are built after load */
+  var n = 0, w = FSBeat.set(function () { apply(); if (++n > 40) FSBeat.clear(w); }, 500);   /* panels are built after load */
 
   /* Settings, My set-up: the layout (Stuart 05:33: "Reset to FirstShift layout"; your layout is saved with My set-up) */
-  var bt = setInterval(function () {
-    var body = document.querySelector('#navPrefs .npbody'); if (!body || $('navMoveAll')) { if ($('navMoveAll')) clearInterval(bt); return; }
+  var bt = FSBeat.set(function () {
+    var body = document.querySelector('#navPrefs .npbody'); if (!body || $('navMoveAll')) { if ($('navMoveAll')) FSBeat.clear(bt); return; }
     var h = document.createElement('div');
     h.innerHTML = '<h4>Window positions</h4><p class="note">Drag the small dots on a window to move it; let go and it stays there. Hold a round button to move it, drag it, then hold again to lock it. It never covers another button: it slides to the nearest gap. While moving, drag a window most of the way off the left or right edge, or flick it towards one, to put it away; tap its tab on the edge to bring it back. Kept for each screen size and orientation, and saved with My set-up.</p>' +
       '<label class="np-row"><input type="checkbox" id="fsWinLock"> Lock layout: nothing moves</label><label class="np-row">Grip on each window <select id="fsWinHand"><option value="c">In the middle</option><option value="l">On the left (left hand)</option><option value="r">On the right (right hand)</option></select></label>' +
@@ -226,7 +226,7 @@
     $('navMoveAll').onclick = function () { resetAll(); };
     $('fsWinLock').checked = locked(); $('fsWinLock').onchange = function () { setOpt('lock', this.checked ? '1' : '0'); };
     $('fsWinHand').value = opt('hand', 'c'); $('fsWinHand').onchange = function () { setOpt('hand', this.value); place(); };
-    clearInterval(bt);
+    FSBeat.clear(bt);
   }, 500);
   window.NavDrag = { stash: function (id, edge) { setStash(id, edge ? [edge, 200] : null); apply(); }, stashed: stashOf, reset: reset, resetAll: resetAll, apply: apply, bucket: bucket, begin: function (id) { var el = $(id); if (el) begin(el, id); }, lock: lock, settle: settle, moving: function () { return M.id; }, start: function () {}, on: function () { return !!M.el; } };
 })();

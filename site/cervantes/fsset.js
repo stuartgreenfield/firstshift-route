@@ -78,6 +78,6 @@
     inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && cur[0]) { out.hidden = true; var r = cur[0]; inp.value = ''; go(r); } if (e.key === 'Escape') { out.hidden = true; inp.value = ''; } });
     return true;
   }
-  var n = 0, t = setInterval(function () { var a = place(), b = searchBuild(); sums(); if ((a && b) || ++n > 80) clearInterval(t); }, 400);
+  var n = 0, t = FSBeat.set(function () { var a = place(), b = searchBuild(); sums(); if ((a && b) || ++n > 80) FSBeat.clear(t); }, 400);
   window.NavSet = { open: open, find: function (q) { return find(q).map(function (r) { return { t: r.t, tab: r.tab }; }); }, go: function (q) { var r = find(q)[0]; if (r) go(r); return !!r; } };
 })();

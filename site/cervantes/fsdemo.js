@@ -42,7 +42,7 @@
     if (f > 0.32 && f < 0.48) { var s = Math.sin((f - 0.32) / 0.16 * Math.PI) * 0.3, b = (q.cog + 90) * R; q.la += s * Math.cos(b) / 60; q.lo += s * Math.sin(b) / (60 * Math.cos(q.la * R)); }
     try { window.__fsSimFix(q.la, q.lo, q.kn, q.cog); } catch (e) {}
     var st = STEPS(), i = 0; for (var j = 0; j < st.length; j++) if (f >= st[j][0]) i = j; if (i !== D.i) D.i = i; say(D.i, f);
-    if (f >= 1) { clearInterval(D.timer); D.timer = null; }
+    if (f >= 1) { FSBeat.clear(D.timer); D.timer = null; }
   }
   function start() {
     if (D.on || !window.__fsSim || !window.__fsPlan) return false; var pl = window.__fsPlan();
@@ -50,10 +50,10 @@
     D.P = prep(pl); D.on = true; D.t0 = Date.now(); D.i = -1;
     try { D.plotWas = !!(PL() && PL().C.on); window.__fsSim(true); var s0 = at(D.P, 0); window.__fsSimFix(s0.la, s0.lo, s0.kn, s0.cog); } catch (e) {}
     try { var pp = PL(); if (pp) { D.modeWas = pp.C.mode; pp.C.mode = 'route'; if (!pp.C.on) pp.toggle(true); } } catch (e) {}
-    D.timer = setInterval(tick, 500); tick(); return true;
+    D.timer = FSBeat.set(tick, 500, true); tick(); return true;
   }
-  function stop(quiet) { if (!D.on && !$('fsDemo')) return; D.on = false; clearInterval(D.timer); D.timer = null; try { window.__fsSim(false); } catch (e) {} try { var pq = PL(); if (pq) { pq.C.mode = D.modeWas; if (pq.C.on && !D.plotWas) pq.toggle(false); } } catch (e) {} var b = $('fsDemo'); if (b) b.hidden = true; if (!quiet && window.NavToast) window.NavToast('Demo stopped. Everything is as it was.'); }
+  function stop(quiet) { if (!D.on && !$('fsDemo')) return; D.on = false; FSBeat.clear(D.timer); D.timer = null; try { window.__fsSim(false); } catch (e) {} try { var pq = PL(); if (pq) { pq.C.mode = D.modeWas; if (pq.C.on && !D.plotWas) pq.toggle(false); } } catch (e) {} var b = $('fsDemo'); if (b) b.hidden = true; if (!quiet && window.NavToast) window.NavToast('Demo stopped. Everything is as it was.'); }
   window.FSDemo = { start: start, stop: stop, on: function () { return D.on; } };
   /* Try it safely (landing page and Help) starts the demo in Route; Route+ keeps its practice boat there and has the demo in Help */
-  if (!plus()) window.FSTryPractice = function () { var n = 0, w = setInterval(function () { n++; if (start() || n > 120) clearInterval(w); }, 1000); };
+  if (!plus()) window.FSTryPractice = function () { var n = 0, w = FSBeat.set(function () { n++; if (start() || n > 120) FSBeat.clear(w); }, 1000); };
 })();

@@ -81,9 +81,9 @@
     d.addEventListener('toggle', function () { if (d.open) status().then(paint, paint); });
     paint(); return true;
   }
-  var tries = 0, bt = setInterval(function () { if (build() || ++tries > 60) clearInterval(bt); }, 500);
+  var tries = 0, bt = FSBeat.set(function () { if (build() || ++tries > 60) FSBeat.clear(bt); }, 500);
   /* the summary line keeps itself up to date */
-  setInterval(function () { var s = $('navOffSum'); if (!s || S.busy) return; status().then(function (st) { if (!st) return; s.textContent = st.offline ? 'No signal: using what is on the device' : !st.miss.length ? '✓ Ready: ' + mb(st.tot) + ' on the device, ' + st.run + ' run' : 'Not ready: ' + mb(st.need) + ' to download'; }).catch(function () {}); }, 60000);
+  FSBeat.set(function () { var s = $('navOffSum'); if (!s || S.busy) return; status().then(function (st) { if (!st) return; s.textContent = st.offline ? 'No signal: using what is on the device' : !st.miss.length ? '✓ Ready: ' + mb(st.tot) + ' on the device, ' + st.run + ' run' : 'Not ready: ' + mb(st.need) + ' to download'; }).catch(function () {}); }, 60000);
 
   /* ---- new forecasts at sea: automatic under 20 MB, ask above ---- */
   var asked = null;
@@ -99,7 +99,7 @@
       try { if (window.NavToast) window.NavToast('New forecast on the server (' + m.run + '), ' + mb(size) + '. Tap New data to download it when you are happy to use the data.'); } catch (e) {}
     }).catch(function () {});
   }
-  setInterval(newCheck, 15000);
+  FSBeat.set(newCheck, 15000);
 
   /* ---- model run ages (Stuart 13 Nov: big differences between models, partly from runs of different ages) ----
      Each model's run time and age under its finish box and beside it in Settings, Forecasts; an option to leave out
@@ -162,7 +162,7 @@
     }
     if (left.length) try { if (window.NavToast) window.NavToast('Left out of the routing, run too old: ' + left.join(', ') + '. Tick ' + (left.length > 1 ? 'them' : 'it') + ' again in Settings, Forecasts to use ' + (left.length > 1 ? 'them' : 'it') + '.'); } catch (e) {}
   }
-  setInterval(function () { try { finAges(); modelAges(); } catch (e) {} }, 3000);
+  FSBeat.set(function () { try { finAges(); modelAges(); } catch (e) {} }, 3000);
   window.__navAges = { runs: runs, fin: finAges, models: modelAges, max: maxAge };
 
   window.__navOff = { status: status, ready: ready, want: want, newCheck: newCheck, S: S };

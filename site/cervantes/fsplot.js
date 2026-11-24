@@ -215,7 +215,7 @@
     bar.addEventListener('pointercancel', function () { sw = null; });
     var grp = document.getElementById('liveBtn'); grp = grp && grp.parentNode;
     if (grp) { var pb = document.createElement('button'); pb.className = 'spd rplotb'; pb.id = 'fsPlotBtn'; pb.type = 'button'; pb.textContent = 'PLOT'; pb.title = 'Plotter: the next mark from this phone’s GPS'; pb.setAttribute('aria-label', 'Plotter'); pb.setAttribute('aria-pressed', String(!!C.on)); pb.onclick = function () { toggle(); }; grp.appendChild(pb); }
-    setInterval(tick, 1000); if (C.on) setTimeout(function () { toggle(true); }, 1500); else tick();
+    FSBeat.set(tick, 1000); if (C.on) setTimeout(function () { toggle(true); }, 1500); else tick();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
   window.__fsPlot = { C: C, calc: function () { last = calc(); render(last); return last; }, toggle: toggle, setMark: setMark, reset: function () { MKS = {}; sv(MK, MKS); arrived = null; } };   /* for the automatic tests */

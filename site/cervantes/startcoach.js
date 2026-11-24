@@ -49,7 +49,7 @@
     }
     if (L >= 3 && n.d != null && !n.over && r <= 45) { var lk = lineKey(n.d); if (lk && !C.said[lk]) { if (say(lk)) { C.said[lk] = 1; var s = [10, 20, 30, 40, 50, 75, 100]; s.forEach(function (x) { if (x > +lk.slice(1)) C.said['d' + x] = 1; }); } } }
   }
-  setInterval(tick, 250);
+  FSBeat.set(tick, 250, true);
   /* the speaker button on the start screen, and its slider */
   var ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/></svg>';
   var ICOFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9l5 6M21 9l-5 6"/></svg>';
@@ -63,7 +63,7 @@
     c.innerHTML = '<b>Start coach: how much Emma says</b><input type="range" min="0" max="4" step="1" aria-label="How much the coach says"><div class="scl"><span>Off</span><span>Count</span><span>Burn</span><span>Line</span><span>All</span></div><p></p><div class="xrow"><button class="btn" type="button" data-sc="try">Hear a sample</button><button class="btn" type="button" data-sc="x">Done</button></div>';
     e.appendChild(c); c.addEventListener('click', function (ev) { ev.stopPropagation(); var t = ev.target.closest('[data-sc]'); if (!t) return; if (t.dataset.sc === 'x') c.remove(); else { load(); setTimeout(function () { say('e10', true); }, MAN && MAN.e10 ? 0 : 600); } });
     c.querySelector('input').addEventListener('input', function (ev) { setLvl(+ev.target.value); }); paint(); }
-  setInterval(function () { var e = document.getElementById('solStartScr'), hd = e && e.querySelector('.sshd'); if (!hd || hd.querySelector('.sscoach')) return; css();
+  FSBeat.set(function () { var e = document.getElementById('solStartScr'), hd = e && e.querySelector('.sshd'); if (!hd || hd.querySelector('.sscoach')) return; css();
     var b = document.createElement('button'); b.className = 'btn sscoach'; b.type = 'button'; b.addEventListener('click', function (ev) { ev.stopPropagation(); card(); });
     var ch = hd.querySelector('[data-q=small]'); hd.insertBefore(b, ch || null); paint(); }, 500);
   window.FSStartCoach = { level: lvl, set: setLvl, say: say, keys: function () { return MAN; } };

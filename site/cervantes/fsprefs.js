@@ -127,7 +127,7 @@
     if (hasDef) confirmRow('Added ' + n + ' set-ups from the file. Also use the file\'s defaults as yours, and load them now?', 'Use them', function () { st.def = o.def; sv(st); if (apply(o.def)) reload('Loaded the defaults from the file.'); });
     else note('Added ' + n + ' set-ups from the file. Pick one and Load.');
   }
-  var tries = 0, t = setInterval(function () { if (build() || ++tries > 60) clearInterval(t); }, 500);
+  var tries = 0, t = FSBeat.set(function () { if (build() || ++tries > 60) FSBeat.clear(t); }, 500);
   try { var m = sessionStorage.getItem('nav-prefs-msg'); if (m) { sessionStorage.removeItem('nav-prefs-msg'); setTimeout(function () { if (window.NavToast) window.NavToast(m); else { var x = document.createElement('div'); x.className = 'navtoast'; x.setAttribute('role', 'status'); x.textContent = m; document.body.appendChild(x); setTimeout(function () { x.remove(); }, 6000); } }, 2500); } } catch (e) {}
   /* for the automatic tests */
   window.__navPrefs = { snap: snap, apply: apply, load: ld, save: sv, importText: importText, setting: setting, render: function () { if ($('navPrefs')) render(); } };
