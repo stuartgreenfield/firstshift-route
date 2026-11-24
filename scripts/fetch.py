@@ -168,14 +168,61 @@ def icon_eu():
         U.append(got['u_10m']); V.append(got['v_10m']); hrs.append(hh); print('icon', hh, end=' | ', flush=True)
     return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
 
+def arome_one_hour(d, r, iso, hh):
+    """Download one AROME 0.01 deg hour and keep its 10 m wind messages as GRIB; True if both are there."""
+    import eccodes, tempfile
+    tag = f'aromehd_{d}{r}_h{hh:03d}'
+    if len(mf_raw('arome', tag)) == 2: return True
+    try: buf = get(f'{MF}/{iso}/arome/001/SP1/arome__001__SP1__{hh:02d}H__{iso}.grib2', tries=3)
+    except Exception: return False
+    with tempfile.NamedTemporaryFile(suffix='.grib2') as tf:
+        tf.write(buf); tf.flush()
+        with open(tf.name, 'rb') as fh:
+            while True:
+                h = eccodes.codes_grib_new_from_file(fh)
+                if h is None: break
+                try:
+                    sn = eccodes.codes_get(h, 'shortName')
+                    if sn in ('10u', '10v'):
+                        tmp = os.path.join(SHARED, f'{tag}_{sn}.part'); open(tmp, 'wb').write(eccodes.codes_get_message(h)); os.replace(tmp, os.path.join(SHARED, f'{tag}_{sn}.grib2'))
+                finally: eccodes.codes_release(h)
+    return len(mf_raw('arome', tag)) == 2
 
-# ---------- Meteo-France AROME (France, 2.5 km, to 48 h) and ARPEGE (Europe, 0.1 deg, to 102 h): open data, no login ----------
+def arome_hd(d, r, iso):
+    from concurrent.futures import ThreadPoolExecutor
+    hrs = [h for h in HOURS if h <= 51]
+    with ThreadPoolExecutor(6) as ex: ok = dict(zip(hrs, ex.map(lambda hh: arome_one_hour(d, r, iso, hh), hrs)))
+    got = [h for h in hrs if ok[h]]; print('arome 0.01:', len(got), 'of', len(hrs), 'hours', flush=True)
+    if os.environ.get('FS_RAW_ONLY'):   # the shared job only keeps the messages; each area cuts its own box
+        if len(got) < 31: raise SystemExit('arome: too few hours')
+        return None
+    U = []; V = []; out_h = []; lat = lon = None
+    for hh in got:
+        mu, mv = mf_raw('arome', f'aromehd_{d}{r}_h{hh:03d}')
+        u, la, lo = grib_crop(mu); v, _, _ = grib_crop(mv)
+        if not u.size: continue
+        U.append(u.astype(np.float32)); V.append(v.astype(np.float32)); out_h.append(hh); lat, lon = la, lo
+    if not out_h: raise SystemExit('arome: nothing for this box')
+    return dict(u=np.array(U), v=np.array(V)), np.array(out_h), lat, lon
+
+
+# ---------- Meteo-France AROME (0.01 deg, about 1.1 km, hourly to 51 h) and ARPEGE (Europe, 0.1 deg, to 102 h): open data, no login ----------
+# Stuart 24 Nov 2026 08:21 ("Go with arome and code now"; 07:52: the Solent needs much higher resolution for tide and wind): AROME moves
+# from the 0.025 deg packages to the 0.01 deg ones (one file per hour, about 24 MB, out about 2 h after the run). Only the 10 m wind
+# messages are kept, as GRIB, so the shared job's download serves every area job (fetch_shared.py, FS_RAW_ONLY) and an area cuts its own box.
 MF = 'https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt'
+def mf_raw(model, tag):
+    """The 10 m wind messages of one AROME hour, saved as GRIB in the shared folder by an earlier download (this job's or the shared job's)."""
+    out = []
+    for sn in ('10u', '10v'):
+        f = os.path.join(SHARED, f'{tag}_{sn}.grib2')
+        if os.path.exists(f): out.append(open(f, 'rb').read())
+    return out
 def meteofrance(model):
     import eccodes, tempfile
     d, r = RUN; iso = f'{d[:4]}-{d[4:6]}-{d[6:]}T{r}:00:00Z'
-    if model == 'arome': groups = [(0, 6)] + [(a, a + 5) for a in range(7, 48, 6)]; name = lambda a, b: f'arome/0025/SP1/arome__0025__SP1__{a:02d}H{b:02d}H__{iso}.grib2'
-    else: groups = [(0, 12)] + [(a, min(a + 11, 102)) for a in range(13, 103, 12)]; name = lambda a, b: f'arpege/01/SP1/arpege__01__SP1__{a:03d}H{b:03d}H__{iso}.grib2'
+    if model == 'arome': return arome_hd(d, r, iso)
+    groups = [(0, 12)] + [(a, min(a + 11, 102)) for a in range(13, 103, 12)]; name = lambda a, b: f'arpege/01/SP1/arpege__01__SP1__{a:03d}H{b:03d}H__{iso}.grib2'
     want = set(h for h in HOURS)
     got = {}
     for a, b in groups:
@@ -397,7 +444,9 @@ if __name__ == '__main__':
             o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)
         elif s in ('arome', 'arpege'):
-            o, h, la, lo = meteofrance(s); save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
+            res = meteofrance(s)
+            if res is None: continue   # FS_RAW_ONLY: the shared job keeps the messages only
+            o, h, la, lo = res; save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
         elif s == 'icon':
             o, h, la, lo = icon_eu(); save(s, u=o['u'], v=o['v'], hours=h, lat=la, lon=lo)
         elif s == 'gfs':

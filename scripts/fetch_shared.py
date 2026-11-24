@@ -3,7 +3,8 @@ The 08:19 UTC run of 21 Nov had all eight area jobs download the same ECMWF fiel
 ECMWF slowed to a crawl. This job downloads ECMWF IFS (wind), AIFS, ECMWF weather, ECMWF waves and the ensemble once, for one box that covers
 every area and the longest forecast any area uses; each area job then cuts its own piece (build.py, FS_SHARED), and fetches for itself only
 if this job did not deliver a source.
-Usage: python3 scripts/fetch_shared.py   writes work/_shared/<source>/*.npz and work/_shared/shared.json"""
+Usage: python3 scripts/fetch_shared.py   writes work/_shared/<source>/*.npz and work/_shared/shared.json
+24 Nov 2026: also the AROME 0.01 deg 10 m wind messages, work/_shared/aromehd_*.grib2 (arome_raw)."""
 import os, sys, json, time, glob, subprocess, numpy as np
 from concurrent.futures import ThreadPoolExecutor
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
@@ -41,7 +42,18 @@ def one(src):
     for f in glob.glob(os.path.join(d, '*.npz')): os.remove(f)
     info[src] = dict(failed=tries); print(src, 'not delivered:', tries, flush=True)
 
+def arome_raw():
+    """AROME 0.01 deg (Stuart 24 Nov 08:21): download each hour once and keep only its 10 m wind messages in work/_shared, where every
+    area job's fetch.py finds them (aromehd_<run>_h<hour>_10u.grib2) and cuts its own box. Tries the run the areas will try first."""
+    t1 = time.time(); c = cycles()[0]
+    env = dict(os.environ, FS_DATA=os.path.join(OUT, 'arome_raw'), FS_BOX='35,62,-15.5,12.5', FS_HOURS='51', FS_RUN=c, FS_RAW_ONLY='1')
+    os.makedirs(env['FS_DATA'], exist_ok=True)
+    try: r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), 'arome'], env=env, capture_output=True, text=True, timeout=max(60, min(1200, T_END - t1)))
+    except subprocess.TimeoutExpired: info['arome_raw'] = dict(failed=[f'{c} timed out']); print('arome 0.01 timed out', flush=True); return
+    if r.returncode == 0: info['arome_raw'] = dict(run=c, at=int(time.time()), secs=round(time.time() - t1)); print('arome 0.01', c, 'in', round(time.time() - t1), 's', flush=True)
+    else: info['arome_raw'] = dict(failed=[f"{c}: {((r.stderr or r.stdout) or '')[-200:]}"]); print('arome 0.01 not delivered', flush=True)
+
 print('shared box', S, N, W, E, 'hours', HRS, flush=True)
-with ThreadPoolExecutor(len(SHARED)) as ex: list(ex.map(one, SHARED))
+with ThreadPoolExecutor(len(SHARED) + 1) as ex: list(ex.map(lambda f: f(), [lambda s=s: one(s) for s in SHARED] + [arome_raw]))
 json.dump(info, open(os.path.join(OUT, 'shared.json'), 'w'), indent=1)
 print('delivered', sorted(k for k, v in info.items() if 'run' in v), flush=True)
