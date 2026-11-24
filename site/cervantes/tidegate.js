@@ -112,7 +112,8 @@
     if (why) { box.innerHTML = '<p class="tgno">Not a tide gate here: ' + why + '.</p>'; body.appendChild(box); return; }
     var L = ptList(d), nm = 'GATE ' + (L.reduce(function (m, q) { var k = /^GATE (\d+)$/.exec(q.name); return k ? Math.max(m, +k[1]) : m; }, 0) + 1);
     box.innerHTML = '<button class="btn tgadd1" type="button" id="tgPtAdd">◎ Tide gate here</button><label class="tgname">Name <input id="tgPtName" type="text" maxlength="24" placeholder="' + nm + '"></label>';
-    body.appendChild(box);
+    /* at the top of the box, under 'Route to here' (Stuart 24 Nov 23:20, mock-up): at the foot of a long card on a phone it was out of sight */
+    var top = body.querySelector('.xrow'); if (top) top.insertAdjacentElement('afterend', box); else { var h = body.querySelector('b'); if (h && h.parentNode === body) h.insertAdjacentElement('afterend', box); else body.insertBefore(box, body.firstChild); }
     $('tgPtAdd').onclick = function (e) { e.stopPropagation(); var v = ($('tgPtName').value || '').trim() || nm; L.push({ name: v.slice(0, 24), lat: la, lon: lo }); save(); var t = $('tip'); if (t) t.hidden = true; open(true); var c = document.querySelector('#tgPop .tgmk[data-l="p' + (L.length - 1) + '"]'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest' }); };
     $('tgPtName').onclick = function (e) { e.stopPropagation(); };
   };

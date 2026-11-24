@@ -526,6 +526,18 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('dlBtn').onclick = function () { download(); };
     $('ovChk').onchange = dataTable;
     $('tipX').onclick = function () { $('tip').hidden = true; };
+    /* a tap that opens the card must not also press the button that appears under the finger (the browser's click follows the touch):
+       found 24 Nov 23:40 with real taps, 'Save as waypoint' on a tablet and 'Route to here' on a phone pressed by the opening tap */
+    $('tip').addEventListener('click', function (e) { var at = +$('tip').dataset.at || 0; if (Date.now() - at < 450 && e.target.closest && e.target.closest('button,input,a,label')) { e.preventDefault(); e.stopPropagation(); } }, true);
+    /* the card moves by the dash line at its top (Stuart 24 Nov 23:20, as the start box's grip); kept for each screen size and way up */
+    (function () { var g = $('tipGrip'), tp = $('tip'), d = null, key = function () { return (innerWidth > innerHeight ? 'L' : 'P') + Math.round(innerWidth / 100); };
+      var all = function () { try { return JSON.parse(store('fs-tippos') || '{}') || {}; } catch (e) { return {}; } };
+      window.__fsTipPlace = function () { var o = all()[key()]; tp.style.translate = ''; if (!o || !tp.classList.contains('docked')) return; var r = tp.getBoundingClientRect(), dx = Math.max(-r.left + 4, Math.min(innerWidth - r.right - 4, o[0])), dy = Math.max(-r.top + 4, Math.min(innerHeight - r.top - 60, o[1])); tp.style.translate = Math.round(dx) + 'px ' + Math.round(dy) + 'px'; };
+      g.addEventListener('pointerdown', function (e) { var t = (tp.style.translate || '0px 0px').split(' ').map(parseFloat); d = { x: e.clientX, y: e.clientY, dx: t[0] || 0, dy: t[1] || 0, id: e.pointerId }; try { g.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault(); e.stopPropagation(); });
+      g.addEventListener('pointermove', function (e) { if (!d || e.pointerId !== d.id) return; tp.style.translate = Math.round(d.dx + e.clientX - d.x) + 'px ' + Math.round(d.dy + e.clientY - d.y) + 'px'; });
+      var end = function (e) { if (!d || e.pointerId !== d.id) return; var t = (tp.style.translate || '0px 0px').split(' ').map(parseFloat), a = all(); a[key()] = [t[0] || 0, t[1] || 0]; d = null; store('fs-tippos', JSON.stringify(a)); window.__fsTipPlace(); };
+      g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end);
+    })();
     $('windShow').onchange = draw;
     ['windSym', 'tideSym'].forEach(function (id) { var v = store('fs-' + id); if (v && $(id).querySelector('option[value="' + v + '"]')) $(id).value = v; $(id).onchange = function () { store('fs-' + id, $(id).value); syncSym(); draw(); animate(); }; });
     if (window.FSSails) FSSails.init({ pts: function () { return S.sel && S.sel.r ? S.sel.r.path : []; }, onChange: function () { plan(); compareTable(); update(); } });
@@ -4209,7 +4221,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (near) rows.push('<b>' + near + '</b>');
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
     if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.splice(rows.length ? 1 : 0, 0, '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>');
-    $('tipBody').innerHTML = rows.join(''); tip.hidden = false; tip.classList.toggle('docked', !!docked);
+    $('tipBody').innerHTML = rows.join(''); if (tapped && tip.hidden) tip.dataset.at = Date.now(); tip.hidden = false; tip.classList.toggle('docked', !!docked);
     if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}
     if (tapped && window.__fsTipGate) try { window.__fsTipGate($('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */   /* waypoints.js: Save as waypoint, Measure from here */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
@@ -4224,7 +4236,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
-    else { tip.style.left = ''; tip.style.top = ''; dot(la, lo, 5, 'transparent', css['--ink']); }
+    else { tip.style.left = ''; tip.style.top = ''; if (window.__fsTipPlace) window.__fsTipPlace(); dot(la, lo, 5, 'transparent', css['--ink']); }
   }
   function r2(k, v) { return '<div class="r"><span>' + k + '</span><span>' + v + '</span></div>'; }
   /* ---------- the boat: type, TCC or own polar, tuning, saved boats ---------- */
