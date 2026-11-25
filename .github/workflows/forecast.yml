@@ -18,6 +18,13 @@ on:
         description: 'Dry run: do everything but publish and ping (to time a change on a test branch)'
         type: boolean
         default: false
+      only:
+        description: 'F4: only these models (comma list, e.g. gfs,icon); every other layer is carried across from the live pack. Empty: all models'
+        type: string
+        default: ''
+
+env:
+  FS_ONLY: ${{ inputs.only }}
 
 permissions:
   contents: write

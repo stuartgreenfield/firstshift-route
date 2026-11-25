@@ -4,6 +4,11 @@ import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'solent-area', 'tasman-area']
 SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet', 'mars', 'ens', 'glocur']
+# F4 (Stuart 25 Nov 2026 15:30, "F1, F2, F6, F8 now, then F4, F5"): a run started for the models that have just landed (FS_ONLY, for example
+# "gfs,icon") fetches only those; the publish step carries every other layer across from the live pack unchanged (keep_old_layers.py), so one
+# model's new run reaches phones in minutes instead of waiting for a full rebuild of every model.
+ONLY = [x.strip() for x in os.environ.get('FS_ONLY', '').split(',') if x.strip()]
+if ONLY: SOURCES = [x for x in SOURCES if x in ONLY]; print('only these models this run:', SOURCES, flush=True)
 # models that cover only European waters, and the global one used instead where they do not reach (21 Nov 2026, Sydney Hobart, F114)
 REGIONAL = {'ukv', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'mars'}; GLOBAL_ONLY = {'glocur'}
 
@@ -107,7 +112,7 @@ for race in RACES:
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(len(SOURCES)) as ex: list(ex.map(one, SOURCES))
     t0c = cyc[0]
-    for c in cyc[:3]:   # the big-picture chart, from the newest ECMWF run that has it
+    for c in (cyc[:3] if (not ONLY or 'ecmwf' in ONLY) else []):   # the big-picture chart, from the newest ECMWF run that has it (F4: only when ECMWF is in this run; otherwise the live one is carried across)
         try:
             r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch_overview.py')], env=dict(env, FS_RUN=c, FS_BOX='', FS_OVERVIEW_BOX='' if europe else f"{b['s'] - 8},{b['n'] + 8},{b['w'] - 12},{b['e'] + 12}"), capture_output=True, text=True, timeout=900)
             ok = r.returncode == 0

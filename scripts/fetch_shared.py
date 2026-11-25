@@ -10,6 +10,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import landed
 from concurrent.futures import ThreadPoolExecutor
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 SHARED = ['ecmwf', 'aifs', 'ecmet', 'ecwav', 'ens']
+ONLY = [x.strip() for x in os.environ.get('FS_ONLY', '').split(',') if x.strip()]   # F4: a run for some models only fetches only those of the ECMWF family
+if ONLY: SHARED = [x for x in SHARED if x in ONLY]
 OUT = os.path.join(ROOT, 'work', '_shared'); os.makedirs(OUT, exist_ok=True)
 boxes = [json.load(open(f)) for f in glob.glob(os.path.join(ROOT, 'static', '*', 'static.json'))]
 S = min(b['box']['s'] for b in boxes); N = max(b['box']['n'] for b in boxes); W = min(b['box']['w'] for b in boxes); E = max(b['box']['e'] for b in boxes)

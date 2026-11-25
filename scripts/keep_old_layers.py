@@ -6,6 +6,8 @@ F8 (Stuart 25 Nov 2026 15:30): a layer the new build fetched from an OLDER run t
 back) never replaces the newer live layer: the live one is kept as it is. Usage: python3 scripts/keep_old_layers.py prev site"""
 import json, os, shutil, sys, time
 PREV, SITE = sys.argv[1], sys.argv[2]
+ONLY = [x.strip() for x in os.environ.get('FS_ONLY', '').split(',') if x.strip()]   # F4: the models this run fetched; every other layer is the live one, carried across as it is
+def src_of(i): return 'ens' if (len(i) == 3 and i[0] == 'e' and i[1:].isdigit()) else i
 now = time.time()
 for area in sorted(os.listdir(SITE)):
     newp, oldp = os.path.join(SITE, area, 'pack', 'pack.json'), os.path.join(PREV, area, 'pack', 'pack.json')
@@ -40,8 +42,15 @@ for area in sorted(os.listdir(SITE)):
             new['layers'].append(L); added.append(L['id'] + ' (newer live run kept)')
             new.setdefault('runs', {})[L['id']] = (old.get('runs') or {}).get(L['id'], '')
             continue
+        if ONLY and src_of(L['id']) not in ONLY:   # F4: not fetched this run on purpose: still the newest run, not an older one kept
+            new['layers'].append(L); added.append(L['id'] + ' (carried)'); new.setdefault('runs', {})[L['id']] = (old.get('runs') or {}).get(L['id'], ''); continue
         L = dict(L, latest=False, kept=True); new['layers'].append(L); added.append(L['id'])
         new.setdefault('runs', {})[L['id']] = (old.get('runs') or {}).get(L['id'], '') + ' (older run kept)'
+    if 'overview' not in new and old.get('overview'):   # F4: a run without ECMWF keeps the live big-picture chart
+        ov = old['overview']; src = os.path.join(PREV, area, 'pack', ov.get('file', ''))
+        if ov.get('file') and os.path.exists(src):
+            shutil.copy(src, os.path.join(SITE, area, 'pack', ov['file'])); ov = dict(ov, hours=[round(h + (old['t0'] - new['t0']) / 3600.0, 3) for h in ov.get('hours', [])]); new['overview'] = ov; added.append('overview (carried)')
     if added:
+        oi = {l['id']: i for i, l in enumerate(old['layers'])}; new['layers'].sort(key=lambda l: oi.get(l['id'], 999))   # the live order of the layers (the colours and lists follow it)
         json.dump(new, open(newp, 'w'), separators=(',', ':'))
         print(area, 'kept older runs of', ', '.join(added))
