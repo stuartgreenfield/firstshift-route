@@ -16,6 +16,17 @@ def cycles(lag_h=7, n=4):
     t = time.time() - lag_h * 3600; t -= t % (6 * 3600)
     return [time.strftime('%Y%m%d%H', time.gmtime(t - 6 * 3600 * i)) for i in range(n)]
 
+import landed   # F1 (Stuart 25 Nov 15:30): runs chosen by checking they have landed
+def order(src, hrs, cyc):
+    """The runs to try for one model, newest first: those that have landed (landed.py), then older ones as a fall-back; the old fixed
+    wait (LAG) only when the model has no check or its server could not be asked."""
+    skip = (lambda c: c[-2:] in ('06', '18')) if (src == 'ens' and hrs > 100) else (lambda c: False)   # the ensemble's 06Z and 18Z runs stop at 144 h
+    try: got = landed.newest(src, hrs, skip=skip)
+    except Exception as e: print(src, 'landed check failed:', e, flush=True); got = None
+    old = [c for c in (cycles(LAG.get(src, 7)) if src in LAG else cyc) if not skip(c)]
+    if not got: return old
+    return got + [c for c in old if c < got[-1]]
+
 def good(path, need_h):
     try:
         z = np.load(path); return len(z['hours']) >= 3 and float(z['hours'][-1]) >= need_h
@@ -65,14 +76,14 @@ for race in RACES:
         first = None
         sh = SHARED_INFO.get(src) or {}
         if sh.get('run'):   # the shared download, if it is the run this area would take first
-            want = [c for i, c in enumerate(cycles(LAG.get(src, 7)) if src in LAG else cyc) if not (src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2)][:1]
+            want = order(src, hrs, cyc)[:1]
             t1 = time.time()
             if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), 30):
                 log[f'{race}:{src}'] = f"{sh['run']} shared ({sh.get('secs', '?')}s once for all areas, cut here in {time.time() - t1:.0f}s)"; recv[src] = dict(run=sh['run'], at=sh['at'], latest=sh['latest'], newest=sh['newest'])
                 print(src, log[f'{race}:{src}'], flush=True); return
-        cyc_s = cycles(LAG.get(src, 7)) if src in LAG else cyc   # 24 Nov: models known to publish sooner are tried sooner (LAG)
+        cyc_s = order(src, hrs, cyc)   # F1: the newest run that has landed first (24 Nov's fixed waits only as the fall-back)
+        print(src, 'runs to try', cyc_s[:4], flush=True)
         for i, c in enumerate(cyc_s):
-            if src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             if first is None: first = c   # the newest run this model should have by now
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)

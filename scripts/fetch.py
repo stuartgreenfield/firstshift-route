@@ -418,14 +418,39 @@ def save(name, **k):
     np.savez_compressed(os.path.join(OUT, name + '.npz'), t0=T0, **k); print('\nsaved', name, {a: getattr(b, 'shape', b) for a, b in k.items() if hasattr(b, 'shape')})
 
 
+def with_tail(fetch_one):
+    """F2: an ECMWF 06Z or 18Z run ends at 144 h; for an area that needs more, the hours beyond come from the run 6 hours earlier
+    (a 00Z or 12Z run), put on this run's clock. fetch_one() returns (fields, hours, lat, lon) for the current RUN and HOURS_LONG."""
+    global RUN, HOURS_LONG
+    o, h, la, lo = fetch_one()
+    keep_run, keep_hl = RUN, HOURS_LONG
+    t = time.mktime(time.strptime(RUN[0] + RUN[1], '%Y%m%d%H')) - time.timezone - 6 * 3600; pr = time.strftime('%Y%m%d%H', time.gmtime(t))
+    last = float(h[-1]) if len(h) else 0
+    try:
+        RUN = (pr[:8], pr[8:]); HOURS_LONG = [x + 6 for x in keep_hl if x > last]
+        o2, h2, la2, lo2 = fetch_one()
+    finally:
+        RUN, HOURS_LONG = keep_run, keep_hl
+    if len(h2) and la2 is not None and len(la2) == len(la) and len(lo2) == len(lo):
+        h2 = np.array(h2, float) - 6; ok = h2 > last
+        for k in list(o):
+            if k in o2 and len(o2[k]) == len(h2): o[k] = np.concatenate([np.asarray(o[k]), np.asarray(o2[k])[ok]])
+            elif ok.any(): del o[k]   # an optional field the earlier run lacks: left out rather than mismatched in length
+        h = np.concatenate([np.asarray(h, float), h2[ok]]); print('joined', int(ok.sum()), 'hours from', pr, 'beyond', last, flush=True)
+    return o, h, la, lo
+
+
 if __name__ == '__main__':
     for s in sys.argv[1:]:
-        short = RUN[1] in ('06', '18')       # ECMWF 06Z and 18Z runs use the short-cut-off streams
+        short = False   # F2 (25 Nov 2026): ECMWF now publishes its 06Z and 18Z runs under the same streams as 00Z and 12Z ("oper", "wave"), to 144 h; the old "scda"/"scwv" names gave 404s
+        tail = RUN[1] in ('06', '18') and HOURS_LONG and HOURS_LONG[-1] > 144 and s in ('ecmwf', 'ecmet', 'ecwav')
         if s in ('ecmwf', 'aifs'):
-            o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf' and os.environ.get('FS_ECMWF_9KM') == '1'))   # 21 Nov: 9 km (A of 20 Nov) only when switched on, for a release of its own on Stuart's go
+            f1 = lambda: ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf' and os.environ.get('FS_ECMWF_9KM') == '1'))
+            o, h, la, lo = with_tail(f1) if tail else f1()   # 21 Nov: 9 km (A of 20 Nov) only when switched on, for a release of its own on Stuart's go
             save(s, u=o['10u'], v=o['10v'], hours=h, lat=la, lon=lo)
         elif s == 'ecmet':   # ECMWF weather beyond the wind: gusts, pressure, rain, thunderstorm energy, cloud, air temperature, sea temperature
-            o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))
+            f1 = lambda: ecmwf('ifs', 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))
+            o, h, la, lo = with_tail(f1) if tail else f1()
             tp = o['tp']; rain = np.zeros_like(tp)
             if len(h) > 1:
                 dh = np.diff(h).astype(float).reshape(-1, 1, 1); rain[1:] = np.maximum(0, np.diff(tp, axis=0)) * 1000 / dh   # accumulated metres to mm an hour
@@ -441,7 +466,8 @@ if __name__ == '__main__':
                 more['sst'] = sst
             save(s, gust=o['10fg'], msl=o['msl'] / 100, rain=rain, cape=o['mucape'], cloud=o['tcc'] * 100, temp=o['2t'] - 273.15, hours=h, lat=la, lon=lo, **more)
         elif s == 'ecwav':
-            o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
+            f1 = lambda: ecmwf('ifs', 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
+            o, h, la, lo = with_tail(f1) if tail else f1()
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)
         elif s in ('arome', 'arpege'):
             res = meteofrance(s)
