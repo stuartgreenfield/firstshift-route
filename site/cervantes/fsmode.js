@@ -7,7 +7,50 @@
    instrument strip under it shows the same connection and CONNECT BOAT (Stuart to confirm). */
 (function () {
   'use strict';
-  if (window.FS_MARK) return;
+  if (window.FS_MARK) { markSteps(); return; }
+  /* Mark and Mark+ (Stuart 25 Nov 2026 19:5x: "A: strip in the top band"; RACE before the gun "Yes, allowed"): 1 COURSE, 2 START, 3 RACE in
+     the top band where START was, the step the race is at lit. COURSE opens the race card (the course, or a new one); START opens the start
+     screen (it asks for the start time first if there is none); RACE goes to the chart with GPS on, before the gun too (a pursuit race, no
+     sequence). The step follows the race by itself: no course yet is COURSE, a course and a gun still to come is START, after the gun is RACE. */
+  function markSteps() {
+    var $ = function (id) { return document.getElementById(id); }, Mk = { pick: null, el: null };
+    function sol() { return window.FSSolent || {}; }
+    function step() {
+      var c = null; try { c = window.__navCourse && window.__navCourse(); } catch (e) {}
+      if (!c) return 'course';
+      var cd = $('solCard'); if (cd && !cd.hidden && cd.getClientRects().length) return 'course';   /* the race card open: setting the course */
+      var sn = null; try { sn = sol().startNow ? sol().startNow() : null; } catch (e) {}
+      if (sn && sn.rem <= 0 && sn.rem > -36000) return 'race';
+      if (Mk.pick === 'race') return 'race';
+      return 'start';
+    }
+    function liveOn() { try { return !!(window.__navLiveState && window.__navLiveState().on); } catch (e) { return false; } }
+    function go(k) {
+      if (k === 'course') { Mk.pick = null; try { sol().start(); } catch (e) {} }
+      else if (k === 'start') { Mk.pick = null; try { if (sol().ssHold) sol().ssHold(false); if (window.__fsStartScreen) window.__fsStartScreen(); } catch (e) {} }
+      else { Mk.pick = 'race'; try { if (sol().ssHold) sol().ssHold(true); } catch (e) {} ['solCard', 'solStartScr'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; }); if (!liveOn()) { var l = $('liveBtn'); if (l) l.click(); } }
+      paint();
+    }
+    function build() {
+      if (Mk.el) return true; var sc = $('startChip'); if (!sc) return false;
+      var e = document.createElement('div'); e.className = 'fsmode fssteps'; e.setAttribute('role', 'group'); e.setAttribute('aria-label', 'Course, start, race');
+      e.innerHTML = '<button type="button" data-s="course"><b><i>1 </i>COURSE</b></button><button type="button" data-s="start"><b><i>2 </i>START</b></button><button type="button" data-s="race"><b><i>3 </i>RACE</b></button>';
+      sc.parentNode.insertBefore(e, sc.nextSibling); Mk.el = e;
+      e.addEventListener('click', function (ev) { var b = ev.target.closest('[data-s]'); if (!b) return; ev.stopPropagation(); go(b.dataset.s); });
+      var css = document.createElement('style');
+      css.textContent = '.fssteps{display:flex;align-self:stretch;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel);flex:none}.fssteps button{display:grid;place-items:center;min-width:56px;padding:0 8px;border:0;background:none;color:var(--muted);cursor:pointer;font:inherit}.fssteps b{font:700 11px var(--f-data);letter-spacing:.05em;white-space:nowrap}.fssteps button.on{background:var(--brand,#3574BA);color:#fff}.fssteps button.done{color:var(--ink)}:root[data-night] .fssteps button.on{background:#3A0A08;color:#E0322A}' +
+        '@media (max-width:600px),(orientation:landscape) and (max-height:500px){#startChip{display:none!important}#navBoatBtn{width:0!important;min-width:0!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}.fssteps button{min-width:0;padding:0 5px}.fssteps b{font-size:10px;letter-spacing:.02em}.fssteps i{display:none}}' +
+        '.fssteps i{font-style:normal}@media (max-width:430px){.fssteps b{font-size:9.5px;letter-spacing:0}.fssteps button{padding:0 4px}}@media (max-width:370px){.fssteps b{font-size:8.5px}.fssteps button{padding:0 2px}}';
+      document.head.appendChild(css); return true;
+    }
+    function paint() {
+      if (!build()) return; var k = step(), order = ['course', 'start', 'race'], at = order.indexOf(k);
+      [].forEach.call(Mk.el.querySelectorAll('[data-s]'), function (b) { var i = order.indexOf(b.dataset.s); b.classList.toggle('on', i === at); b.classList.toggle('done', i < at); b.setAttribute('aria-current', i === at ? 'step' : 'false'); });
+    }
+    function boot() { paint(); if (window.FSBeat) FSBeat.set(paint, 1000); else setInterval(paint, 1000); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+    window.FSSteps = { get: step, go: go };
+  }
   var page = location.pathname.replace(/\/+$/, '').split('/').pop() || 'x', KEY = 'fs-mode-' + page, $ = function (id) { return document.getElementById(id); };
   var M = { mode: null, pillOff: 0, el: null, pill: null };
   try { M.mode = localStorage.getItem(KEY); } catch (e) {}
