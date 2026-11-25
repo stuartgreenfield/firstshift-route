@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-25T08:24:10.339Z",
+ "log": [
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 36,
+   "note": "Finer routes in 26.1 s. Times: first routes 1.5 s, standard 8.0 s, finer 34.2 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 66,
+   "note": "Finer routes in 23.4 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 0.9 min faster than ECMWF’s "
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 96,
+   "note": "Finer routes in 23.2 s. Also worth knowing: in UKV wind, the ECMWF route is 3.0 min faster than UKV’s own route; in GFS "
+  }
+ ]
+}

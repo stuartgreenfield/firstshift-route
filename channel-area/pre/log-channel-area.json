@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-25T08:26:20.844Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 42,
+   "note": "Finer routes in 30.7 s. Times: first routes 1.8 s, standard 9.1 s, finer 39.9 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 78,
+   "note": "Finer routes in 28.5 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 0.9 min faster than ECMWF’s "
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 114,
+   "note": "Finer routes in 27.8 s. Also worth knowing: in UKV wind, the ECMWF route is 3.0 min faster than UKV’s own route; in GFS "
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 148,
+   "note": "Finer routes in 26.9 s. Also worth knowing: in UKV wind, the AROME HD route is 0.9 min faster than UKV’s own route; in A"
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 183,
+   "note": "Finer routes in 27.5 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 8.2 min faster than ECMWF’s "
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 220,
+   "note": "Finer routes in 28.9 s. Also worth knowing: in AIFS wind, the Combined (6 models) route is 2.8 min faster than AIFS’s ow"
+  }
+ ]
+}
