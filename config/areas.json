@@ -1,7 +1,7 @@
 {
  "note": "Forecast areas the server builds every run. \"off\" saves server time: the area keeps its last forecasts and is not refreshed. Sydney Hobart area (tasman-area) added 21 Nov 2026 (Stuart 15:50: \"Put an on off switch in settings to save server time if you don't want it\").",
  "tasman-area": "on",
- "middlesea-area": "on",
- "caribbean-area": "on",
- "atlantic-area": "on"
+ "middlesea-area": "off",
+ "caribbean-area": "off",
+ "atlantic-area": "off"
 }
