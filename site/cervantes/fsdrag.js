@@ -21,7 +21,8 @@
 (function () {
   'use strict';
   var KEY = 'nav-pos', LONG = 500, GW = 44, GH = 28;
-  var PANELS = [['liveBox', 'GPS window', 'win', 'GPS'], ['fsPlot', 'Plotter bar', 'win', 'PLOT'], ['navPlot', 'Plotter bar', 'win', 'PLOT'], ['solSeq', 'Start sequence', 'win', 'START'], ['solLegs', 'Course card', 'win', 'COURSE'], ['layers', 'Layers box', 'win', 'LAYERS'], ['navStrip', 'Instrument strip', 'win', 'BOAT'],
+  var PANELS = [['liveBox', 'GPS window', 'win', 'GPS'], ['fsPlot', 'Plotter bar', 'win', 'PLOT'], ['navPlot', 'Plotter bar', 'win', 'PLOT'], ['solSeq', 'Start sequence', 'win', 'START'], ['solLegs', 'Course card', 'win', 'COURSE'], ['layers', 'Layers box', 'win', 'LAYERS'], ['navStrip', 'Instrument strip', 'win', 'BOAT'], ['tgPop', 'Tide window', 'win', 'TIDE'],   /* Stuart 25 Nov 17:45: the tide window moves and slides away like the plotter, in all four tools */
+   
     ['fsRulerBtn', 'Ruler button'], ['helpBtn', 'Help button'], ['oriBtn', 'North up button'], ['editFab', 'Edit course button'], ['fromHere', 'From here button'], ['navClearBtn', 'Clear screen button'], ['navMenuBtn', 'MENU button'], ['navCentreBtn', 'Centre on the boat button']];   /* man overboard stays where it is */
   function $(id) { return document.getElementById(id); }
   function ld() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
@@ -115,6 +116,13 @@
   function gHide(g) { if (g.hidden) { g.__ok = 0; return; } g.__cv = (g.__cv || 0) + 1; if (g.__cv >= 2 || M.el) { g.hidden = true; g.__soft = true; g.__cv = 0; g.__ok = 0; } }
   function gShow(g) { g.__cv = 0; if (!g.hidden) return; if (g.__soft && !M.el) { g.__ok = (g.__ok || 0) + 1; if (g.__ok < 4) return; } g.hidden = false; g.__soft = false; g.__ok = 0; }
   var GP = [];
+  /* Apple window 25 Nov 15:53 and 16:35 (Stuart's iPhone): the grip sat on chart readouts and names ("180 T, 58 nm", "Needles Fairway").
+     The grips are placed first, so the chart's labels give way to them: each shown grip takes its place in the label list before any
+     label is drawn, and a label there moves a step or is left out, as labels do for each other (A14). */
+  (window.__fsLabelFirst = window.__fsLabelFirst || []).push(function () {
+    if (!window.__fsLabelTake) return; var mp = $('map'), o = mp && mp.getBoundingClientRect ? mp.getBoundingClientRect() : { left: 0, top: 0 };
+    Object.keys(grips).forEach(function (k) { var g = grips[k]; if (!g || g.hidden) return; var l = parseFloat(g.style.left), t = parseFloat(g.style.top); if (!(l === l) || !(t === t)) return; window.__fsLabelTake(l - o.left - 4, t - o.top - 4, GW + 8, GH + 8); });
+  });
   function place() {
     BC = null; GP = []; var now = Date.now();
     if (fullView() && !M.el) { Object.keys(grips).forEach(function (k) { grips[k].hidden = true; grips[k].__key = null; }); Object.keys(tabs).forEach(function (k) { tabs[k].hidden = true; }); return; }

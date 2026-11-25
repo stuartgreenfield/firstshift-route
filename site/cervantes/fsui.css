@@ -190,3 +190,5 @@ body.gpsstrip #liveBox{display:none!important}
 
 /* 25 Nov 2026 (Stuart, BRIEF-CLEAR-BUTTON-ROW): CLEAR takes only the row of big buttons; the bar keeps the LIVE and ROUTE lines and the slider (fsclear.js) */
 body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px}
+/* Stuart 25 Nov 17:41 (laptop picture): the next mark's name was cut short ("Finish, Cher..."); it now takes up to two lines */
+.rpname b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;overflow:hidden;text-overflow:clip;overflow-wrap:anywhere}

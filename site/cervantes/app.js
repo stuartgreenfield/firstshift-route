@@ -2251,8 +2251,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      works ashore. */
   function offRow(rows) {
     var st = S.offSt; if (!st || st.offline || !st.list) return;   /* not routed yet, or no signal to check: no row */
-    var ok = !st.miss.length; rows.push({ k: 'off', t: 'Offline', ok: ok, s: ok ? 'Kept on this phone' : 'Not all kept on this phone · ' + offMb(st.need) + ' to download' });
+    var ok = !st.miss.length, O = window.__navOff && window.__navOff.S, note = O && (O.busy || Date.now() - (S.offNoteAt || 0) < 12000) ? O.note : '';
+    /* Stuart 25 Nov 17:4x (Apple window items 4 and 5): "SAVE FOR OFFLINE", the card row "Saved on this phone", the button "Save, then route";
+       Set shows its progress and the result on the card */
+    rows.push({ k: 'off', t: 'Saved on this phone', chip: 'SAVE FOR OFFLINE', soft: true, ok: ok, s: note || (ok ? 'Everything for this race' : 'Not yet · ' + offMb(st.need) + ' to download') });
   }
+  /* Set on the Saved on this phone row (and Save, then route): the download's progress and its result show on the card itself */
+  function offSave(then) { if (!window.__navOff) { if (then) then(); return; } var t = setInterval(function () { try { setupRender(); } catch (e) {} }, 600);
+    window.__navOff.ready().then(function () { clearInterval(t); S.offNoteAt = Date.now(); offCheck(); if (then) then(); }, function () { clearInterval(t); S.offNoteAt = Date.now(); offCheck(); }); setTimeout(function () { try { setupRender(); } catch (e) {} }, 50); }
   function offMb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
   function offCheck() { try { if (!window.__navOff || !S.routes || !S.routes.length) return; window.__navOff.status().then(function (st) { S.offSt = st; try { setupRender(); } catch (e) {} }, function () {}); } catch (e) {} }
   FSBeat.set(offCheck, 60000); setTimeout(offCheck, 8000);
@@ -2263,7 +2269,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!ch) { ch = document.createElement('span'); ch.id = 'readyChip'; ch.className = 'readychip'; ch.setAttribute('role', 'button'); ch.tabIndex = 0; document.body.appendChild(ch); window.addEventListener('resize', function () { chipAt(ch); });
       var css = document.createElement('style'); css.textContent = '.readychip{position:fixed;z-index:30;padding:1px 7px;border-radius:999px;background:#d97706;color:#fff;font:700 10px/1.4 var(--f-body,system-ui);letter-spacing:.05em;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.4)}html[data-night] .readychip{background:#5A1410;color:#E8B0A8}'; document.head.appendChild(css);
       ch.onclick = function (e) { e.stopPropagation(); S.suOpen = true; openTab('decision'); setupRender(); var c = $('setupCard'); if (c) c.scrollIntoView({ block: 'start' }); }; }
-    ch.hidden = false; chipAt(ch); ch.textContent = '! ' + miss.map(function (r) { return r.t.toUpperCase(); }).join(' · '); ch.title = 'Not ready: ' + miss.map(function (r) { return r.t; }).join(', ') + '. Tap to fix.';
+    ch.hidden = false; chipAt(ch); ch.textContent = (miss.every(function (r) { return r.chip; }) ? '' : '! ') + miss.map(function (r) { return r.chip || r.t.toUpperCase(); }).join(' · '); ch.title = 'Not ready: ' + miss.map(function (r) { return r.t; }).join(', ') + '. Tap to fix.';
   }
   /* the set-up card is the one place to set up a race (Stuart 12 Nov): the old steps open only for the single item tapped, then come back here */
   function showCard() {
@@ -2290,17 +2296,18 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var el = $('setupCard'); if (!el || !meta) return; var rows; try { rows = setupRows(); } catch (e) { return; }
     readyChip(rows);
     var ready = rows.filter(function (r) { return r.ok; }).length, all = ready === rows.length, has = S.routes && S.routes.length;
+    var onlySoft = !all && rows.every(function (r) { return r.ok || r.soft; });
     var open = S.suOpen || !all || !has;   /* routed and all ready: one line, tap to open */
     if (!open) { el.innerHTML = '<button class="srow" id="suOpen"><span class="sic">✓</span><span class="stx"><b>Set-up: all ' + rows.length + ' ready</b><span>' + wizEsc(rows.map(function (r) { return r.s.split(' · ')[0]; }).join(' · ')) + '</span></span><span class="sgo">Show</span></button>'; $('suOpen').onclick = function () { S.suOpen = true; setupRender(); }; return; }
     el.innerHTML = '<div class="shd"><b>Race set-up</b><span>' + ready + ' of ' + rows.length + ' ready' + (all && has ? ' · <a href="#" id="suHide">Hide</a>' : '') + '</span></div>' + rows.map(function (r) { return '<button class="srow' + (r.ok ? '' : ' warn') + '" data-su="' + r.k + '"><span class="sic">' + (r.ok ? '✓' : '!') + '</span><span class="stx"><b>' + r.t + '</b><span>' + wizEsc(r.s) + '</span></span><span class="sgo">' + (r.ok ? 'Change' : 'Set') + '</span></button>'; }).join('') +
-      '<button class="sroute" id="suRoute"' + (all ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : 'Route (' + rows.filter(function (r) { return !r.ok; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
+      '<button class="sroute" id="suRoute"' + (all || onlySoft ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : onlySoft ? 'Save, then route' : 'Route (' + rows.filter(function (r) { return !r.ok && !r.soft; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
     [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function (ev) { var k = b.dataset.su;
       if (k === 'course') { if (ev) ev.stopPropagation(); $('raceMenu').hidden = true; $('raceBtn').onclick({ stopPropagation: function () {} }); }   /* the tap must not reach the page, which closes the menu */
       else if (k === 'boat') cardSettings('boat');
       else if (k === 'start') cardStep(3);
-      else if (k === 'off') { if (window.__navOff) window.__navOff.ready().then(offCheck, offCheck); }
+      else if (k === 'off') offSave();
       else cardSettings('fc'); }; });
-    $('suRoute').onclick = function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); };
+    $('suRoute').onclick = function () { if (onlySoft) { offSave(function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); }); return; } S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); };
     if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
   }
   /* how far each forecast reaches against the race (wireframe A4): a bar per wind model from the start, the white tick the estimated finish */
@@ -4069,7 +4076,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (fa && fa.ahead) { view.la += fa.ahead[0] / view.s; view.lo += fa.ahead[1] / (K * view.s); }
   }
   var KVT = { Hdg: 'Plan: heading to steer', BSP: 'Plan: boat speed through the water, from the polar', SOG: 'Plan: speed over the ground, tide included', COG: 'Plan: course over the ground, tide included', TWA: 'Plan: true wind angle, from the forecast', TWS: 'Plan: true wind speed, from the forecast', VMC: 'Plan: velocity made good on course: speed over the ground towards the next mark, tide included, in knots (VMG is speed towards the wind)', Sail: 'Plan: sail', Sea: 'Plan: significant wave height, from the forecast' };
-  function kv(k, v) { return '<div' + (KVT[k] ? ' title="' + KVT[k] + '"' : '') + '><span>' + k + '</span><b>' + v + '</b></div>'; }
+  function kv(k, v) { return '<div' + (/^(Mark|Finish|Start)\b/.test(k) ? ' class="kvw"' : '') + (KVT[k] ? ' title="' + KVT[k] + '"' : '') + '><span>' + k + '</span><b>' + v + '</b></div>'; }
   function pad(x) { return String(Math.round(((x % 360) + 360) % 360)).padStart(3, '0'); }
   var playing = false, lastTs = 0;
   function togglePlay() { playing = !playing; playDraw = 0; setTimeout(resizeDraw, 0); $('playIcon').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>'; $('play').setAttribute('aria-label', playing ? 'Pause' : 'Play'); if (playing) { lastTs = 0; if (+$('time').value >= 1000) setTime(S.tmin || 5); requestAnimationFrame(tick); } }
@@ -4349,7 +4356,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function open() { for (var i = 0; i < WINS.length; i++) { var l = document.querySelectorAll(WINS[i]); for (var j = 0; j < l.length; j++) { var e = l[j]; if (!e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden') return true; } } return false; }
   /* Screen rules (UI review step 1, 16 Nov): on any screen, a round button that an open window would cover steps out of the way
      until the window closes (Layers, the GPS window, a card) */
-  var COVER = ['#layers', '.livebox:not(.mini)', '#liveBig', '.sheet', '#tip', '#sessBox', '#errBox', '#solCard', '#trkCard', '#solLegs', '#solStep', '#fsPlot', '#astroLine', '.livebox.mini', '#navStrip'];
+  var COVER = ['.navplotbar', '#panel', '#layers', '.livebox:not(.mini)', '#liveBig', '.sheet', '#tip', '#sessBox', '#errBox', '#solCard', '#trkCard', '#solLegs', '#solStep', '#fsPlot', '#astroLine', '.livebox.mini', '#navStrip'];
   function vis(e) { if (e.hidden || !e.getClientRects().length) return false; var c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; }
   function winRects() { var wins = []; COVER.forEach(function (q) { [].forEach.call(document.querySelectorAll(q), function (e) { if (vis(e)) wins.push(e.getBoundingClientRect()); }); }); return wins; }
   function covers() { var wins = winRects();
