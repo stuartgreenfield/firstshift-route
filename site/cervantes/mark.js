@@ -561,7 +561,7 @@
   function splash() {
     var sp = $('splash'); if (!sp) return; var nm = plus ? 'Mark+' : 'Mark'; sp.setAttribute('aria-label', 'FirstShift ' + nm);
     var h1 = sp.querySelector('.sp-txt h1'); if (h1) h1.innerHTML = (plus ? 'Mark+' : 'Mark') + '<span>.</span><sup class="tm" aria-label="trade mark">™</sup>';   /* as Route. and Route+. (Stuart 17 Nov 05:22) */
-    var p0 = sp.querySelector('.sp-txt > p'); if (p0) p0.textContent = 'Inshore racing for the ' + (window.FS_AREA || 'Solent') + ': round the cans and windward-leeward. The course, the start line, the gun and the next mark on your phone or pad, with the crew in step by one boat code.';
+    var p0 = sp.querySelector('.sp-txt > p'); if (p0) p0.textContent = 'Race starting and routing for inshore sailors.';   /* Stuart 25 Nov 16:58 and 17:4x (opening screen D) */
     var te = $('spTerms'); if (te) { te.setAttribute('aria-label', 'Before you use ' + nm); [].forEach.call(te.querySelectorAll('b,p'), function (e) { e.textContent = e.textContent.replace(/\bRoute\b/g, nm); }); }
     var tr = $('spTry'); if (tr) tr.title = 'Test mode first: nothing is sent anywhere';
     tourSetup();
