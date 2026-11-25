@@ -1,6 +1,6 @@
 /* Quick reference at sea, in Help for all four tools (Stuart 24 Nov 2026 15:47, night jobs 26 to 29; written 25 Nov). Each topic is
    researched from the source named under it, in our own words except the radio message forms, which follow the MCA's published order.
-   Man overboard is for Stuart to check before release. Emma reads each topic (helpmedia/voice, made by tools/help_voice.py). */
+   Man overboard is for Stuart to check before release. No recordings: these pages are pictures and short text (Stuart 25 Nov 23:13). */
 (function () {
   'use strict';
   var T = [
