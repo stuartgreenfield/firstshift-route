@@ -66,7 +66,9 @@
     'body.navclear #fsBadge{display:none!important}',
     'body.navclear .bar>.pgrp>:not(.mobbtn),body.navclear #tzRow,body.navclear #clock{display:none!important}',
     'body.navclear #trow>.navmenub{display:block;flex:none;width:auto;min-width:56px;height:40px;font-size:12px}',
-    ':root[data-night] body.navclear .top{border-bottom-color:#6A0F0B}'
+    ':root[data-night] body.navclear .top{border-bottom-color:#6A0F0B}',
+    /* Stuart 25 Nov 16:50: on a phone on its side the refining-the-routes box was far too big: one small line and the bar, at the left, all four tools */
+    '@media (orientation:landscape) and (max-height:500px){#prog{left:var(--gut,12px)!important;right:auto!important;transform:none!important;width:min(250px,34vw)!important;max-width:250px;padding:4px 8px!important;font-size:11.5px}#prog .pg-t{font-size:11.5px;line-height:1.2}#prog #pgD,#prog #pgCk{display:none!important}#prog .pgmin{min-height:24px;min-width:24px}}'
   ].join('\n');
   (document.head || document.documentElement).appendChild(css);
   window.FSClear = { set: set, on: on, arm: arm, auto: auto, build: build, busy: busy, alarm: alarm, state: function () { return { up: st.up, side: st.side, auto: S.auto }; } };
