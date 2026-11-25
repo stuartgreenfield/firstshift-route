@@ -62,9 +62,10 @@
     M.el.title = m === 'plan' ? 'ROUTE: routing only. RACE: GPS, the LIVE line and the start tools.' : 'RACE: GPS, the LIVE line and the start tools. ROUTE: routing only.';
     /* the pill: in PLAN, the gun within 2 hours, or the boat within 2 nm of the start */
     var want = m === 'plan' && Date.now() - M.pillOff > 30 * 60000 && ((g && t > g - 7200 && t < g + 600) || near()), p = M.pill;
+    if (want) { try { if (window.FSClear && (FSClear.busy() || FSClear.alarm())) want = false; } catch (e) {} }   /* never over a panel, Settings, Layers, an alarm or the start sequence (screens check 25 Nov) */
     if (!want) { p.hidden = true; return; }
     p.innerHTML = (g && t < g ? 'Gun in ' + dur(g - t) : 'Near the start') + ' <em>On the boat? Tap for RACE</em><span data-x="1" aria-label="Not now">✕</span>';
-    var top = 0; ['.top', '#cbanner', '#navStrip', '#navPlot', '#fsPlot'].forEach(function (q) { var e = document.querySelector(q); if (e && !e.hidden && e.getClientRects().length) { var r = e.getBoundingClientRect(); if (r.top < innerHeight * 0.4) top = Math.max(top, r.bottom); } });
+    var top = 0; ['.top', '#cbanner', '#navStrip', '#navPlot', '#fsPlot', '#prog', '#folStrip', '#readyChip'].forEach(function (q) { var e = document.querySelector(q); if (e && !e.hidden && e.getClientRects().length) { var r = e.getBoundingClientRect(); if (r.top < innerHeight * 0.4) top = Math.max(top, r.bottom); } });
     p.style.top = Math.round(top + 8) + 'px'; p.hidden = false;
   }
   function boot() { apply(); if (window.FSBeat) FSBeat.set(apply, 1000); else setInterval(apply, 1000); }
