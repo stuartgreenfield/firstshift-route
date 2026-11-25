@@ -667,7 +667,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function folToggle(id) { var f = folGet(); if (f && f.id === id) { folSet(null); folTo(folBest()); } else { folSet(id); folTo(S.routes.filter(function (x) { return x.id === id; })[0] || folBest()); } }
   /* the strip sits under the top bar, and under the start sequence card or gun bar when one shows there; re-placed by the clock's
      one-second tick, so no timer of its own */
-  function folPlace() { var box = $('folStrip'); if (!box || box.hidden) return; var y = 0; ['.top', '#cbanner', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' || q === '#cbanner' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
+  /* the strip is for the chart view: off while routing (the progress card sits there and the times are changing) and while a race view
+     (20/20, HELM, the plotter's deck) covers the chart; the cards in Routes still choose (screens check 25 Nov 00:40) */
+  function folBusy() { if (S.running) return true; var q = ['#deckNums', '#dkView', '#fsHelm', '#navHelm', '#fhHelm', '#liveBig', '#fsPlot', '#navPlot']; for (var i = 0; i < q.length; i++) { var e = document.querySelector(q[i]); if (e && !e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none') return true; } return false; }
+  function folPlace() { var box = $('folStrip'); if (!box || !box.innerHTML) return; var off = folBusy(); if (box.hidden !== off) box.hidden = off; if (off) return; var y = 0; ['.top', '#cbanner', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' || q === '#cbanner' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
     var t = Math.round(y + 6) + 'px'; if (box.style.top !== t) box.style.top = t; }
   function folName(s) { return s.combined ? 'Combined' : short(s.id); }
   function folTime(s) { return s.r.partial ? s.r.partial.togo + ' nm to go' : fmtH(s.r.finish - (S.matrix ? S.matrix.start : 0)); }
@@ -681,7 +684,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (a && b) h += '<div class="folask" role="alertdialog" aria-label="New forecasts are in"><b>New forecasts are in</b><span>You are following ' + folName(a) + ': ' + folTime(a) + '. The quickest is now ' + folName(b) + ': ' + folTime(b) + '.</span><div><button type="button" class="btn primary" data-fk="keep">Keep following ' + folName(a) + '</button><button type="button" class="btn" data-fk="best">Follow the quickest (' + folName(b) + ')</button></div></div>'; }
     if (fs) h += '<button type="button" class="folpill" data-fx="1" aria-label="Stop following ' + folName(fs) + ' and go back to the quickest">Following ' + folName(fs) + ' ✕</button>';
     h += '<div class="folchips">' + rs.map(function (s) { var on = fs === s; return '<button type="button" class="folchip' + (on ? ' on' : '') + (s === S.sel ? ' sel' : '') + '" data-fc="' + s.id + '" title="Tap to show this route; long tap to follow it">' + folName(s) + ' ' + folTime(s) + (on ? ' · FOLLOWING' : '') + '</button>'; }).join('') + '</div>';
-    box.innerHTML = h; box.hidden = false;
+    box.innerHTML = h; box.hidden = folBusy();
     folPlace();
     [].forEach.call(box.querySelectorAll('[data-fc]'), function (b) { var id = b.dataset.fc; b.onclick = function () { folTo(S.routes.filter(function (x) { return x.id === id; })[0]); }; folHold(b, function () { folToggle(id); }); });
     var x = box.querySelector('[data-fx]'); if (x) x.onclick = function () { folSet(null); folTo(folBest()); };

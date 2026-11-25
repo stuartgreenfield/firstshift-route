@@ -26,6 +26,7 @@ const scan = () => { const W = innerWidth, H = innerHeight, vis = e => { if (!e.
   els.forEach(e => { const R = e.getBoundingClientRect(); if (R.width < 2 || R.height < 2) return; const sc = scroller(e);
     if (R.right > W + 1 || R.bottom > H + 1 || R.left < -1 || R.top < -1) { if (!sc) off.push(name(e) + ' ' + Math.round(R.left) + ',' + Math.round(R.top) + '-' + Math.round(R.right) + ',' + Math.round(R.bottom)); return; }
     if (e.classList.contains('ssc') || e.tagName === 'INPUT' && e.type === 'range') return;
+    if (sc) { const Q = sc.getBoundingClientRect(); if (R.top < Q.top - 1 || R.bottom > Q.bottom + 1) return; }   /* 25 Nov: a button scrolled out of its own scrolling list (a route card below the fold of Routes) is reached by scrolling, not covered */
     const x = (R.left + R.right) / 2, y = (R.top + R.bottom) / 2, h = document.elementFromPoint(x, y);
     const LAYER = '.sheet, .pop, #panel, [role=dialog], .solss, #help, #fsTour, #liveBig, #navHelm, #fhHelm, .solpop, #races, #solList, #layers, .fstpop, #tgPop, #fsHelm, #deckNums, #dkView';   /* 24 Nov 20:40: the Tide gates window, Route's HELM view and the 20/20 deck are windows the user opens over the chart (item 21) */
     const lay = h && h.closest && h.closest(LAYER);   /* an open panel, sheet or window lying over the chart is meant to cover what is under it */
