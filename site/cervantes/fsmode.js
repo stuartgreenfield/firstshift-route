@@ -1,4 +1,4 @@
-/* PLAN and RACE on Route and Route+ (Stuart 25 Nov 2026 16:50; decided 17:2x: "C: switch plus pill", the pill when "Gun within 2 h, or GPS
+/* ROUTE and RACE on Route and Route+ (named ROUTE | RACE by Stuart 25 Nov 18:1x: PLAN is already the PLAN line and the Plan tab; inside the code the mode is still called 'plan') (Stuart 25 Nov 2026 16:50; decided 17:2x: "C: switch plus pill", the pill when "Gun within 2 h, or GPS
    near line"). Routing a day or two out is PLAN: no start tools on the chart. On the boat it is RACE: GPS on, the LIVE line, and the start
    sequence and race buttons as before; after the gun it carries on as now. Back to PLAN at any time. The start time set in race set-up is
    the routing start in both; the start tools use it as the gun only in RACE. Mark and Mark+ have no switch: the start is their front page.
@@ -31,11 +31,11 @@
   }
   function build() {
     var sc = $('startChip'); if (!sc || M.el) return !!M.el;
-    var e = document.createElement('div'); e.className = 'fsmode'; e.setAttribute('role', 'group'); e.setAttribute('aria-label', 'Plan or race');
-    e.innerHTML = '<button type="button" data-m="plan"><b>PLAN</b><i></i></button><button type="button" data-m="race"><b>RACE</b><i></i></button>';
+    var e = document.createElement('div'); e.className = 'fsmode'; e.setAttribute('role', 'group'); e.setAttribute('aria-label', 'Route or race');
+    e.innerHTML = '<button type="button" data-m="plan"><b>ROUTE</b><i></i></button><button type="button" data-m="race"><b>RACE</b><i></i></button>';
     sc.parentNode.insertBefore(e, sc.nextSibling); M.el = e;
     e.addEventListener('click', function (ev) { var b = ev.target.closest('[data-m]'); if (!b) return; ev.stopPropagation(); var m = b.dataset.m;
-      if (m === mode()) { if (m === 'plan') sc.click(); return; }   /* PLAN again: change the start time, as the START chip does */
+      if (m === mode()) { if (m === 'plan') sc.click(); return; }   /* ROUTE again: change the start time, as the START chip does */
       set(m); });
     var p = document.createElement('button'); p.type = 'button'; p.className = 'fsmodepill'; p.hidden = true; document.body.appendChild(p); M.pill = p;
     p.addEventListener('click', function (ev) { ev.stopPropagation(); if (ev.target.closest('[data-x]')) { M.pillOff = Date.now(); p.hidden = true; return; } set('race'); });
@@ -59,7 +59,7 @@
     var sv = document.querySelector('#startChip .stv'), pi = M.el.querySelector('[data-m=plan] i'), ri = M.el.querySelector('[data-m=race] i');
     pi.textContent = sv ? sv.textContent.replace(/^tap to choose$/, 'set start') : '';
     ri.textContent = g ? (t < g ? 'gun ' + dur(g - t) : t < g + 36000 ? 'racing' : '') : '';
-    M.el.title = m === 'plan' ? 'PLAN: routing only. RACE: GPS, the LIVE line and the start tools.' : 'RACE: GPS, the LIVE line and the start tools. PLAN: routing only.';
+    M.el.title = m === 'plan' ? 'ROUTE: routing only. RACE: GPS, the LIVE line and the start tools.' : 'RACE: GPS, the LIVE line and the start tools. ROUTE: routing only.';
     /* the pill: in PLAN, the gun within 2 hours, or the boat within 2 nm of the start */
     var want = m === 'plan' && Date.now() - M.pillOff > 30 * 60000 && ((g && t > g - 7200 && t < g + 600) || near()), p = M.pill;
     if (!want) { p.hidden = true; return; }

@@ -81,10 +81,31 @@
   ].join('');
   (document.head || document.documentElement).appendChild(css);
   function filmRow() { var f = $('spFilm'), b = f && f.querySelector('.sp-rt b'), i = f && f.querySelector('.sp-rt i'); if (!b) return; b.textContent = 'Watch the 2-minute film'; var m = /how to use (.+)$/.exec(f.getAttribute('aria-label') || ''); if (m && i) i.textContent = 'How to use ' + m[1] + ', with sound'; }   /* the film's own wiring names the tool after D has run */
-  function boot() { build(); D(); setTimeout(filmRow, 60); setTimeout(filmRow, 800); }
+  /* Back to the opening screen from inside the tool (Apple window item 13; Stuart 25 Nov 18:1x: the top of Settings, Help's front page,
+     and a long press on the tool's mark top left, whose ordinary tap still opens the website) */
+  function show() {
+    var sp = $('splash'); if (!sp) return; note();
+    ['sheet', 'help'].forEach(function (id) { var e = $(id); if (e && !e.hidden) { var x = e.querySelector('.close,#setClose,#helpClose'); if (x) x.click(); else e.hidden = true; } });
+    var c = $('spCarry'), o = get(); if (c && o) { var i = c.querySelector('i'); if (i) i.textContent = o.name + ', left ' + ago(Date.now() - o.at) + ' at ' + hm(o.at); }
+    else if (!c && o) { build(); D2(); }
+    sp.classList.remove('out', 'terms'); sp.hidden = false;
+    if (!sp.__again) { sp.__again = true; sp.addEventListener('click', function (e) { if (!sp.__shown || !e.target.closest('button')) return; setTimeout(function () { sp.classList.add('out'); setTimeout(function () { sp.hidden = true; sp.classList.remove('out'); }, 550); }, 0); }); }
+    sp.__shown = true;
+  }
+  function D2() { var c = $('spCarry'), acts = document.querySelector('.splash .sp-acts'), no = $('spTourNo'); if (c && acts) { acts.insertBefore(c, acts.firstChild); if (no) no.classList.remove('sp-pri'); } }
+  function links() {
+    var sd = $('setDone'); if (sd && !$('setOpening')) { var b = document.createElement('button'); b.type = 'button'; b.id = 'setOpening'; b.className = 'btn'; b.textContent = '‹ Opening screen'; b.style.cssText = 'margin:6px 0 2px;min-height:40px'; b.onclick = function (e) { e.stopPropagation(); show(); }; sd.parentNode.insertBefore(b, sd); }
+    var hh = document.querySelector('#help .shead'); if (hh && !$('helpOpening')) { var h = document.createElement('button'); h.type = 'button'; h.id = 'helpOpening'; h.className = 'btn'; h.textContent = '‹ Opening screen'; h.style.cssText = 'margin:6px 0 2px;min-height:40px'; h.onclick = function (e) { e.stopPropagation(); show(); }; hh.parentNode.insertBefore(h, hh.nextSibling); }
+    var lb = document.querySelector('.logobox'); if (lb && !lb.__open) { lb.__open = true; var t = null, fired = 0;
+      lb.addEventListener('pointerdown', function () { clearTimeout(t); t = setTimeout(function () { fired = Date.now(); show(); }, 650); });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (k) { lb.addEventListener(k, function () { clearTimeout(t); }); });
+      lb.addEventListener('click', function (e) { if (Date.now() - fired < 1200) { e.preventDefault(); e.stopPropagation(); } }, true);
+      lb.addEventListener('contextmenu', function (e) { e.preventDefault(); }); lb.title = (lb.title || '') + ' (hold for the opening screen)'; }
+  }
+  function boot() { build(); D(); setTimeout(filmRow, 60); setTimeout(filmRow, 800); links(); setTimeout(links, 1500); setTimeout(links, 5000); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   setInterval(note, 5000);
   document.addEventListener('visibilitychange', function () { if (document.hidden) note(); });
   window.addEventListener('pagehide', note);
-  window.FSCarry = { get: get, note: note };
+  window.FSCarry = { get: get, note: note, show: show };
 })();
