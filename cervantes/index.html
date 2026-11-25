@@ -287,8 +287,8 @@ table{border-collapse:collapse;width:100%;font-size:12.5px}
 .folstrip{position:absolute;left:var(--gut);right:var(--gutR);z-index:4;display:flex;flex-direction:column;gap:6px;pointer-events:none}
 .folstrip>*{pointer-events:auto}.folchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.folchips::-webkit-scrollbar{display:none}
 .folchip{flex:none;border:1px solid var(--line);border-radius:10px;padding:4px 9px;font:600 12px var(--f-data);background:var(--panel);color:var(--ink);white-space:nowrap;min-height:30px}
-.folchip.sel{border-color:var(--route)}.folchip.on{background:var(--route);border-color:var(--route);color:var(--onroute)}
-.folpill{align-self:flex-start;border:0;border-radius:10px;padding:5px 11px;font:700 12.5px var(--f-body);background:var(--route);color:var(--onroute);min-height:32px}
+.folchip.sel{border-color:var(--route)}.folchip.on{background:var(--panel);border:2px solid var(--route);padding:3px 8px;color:var(--ink)}   /* Stuart 25 Nov 23:16: the pink fill was too bright; an outline is enough */
+.folpill{align-self:flex-start;border:2px solid var(--route);border-radius:10px;padding:3px 9px;font:700 12.5px var(--f-body);background:var(--panel);color:var(--ink);min-height:32px}
 .folask{background:var(--panel);border:1px solid var(--route);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13px;max-width:420px}
 .folask div{display:flex;flex-wrap:wrap;gap:6px}
 .folTag{position:absolute;top:-8px;left:8px;background:var(--route);color:var(--onroute);font:700 10px var(--f-data);font-style:normal;border-radius:6px;padding:1px 6px}
