@@ -150,22 +150,27 @@ def icon_eu():
     import bz2
     d, r = RUN; run = d + r; base = 'https://opendata.dwd.de/weather/nwp/icon-eu/grib'
     U = []; V = []; hrs = []; lat = lon = None
-    for hh in [h for h in HOURS if (h <= 78 or h % 3 == 0) and h <= 120]:
+    # F5 (Stuart 25 Nov 2026): ICON-EU took 13 minutes, one file after another (two per hour, about 90 hours). The files are fetched
+    # eight at a time now; DWD's open data server serves them in parallel. Same files, same cut, same order.
+    hh_all = [h for h in HOURS if (h <= 78 or h % 3 == 0) and h <= 120]
+    def one_file(job):
+        hh, var = job; p = os.path.join(SHARED, f'icon_{run}_{hh:03d}_{var}.npz')
+        if not os.path.exists(p):
+            f = f'{base}/{r}/{var}/icon-eu_europe_regular-lat-lon_single-level_{run}_{hh:03d}_{var.upper()}.grib2.bz2'
+            buf = bz2.decompress(get(f, tries=3))
+            a, la, lo = grib_crop(buf, AREA)
+            np.savez(p, a=a, la=la, lo=lo)
+        return p
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as ex: paths = list(ex.map(one_file, [(hh, var) for hh in hh_all for var in ('u_10m', 'v_10m')]))
+    for k, hh in enumerate(hh_all):
         got = {}
-        for var in ('u_10m', 'v_10m'):
-            p = os.path.join(SHARED, f'icon_{run}_{hh:03d}_{var}.npz')
-            if not os.path.exists(p):
-                f = f'{base}/{r}/{var}/icon-eu_europe_regular-lat-lon_single-level_{run}_{hh:03d}_{var.upper()}.grib2.bz2'
-                buf = bz2.decompress(get(f, tries=3))
-                global BOX
-                keep = BOX; BOX = AREA
-                try: a, la, lo = grib_crop(buf)
-                finally: BOX = keep
-                np.savez(p, a=a, la=la, lo=lo)
-            z = np.load(p); la, lo = z['la'], z['lo']
+        for j, var in enumerate(('u_10m', 'v_10m')):
+            z = np.load(paths[2 * k + j]); la, lo = z['la'], z['lo']
             iy = np.where((la >= BOX['s'] - .3) & (la <= BOX['n'] + .3))[0]; ix = np.where((lo >= BOX['w'] - .3) & (lo <= BOX['e'] + .3))[0]
             got[var] = z['a'][np.ix_(iy, ix)]; lat, lon = la[iy], lo[ix]
-        U.append(got['u_10m']); V.append(got['v_10m']); hrs.append(hh); print('icon', hh, end=' | ', flush=True)
+        U.append(got['u_10m']); V.append(got['v_10m']); hrs.append(hh)
+    print('icon', len(hrs), 'hours', flush=True)
     return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
 
 def arome_one_hour(d, r, iso, hh):
@@ -323,6 +328,20 @@ def zarr(url, vars_, step_hours=1):
     import numcodecs
     md = json.loads(get(url + '/.zmetadata'))['metadata']
     dec = lambda b, dt: np.frombuffer(numcodecs.Blosc().decode(b), dtype=dt)
+    import threading
+    BLK, LK = {}, threading.Lock()
+    def blk_get(key, dt):   # one download per block, shared by every hour that lies in it
+        with LK:
+            ev = BLK.get(key)
+            if ev is None: ev = BLK[key] = [threading.Event(), None, None]; mine = True
+            else: mine = False
+        if mine:
+            try: ev[1] = dec(get(key), dt)
+            except Exception as e: ev[2] = e
+            ev[0].set()
+        else: ev[0].wait()
+        if ev[2] is not None: raise ev[2]
+        return ev[1]
     def coord(name):
         z = md[f'{name}/.zarray']; n = z['shape'][0]; c = z['chunks'][0]
         return np.concatenate([dec(get(f'{url}/{name}/{i}'), z['dtype']) for i in range((n + c - 1) // c)])[:n]
@@ -340,20 +359,24 @@ def zarr(url, vars_, step_hours=1):
         sc = at.get('scale_factor', 1.0); off = at.get('add_offset', 0.0)
         arr = []
         for k, i in enumerate(idx):
-            def f():
+            def f(i=i):   # i bound now: the hours are read later, side by side
                 ny, nx = sh[-2], sh[-1]; cy, cx = ch[-2], ch[-1]
                 full = np.full((ny, nx), np.nan, 'f4')
                 for by in range(iy.min() // cy, iy.max() // cy + 1):
                     for bx in range(ix.min() // cx, ix.max() // cx + 1):
                         key = f'{url}/{v}/{i // ch[0]}.' + ('0.' if len(sh) == 4 else '') + f'{by}.{bx}'
-                        raw = dec(get(key), za['dtype'])
+                        raw = blk_get(key, za['dtype'])
                         blk = raw.reshape(ch)[i % ch[0]] if len(sh) == 3 else raw.reshape(ch)[i % ch[0], 0]
                         y1 = min(ny, (by + 1) * cy); x1 = min(nx, (bx + 1) * cx)
                         blk = blk[:y1 - by * cy, :x1 - bx * cx].astype('f4')
                         if fill is not None: blk = np.where(blk == fill, np.nan, blk)
                         full[by * cy:y1, bx * cx:x1] = blk * sc + off
                 return full[np.ix_(iy, ix)]
-            arr.append(cached(url.split('/')[-2] + f'_{v}_{i}', f))
+            arr.append((url.split('/')[-2] + f'_{v}_{i}', f))
+        # F5 (Stuart 25 Nov 2026): the Copernicus tides and waves took 7 to 10 minutes, one block after another. The hours are read eight at
+        # a time, and a block that holds several hours is fetched once (blk_get), not once for each hour in it.
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(8) as ex: arr = list(ex.map(lambda kf: cached(kf[0], kf[1]), arr))
         out[v] = np.array(arr); print(v, 'done', end=' | ', flush=True)
     return out, (want - T0) / 3600, lat[iy], lon[ix]
 
