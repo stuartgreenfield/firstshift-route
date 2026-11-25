@@ -115,8 +115,9 @@
   var parts = null;
   function shell() {
     if (parts) return parts;
-    bar.innerHTML = '<button class="rparrow" data-k="prev" aria-label="Previous mark">‹</button><div class="rpbody"><div class="rphead"></div><div class="rprest"></div></div><button class="rparrow" data-k="next" aria-label="Next mark">›</button>';
-    parts = { head: bar.querySelector('.rphead'), rest: bar.querySelector('.rprest'), key: null, name: null, restH: null };
+    /* layout A (Stuart 25 Nov 20:5x): the mark's name between the two arrows, the controls in one row under it, then the figures */
+    bar.innerHTML = '<div class="rpbody"><div class="rptop"><button class="rparrow" data-k="prev" aria-label="Previous mark">‹</button><div class="rphead"></div><button class="rparrow" data-k="next" aria-label="Next mark">›</button></div><div class="rpctl"></div><div class="rprest"></div></div>';
+    parts = { head: bar.querySelector('.rphead'), ctl: bar.querySelector('.rpctl'), rest: bar.querySelector('.rprest'), key: null, name: null, restH: null };
     return parts;
   }
   function put(e, h, k) { if (parts[k] !== h) { parts[k] = h; e.innerHTML = h; } }
@@ -128,7 +129,8 @@
     bar.classList.toggle('mini', mini);
     var key = (mini ? 'mini' : 'full') + '|' + C.mode + '|' + (C.view || 'deck') + '|' + (window.FS_HIDE || 'Hide');
     if (P.key !== key) { P.key = key; P.name = null;
-      P.head.innerHTML = '<button class="rpname" data-k="mini" aria-label="' + (mini ? 'Show all the figures' : 'Show one line') + '"></button>' + modeBtn() + viewSw() + (mini ? '' : '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button>'); }
+      P.head.innerHTML = '<button class="rpname" data-k="mini" aria-label="' + (mini ? 'Show all the figures' : 'Show one line') + '"></button>';
+      P.ctl.innerHTML = mini ? '' : modeBtn() + viewSw() + '<button class="rpnav rpmin" data-k="mini" aria-label="Hide: shrink to one line" title="Hide: shrink to one line">' + (window.FS_HIDE || 'Hide') + '</button>'; }
     var nb = P.head.querySelector('.rpname');
     var nm = mini ? '<b>' + esc(o.m.name || 'Mark') + ' <em>▾ more</em></b><span class="rpline">' + brg(o.btw) + ' · ' + dist(o.dtw) + (x ? ' · XTE ' + (x.d < 0.01 ? '0.00' : x.d.toFixed(2) + ' ' + x.side) : '') + '</span>' : name;
     if (P.name !== nm) { P.name = nm; nb.innerHTML = nm; }
