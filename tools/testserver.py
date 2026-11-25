@@ -7,7 +7,7 @@ Route+ and Mark+: python3 tools/testserver.py --web <navigate>/web --media <navi
 import http.server, os, posixpath, json, re, time, threading, argparse
 a = argparse.ArgumentParser(); a.add_argument('--web', required=True); a.add_argument('--media', required=True); a.add_argument('--port', type=int, required=True); a.add_argument('--site', default='/tmp/claude-0/sitebr')
 A = a.parse_args(); WEB = os.path.abspath(A.web); MEDIA = os.path.abspath(A.media); SITE = os.path.abspath(A.site)
-AREAS = {'cervantes', 'fastnet', 'channel-area', 'mark', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'tasman-area'}
+AREAS = {'cervantes', 'fastnet', 'channel-area', 'mark', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'tasman-area', 'middlesea-area', 'caribbean-area', 'atlantic-area'}
 KV = {}; LOCK = threading.Lock(); OK = re.compile(r'^[A-HJ-NP-Z2-9]{6}$')
 class H(http.server.SimpleHTTPRequestHandler):
     def _json(self, o, st=200):

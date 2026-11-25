@@ -2,7 +2,7 @@
 Runs on GitHub Actions every six hours; also runs on a laptop. Usage: python3 scripts/build.py [race ...]"""
 import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
-RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'solent-area', 'tasman-area']
+RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'solent-area', 'tasman-area', 'middlesea-area', 'caribbean-area', 'atlantic-area']
 SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet', 'mars', 'ens', 'glocur']
 # models that cover only European waters, and the global one used instead where they do not reach (21 Nov 2026, Sydney Hobart, F114)
 REGIONAL = {'ukv', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'mars'}; GLOBAL_ONLY = {'glocur'}
@@ -47,6 +47,7 @@ def from_shared(src, box, hrs, dest):
             z['hours'] = hh[keep]
         np.savez_compressed(os.path.join(dest, f), **z)
     return True
+NOT_HERE = {'middlesea-area': ('ukv', 'mog', 'arome', 'nwscur', 'ibicur', 'nwswav', 'mars')}   # 25 Nov 2026: the new Middle Sea area (Stuart 24 Nov 15:47)
 for race in RACES:
     st = json.load(open(os.path.join(ROOT, 'static', race, 'static.json')))
     b = st['box']; data = os.path.join(ROOT, 'work', race); os.makedirs(data, exist_ok=True)
@@ -60,7 +61,8 @@ for race in RACES:
     T_END = time.time() + float(os.environ.get('FS_FETCH_MIN', '20')) * 60
     europe = b['s'] > 30 and b['w'] > -40 and b['e'] < 45
     def one(src):
-        if (src in REGIONAL and not europe) or (src in GLOBAL_ONLY and europe): return
+        if (src in REGIONAL and not europe) or (src in GLOBAL_ONLY and europe and race != 'middlesea-area'): return   # the Middle Sea takes the global currents (no regional ones there)
+        if src in NOT_HERE.get(race, ()): return   # a European model whose area does not reach this one (the Middle Sea: no UK, French high-resolution or NW Shelf data)
         if src == 'mars' and (b['s'] > 50.0 or b['n'] < 48.6 or b['w'] > -1.2 or b['e'] < -3.3): return   # the 250 m model only covers the western Channel
         first = None
         sh = SHARED_INFO.get(src) or {}

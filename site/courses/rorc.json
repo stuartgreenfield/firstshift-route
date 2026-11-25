@@ -765,6 +765,87 @@
    "depthSource": "etopo",
    "coastSource": "osm",
    "note": "Forecasts for the whole Sydney to Hobart course, from Sydney Heads down the New South Wales coast, across Bass Strait and down the east coast of Tasmania to Storm Bay and the Derwent."
+  },
+  {
+   "id": "middlesea-area",
+   "name": "Rolex Middle Sea Race",
+   "org": "RMYC",
+   "region": {
+    "s": 34.8,
+    "n": 39.4,
+    "w": 11.3,
+    "e": 16.3
+   },
+   "hours": 144,
+   "start": {
+    "name": "Start, Grand Harbour, Valletta (approximate; the exact line comes from the Sailing Instructions)",
+    "lat": 35.896,
+    "lon": 14.519
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, entrance to Marsamxett Harbour (approximate; the exact line comes from the Sailing Instructions)",
+    "lat": 35.905,
+    "lon": 14.513,
+    "radius_nm": 0.3
+   },
+   "depthSource": "etopo",
+   "coastSource": "osm",
+   "note": "Forecasts for the whole Middle Sea course: Malta, round Sicily anticlockwise by Capo Passero, the Strait of Messina, Stromboli, the Egadi Islands, Pantelleria and Lampedusa. Draw the course from the Sailing Instructions; the marks are not set here yet. Research: docs/RACE-AREAS-RESEARCH-2026-11-25.md (Stuart 24 Nov 15:47, built 25 Nov 19:10, switched off until he switches it on)."
+  },
+  {
+   "id": "caribbean-area",
+   "name": "RORC Caribbean 600",
+   "org": "RORC",
+   "region": {
+    "s": 15.5,
+    "n": 18.5,
+    "w": -63.6,
+    "e": -60.9
+   },
+   "hours": 144,
+   "start": {
+    "name": "Start off Fort Charlotte, Antigua (approximate; the exact line comes from the Sailing Instructions)",
+    "lat": 17.0,
+    "lon": -61.765
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish off Fort Charlotte, Antigua (approximate; the exact line comes from the Sailing Instructions)",
+    "lat": 17.0,
+    "lon": -61.765,
+    "radius_nm": 0.3
+   },
+   "depthSource": "etopo",
+   "coastSource": "osm",
+   "note": "Forecasts for the RORC Caribbean 600 islands: Antigua, Barbuda, Nevis, Saba, St Barths, St Martin, Tintamarre, Montserrat, Guadeloupe and La Desirade, and Redonda. Draw the course from the Sailing Instructions. Global models only."
+  },
+  {
+   "id": "atlantic-area",
+   "name": "RORC Transatlantic Race",
+   "org": "RORC",
+   "region": {
+    "s": 13.0,
+    "n": 31.0,
+    "w": -64.0,
+    "e": -12.0
+   },
+   "hours": 240,
+   "start": {
+    "name": "Start off Marina Lanzarote, Arrecife (approximate; the exact line comes from the Sailing Instructions)",
+    "lat": 28.955,
+    "lon": -13.545
+   },
+   "marks": [],
+   "finish": {
+    "name": "Finish, Antigua (approximate; the exact line comes from the Sailing Instructions)",
+    "lat": 17.0,
+    "lon": -61.765,
+    "radius_nm": 0.5
+   },
+   "depthSource": "etopo",
+   "coastSource": "osm",
+   "note": "Forecasts from Lanzarote to Antigua (the 2027 race starts 10 January from Marina Lanzarote and finishes in Antigua). Global models only; the race runs past the end of the forecasts, and the tool says so."
   }
  ]
 }

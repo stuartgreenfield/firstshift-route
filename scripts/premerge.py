@@ -5,7 +5,7 @@ Keeps only routes built on the pack now in <site>/<page>/pack (never an older fo
 that should have pre-routes has none (the forecast job's end ping reports these)."""
 import json, os, shutil, sys, glob
 site, pre = sys.argv[1], sys.argv[2]
-PAGES = ['channel-area', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'fastnet', 'cervantes', 'tasman-area']
+PAGES = ['channel-area', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'fastnet', 'cervantes', 'tasman-area', 'middlesea-area', 'caribbean-area', 'atlantic-area']
 got = {}
 for d in sorted(glob.glob(os.path.join(pre, 'pre-*', '*', 'pre'))):
     page = os.path.basename(os.path.dirname(d))
