@@ -89,7 +89,7 @@
      has been set; in course order; can type a name otherwise GATE 1 / 2"; go 15:24). A point is saved with the race (keyed by its
      marks), timed from the route's nearest point to it, so it moves with every reroute; the tide is taken at the point itself, along the
      route's own heading into and out of that spot; the Fleet boats are compared there exactly as at a mark. */
-  function raceKey(d) { return d.legs.map(function (m) { return m.lat.toFixed(3) + ',' + m.lon.toFixed(3); }).join(';'); }
+  function raceKey(d) { if (d.key) return d.key; return d.legs.map(function (m) { return m.lat.toFixed(3) + ',' + m.lon.toFixed(3); }).join(';'); }
   function ptList(d) { var k = raceKey(d); return C.pts[k] || (C.pts[k] = []); }
   function ptsPlan(d, P) {
     var p = d.path, ts = d.ts, n = p.length, round = []; for (var i = 1; i < n; i++) { var lg = p[i].leg || 0, lp = p[i - 1].leg || 0; if (lg > lp) for (var L = lp; L < lg; L++) round[L] = i; } round[d.legs.length - 1] = n - 1;
@@ -102,6 +102,13 @@
         bIn: bi > 0 ? brg({ lat: a.la, lon: a.lo }, here) : null, bOut: bi < n - 1 ? brg(here, { lat: b.la, lon: b.lo }) : null, next: nextRi != null ? d.legs[p[nextRi].leg || 0] : null, nextRi: nextRi };
     }).filter(Boolean);
   }
+  /* the gates on the chart (Stuart 25 Nov 08:04: "a mark should appear on the chart showing where it was placed with its name ... when you
+     go back to it and tap it it gives the information and the ability to clear it or reroute from the point") */
+  window.__fsTgPts = function () { var d = window.__fsTgData ? window.__fsTgData() : null; if (!d || !d.legs.length) return []; return ptList(d).map(function (q, j) { return { i: j, name: q.name, lat: q.lat, lon: q.lon }; }); };
+  window.__fsTgPtInfo = function (j) { var d = window.__fsTgData ? window.__fsTgData() : null; if (!d || !d.legs.length) return null; var P = legsPlan(d), g = ptsPlan(d, P).filter(function (x) { return x.pt === j; })[0];
+    if (!g) return { passed: true }; g.bandsIn = bandsAt(g.m, g.bIn, g.eta - HW * 3600000, g.eta + HW * 3600000); g.bandsOut = bandsAt(g.m, g.bOut, g.eta - HW * 3600000, g.eta + HW * 3600000); return { line: gateLine(g), eta: g.eta, off: g.off }; };
+  window.__fsTgPtDel = function (j) { var d = window.__fsTgData ? window.__fsTgData() : null; if (!d) return; ptList(d).splice(j, 1); save(); if (window.__fsRedraw) window.__fsRedraw(); var p = $('tgPop'); if (p && !p.hidden) render(); };
+  window.__fsTgShow = function (j) { OPEN['p' + j] = 1; open(true); var p = $('tgPop'), e = p && p.querySelector('.tgmk[data-l="p' + j + '"]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); };
   function inPoly(poly, la, lo) { var c = false; for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) { var a = poly[i], b = poly[j]; if ((a[0] > la) !== (b[0] > la) && lo < (b[1] - a[1]) * (la - a[0]) / (b[0] - a[0]) + a[1]) c = !c; } return c; }
   /* the tap box on the chart: a 'Tide gate here' button and a name, or why not here */
   window.__fsTipGate = function (body, la, lo, o) {
@@ -114,7 +121,7 @@
     box.innerHTML = '<button class="btn tgadd1" type="button" id="tgPtAdd">◎ Tide gate here</button><label class="tgname">Name <input id="tgPtName" type="text" maxlength="24" placeholder="' + nm + '"></label>';
     /* at the top of the box, under 'Route to here' (Stuart 24 Nov 23:20, mock-up): at the foot of a long card on a phone it was out of sight */
     var top = body.querySelector('.xrow'); if (top) top.insertAdjacentElement('afterend', box); else { var h = body.querySelector('b'); if (h && h.parentNode === body) h.insertAdjacentElement('afterend', box); else body.insertBefore(box, body.firstChild); }
-    $('tgPtAdd').onclick = function (e) { e.stopPropagation(); var v = ($('tgPtName').value || '').trim() || nm; L.push({ name: v.slice(0, 24), lat: la, lon: lo }); save(); var t = $('tip'); if (t) t.hidden = true; open(true); var c = document.querySelector('#tgPop .tgmk[data-l="p' + (L.length - 1) + '"]'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest' }); };
+    $('tgPtAdd').onclick = function (e) { e.stopPropagation(); var v = ($('tgPtName').value || '').trim() || nm; L.push({ name: v.slice(0, 24), lat: la, lon: lo }); save(); if (window.__fsRedraw) window.__fsRedraw();   /* the new gate shows on the chart at once */ var t = $('tip'); if (t) t.hidden = true; open(true); var c = document.querySelector('#tgPop .tgmk[data-l="p' + (L.length - 1) + '"]'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest' }); };
     $('tgPtName').onclick = function (e) { e.stopPropagation(); };
   };
   function bandsAt(m, b, t0, t1) { var a = [], st = null, s0 = t0; if (b == null) return a; for (var t = t0; t <= t1 + 1; t += 300000) { var v = state(along(tideAt(m.lat, m.lon, Math.min(t, t1)), b)); if (st !== v) { if (st) a.push([s0, t, st]); st = v; s0 = t; } } if (st) a.push([s0, t1, st]); return a; }
@@ -200,7 +207,7 @@
     var fl = $('tgFleet'); if (fl) fl.onclick = function () { var wideScreen = window.__fsFleetOpen ? window.__fsFleetOpen() : false; if (!wideScreen) open(false); };   /* on a phone the Fleet tab takes the screen, so the tide gates close; beside the panel they stay */
     [].forEach.call(p.querySelectorAll('.tgfold,.tgovm'), function (b) { b.onclick = function () { OPEN[b.getAttribute('data-l')] = 1; render(); var e = p.querySelector('.tgmk[data-l="' + b.getAttribute('data-l') + '"]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); }; });
     var PL = ptList(d);
-    [].forEach.call(p.querySelectorAll('.tgdel'), function (b) { b.onclick = function () { PL.splice(+b.dataset.p, 1); save(); render(); }; });
+    [].forEach.call(p.querySelectorAll('.tgdel'), function (b) { b.onclick = function () { PL.splice(+b.dataset.p, 1); save(); render(); if (window.__fsRedraw) window.__fsRedraw(); }; });
     [].forEach.call(p.querySelectorAll('.tgren'), function (b) { b.onclick = function () { var j = +b.dataset.p, card = b.closest('.tgmk'), t1 = card.querySelector('.tgt1 b'); t1.innerHTML = '<input class="tgrin" type="text" maxlength="24" value="' + esc(PL[j].name) + '"> <button type="button" class="btn tgrok">OK</button>'; var inp = t1.querySelector('input'); inp.focus(); var ok = function () { var v = inp.value.trim(); if (v) { PL[j].name = v.slice(0, 24); save(); } render(); }; t1.querySelector('.tgrok').onclick = ok; inp.onkeydown = function (e) { if (e.key === 'Enter') ok(); }; }; });
     var al = $('tgAlarm'); if (al) al.onchange = function () { C.alarm = al.checked; save(); };
     var sv = p.querySelector('.tgmk.next .tgsv'), tip = $('tgTip'); if (!sv || !tip) return; var g = P.legs[0];

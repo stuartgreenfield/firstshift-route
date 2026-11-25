@@ -2088,6 +2088,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsTgData = function () { var s = S.sel; if (!s || !s.r || !s.r.path || !s.r.path.length) return null; var p = s.r.path;
     return { T0: T0, name: s.name || '', path: p, ts: tsOf(p), legs: (S.legs || []).map(function (l) { var a = l.at || l.point || [0, 0]; return { name: l.name || 'Mark', lat: a[0], lon: a[1] }; }),
       start: S.start ? { lat: S.start.lat, lon: S.start.lon, t: S.start.t } : null, from: S.from ? { lat: S.from.lat, lon: S.from.lon, t: S.from.t } : null, tcc: +$('tcc').value || 1,
+      key: (function () { try { var k = S.to, f = S.from; S.to = null; var L = legsFor(null); S.to = k; S.from = f; return L.map(function (l) { var a = l.at || l.point || [0, 0]; return (+a[0]).toFixed(3) + ',' + (+a[1]).toFixed(3); }).join(';'); } catch (e) { return null; } })(),   /* the whole course, so tide gates keep their race when routing from the boat or a gate drops the marks already passed */
       ghosts: (S.ghosts || []).filter(function (g) { return g.ts && g.ts.length === p.length; }).map(function (g) { return { name: g.name, tcc: g.tcc, ts: g.ts }; }),
       live: LIVE.on && LIVE.calc && LIVE.calc.xte ? { d: LIVE.calc.xte.d, side: LIVE.calc.xte.side, ahead: LIVE.calc.ahead } : null }; };
   window.__fsLiveReroute = function () { if (LIVE.on && LIVE.fix) { liveReroute(); return true; } return false; };
@@ -3878,6 +3879,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var nm = i === 0 && a.length > 1 && same(m, a[a.length - 1]) ? (/^Start, /.test(m.name) ? m.name.replace(/^Start, /, 'Start and finish, ') : 'Start and finish, ' + m.name) : m.name, mx = X(m.lon), my = Y(m.lat), tag = i > 0 && !last && !!m.side;
       ctx.font = '600 11px Inter, sans-serif'; var dy = lbFit(mx + 11, my - 19, Math.max(ctx.measureText(nm).width, tag ? 64 : 0), tag ? 32 : 14); if (dy == null) return; ctx.fillStyle = css['--ink']; ctx.fillText(nm, mx + 11, my - 8 + dy); if (tag) sideTag(m, mx + 11, my - 2 + dy); });
     if (S.show.legs) legsDraw(full, false, 'line');
+    /* tide gates the crew placed: a ring with GATE n (or its name), on the chart until cleared (Stuart 25 Nov 08:04) */
+    if (window.__fsTgPts) window.__fsTgPts().forEach(function (q) { var gx = X(q.lon), gy = Y(q.lat); ctx.beginPath(); ctx.arc(gx, gy, 7, 0, 7); ctx.fillStyle = css['--panel']; ctx.fill(); ctx.strokeStyle = '#14b8a6'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.beginPath(); ctx.arc(gx, gy, 2.6, 0, 7); ctx.fillStyle = '#14b8a6'; ctx.fill();
+      ctx.font = '700 11px Inter, sans-serif'; var dyg = lbFit(gx + 11, gy - 19, ctx.measureText(q.name).width, 14); if (dyg == null) return; ctx.fillStyle = css['--ink']; ctx.fillText(q.name, gx + 11, gy - 8 + dyg); });
     if (S.legs && S.legs[0].gate) { var g = S.legs[0].gate; ctx.strokeStyle = css['--ink']; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(g.a[1]), Y(g.a[0])); ctx.lineTo(X(g.b[1]), Y(g.b[0])); ctx.stroke(); ctx.setLineDash([]); }
   }
   /* FirstShift triangle markers: open for your boat, solid for the fleet, triangle in a circle for marks */
@@ -4152,7 +4156,20 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (pos && !pos.done && pos.la != null) S.from = { lat: pos.la, lon: pos.lo, t: S.t }; else S.from = { lat: meta.course.start.lat, lon: meta.course.start.lon, t: (+$('startSel').value - T0) / 3600 };
     S.to = { lat: la, lon: lo }; $('tip').hidden = true; busy('Routing to your point…'); run();
   }
-  function hover(x, y, docked, tapped, force) {   /* force: { s, p } shows that route point (C2 steps), whatever is under the pointer */
+  /* a tap on a placed tide gate: its card, with the tide there on the route's arrival, Clear and Route from here */
+  function gateHit(x, y) { if (!window.__fsTgPts) return null; var best = null, bd = 22; window.__fsTgPts().forEach(function (q) { var d = Math.hypot(X(q.lon) - x, Y(q.lat) - y); if (d < bd) { bd = d; best = q; } }); return best; }
+  function gateCard(q) {
+    var tip = $('tip'), inf = window.__fsTgPtInfo(q.i) || {}, rows = ['<b>◎ ' + xEsc(q.name) + '</b><div class="tiphere">Tide gate · ' + dm(q.lat, 'NS') + ' ' + dm(q.lon, 'EW') + '</div>'];
+    rows.push(inf.passed ? '<p class="tgcardl">The route has passed this gate.</p>' : inf.line ? '<p class="tgcardl ' + (inf.line.cls || '') + '">' + inf.line.text + '</p>' + (inf.off > 0.5 ? '<p class="tiphere">The route passes ' + inf.off.toFixed(1) + ' nm from it.</p>' : '') : '<p class="tgcardl">Route first: the tide here is timed from the route.</p>');
+    var etaH = inf.eta ? (inf.eta / 1000 - T0) / 3600 : null;
+    rows.push('<div class="xrow"><button class="btn primary" id="gcRoute" type="button"' + (etaH != null && etaH > 0 && etaH < HMAX() - 1 ? '' : ' disabled') + '>Route from here' + (etaH != null ? ' at ' + clockH(etaH).slice(-5) : '') + '</button><button class="btn" id="gcOpen" type="button">Tide gates</button><button class="btn" id="gcDel" type="button">Clear gate</button></div>');
+    $('tipBody').innerHTML = rows.join(''); if (tip.hidden) tip.dataset.at = Date.now(); tip.hidden = false; tip.classList.add('docked'); tip.style.left = ''; tip.style.top = ''; if (window.__fsTipPlace) window.__fsTipPlace();
+    $('gcOpen').onclick = function (e) { e.stopPropagation(); tip.hidden = true; window.__fsTgShow(q.i); };
+    $('gcDel').onclick = function (e) { e.stopPropagation(); var b = $('gcDel'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Clear ' + q.name + '?'; return; } window.__fsTgPtDel(q.i); tip.hidden = true; draw(); };   /* a second tap clears: no browser pop-up */
+    $('gcRoute').onclick = function (e) { e.stopPropagation(); if (etaH == null) return; tip.hidden = true; S.from = { lat: q.lat, lon: q.lon, t: etaH, gate: q.name }; run(); };   /* reroute from the gate, at the time the route reaches it */
+  }
+  function hover(x, y, docked, tapped, force) {
+    if (tapped && !force) { var gq = gateHit(x, y); if (gq) return gateCard(gq); }   /* force: { s, p } shows that route point (C2 steps), whatever is under the pointer */
     if (!meta) return;
     if (S.edit) { $('tip').hidden = true; return; }   /* editing a course: no info boxes over the marks */
     if (LIVE.trail.length) { var bt = null, bd = 12; LIVE.trail.forEach(function (q) { var d = Math.hypot(X(q[1]) - x, Y(q[0]) - y); if (d < bd) { bd = d; bt = q; } });   /* the boat's own track: time, SOG, COG at that point (Stuart 12 Nov) */
