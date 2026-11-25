@@ -103,6 +103,7 @@ if DEPTH == 'etopo':
         deep = g[np.ix_(gy, gx)] < -5; opened = int((LAND.astype(bool) & deep).sum()); LAND[deep] = 0
         print('coast: water from the depth survey inside closed harbours', opened, 'cells', flush=True)
         for nm, la, lo in (('Sydney Harbour off Shark Island', -33.852, 151.257), ('Mark X off South Head', -33.82861, 151.28056), ('Port Jackson entrance', -33.832, 151.29), ('Derwent off Battery Point', -42.887, 147.342)):
+            if not (s < la < n and w < lo < e): continue   # the Sydney checks only inside their own area (25 Nov: the new areas failed here)
             y = int((la - s) / cst); x = int((lo - w) / cst); print('coast check', nm, 'land' if LAND[y, x] else 'water', 'land share round it', round(float(LAND[y - 5:y + 6, x - 5:x + 6].mean()), 2), flush=True)
         print('coast (OSM land polygons)', LAND.shape, len(shapes), 'polygons', flush=True)
         # the depth grid takes land from the OSM coast too, so the two always agree
