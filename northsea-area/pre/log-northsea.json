@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-25T08:25:54.927Z",
+ "log": [
+  {
+   "race": "northsea",
+   "h": 0,
+   "s": 65,
+   "note": "Finer routes in 47.2 s. Times: first routes 5.1 s, standard 14.6 s, finer 61.9 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea",
+   "h": 1,
+   "s": 122,
+   "note": "Finer routes in 46.3 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 2.3 min faster than ICON-E"
+  },
+  {
+   "race": "northsea",
+   "h": 2,
+   "s": 176,
+   "note": "Finer routes in 42.3 s. Times: first routes 1.8 s, standard 10.4 s, finer 52.8 s. The faint line is the standard route. "
+  }
+ ]
+}

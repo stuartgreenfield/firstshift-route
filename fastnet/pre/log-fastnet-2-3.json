@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-25T08:35:04.092Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 488,
+   "note": "Finer routes in 190.8 s. Times: first routes 7.0 s, standard 45.5 s, finer 236.3 s. The faint line is the standard route"
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 726,
+   "note": "Finer routes in 192.5 s. Also worth knowing: in AROME HD wind, the UKV route is 10.0 min faster than AROME HD’s own rout"
+  }
+ ]
+}
