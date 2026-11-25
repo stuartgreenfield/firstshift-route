@@ -41,7 +41,12 @@ def one(src):
         try: r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=env, capture_output=True, text=True, timeout=min(1500, left))
         except subprocess.TimeoutExpired: tries.append(f'{c} timed out'); continue
         stat = [l for l in (r.stdout or '').splitlines() if 'requests,' in l][-1:]
-        if r.returncode == 0 and good(os.path.join(d, src + '.npz'), 30 + 6 * i):
+        need = min(HRS, 240) - 12 if (src in ('ecmwf', 'ecmet', 'ecwav') and c[-2:] in ('06', '18') and HRS > 144) else 30 + 6 * i   # F2: a 06Z/18Z run counts only when joined to its full length
+        for l in (r.stdout or '').splitlines():
+            if l.startswith('joined'): print(src, c, l, flush=True)
+        try: zz = np.load(os.path.join(d, src + '.npz')); print(src, c, 'hours', float(zz['hours'][0]), 'to', float(zz['hours'][-1]), len(zz['hours']), flush=True)
+        except Exception: pass
+        if r.returncode == 0 and good(os.path.join(d, src + '.npz'), need):
             info[src] = dict(run=c, at=int(time.time()), latest=(c == first), newest=first, secs=round(time.time() - t1), stats=stat[0] if stat else '')
             print(src, c, 'in', round(time.time() - t1), 's', '|', stat[0] if stat else '', flush=True); return
         tries.append(f"{c} failed: {((r.stderr or r.stdout) or '')[-200:]}")

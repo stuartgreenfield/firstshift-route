@@ -78,7 +78,7 @@ for race in RACES:
         if sh.get('run'):   # the shared download, if it is the run this area would take first
             want = order(src, hrs, cyc)[:1]
             t1 = time.time()
-            if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), 30):
+            if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), min(hrs, 240) - 12 if (src in ('ecmwf', 'ecmet', 'ecwav') and want[0][-2:] in ('06', '18') and hrs > 144) else 30):
                 log[f'{race}:{src}'] = f"{sh['run']} shared ({sh.get('secs', '?')}s once for all areas, cut here in {time.time() - t1:.0f}s)"; recv[src] = dict(run=sh['run'], at=sh['at'], latest=sh['latest'], newest=sh['newest'])
                 print(src, log[f'{race}:{src}'], flush=True); return
         cyc_s = order(src, hrs, cyc)   # F1: the newest run that has landed first (24 Nov's fixed waits only as the fall-back)
@@ -94,7 +94,8 @@ for race in RACES:
                 r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=dict(env, FS_RUN=c), capture_output=True, text=True, timeout=min(1500, left))
             except subprocess.TimeoutExpired:
                 log[f'{race}:{src}'] = f'{c} timed out'; print(src, 'try', log[f'{race}:{src}'], flush=True); continue   # every failed try in the job log, not only the last (19 Nov 2026)
-            if r.returncode == 0 and good(out, (12 if src == 'mars' else 30) + 6 * i):
+            need = min(hrs, 240) - 12 if (src in ('ecmwf', 'ecmet', 'ecwav') and c[-2:] in ('06', '18') and hrs > 144) else (12 if src == 'mars' else 30) + 6 * i   # F2: a 06Z/18Z run counts only when joined to its full length
+            if r.returncode == 0 and good(out, need):
                 log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time()), latest=(c == first), newest=first); break
             why = 'exit ' + str(r.returncode) if r.returncode else 'too few hours'
             log[f'{race}:{src}'] = f'{c} failed ({why}): {(r.stderr or r.stdout)[-200:]}'; print(src, 'try', log[f'{race}:{src}'].replace(chr(10), ' '), flush=True)
