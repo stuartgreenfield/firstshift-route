@@ -98,7 +98,58 @@
       'Racing (the race signals of the Racing Rules of Sailing, in our own words; the sailing instructions can change them): AP, the answering pennant, postponed. P, the preparatory signal. I, the round-an-end rule. Z, the 20 per cent penalty. U, the U flag rule. Black flag, disqualified if over in the last minute. X, individual recall. First substitute, general recall. N, abandoned. S, the course is shortened. C, the next mark has moved. M, this object replaces a missing mark. L, come within hail, or follow this boat. Y, wear your lifejackets.',
       'International Code of Signals, one flag: A, diver down, keep clear at slow speed. B, dangerous goods. C, yes. D, keep clear, I am manoeuvring with difficulty. E, I am altering course to starboard. F, I am disabled. G, I need a pilot. H, I have a pilot on board. I, I am altering course to port. J, keep clear, fire or a dangerous cargo leaking. K, I wish to communicate with you. L, stop your vessel instantly. M, my vessel is stopped. N, no. O, man overboard. P, in harbour: all aboard, we are about to sail. Q, my vessel is healthy, I request free pratique. S, my engines are going astern. T, keep clear of me. U, you are running into danger. V, I need assistance. W, I need medical assistance. X, stop and watch for my signals. Y, I am dragging my anchor. Z, I need a tug.',
       'Sources: International Code of Signals; World Sailing, the Racing Rules of Sailing 2025 to 2028, race signals. To be checked by FirstShift before release.']]
+    ,['ref-twa', 'True wind from the instruments', [
+      'The wind vane and the anemometer feel the apparent wind: the true wind plus the wind of the boat’s own motion. Take the boat’s motion away and what is left is the true wind.',
+      'In the picture: the boat moves at its speed through the water (the blue arrow, BSP). Sailing creates a head wind of the same size, from straight ahead. The apparent wind (green, AWS at angle AWA) is the true wind (red, TWS at angle TWA) added to that head wind.',
+      'Worked out: TWS is the square root of AWS squared plus BSP squared minus 2 times AWS times BSP times the cosine of AWA. TWA is the angle whose tangent is AWS times sine AWA divided by (AWS times cosine AWA minus BSP).',
+      'For example AWS 15 knots at 35 degrees, boat speed 6.5 knots: TWS about 10.4 knots, TWA about 56 degrees. The apparent wind is always further forward and, upwind, stronger than the true wind.',
+      'Instruments work it out through the water, so this is the true wind over the water. Over the ground, as the forecasts give it, also adds the tide: the router does that (the wind over the water, in How the routing works).']]
+    ,['ref-ep', 'Estimated position with the tide', [
+      'Dead reckoning (DR) is where the boat would be from its course and the distance run through the water. The estimated position (EP) adds the tide for the same time, and leeway if there is any.',
+      'In the picture: from the last fix, the boat’s water track for one hour (blue: course and distance through the water). From its end, the tide for that hour (orange: the set and drift from the tidal atlas or the forecast). The EP is at the end of the tide arrow; the line from the fix to the EP (red) is the track over the ground.',
+      'For example: 6 knots on 180 degrees true for one hour, with a 2 knot tide setting 090 degrees. DR is 6 nm south of the fix; the EP is a further 2 nm east of it: 6.3 nm from the fix, on 162 degrees true.',
+      'To steer a course that makes good a chosen track, draw it the other way round: the tide first from the fix, then the boat’s speed reaching the track line; that direction is the course to steer.',
+      'Route does the same at every step of every route, with the tide for that place and time from the forecast.']]
+    ,['ref-routing', 'How the routing works', [
+      'Route uses isochrones: lines joining the furthest the boat can get in a given time. In the picture each coloured line is one time step from the start.',
+      'From every point on the last line, the router tries headings every 5 degrees, and the best angle upwind and downwind on each side.',
+      'For each heading it takes the wind there at that time from the chosen forecast, takes away the tide to get the wind over the water, and reads the boat speed for that true wind speed and angle from your polar. Waves slow the boat or, surfing downwind, add a little.',
+      'The boat moves at that speed along the heading for the step, then the tide carries it. A tack or a gybe costs its time. A step that crosses land, water shallower than the safety depth, a traffic separation scheme or a keep-out area is thrown away.',
+      'Of all the new points, only the one that has got furthest in each slice of the compass is kept. That makes the next line.',
+      'When a line reaches the finish, the router follows the kept points back to the start: that is the route. It does this for each forecast model, and for the ensemble members, so you can compare them.',
+      'The marks must be rounded on their side: a gate from the buoy stops a route crossing the wrong way.']]
   ];
+
+  /* the vector pictures for the true wind, estimated position and routing topics */
+  function vecSvg(k) {
+    var A = function (x1, y1, x2, y2, c, lab, lx, ly) { var a = Math.atan2(y2 - y1, x2 - x1), h = 10; return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + c + '" stroke-width="3.5"/><polygon points="' + x2 + ',' + y2 + ' ' + (x2 - h * Math.cos(a - 0.4)) + ',' + (y2 - h * Math.sin(a - 0.4)) + ' ' + (x2 - h * Math.cos(a + 0.4)) + ',' + (y2 - h * Math.sin(a + 0.4)) + '" fill="' + c + '"/>' + (lab ? '<text x="' + lx + '" y="' + ly + '" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="' + c + '">' + lab + '</text>' : ''); };
+    var g = '';
+    if (k === 'ref-twa') {   /* the triangle of air motions (where the air goes), boat heading up the page: apparent = true + the head wind of the boat's motion */
+      var px = 300, py = 60, Ax = -94.6, Ay = 135.2, Hy = 71.5, Tx = Ax, Ty = Ay - Hy;   /* AWS 15 kn at 35 deg, BSP 6.5 kn, 11 px a knot */
+      g += '<rect width="420" height="300" fill="#0B1B30"/><text x="12" y="22" font-family="Arial,sans-serif" font-size="13" fill="#9AB0C6">Where the air goes, boat heading up the page</text>';
+      g += '<path d="M60 150 q 14 30 0 90 q -14 -60 0 -90z" fill="#E8F0F8"/>' + A(60, 270, 60, 200, '#5B8DEF', '', 0, 0) + '<text x="76" y="250" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#5B8DEF">Boat 6.5 kn</text>';
+      g += A(px, py, px + Tx, py + Ty, '#E5484D', 'True 10.4 kn, TWA 56°', px - 20, py - 12);
+      g += A(px + Tx, py + Ty, px + Tx, py + Ty + Hy, '#5B8DEF', 'Head wind 6.5 kn', px + Tx + 10, py + Ty + 40);
+      g += A(px, py, px + Ax, py + Ay, '#4CC38A', 'Apparent 15 kn, AWA 35°', px - 40, py + Ay + 30);
+    } else if (k === 'ref-ep') {
+      var s2 = 30, fx = 200, fy = 40;
+      g += '<rect width="420" height="300" fill="#0B1B30"/><circle cx="' + fx + '" cy="' + fy + '" r="6" fill="none" stroke="#E8F0F8" stroke-width="2"/><text x="' + (fx + 10) + '" y="' + (fy + 4) + '" font-family="Arial,sans-serif" font-size="13" fill="#E8F0F8">Fix</text>';
+      g += A(fx, fy, fx, fy + 6 * s2, '#5B8DEF', 'Water track 180°, 6 nm', fx - 110, fy + 100);
+      g += A(fx, fy + 6 * s2, fx + 2 * s2, fy + 6 * s2, '#F5A524', 'Tide 090°, 2 kn', fx - 10, fy + 6 * s2 + 22);
+      g += A(fx, fy, fx + 2 * s2, fy + 6 * s2, '#E5484D', 'Ground track 162°, 6.3 nm', fx + 2 * s2 + 10, fy + 120);
+      g += '<polygon points="' + (fx + 2 * s2) + ',' + (fy + 6 * s2 - 9) + ' ' + (fx + 2 * s2 + 8) + ',' + (fy + 6 * s2 + 5) + ' ' + (fx + 2 * s2 - 8) + ',' + (fy + 6 * s2 + 5) + '" fill="none" stroke="#E8F0F8" stroke-width="2"/><text x="' + (fx + 2 * s2 + 12) + '" y="' + (fy + 6 * s2 + 4) + '" font-family="Arial,sans-serif" font-size="13" fill="#E8F0F8">EP</text>';
+    } else {   /* isochrones: the reach after 1, 2, 3 and 4 hours, a few of the headings tried, and the route traced back */
+      g += '<rect width="420" height="300" fill="#0B1B30"/><text x="12" y="22" font-family="Arial,sans-serif" font-size="13" fill="#9AB0C6">How far the boat can get in 1, 2, 3 and 4 hours</text>';
+      var cx = 50, cy = 265, cols = ['#5B8DEF', '#4CC38A', '#F5A524', '#E5484D'];
+      for (var a3 = 0; a3 <= 90; a3 += 15) { var rr = a3 * Math.PI / 180; g += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + 70 * Math.cos(rr)).toFixed(1) + '" y2="' + (cy - 52 * Math.sin(rr)).toFixed(1) + '" stroke="#9AB0C6" stroke-width="1.2" stroke-dasharray="3 3"/>'; }
+      for (var r = 1; r <= 4; r++) { var d = ''; for (var a2 = 0; a2 <= 90; a2 += 5) { var rad = a2 * Math.PI / 180, k2 = 1 - 0.18 * Math.sin(rad * 2); d += (a2 ? ' L' : 'M') + (cx + r * 78 * k2 * Math.cos(rad)).toFixed(1) + ' ' + (cy - r * 56 * k2 * Math.sin(rad)).toFixed(1); }
+        g += '<path d="' + d + '" fill="none" stroke="' + cols[r - 1] + '" stroke-width="2.5"/><text x="' + (cx + r * 78 + 4) + '" y="' + (cy - 4) + '" font-family="Arial,sans-serif" font-size="12" fill="' + cols[r - 1] + '">' + r + ' h</text>'; }
+      g += '<polyline points="' + cx + ',' + cy + ' 110,222 165,175 222,128 282,92" fill="none" stroke="#FF4FB4" stroke-width="3"/><text x="150" y="150" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#FF4FB4">the route</text>';
+      g += '<circle cx="' + cx + '" cy="' + cy + '" r="6" fill="#E8F0F8"/><text x="' + (cx - 30) + '" y="' + (cy + 4) + '" font-family="Arial,sans-serif" font-size="12" fill="#E8F0F8">Start</text>';
+      g += '<circle cx="300" cy="80" r="7" fill="none" stroke="#E8F0F8" stroke-width="2"/><text x="312" y="76" font-family="Arial,sans-serif" font-size="13" fill="#E8F0F8">Finish</text>';
+    }
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300">' + g + '</svg>');
+  }
 
   /* the flags drawn (International Code of Signals designs), one picture for the Signal flags topic */
   function flagSvg() {
@@ -148,7 +199,7 @@
   function build() {
     var list = $('helpList'); if (!list) return false; if ($('fsRef')) return true;
     var sec = document.createElement('section'); sec.id = 'fsRef'; sec.className = 'fsref';
-    sec.innerHTML = '<h3 class="navhelph">Quick reference at sea</h3>' + T.map(function (t) { return '<div class="htopic" data-k="' + t[0] + '"><h3>' + esc(t[1]) + '</h3>' + t[2].map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + (t[0] === 'ref-flags' ? '<img class="hpic" alt="The signal flags A to Z, the answering pennant, the first substitute and the black flag" src="' + flagSvg() + '">' : '') + '</div>'; }).join('');
+    sec.innerHTML = '<h3 class="navhelph">Quick reference at sea</h3>' + T.map(function (t) { return '<div class="htopic" data-k="' + t[0] + '"><h3>' + esc(t[1]) + '</h3>' + t[2].map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + (t[0] === 'ref-flags' ? '<img class="hpic" alt="The signal flags A to Z, the answering pennant, the first substitute and the black flag" src="' + flagSvg() + '">' : /^ref-(twa|ep|routing)$/.test(t[0]) ? '<img class="hpic" alt="Vector picture: ' + esc(t[1]) + '" src="' + vecSvg(t[0]) + '">' : '') + '</div>'; }).join('');
     list.parentNode.insertBefore(sec, list.nextSibling);
     return true;
   }

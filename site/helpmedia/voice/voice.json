@@ -488,5 +488,20 @@
   "f": "signal-flags-19464e4b.mp3",
   "t": "Signal flags",
   "sec": 147.9
+ },
+ "true-wind-from-the-instruments-8b90a2ca": {
+  "f": "true-wind-from-the-instruments-8b90a2ca.mp3",
+  "t": "True wind from the instruments",
+  "sec": 95.1
+ },
+ "estimated-position-with-the-tide-98c3e583": {
+  "f": "estimated-position-with-the-tide-98c3e583.mp3",
+  "t": "Estimated position with the tide",
+  "sec": 85.3
+ },
+ "how-the-routing-works-46b5261f": {
+  "f": "how-the-routing-works-46b5261f.mp3",
+  "t": "How the routing works",
+  "sec": 85.7
  }
 }
