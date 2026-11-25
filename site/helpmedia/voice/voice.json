@@ -433,5 +433,30 @@
   "f": "the-start-screen-7d990328.mp3",
   "t": "The start screen",
   "sec": 151.3
+ },
+ "mayday-how-to-call-994628ff": {
+  "f": "mayday-how-to-call-994628ff.mp3",
+  "t": "Mayday: how to call",
+  "sec": 78.1
+ },
+ "pan-pan-how-to-call-f1755bfb": {
+  "f": "pan-pan-how-to-call-f1755bfb.mp3",
+  "t": "Pan-Pan: how to call",
+  "sec": 65.0
+ },
+ "man-overboard-what-to-do-a67f8e79": {
+  "f": "man-overboard-what-to-do-a67f8e79.mp3",
+  "t": "Man overboard: what to do",
+  "sec": 97.2
+ },
+ "beaufort-scale-a5811d6b": {
+  "f": "beaufort-scale-a5811d6b.mp3",
+  "t": "Beaufort scale",
+  "sec": 159.5
+ },
+ "conversions-be7a196c": {
+  "f": "conversions-be7a196c.mp3",
+  "t": "Conversions",
+  "sec": 138.2
  }
 }

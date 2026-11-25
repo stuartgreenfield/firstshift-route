@@ -81,6 +81,7 @@
     { id: 'wx', name: 'Forecasts and routing', blurb: 'Routes, models, wind by hand', titles: [], re: /forecast|route|isochrone|model|wind|ask/i },
     { id: 'chart', name: 'Chart and screen', blurb: 'Charts, layers, the screen', titles: [], re: /chart|mark|waypoint|screen|move|astro|track/i },
     { id: 'polar', name: 'Polars and the log', blurb: 'Learning polars, the race log', titles: [], re: /polar|log\b|debrief/i },
+    { id: 'ref', name: 'Quick reference at sea', blurb: 'Mayday, Pan-Pan, man overboard, Beaufort, conversions', titles: ['Mayday: how to call', 'Pan-Pan: how to call', 'Man overboard: what to do', 'Beaufort scale', 'Conversions'], re: /^(Mayday:|Pan-Pan:|Man overboard: what|Beaufort scale|Conversions)/ },   // night jobs 26 to 29 (Stuart 24 Nov 15:47), fsref.js
     { id: 'more', name: 'More', blurb: 'Everything else', titles: [], re: /$^/ }
   ];
   window.FS_HELP_PATHS = [

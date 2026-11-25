@@ -16,6 +16,7 @@
     { id: 'wx', name: 'Forecasts and routing', blurb: 'Routes, isochrones, models, wind by hand', titles: ['Routes', 'Routing detail', 'Isochrones', 'New forecasts', 'How old is each forecast', 'Forecast models: ages and blending', 'Forecast models and resolution', 'If you think the forecast is wrong', 'Tide by hand', 'Wind by hand', 'Ask Route'], re: /forecast|model|routing|route|wind|tide|isochron/i },
     { id: 'chart', name: 'Chart and screen', blurb: 'Charts, marks, waypoints, moving things', titles: ['Charts', 'Real charts', 'Chart orientation', 'Waypoints on the course', 'Clear screen', 'Move a window', 'Move the panels', 'My tracks', 'Astro'], re: /chart|mark|depth|waypoint|screen|move/i },
     { id: 'polar', name: 'Polars and the log', blurb: 'Learning polars, sails, the race log', titles: ['Polars', 'Log and debrief'], re: /polar|log\b|debrief/i },
+    { id: 'ref', name: 'Quick reference at sea', blurb: 'Mayday, Pan-Pan, man overboard, Beaufort, conversions', titles: ['Mayday: how to call', 'Pan-Pan: how to call', 'Man overboard: what to do', 'Beaufort scale', 'Conversions'], re: /^(Mayday:|Pan-Pan:|Man overboard: what|Beaufort scale|Conversions)/ },   // night jobs 26 to 29 (Stuart 24 Nov 15:47), fsref.js
     { id: 'more', name: 'More', blurb: 'Everything else', titles: [], re: /$^/ }
   ];
   /* help logic trees (first-time guide, Stuart 14 Nov): "What do you want to do?", each a path of topics in order */
