@@ -1,0 +1,28 @@
+# Full detail offshore, step 1 (Stuart 25 Nov 2026 13:20 "Go: UKV Fastnet first"): build the Fastnet pack once with UKV at its native grid
+# (no thinning) and keep it as an artifact for a side-by-side routing test. Runs only on a push to this experiment branch; publishes nothing.
+name: Full detail experiment
+on:
+  push:
+    branches: [exp-fulldetail]
+concurrency: { group: fulldetail-exp, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install numpy numcodecs eccodes eccodeslib netCDF4 pyproj tifffile
+      - name: Fastnet with UKV at its native grid
+        env:
+          FS_NOTHIN: ukv
+        run: python3 scripts/build.py fastnet
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fastnet-ukv-native
+          path: site/fastnet/pack
+          retention-days: 3
+          compression-level: 0

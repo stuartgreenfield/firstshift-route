@@ -70,7 +70,7 @@ def add(kind, k, name, note, keys, sc, sp, ev):
     while True:   # long races: thin the full layer until it fits comfortably under the host's 25 MiB per file
         la_, lo_, h_, f_ = thin(z, keys, fsp, 1)
         full = pack_layer(k, 'full', la_, lo_, h_, f_, sc, cell(la_, lo_))
-        if full['bytes'] < 18e6 or fsp >= 4: break
+        if full['bytes'] < 18e6 or fsp >= 4 or os.environ.get('FS_NOTHIN') == k: break   # full detail offshore experiment (Stuart 25 Nov 13:20): one model at its native grid
         fsp += 1
     if fsp > 1: print(k, 'full thinned by', fsp)
     la, lo, h, f = thin(z, keys, sp, ev); lite = pack_layer(k, 'lite', la, lo, h, f, sc, cell(la, lo))
