@@ -3,4 +3,4 @@
 <defs><clipPath id="in3"><path d="M808.86 -619.67 L-293.61 1045.42 L456.82 1542.28 L1559.28 -122.82 Z"/></clipPath></defs>
 <g fill="none" stroke-width="8.50" stroke-linejoin="round" stroke-linecap="round"><path d="M298.69 39.95 L143.48 255.04 L255.67 221.10 Z" stroke="#042D5E"/><path d="M335.02 70.41 L171.94 293.84 L292.69 254.37 Z" stroke="#042D5E"/><g clip-path="url(#in3)"><path d="M335.02 70.41 L171.94 293.84 L292.69 254.37 Z" stroke="#3574BA"/></g><path d="M371.25 94.59 L215.58 321.24 L324.21 284.97 Z" stroke="#3574BA"/></g>
 <rect x="0" y="362" width="512" height="150" fill="#8B5CF6"/>
-<text x="255.75" y="476.00" text-anchor="middle" font-family="'Barlow Condensed', sans-serif" font-weight="700" font-size="109.50" fill="#001829">Route+</text></svg>
+<text x="255.75" y="476.00" text-anchor="middle" font-family="'Barlow Condensed', sans-serif" font-weight="700" font-size="109.50" fill="#001829">Route+</text><text x="438" y="84" text-anchor="end" font-family="Inter, sans-serif" font-weight="600" font-size="40" fill="#001829" fill-opacity="0.8" aria-label="trade mark">™</text></svg>
