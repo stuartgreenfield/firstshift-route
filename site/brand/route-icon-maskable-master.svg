@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512"><title>FirstShift Route app icon, master</title><desc>Vector master rebuilt 25 Nov 2026, traced to route-icon-maskable-512.png. Square, white ground, no transparency. Colours: navy #042D5E, blue #3574BA, band #FF4FB4, name #001829. Name in Barlow Condensed Bold 700 (SIL Open Font Licence); without that font installed, use the PNG.</desc>
+<rect width="512" height="512" fill="#FFFFFF"/>
+<defs><clipPath id="in3"><path d="M795.82 -595.00 L-281.72 1038.75 L469.58 1534.28 L1547.13 -99.48 Z"/></clipPath></defs>
+<g fill="none" stroke-width="6.80" stroke-linejoin="round" stroke-linecap="round"><path d="M290.40 82.41 L165.98 255.23 L255.74 228.08 Z" stroke="#042D5E"/><path d="M318.97 108.03 L188.75 286.27 L285.35 255.20 Z" stroke="#042D5E"/><g clip-path="url(#in3)"><path d="M318.97 108.03 L188.75 286.27 L285.35 255.20 Z" stroke="#3574BA"/></g><path d="M348.20 127.12 L223.66 308.19 L310.57 279.18 Z" stroke="#3574BA"/></g>
+<rect x="51" y="343" width="410" height="118" fill="#FF4FB4"/>
+<text x="256.50" y="430.68" text-anchor="middle" font-family="'Barlow Condensed', sans-serif" font-weight="700" font-size="86.89" fill="#001829">Route</text></svg>

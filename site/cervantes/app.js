@@ -521,7 +521,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       else if (!$('panel').hidden && !$('panel').classList.contains('collapsed')) closePanel();
     });
     $('dataChip').onclick = function () { $('panel').hidden = false; openTab('data'); };
-    $('layersBtn').onclick = function () { var p = $('layers'); if (!p.hidden) { closeLayers(); return; } p.hidden = false; layDepth = +$('depth').value; $('layersBtn').setAttribute('aria-expanded', 'true'); layersPop(); popBelowTop(p); };
+    $('layersBtn').onclick = function () { var p = $('layers'); if (!p.hidden) { closeLayers(); return; } p.hidden = false; layFold(); layDepth = +$('depth').value; $('layersBtn').setAttribute('aria-expanded', 'true'); layersPop(); popBelowTop(p); };
     [].forEach.call($('plans').children, function (b) { b.onclick = function () { applyPlan(b.dataset.plan); }; });
     $('dlBtn').onclick = function () { download(); };
     $('ovChk').onchange = dataTable;
@@ -563,7 +563,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function syncSym() { var a = document.getElementById('lWind'), b = document.getElementById('lTide'); if (a) a.value = $('windSym').value; if (b) b.value = $('tideSym').value; }
   var layDepth = null;   /* the no-go depth when the Layers panel opened: closing it routes again if it changed, as closing Settings does */
-  function closeLayers() { $('layers').hidden = true; $('layersBtn').setAttribute('aria-expanded', 'false'); if (layDepth != null && +$('depth').value !== layDepth) depthRerun(); layDepth = null; }
+  /* C3 (Stuart 25 Nov 13:30, mock-up A): on a phone held upright, Layers had a 120-point strip with the bottom panel open. While Layers is open
+     the panel folds to its time row, and comes back as it was when Layers closes. */
+  var layFolded = false;
+  function phoneUp() { return !wide() && window.matchMedia('(orientation:portrait)').matches; }
+  function layFold() { var pn = $('panel'); layFolded = false; if (phoneUp() && pn && !pn.hidden && !pn.classList.contains('collapsed')) { pn.classList.add('collapsed'); layFolded = true; resizeDraw(); } }
+  function closeLayers() { if (layFolded) { layFolded = false; var pn = $('panel'); if (pn) { pn.classList.remove('collapsed'); setTimeout(resizeDraw, 0); } } $('layers').hidden = true; $('layersBtn').setAttribute('aria-expanded', 'false'); if (layDepth != null && +$('depth').value !== layDepth) depthRerun(); layDepth = null; }
   function depthRerun() { if (S.running) { setTimeout(depthRerun, 1000); return; } busy('No-go depth changed: routing again…'); S.from = null; run(); }   /* waits for a route already being worked out, then routes again with the new depth */
   function closePanel() { var p = $('panel'); if (wide()) p.hidden = true; else p.classList.add('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'false'); setTimeout(resizeDraw, 0); }
   function wide() { return matchMedia('(min-width:900px), (orientation:landscape) and (max-height:500px)').matches; }   /* a phone on its side gets the computer layout: a short screen needs the chart beside the results */
@@ -670,7 +675,12 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   /* the strip is for the chart view: off while routing (the progress card sits there and the times are changing) and while a race view
      (20/20, HELM, the plotter's deck) covers the chart; the cards in Routes still choose (screens check 25 Nov 00:40) */
   function folBusy() { if (S.running) return true; var q = ['#deckNums', '#dkView', '#fsHelm', '#navHelm', '#fhHelm', '#liveBig', '#fsPlot', '#navPlot']; for (var i = 0; i < q.length; i++) { var e = document.querySelector(q[i]); if (e && !e.hidden && e.getClientRects().length && getComputedStyle(e).display !== 'none') return true; } return false; }
-  function folPlace() { var box = $('folStrip'); if (!box || !box.innerHTML) return; var off = folBusy(); if (box.hidden !== off) box.hidden = off; if (off) return; var y = 0; ['.top', '#cbanner', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' || q === '#cbanner' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
+  /* C1 (Stuart 25 Nov 13:30, mock-up A): on a phone held upright the course banner sat under the MARK / DECK / NAV card and its cross could
+     not be reached; it now goes full width under that card. Runs on the existing one-second clock tick, no new timer. */
+  function bannerPlace() { var b = $('cbanner'); if (!b || b.hidden) return; if (window.innerHeight < 500) { if (b.style.top) b.style.top = ''; if (b.style.right) b.style.right = ''; return; }   /* a phone on its side: no room below the plotter strip (the time row is there) */ var y = 0, bl = b.getBoundingClientRect(); ['fsPlot', 'navPlot', 'navStrip'].forEach(function (id) { var e = $(id); if (!e || e.hidden || !e.getClientRects().length) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4 && r.left < bl.right && r.right > bl.left) y = Math.max(y, r.bottom); });   /* any screen: the tablet on its side had the same cross under the plotter strip */ var par = b.offsetParent || document.body, t = y ? Math.round(y - par.getBoundingClientRect().top + 6) + 'px' : ''; if (b.style.top !== t) b.style.top = t;
+    if (phoneUp()) { var bb0 = b.getBoundingClientRect(), mL = window.innerWidth; [].forEach.call(document.querySelectorAll('#oriBtn, #fromHere, #editFab, #helpBtn, .fabhelp'), function (e) { if (e.hidden || !e.getClientRects().length) return; var r = e.getBoundingClientRect(); if (r.left > window.innerWidth / 2 && r.top < bb0.top + 140 && r.bottom > bb0.top) mL = Math.min(mL, r.left); }); var rt = mL < window.innerWidth ? Math.round(window.innerWidth - mL + 6) + 'px' : ''; if (b.style.right !== rt) b.style.right = rt; }   /* the banner stops short of the chart's own buttons (screens check 25 Nov 14:10) */
+    var pg = $('prog'); if (pg && !pg.hidden && pg.getClientRects().length) { var bb = b.getBoundingClientRect(), pr = pg.getBoundingClientRect(); if (pr.top < bb.bottom && pr.bottom > bb.top) { var pp = pg.offsetParent || document.body; pg.style.top = Math.round(bb.bottom - pp.getBoundingClientRect().top + 6) + 'px'; } } }   /* C7: the progress card below the banner, never over it */
+  function folPlace() { try { bannerPlace(); } catch (e) {} var box = $('folStrip'); if (!box || !box.innerHTML) return; var off = folBusy(); if (box.hidden !== off) box.hidden = off; if (off) return; var y = 0; ['.top', '#cbanner', '#solSeq', '#solGunBar'].forEach(function (q) { var e = document.querySelector(q); if (!e || e.hidden) return; var r = e.getBoundingClientRect(); if (r.height && r.top < window.innerHeight * 0.4) y = Math.max(y, r.bottom + (q === '.top' || q === '#cbanner' ? 0 : 40)); });   /* 40: room for the window's own move grip (fsdrag.js), which would otherwise slide up onto the card */
     var t = Math.round(y + 6) + 'px'; if (box.style.top !== t) box.style.top = t; }
   function folName(s) { return s.combined ? 'Combined' : short(s.id); }
   function folTime(s) { return s.r.partial ? s.r.partial.togo + ' nm to go' : fmtH(s.r.finish - (S.matrix ? S.matrix.start : 0)); }
@@ -3425,7 +3435,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var cv = $('map'), ctx = cv.getContext('2d'), FT0 = ctx.fillText, CTX0 = ctx;
   CTX0.fillText = function (t, x, y, mw) { if (!ORI.ang || !ORI.turned) return mw == null ? FT0.call(CTX0, t, x, y) : FT0.call(CTX0, t, x, y, mw); CTX0.save(); CTX0.translate(x, y); CTX0.rotate(ORI.ang * R); if (mw == null) FT0.call(CTX0, t, 0, 0); else FT0.call(CTX0, t, 0, 0, mw); CTX0.restore(); };   /* text stays upright on a turned chart */
   var _unused0 = 0, W = 0, H = 0, dpr = 1, K = Math.cos(50.1 * R), view = { lo: -0.8, la: 50.15, s: 300 }, fitted = false;
-  function resize() { var r = cv.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); if (!fitted && W) { fit(); fitted = true; } }
+  /* Mac fan D (Stuart 25 Nov 13:20, "D lighter while playing"): while the forecast plays on a big screen the chart is drawn at one pixel per
+     point, a quarter of the work on a Retina screen; full sharpness returns the moment it stops. */
+  function resize() { var r = cv.getBoundingClientRect(), dp0 = window.devicePixelRatio || 1; dpr = playing && dp0 > 1 && r.width * r.height * dp0 * dp0 > 2e6 ? 1 : dp0; W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); if (!fitted && W) { fit(); fitted = true; } }
   function resizeDraw() { resize(); draw(); }
   /* frame the whole course: start, marks, finish and the forecast band */
   function fit() {
@@ -4060,8 +4072,11 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function kv(k, v) { return '<div' + (KVT[k] ? ' title="' + KVT[k] + '"' : '') + '><span>' + k + '</span><b>' + v + '</b></div>'; }
   function pad(x) { return String(Math.round(((x % 360) + 360) % 360)).padStart(3, '0'); }
   var playing = false, lastTs = 0;
-  function togglePlay() { playing = !playing; $('playIcon').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>'; $('play').setAttribute('aria-label', playing ? 'Pause' : 'Play'); if (playing) { lastTs = 0; if (+$('time').value >= 1000) setTime(S.tmin || 5); requestAnimationFrame(tick); } }
-  function tick(ts) { if (!playing) return; if (lastTs) { var t = S.t + Math.min(ts - lastTs, 50) / 1000 * (+$('speed').value || 1);   /* a slow frame slows the replay a moment instead of jumping it */ if (t >= (S.tmax || 30)) { t = S.tmax || 30; togglePlay(); } setTime(t); } lastTs = ts; if (playing) requestAnimationFrame(tick); }
+  function togglePlay() { playing = !playing; playDraw = 0; setTimeout(resizeDraw, 0); $('playIcon').innerHTML = playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>'; $('play').setAttribute('aria-label', playing ? 'Pause' : 'Play'); if (playing) { lastTs = 0; if (+$('time').value >= 1000) setTime(S.tmin || 5); requestAnimationFrame(tick); } }
+  /* Mac fan B (Stuart 25 Nov 13:20, "B fewer redraws"): the replay moves the chart at most 30 times a second, not at every screen refresh
+     (60 to 120 on a Mac); the time still runs at the chosen speed. */
+  var playDraw = 0;
+  function tick(ts) { if (!playing) return; if (lastTs && ts - playDraw < 33) { requestAnimationFrame(tick); return; } playDraw = ts; if (lastTs) { var t = S.t + Math.min(ts - lastTs, 100) / 1000 * (+$('speed').value || 1);   /* a slow frame slows the replay a moment instead of jumping it */ if (t >= (S.tmax || 30)) { t = S.tmax || 30; togglePlay(); } setTime(t); } lastTs = ts; if (playing) requestAnimationFrame(tick); }
 
   /* ---------- pointer ---------- */
   var ptrs = new Map(), pinch = 0, pmid = null, moved = 0;
