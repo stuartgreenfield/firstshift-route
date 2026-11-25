@@ -5,22 +5,11 @@
 .fabhelp.navclearb{bottom:208px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
 .navclearb svg{width:18px;height:18px}
 .navclearb span{font:700 9px var(--f-data);letter-spacing:.04em;line-height:1}
-body.navclear #panel,body.navclear .top,body.navclear #navClearBtn,body.navclear #editFab,body.navclear #helpBtn,body.navclear #boatWarn,body.navclear .cbanner{display:none!important}
-body.navclear .bar{display:flex;justify-content:space-between;align-items:center}
-body.navclear .bar>*{display:none!important}
-body.navclear .bar>.mobbtn,body.navclear .bar>.navmenub{display:block!important}
-body.navclear .prog{top:calc(env(safe-area-inset-top,0px) + 60px)}
+body.navclear #panel,body.navclear #navClearBtn,body.navclear #editFab,body.navclear #helpBtn,body.navclear #boatWarn,body.navclear .cbanner{display:none!important}
 .navtoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(92vw,460px);padding:10px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font:400 14px var(--f-body);box-shadow:0 8px 24px rgba(0,0,0,.35);text-align:center}
 .navtoast{white-space:pre-line}
 /* the plotter bar never runs under the bottom menu: it fits the chart and scrolls inside (Stuart 13 Nov) */
 /* clear screen: no blue strip, a small MOB and MENU floating over the chart (Stuart 13 Nov) */
-body.navclear .app{grid-template-rows:minmax(0,1fr) 0 0}
-body.navclear .bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:transparent!important;border:0!important;padding:0 max(10px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));pointer-events:none}
-body.navclear .bar>.mobbtn,body.navclear .bar>.navmenub{pointer-events:auto;box-shadow:0 2px 10px rgba(0,0,0,.4)}
-body.navclear .bar>.mobbtn{width:auto;min-width:52px;height:40px;font-size:12px}
-body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px;opacity:.9}
-body.navclear .bar>.navmenub{margin-left:auto}   /* MENU on the right, as in Route+ (Stuart 15 Nov 21:16: "the menu button needs to move to the right side like navigate") */
-body.navclear .livebox{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 body.navtip .livebox{visibility:hidden}
 :root[data-night] .navtoast{border-color:#3A0A08}
 :root[data-night] .navmenub{background:#2A0302;color:#B4231B;border-color:#6A0F0B}
@@ -198,3 +187,6 @@ body.gpsstrip #liveBox{display:none!important}
 /* Stuart 22 Nov: DECK | NAV on the plotter bar. On a phone the buttons take their own short row and the mark name and the one-line readout
    the full width under them, so no button sits on the figures. */
 @media (max-width:600px){.rphead{flex-wrap:wrap;justify-content:center;row-gap:4px}.rphead .rpname{order:2;flex:1 1 100%}.rphead .rpnav{min-height:30px;font-size:11px}.rpnav.rpview span{min-width:36px}.rpline{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}}
+
+/* 25 Nov 2026 (Stuart, BRIEF-CLEAR-BUTTON-ROW): CLEAR takes only the row of big buttons; the bar keeps the LIVE and ROUTE lines and the slider (fsclear.js) */
+body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px}

@@ -57,7 +57,7 @@
     $('npBack').disabled = !st.def;
     sel.innerHTML = names.length ? names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + ' (' + when(st.named[n].at) + ')</option>'; }).join('') : '<option value="">No named set-ups yet</option>';
     sel.disabled = !names.length; $('npLoad').disabled = $('npDel').disabled = !names.length;
-    var h = window.__navHide ? window.__navHide() : 1; $('npHide').value = String(h == null ? 1 : h);
+    var h = window.__navHide ? window.__navHide() : 60; $('npHide').value = String(h == null ? 60 : h);
   }
   function build() {
     var link = $(PLUS ? 'navSetLink' : 's-mine'); if (!link || $('navPrefs')) return !!$('navPrefs');
@@ -72,7 +72,7 @@
       '<div class="npask" id="npAsk" hidden></div><p class="note" id="npNote" role="status"></p>' +
       '<p class="note">' + (PLUS ? 'A set-up holds your settings: boat, sails, display, night mode, plotter, Deck and Nav views, alarms and the boat link. It never holds the race, its marks, the log, recordings or the learned Target polar, so loading one cannot lose them.' : 'A set-up holds your settings: boat, sails, display, night mode, Deck and Nav views and clear screen. It never holds the race, its marks or recordings, so loading one cannot lose them.') + '</p>' +
       '<h4>Copy to another device</h4><div class="xrow"><button class="btn" id="npExport" type="button">Export to a file</button><button class="btn" id="npImport" type="button">Import a file</button><input type="file" id="npFile" accept=".json,application/json" hidden></div>' +
-      '<h4 id="npClearH">Clear screen</h4><label class="nprow">With a boat connection, hide the menus again after <select id="npHide" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><p class="note">CLEAR leaves the chart, MOB and MENU. MENU brings back the menus and any windows that were open. With the phone\u2019s GPS, or ashore, they stay up until you tap CLEAR again; in the Route+ and Mark+ apps, while the boat\u2019s instruments are connected, they hide again after the time set here.</p>' +
+      '<h4 id="npClearH">Clear screen</h4><label class="nprow">Clear the buttons by themselves after <select id="npHide" aria-label="Clear the buttons by themselves after"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="120">2 minutes</option></select></label><p class="note">CLEAR takes away the row of big buttons and leaves the chart, the LIVE and ROUTE lines, the slider, MOB and MENU. MENU, or a swipe up on the bar, brings the buttons back; a swipe down clears them. They never clear by themselves while a window is open, while typing or during the start sequence, and an alarm brings them back.</p>' +
       
       
       '</div>';
@@ -113,7 +113,7 @@
       var f = this.files && this.files[0]; if (!f) return;
       var r = new FileReader(); r.onload = function () { importText(String(r.result)); }; r.readAsText(f);
     };
-    $('npHide').onchange = function () { if (window.__navHide) window.__navHide(+this.value); note(+this.value ? 'With a boat connection, menus hide again after ' + this.value + ' minute' + (+this.value > 1 ? 's' : '') + ' without a tap.' : 'Menus stay up until you clear the screen.'); };
+    $('npHide').onchange = function () { var v = window.__navHide ? window.__navHide(+this.value) : +this.value; note(v ? 'The buttons clear by themselves after ' + (v < 60 ? v + ' seconds' : v / 60 + ' minute' + (v > 60 ? 's' : '')) + ' untouched.' : 'The buttons stay until you clear them.'); };
     render();
     return true;
   }

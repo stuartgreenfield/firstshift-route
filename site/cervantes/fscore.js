@@ -80,23 +80,18 @@
   /* Stuart 22 Nov 08:01 (decided 08:05): the menus hide by themselves only while a boat connection is sending data (Route+ and Mark+ apps);
      with the phone's GPS, or planning ashore, they stay up until the crew clears the screen. A browser has no boat connection. */
   function boatLinked() { return false; }
-  function hideV() { return C.hide == null ? (window.FS_MARK ? 0 : 1) : C.hide === 3 ? 5 : C.hide; }   /* 22 Nov: the choices are 1, 5 and 10 minutes; a saved 3 becomes 5 */
-  function clearSet(on, why) {
-    C.clear = !!on; save(); CL.peek = false; clearTimeout(CL.timer);
-    document.body.classList.toggle('navclear', !!on);
-    if (on && !C.clearTold) { C.clearTold = true; save(); clearToast('Clear screen. MENU, or a long press on the chart, brings the menus back.'); }
-    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
-  }
-  function clearPeek() { document.body.classList.remove('navclear'); CL.peek = true; C.clear = true; save(); clearArm(); try { window.dispatchEvent(new Event('resize')); } catch (e) {} }
-  function clearArm() { clearTimeout(CL.timer); if (!CL.peek) return; var after = CL.after || (boatLinked() ? hideV() * 60000 : 0); if (!after) { if (hideV()) CL.timer = setTimeout(clearArm, 15000); return; }   /* boat data may start while the menus are up: look again every 15 s */ CL.timer = setTimeout(function () { if (!CL.peek) return; if (busyUi()) { clearArm(); return; } CL.peek = false; document.body.classList.add('navclear'); try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, after); }
+  function hideV() { return window.FSClear ? FSClear.auto() : 60; }   /* 25 Nov 2026: the seconds before the buttons clear by themselves (fsclear.js); 0 is Off */
+  function clearSet(on, why) { C.clear = !!on; save(); if (window.FSClear) FSClear.set(on, why); else document.body.classList.toggle('navclear', !!on); }   /* the button row: fsclear.js (25 Nov 2026) */
+  function clearPeek() { clearSet(false, 'menu'); }   /* MENU brings the buttons back; they clear again by themselves (fsclear.js) */
+  function clearArm() { if (window.FSClear) FSClear.arm(); }
   function clearToast(t) { var e = document.getElementById('navToast'); if (!e) { e = el('div', 'navtoast'); e.id = 'navToast'; e.setAttribute('role', 'status'); document.body.appendChild(e); } var keep = !e.hidden && e._lines ? e._lines.filter(function (x) { return x !== t && !(/^Up to date|^Carried on/.test(x) && /^Up to date|^Carried on|^Boat link on|^Carried on\. No/.test(t)); }) : []; e._lines = keep.concat([t]).slice(-3); e.textContent = e._lines.join('\n'); e.hidden = false; clearTimeout(e._t); e._t = setTimeout(function () { e.hidden = true; e._lines = []; }, 8000); }   /* notes stack, so a no-signal note is not hidden by the next one */
   function hideChoice(near) {
     var o = document.getElementById('navHideCard'); if (o) { o.remove(); return; }
-    o = el('div', 'navhidecard', '<label>With a boat connection, hide the menus again after <select id="navHideSel" aria-label="Hide the menus again after"><option value="0">Off: leave them up</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label><span class="navhiderow"><button type="button" class="btn" id="navHideMove">Move this button</button><button type="button" class="btn primary" id="navHideOk">Done</button></span>');
+    o = el('div', 'navhidecard', '<label>Clear the buttons by themselves after <select id="navHideSel" aria-label="Clear the buttons by themselves after"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="120">2 minutes</option></select></label><span class="navhiderow"><button type="button" class="btn" id="navHideMove">Move this button</button><button type="button" class="btn primary" id="navHideOk">Done</button></span>');
     o.id = 'navHideCard'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Clear screen'); document.body.appendChild(o);
     var r = near.getBoundingClientRect(); o.style.right = Math.max(8, innerWidth - r.left + 8) + 'px'; o.style.top = Math.max(8, Math.min(innerHeight - o.offsetHeight - 8, r.top - 10)) + 'px';
     var sel = o.querySelector('select'); sel.value = String(hideV());
-    sel.onchange = function () { window.__navHide(+sel.value); clearToast(+sel.value ? 'With a boat connection, menus hide again after ' + sel.value + ' minute' + (+sel.value > 1 ? 's' : '') + ' without a tap.' : 'Menus stay up until you clear the screen.'); };
+    sel.onchange = function () { var v = window.__navHide(+sel.value); clearToast(v ? 'The buttons clear by themselves after ' + (v < 60 ? v + ' seconds' : v / 60 + ' minute' + (v > 60 ? 's' : '')) + ' untouched.' : 'The buttons stay until you clear them.'); };
     o.querySelector('#navHideOk').onclick = function () { o.remove(); };
     o.querySelector('#navHideMove').onclick = function () { o.remove(); if (window.NavDrag) NavDrag.begin(near.id); };   /* a long press on a round button moves it; on CLEAR the long press is this choice, so moving is here */
   }
@@ -129,7 +124,7 @@
       cv.addEventListener('pointermove', function (e) { if (lp && e.pointerId === lp.id && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) lp.no = true; });
       ['pointerup', 'pointercancel'].forEach(function (k) { cv.addEventListener(k, function (e) { fingers = Math.max(0, fingers - 1); if (!lp || e.pointerId !== lp.id) return; var held = Date.now() - lp.at;
         if (k === 'pointerup' && !lp.no && held >= 700 && held < 4000) { var cl = document.body.classList.contains('navclear');
-          if (cl || hideV() !== 0) { lp.fired = true; if (cl) clearPeek(); else clearSet(true); try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} e.stopImmediatePropagation(); } }
+          if (!cl && hideV() !== 0) { lp.fired = true; clearSet(true);   /* 25 Nov: the buttons come back from MENU or a swipe up, never from touching the chart */ try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) {} e.stopImmediatePropagation(); } }
         if (!lp.fired) lp = null; }, true); });
       cv.addEventListener('click', function (e) { if (lp && lp.fired) { e.stopImmediatePropagation(); e.preventDefault(); lp = null; } }, true);
       cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -187,7 +182,7 @@
   window.__navResume = { save: resumeSave, load: resumeLoad, state: function () { try { return JSON.parse(localStorage.getItem(RES) || 'null'); } catch (e) { return null; } } };
   /* the instrument strip sits just below the top buttons, however many rows they wrap to, so it never covers Settings (found 13 Nov) */
   window.NavToast = function (t) { clearToast(t); };
-  window.__navHide = function (v) { if (v === undefined) return hideV(); C.hide = v; save(); if (CL.peek) clearArm(); };
+  window.__navHide = function (v) { return window.FSClear ? FSClear.auto(v) : 60; };
   window.NavClear = { set: clearSet, peek: clearPeek, on: function () { return document.body.classList.contains('navclear'); }, _after: function (ms) { CL.after = ms; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { clearBuild(); resumeWhenReady(); }); else { clearBuild(); resumeWhenReady(); }
 
