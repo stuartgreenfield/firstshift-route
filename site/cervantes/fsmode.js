@@ -67,6 +67,9 @@
     p.innerHTML = (g && t < g ? 'Gun in ' + dur(g - t) : 'Near the start') + ' <em>On the boat? Tap for RACE</em><span data-x="1" aria-label="Not now">✕</span>';
     var top = 0; ['.top', '#cbanner', '#navStrip', '#navPlot', '#fsPlot', '#prog', '#folStrip', '#readyChip'].forEach(function (q) { var e = document.querySelector(q); if (e && !e.hidden && e.getClientRects().length) { var r = e.getBoundingClientRect(); if (r.top < innerHeight * 0.4) top = Math.max(top, r.bottom); } });
     p.style.top = Math.round(top + 8) + 'px'; p.hidden = false;
+    /* never over a button (screens check 25 Nov: under a tall plotter window it reached the round chart buttons): try just under the top band, else not now */
+    var hits = function () { var r = p.getBoundingClientRect(); return [].some.call(document.querySelectorAll('button,[role=button]'), function (b) { if (!b.getClientRects().length || b.closest('.fsmodepill')) return false; var q = b.getBoundingClientRect(); return q.width && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top; }); };
+    if (hits()) { var tb = document.querySelector('.top'); p.style.top = Math.round((tb ? tb.getBoundingClientRect().bottom : 60) + 8) + 'px'; if (hits()) p.hidden = true; }
   }
   function boot() { apply(); if (window.FSBeat) FSBeat.set(apply, 1000); else setInterval(apply, 1000); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
