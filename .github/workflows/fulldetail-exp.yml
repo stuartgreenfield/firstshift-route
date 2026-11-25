@@ -5,6 +5,8 @@ on:
   push:
     branches: [exp-fulldetail]
 concurrency: { group: fulldetail-exp, cancel-in-progress: true }
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,3 +28,9 @@ jobs:
           path: site/fastnet/pack
           retention-days: 3
           compression-level: 0
+      - name: Keep the pack on a branch (artifact downloads are not reachable from the test workspace)
+        run: |
+          ls -la site/fastnet/pack | sort -k5 -n | tail -5
+          mkdir -p /tmp/out && cp -r site/fastnet/pack /tmp/out/ && cd /tmp/out
+          git init -q -b exp-fulldetail-pack && git add -A && git -c user.name=fs-bot -c user.email=bot@example.invalid commit -qm "UKV native Fastnet pack $(date -u +%FT%TZ)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" exp-fulldetail-pack
