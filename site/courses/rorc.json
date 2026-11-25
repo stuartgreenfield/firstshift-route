@@ -845,7 +845,8 @@
    },
    "depthSource": "etopo",
    "coastSource": "osm",
-   "note": "Forecasts from Lanzarote to Antigua (the 2027 race starts 10 January from Marina Lanzarote and finishes in Antigua). Global models only; the race runs past the end of the forecasts, and the tool says so."
+   "note": "Forecasts from Lanzarote to Antigua (the 2027 race starts 10 January from Marina Lanzarote and finishes in Antigua). Global models only; the race runs past the end of the forecasts, and the tool says so.",
+   "coastRes": 160
   }
  ]
 }

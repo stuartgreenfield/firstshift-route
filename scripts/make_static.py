@@ -5,6 +5,7 @@ import json, os, sys, gzip, io, time, urllib.request, numpy as np, tifffile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RACE = sys.argv[1]
+# coastRes (cells per degree, 480 by default): a whole-ocean area such as the Transatlantic takes 160 (about 700 m), or its coast file passes Cloudflare's 25 MB a file (25 Nov 2026)
 lib = json.load(open(os.path.join(ROOT, 'site', 'courses', 'rorc.json')))
 R = [r for r in lib['races'] + lib.get('regions', []) if r['id'] == RACE][0]
 REGION = R.get('region')   # a whole sea area rather than one course: every point inside the box is routable
@@ -81,7 +82,7 @@ if DEPTH == 'etopo':
         if not os.path.exists(zf): open(zf, 'wb').write(get('https://osmdata.openstreetmap.de/download/land-polygons-split-4326.zip'))
         z = zipfile.ZipFile(zf); base = [x for x in z.namelist() if x.endswith('.shp')][0][:-4]
         sf = shapefile.Reader(shp=z.open(base + '.shp'), shx=z.open(base + '.shx'), dbf=z.open(base + '.dbf'))
-        cst = 1 / 480; ny_c = int(round((n - s) / cst)); nx_c = int(round((e - w) / cst))
+        cst = 1 / R.get('coastRes', 480); ny_c = int(round((n - s) / cst)); nx_c = int(round((e - w) / cst))
         tr = rasterio.transform.from_origin(w, n, cst, cst); LAND = np.zeros((ny_c, nx_c), 'uint8'); nsh = 0
         # every ring is filled on its own and laid on with exclusive-or (the even-odd rule), so a hole is water whichever way
         # its ring runs; the first build (21 Nov 15:16) closed Sydney Harbour, read as land through the shapes' own ring order
@@ -148,7 +149,7 @@ depth = dict(kind='depth', id='emodnet', name='EMODnet seabed depth' if DEPTH !=
 
 # ---- coastline bitmap for the whole box, 1/120 degree ----
 if DEPTH == 'etopo' and R.get('coastSource') == 'osm':
-    land = LAND; cst = 1 / 480; clat0 = s + cst / 2; clon0 = w + cst / 2
+    land = LAND; cst = 1 / R.get('coastRes', 480); clat0 = s + cst / 2; clon0 = w + cst / 2
 else:
     gc = pool(g, 4); land = (np.isnan(gc) | (gc > 0)).astype(np.uint8); cst = st * 4; clat0 = lat0 - st / 2 + cst / 2; clon0 = lon0 - st / 2 + cst / 2
 open(f'{OUT}/coast.wasm', 'wb').write(np.packbits(land.ravel()).tobytes())
