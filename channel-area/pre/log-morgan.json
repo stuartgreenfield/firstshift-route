@@ -1,23 +1,23 @@
 {
- "at": "2026-11-25T08:26:03.393Z",
+ "at": "2026-11-25T14:21:17.911Z",
  "log": [
   {
    "race": "morgan",
    "h": 0,
-   "s": 70,
-   "note": "Finer routes in 50.3 s. Also worth knowing: in AROME HD wind, the UKV route is 2.1 min faster than AROME HD’s own route."
+   "s": 79,
+   "note": "Finer routes in 58.4 s. Times: first routes 2.6 s, standard 17.7 s, finer 76.2 s. The faint line is the standard route. "
   },
   {
    "race": "morgan",
    "h": 1,
-   "s": 129,
-   "note": "Finer routes in 47.4 s. Also worth knowing: in ECMWF wind, the UKV route is 4.0 min faster than ECMWF’s own route; in GF"
+   "s": 156,
+   "note": "Finer routes in 60.0 s. Times: first routes 2.1 s, standard 16.8 s, finer 76.9 s. The faint line is the standard route. "
   },
   {
    "race": "morgan",
    "h": 2,
-   "s": 188,
-   "note": "Finer routes in 45.3 s. Also worth knowing: in UKV wind, the AIFS route is 7.1 min faster than UKV’s own route; in AROME"
+   "s": 235,
+   "note": "Finer routes in 61.6 s. Times: first routes 2.2 s, standard 16.6 s, finer 78.2 s. The faint line is the standard route. "
   }
  ]
 }
