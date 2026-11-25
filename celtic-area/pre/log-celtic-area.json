@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-25T20:40:57.264Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 180,
+   "note": "Finer routes in 101.8 s. Times: first routes 13.4 s, standard 75.7 s, finer 177.5 s. The faint line is the standard rout"
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 356,
+   "note": "Finer routes in 100.7 s. Times: first routes 10.6 s, standard 73.8 s, finer 174.6 s. The faint line is the standard rout"
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 527,
+   "note": "Finer routes in 96.8 s. Times: first routes 11.1 s, standard 73.0 s, finer 169.8 s. The faint line is the standard route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 696,
+   "note": "Finer routes in 99.2 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 458 min faster than GFS’s own "
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 863,
+   "note": "Finer routes in 95.2 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 689 min faster than GFS’s own "
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 1026,
+   "note": "Finer routes in 95.2 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 24 min faster than GFS’s own r"
+  }
+ ]
+}
