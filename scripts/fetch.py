@@ -150,22 +150,27 @@ def icon_eu():
     import bz2
     d, r = RUN; run = d + r; base = 'https://opendata.dwd.de/weather/nwp/icon-eu/grib'
     U = []; V = []; hrs = []; lat = lon = None
-    for hh in [h for h in HOURS if (h <= 78 or h % 3 == 0) and h <= 120]:
+    # F5 (Stuart 25 Nov 2026): ICON-EU took 13 minutes, one file after another (two per hour, about 90 hours). The files are fetched
+    # eight at a time now; DWD's open data server serves them in parallel. Same files, same cut, same order.
+    hh_all = [h for h in HOURS if (h <= 78 or h % 3 == 0) and h <= 120]
+    def one_file(job):
+        hh, var = job; p = os.path.join(SHARED, f'icon_{run}_{hh:03d}_{var}.npz')
+        if not os.path.exists(p):
+            f = f'{base}/{r}/{var}/icon-eu_europe_regular-lat-lon_single-level_{run}_{hh:03d}_{var.upper()}.grib2.bz2'
+            buf = bz2.decompress(get(f, tries=3))
+            a, la, lo = grib_crop(buf, AREA)
+            np.savez(p, a=a, la=la, lo=lo)
+        return p
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as ex: paths = list(ex.map(one_file, [(hh, var) for hh in hh_all for var in ('u_10m', 'v_10m')]))
+    for k, hh in enumerate(hh_all):
         got = {}
-        for var in ('u_10m', 'v_10m'):
-            p = os.path.join(SHARED, f'icon_{run}_{hh:03d}_{var}.npz')
-            if not os.path.exists(p):
-                f = f'{base}/{r}/{var}/icon-eu_europe_regular-lat-lon_single-level_{run}_{hh:03d}_{var.upper()}.grib2.bz2'
-                buf = bz2.decompress(get(f, tries=3))
-                global BOX
-                keep = BOX; BOX = AREA
-                try: a, la, lo = grib_crop(buf)
-                finally: BOX = keep
-                np.savez(p, a=a, la=la, lo=lo)
-            z = np.load(p); la, lo = z['la'], z['lo']
+        for j, var in enumerate(('u_10m', 'v_10m')):
+            z = np.load(paths[2 * k + j]); la, lo = z['la'], z['lo']
             iy = np.where((la >= BOX['s'] - .3) & (la <= BOX['n'] + .3))[0]; ix = np.where((lo >= BOX['w'] - .3) & (lo <= BOX['e'] + .3))[0]
             got[var] = z['a'][np.ix_(iy, ix)]; lat, lon = la[iy], lo[ix]
-        U.append(got['u_10m']); V.append(got['v_10m']); hrs.append(hh); print('icon', hh, end=' | ', flush=True)
+        U.append(got['u_10m']); V.append(got['v_10m']); hrs.append(hh)
+    print('icon', len(hrs), 'hours', flush=True)
     return dict(u=np.array(U), v=np.array(V)), np.array(hrs), lat, lon
 
 def arome_one_hour(d, r, iso, hh):
@@ -323,6 +328,20 @@ def zarr(url, vars_, step_hours=1):
     import numcodecs
     md = json.loads(get(url + '/.zmetadata'))['metadata']
     dec = lambda b, dt: np.frombuffer(numcodecs.Blosc().decode(b), dtype=dt)
+    import threading
+    BLK, LK = {}, threading.Lock()
+    def blk_get(key, dt):   # one download per block, shared by every hour that lies in it
+        with LK:
+            ev = BLK.get(key)
+            if ev is None: ev = BLK[key] = [threading.Event(), None, None]; mine = True
+            else: mine = False
+        if mine:
+            try: ev[1] = dec(get(key), dt)
+            except Exception as e: ev[2] = e
+            ev[0].set()
+        else: ev[0].wait()
+        if ev[2] is not None: raise ev[2]
+        return ev[1]
     def coord(name):
         z = md[f'{name}/.zarray']; n = z['shape'][0]; c = z['chunks'][0]
         return np.concatenate([dec(get(f'{url}/{name}/{i}'), z['dtype']) for i in range((n + c - 1) // c)])[:n]
@@ -340,20 +359,24 @@ def zarr(url, vars_, step_hours=1):
         sc = at.get('scale_factor', 1.0); off = at.get('add_offset', 0.0)
         arr = []
         for k, i in enumerate(idx):
-            def f():
+            def f(i=i):   # i bound now: the hours are read later, side by side
                 ny, nx = sh[-2], sh[-1]; cy, cx = ch[-2], ch[-1]
                 full = np.full((ny, nx), np.nan, 'f4')
                 for by in range(iy.min() // cy, iy.max() // cy + 1):
                     for bx in range(ix.min() // cx, ix.max() // cx + 1):
                         key = f'{url}/{v}/{i // ch[0]}.' + ('0.' if len(sh) == 4 else '') + f'{by}.{bx}'
-                        raw = dec(get(key), za['dtype'])
+                        raw = blk_get(key, za['dtype'])
                         blk = raw.reshape(ch)[i % ch[0]] if len(sh) == 3 else raw.reshape(ch)[i % ch[0], 0]
                         y1 = min(ny, (by + 1) * cy); x1 = min(nx, (bx + 1) * cx)
                         blk = blk[:y1 - by * cy, :x1 - bx * cx].astype('f4')
                         if fill is not None: blk = np.where(blk == fill, np.nan, blk)
                         full[by * cy:y1, bx * cx:x1] = blk * sc + off
                 return full[np.ix_(iy, ix)]
-            arr.append(cached(url.split('/')[-2] + f'_{v}_{i}', f))
+            arr.append((url.split('/')[-2] + f'_{v}_{i}', f))
+        # F5 (Stuart 25 Nov 2026): the Copernicus tides and waves took 7 to 10 minutes, one block after another. The hours are read eight at
+        # a time, and a block that holds several hours is fetched once (blk_get), not once for each hour in it.
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(8) as ex: arr = list(ex.map(lambda kf: cached(kf[0], kf[1]), arr))
         out[v] = np.array(arr); print(v, 'done', end=' | ', flush=True)
     return out, (want - T0) / 3600, lat[iy], lon[ix]
 
@@ -418,14 +441,39 @@ def save(name, **k):
     np.savez_compressed(os.path.join(OUT, name + '.npz'), t0=T0, **k); print('\nsaved', name, {a: getattr(b, 'shape', b) for a, b in k.items() if hasattr(b, 'shape')})
 
 
+def with_tail(fetch_one):
+    """F2: an ECMWF 06Z or 18Z run ends at 144 h; for an area that needs more, the hours beyond come from the run 6 hours earlier
+    (a 00Z or 12Z run), put on this run's clock. fetch_one() returns (fields, hours, lat, lon) for the current RUN and HOURS_LONG."""
+    global RUN, HOURS_LONG
+    o, h, la, lo = fetch_one()
+    keep_run, keep_hl = RUN, HOURS_LONG
+    t = time.mktime(time.strptime(RUN[0] + RUN[1], '%Y%m%d%H')) - time.timezone - 6 * 3600; pr = time.strftime('%Y%m%d%H', time.gmtime(t))
+    last = float(h[-1]) if len(h) else 0
+    try:
+        RUN = (pr[:8], pr[8:]); HOURS_LONG = [x + 6 for x in keep_hl if x > last]
+        o2, h2, la2, lo2 = fetch_one()
+    finally:
+        RUN, HOURS_LONG = keep_run, keep_hl
+    if len(h2) and la2 is not None and len(la2) == len(la) and len(lo2) == len(lo):
+        h2 = np.array(h2, float) - 6; ok = h2 > last
+        for k in list(o):
+            if k in o2 and len(o2[k]) == len(h2): o[k] = np.concatenate([np.asarray(o[k]), np.asarray(o2[k])[ok]])
+            elif ok.any(): del o[k]   # an optional field the earlier run lacks: left out rather than mismatched in length
+        h = np.concatenate([np.asarray(h, float), h2[ok]]); print('joined', int(ok.sum()), 'hours from', pr, 'beyond', last, flush=True)
+    return o, h, la, lo
+
+
 if __name__ == '__main__':
     for s in sys.argv[1:]:
-        short = RUN[1] in ('06', '18')       # ECMWF 06Z and 18Z runs use the short-cut-off streams
+        short = False   # F2 (25 Nov 2026): ECMWF now publishes its 06Z and 18Z runs under the same streams as 00Z and 12Z ("oper", "wave"), to 144 h; the old "scda"/"scwv" names gave 404s
+        tail = RUN[1] in ('06', '18') and HOURS_LONG and HOURS_LONG[-1] > 144 and s in ('ecmwf', 'ecmet', 'ecwav')
         if s in ('ecmwf', 'aifs'):
-            o, h, la, lo = ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', ('scda' if short else 'oper') if s == 'ecmwf' else 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf' and os.environ.get('FS_ECMWF_9KM') == '1'))   # 21 Nov: 9 km (A of 20 Nov) only when switched on, for a release of its own on Stuart's go
+            f1 = lambda: ecmwf('ifs' if s == 'ecmwf' else 'aifs-single', 'oper', step=3 if s == 'ecmwf' else 6, hires=(s == 'ecmwf' and os.environ.get('FS_ECMWF_9KM') == '1'))
+            o, h, la, lo = with_tail(f1) if tail else f1()   # 21 Nov: 9 km (A of 20 Nov) only when switched on, for a release of its own on Stuart's go
             save(s, u=o['10u'], v=o['10v'], hours=h, lat=la, lon=lo)
         elif s == 'ecmet':   # ECMWF weather beyond the wind: gusts, pressure, rain, thunderstorm energy, cloud, air temperature, sea temperature
-            o, h, la, lo = ecmwf('ifs', 'scda' if short else 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))
+            f1 = lambda: ecmwf('ifs', 'oper', params=('10fg', 'msl', 'tp', 'mucape', 'tcc', '2t'), step=3, opt=('skt', 'lsm'))
+            o, h, la, lo = with_tail(f1) if tail else f1()
             tp = o['tp']; rain = np.zeros_like(tp)
             if len(h) > 1:
                 dh = np.diff(h).astype(float).reshape(-1, 1, 1); rain[1:] = np.maximum(0, np.diff(tp, axis=0)) * 1000 / dh   # accumulated metres to mm an hour
@@ -441,7 +489,8 @@ if __name__ == '__main__':
                 more['sst'] = sst
             save(s, gust=o['10fg'], msl=o['msl'] / 100, rain=rain, cape=o['mucape'], cloud=o['tcc'] * 100, temp=o['2t'] - 273.15, hours=h, lat=la, lon=lo, **more)
         elif s == 'ecwav':
-            o, h, la, lo = ecmwf('ifs', 'scwv' if short else 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
+            f1 = lambda: ecmwf('ifs', 'wave', params=('swh', 'mwd', 'pp1d'), step=3)
+            o, h, la, lo = with_tail(f1) if tail else f1()
             save(s, hs=o['swh'], dir=o['mwd'], tp=o['pp1d'], hours=h, lat=la, lon=lo)
         elif s in ('arome', 'arpege'):
             res = meteofrance(s)
