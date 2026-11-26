@@ -4,6 +4,11 @@ import os, sys, time, json, subprocess, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 RACES = sys.argv[1:] or ['cervantes', 'fastnet', 'channel-area', 'northsea-area', 'irishsea-area', 'biscay-area', 'celtic-area', 'solent-area', 'tasman-area']
 SOURCES = ['ecmwf', 'aifs', 'gfs', 'ukv', 'mog', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'ecwav', 'ecmet', 'mars', 'ens', 'glocur']
+# F4 (Stuart 25 Nov 2026 15:30, "F1, F2, F6, F8 now, then F4, F5"): a run started for the models that have just landed (FS_ONLY, for example
+# "gfs,icon") fetches only those; the publish step carries every other layer across from the live pack unchanged (keep_old_layers.py), so one
+# model's new run reaches phones in minutes instead of waiting for a full rebuild of every model.
+ONLY = [x.strip() for x in os.environ.get('FS_ONLY', '').split(',') if x.strip()]
+if ONLY: SOURCES = [x for x in SOURCES if x in ONLY]; print('only these models this run:', SOURCES, flush=True)
 # models that cover only European waters, and the global one used instead where they do not reach (21 Nov 2026, Sydney Hobart, F114)
 REGIONAL = {'ukv', 'icon', 'arome', 'arpege', 'nwscur', 'ibicur', 'nwswav', 'mars'}; GLOBAL_ONLY = {'glocur'}
 
@@ -15,6 +20,17 @@ def cycles(lag_h=7, n=4):
     """Latest 00/06/12/18 UTC cycles that should be published by now, newest first."""
     t = time.time() - lag_h * 3600; t -= t % (6 * 3600)
     return [time.strftime('%Y%m%d%H', time.gmtime(t - 6 * 3600 * i)) for i in range(n)]
+
+import landed   # F1 (Stuart 25 Nov 15:30): runs chosen by checking they have landed
+def order(src, hrs, cyc):
+    """The runs to try for one model, newest first: those that have landed (landed.py), then older ones as a fall-back; the old fixed
+    wait (LAG) only when the model has no check or its server could not be asked."""
+    skip = (lambda c: c[-2:] in ('06', '18')) if (src == 'ens' and hrs > 100) else (lambda c: False)   # the ensemble's 06Z and 18Z runs stop at 144 h
+    try: got = landed.newest(src, hrs, skip=skip)
+    except Exception as e: print(src, 'landed check failed:', e, flush=True); got = None
+    old = [c for c in (cycles(LAG.get(src, 7)) if src in LAG else cyc) if not skip(c)]
+    if not got: return old
+    return got + [c for c in old if c < got[-1]]
 
 def good(path, need_h):
     try:
@@ -65,14 +81,14 @@ for race in RACES:
         first = None
         sh = SHARED_INFO.get(src) or {}
         if sh.get('run'):   # the shared download, if it is the run this area would take first
-            want = [c for i, c in enumerate(cycles(LAG.get(src, 7)) if src in LAG else cyc) if not (src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2)][:1]
+            want = order(src, hrs, cyc)[:1]
             t1 = time.time()
-            if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), 30):
+            if want and sh['run'] == want[0] and from_shared(src, b, hrs, data) and good(os.path.join(data, src + '.npz'), min(hrs, 240) - 12 if (src in ('ecmwf', 'ecmet', 'ecwav') and want[0][-2:] in ('06', '18') and hrs > 144) else 30):
                 log[f'{race}:{src}'] = f"{sh['run']} shared ({sh.get('secs', '?')}s once for all areas, cut here in {time.time() - t1:.0f}s)"; recv[src] = dict(run=sh['run'], at=sh['at'], latest=sh['latest'], newest=sh['newest'])
                 print(src, log[f'{race}:{src}'], flush=True); return
-        cyc_s = cycles(LAG.get(src, 7)) if src in LAG else cyc   # 24 Nov: models known to publish sooner are tried sooner (LAG)
+        cyc_s = order(src, hrs, cyc)   # F1: the newest run that has landed first (24 Nov's fixed waits only as the fall-back)
+        print(src, 'runs to try', cyc_s[:4], flush=True)
         for i, c in enumerate(cyc_s):
-            if src in ('ecmwf', 'ecwav', 'ecmet', 'ens') and hrs > 100 and c[-2:] in ('06', '18') and i < 2: continue   # ECMWF's 06Z and 18Z runs stop at 90 h; the 00Z and 12Z runs reach 10 days
             if first is None: first = c   # the newest run this model should have by now
             out = os.path.join(data, src + '.npz')
             if os.path.exists(out): os.remove(out)
@@ -83,7 +99,8 @@ for race in RACES:
                 r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch.py'), src], env=dict(env, FS_RUN=c), capture_output=True, text=True, timeout=min(1500, left))
             except subprocess.TimeoutExpired:
                 log[f'{race}:{src}'] = f'{c} timed out'; print(src, 'try', log[f'{race}:{src}'], flush=True); continue   # every failed try in the job log, not only the last (19 Nov 2026)
-            if r.returncode == 0 and good(out, (12 if src == 'mars' else 30) + 6 * i):
+            need = min(hrs, 240) - 12 if (src in ('ecmwf', 'ecmet', 'ecwav') and c[-2:] in ('06', '18') and hrs > 144) else (12 if src == 'mars' else 30) + 6 * i   # F2: a 06Z/18Z run counts only when joined to its full length
+            if r.returncode == 0 and good(out, need):
                 log[f'{race}:{src}'] = f'{c} in {time.time() - t1:.0f}s'; recv[src] = dict(run=c, at=int(time.time()), latest=(c == first), newest=first); break
             why = 'exit ' + str(r.returncode) if r.returncode else 'too few hours'
             log[f'{race}:{src}'] = f'{c} failed ({why}): {(r.stderr or r.stdout)[-200:]}'; print(src, 'try', log[f'{race}:{src}'].replace(chr(10), ' '), flush=True)
@@ -95,7 +112,7 @@ for race in RACES:
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(len(SOURCES)) as ex: list(ex.map(one, SOURCES))
     t0c = cyc[0]
-    for c in cyc[:3]:   # the big-picture chart, from the newest ECMWF run that has it
+    for c in (cyc[:3] if (not ONLY or 'ecmwf' in ONLY) else []):   # the big-picture chart, from the newest ECMWF run that has it (F4: only when ECMWF is in this run; otherwise the live one is carried across)
         try:
             r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch_overview.py')], env=dict(env, FS_RUN=c, FS_BOX='', FS_OVERVIEW_BOX='' if europe else f"{b['s'] - 8},{b['n'] + 8},{b['w'] - 12},{b['e'] + 12}"), capture_output=True, text=True, timeout=900)
             ok = r.returncode == 0
