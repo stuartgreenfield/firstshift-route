@@ -1485,6 +1485,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var HERE = location.pathname.replace(/\/+$/, '').split('/').pop(), LAST0 = (function () { try { return JSON.parse(localStorage.getItem('fs-last-' + location.pathname.replace(/\/+$/, '').split('/').pop()) || 'null'); } catch (e) { return null; } })();
   function myRaces() { try { return JSON.parse(store('fs-myraces') || '[]'); } catch (e) { return []; } }
   function setMyRaces(a) { store('fs-myraces', JSON.stringify(a)); }
+  /* one product never opens the other (Stuart 25 Nov 23:30: "Must NOT jump"): Route lists and opens Route's saved races, Mark lists and opens Mark's; both are kept in the same store */
+  function sameProd(pg) { return !pg || (pg === 'mark') === (HERE === 'mark'); }
+  function myShown() { return myRaces().filter(function (r) { return sameProd(r.page); }); }
+  function oldShown() { return oldRoutes().filter(function (o) { return sameProd(o.page); }); }
   function snapSettings() { var o = {}; [].forEach.call(document.querySelectorAll('#sheet input[id], #sheet select[id], #sheet textarea[id]'), function (el) { if (/^side\d|^adjNote|^raceSel$|^ed[A-Z]/.test(el.id)) return; o[el.id] = el.type === 'checkbox' ? el.checked : el.value; }); return o; }
   function putSettings(o) {
     Object.keys(o || {}).forEach(function (id) { if (id === 'raceSel') return;   /* the course comes with the saved race, never from its settings */ var el = $(id); if (!el) return; if (el.tagName === 'SELECT' && ![].some.call(el.options, function (x) { return x.value === String(o[id]); })) return;   /* a saved choice that no longer exists (a start that has passed) would blank the list: keep the current one */ if (el.type === 'checkbox') el.checked = o[id]; else el.value = o[id]; ['input', 'change'].forEach(function (t) { el.dispatchEvent(new Event(t, { bubbles: true })); }); });
@@ -1507,17 +1511,18 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function lastSet(o) { if (S.booting) return; var old = lastGet() || {}, same = old.race === o.race && old.my === o.my; o.start = o.start || (same ? old.start : null); o.chosen = same ? !!old.chosen : false; if (!same) { S.startChosen = false; } store('fs-last-' + HERE, JSON.stringify(o)); chipStart(); }
   function openMy(id, boot) {
     var rec = myRaces().filter(function (x) { return x.id === id; })[0]; if (!rec) return;
+    if (!sameProd(rec.page)) return;   /* the other product's race: never opened from here */
     if (window.FS_SOLENT) rec.page = HERE;   /* FirstShift Solent keeps its own races on its own page */
     if (rec.page && rec.page !== HERE) { if (!boot) try { sessionStorage.setItem('fs-wiz', '1'); } catch (e) {} location.href = '../' + rec.page + '/?my=' + encodeURIComponent(id); return; }
     if (!window.FS_SOLENT && courseIssue(rec.course) && regionFor(rec.course) && regionFor(rec.course).id !== HERE) { var rg2 = regionFor(rec.course), all2 = myRaces(); all2.forEach(function (x) { if (x.id === rec.id) x.page = rg2.id; }); setMyRaces(all2); location.href = '../' + rg2.id + '/?my=' + encodeURIComponent(id); return; }   /* drawn on a page without its forecasts: open it where they are */
     S.myId = id; applyCourseObj(asRace(rec.course, rec.id)); var rb = rec.raceId && RACES.filter(function (x) { return x.id === rec.raceId; })[0]; if (rb) { S.yours = { race: rb, rec: rec }; yourNote(); } putSettings(rec.settings); if (window.__fsPendingStart) { var pse = window.__fsPendingStart; window.__fsPendingStart = null; try { setStart(pse); startChosen(true); } catch (e) {} }   /* F17: the start time chosen in the Solent step box, so Route this race routes at once */ $('races').hidden = true; if (!boot && wizCourseChosen(false)) return; if (boot && WIZ.on) return; S.from = null; run();
   }
   /* Mark's first card lists the latest stored races (Stuart 17 Nov 09:42: "This first pull down window could also show list of previously saved races") */
-  window.__fsSavedList = function (n) { try { return myRaces().map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || '' }; }).concat(oldRoutes().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary || '' }; })).sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, n || 4); } catch (e) { return []; } };
+  window.__fsSavedList = function (n) { try { return myShown().map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || '' }; }).concat(oldShown().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary || '' }; })).sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, n || 4); } catch (e) { return []; } };
   window.__fsOpenSaved = function (kind, id) { if (kind === 'old') openOld(id); else { archiveRoutes(); openMy(id); } };
   window.__fsStoredRaces = function () { racesSheet('saved'); $('races').hidden = false; };   /* Mark (Stuart 17 Nov 09:18): Stored races from the race button */
   function racesSheet(mode) {
-    var c = meta.course, mine = myRaces(), h = '';
+    var c = meta.course, mine = myShown(), h = '';
     $('racesH').textContent = mode === 'new' ? 'Start new course' : mode === 'saved' ? 'Saved routes' : mode === 'rorc' ? 'RORC races' : mode === 'jog' ? 'JOG races' : mode === 'other' ? groupName('CYCA') : 'Races';
     if (mode === 'new') {   /* one question, then the whole area and the set-up steps */
       h = '<p class="note">The routes on the chart now are kept under Saved routes.</p>' +
@@ -1532,7 +1537,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     }
     if (mode === 'saved') {   /* one list, newest first: courses you saved and routes kept when you started something new */
       var all = mine.map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || (r.course ? courseNm(r.course) + ' nm' : ''), on: r.id === S.myId }; })
-        .concat(oldRoutes().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary }; }))
+        .concat(oldShown().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary }; }))
         .sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
       h = all.length ? all.map(function (x) { return '<div class="ritem' + (x.on ? ' on' : '') + '"><div><b>' + wizEsc(x.name) + '</b><span class="note">' + (x.at ? new Date(tzMs(x.at)).toUTCString().slice(5, 22) : '') + (x.sum ? ' · ' + wizEsc(x.sum) : '') + (x.kind === 'old' ? ' · routes kept' : ' · your course') + '</span></div><div class="xrow"><button class="btn" data-sv="' + x.kind + ':' + x.id + '">Open</button><button class="btn" data-svdel="' + x.kind + ':' + x.id + '">Delete</button></div></div>'; }).join('')
         : '<p class="note">Nothing saved yet. Routes are kept here when you start a new course, and courses you draw are saved here too.</p>';
@@ -1549,7 +1554,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     h += '<div class="rcur"><div><b>' + c.name + '</b><span class="note">' + (c.race && c.race.custom ? 'Your own course' : orgOf(c.race) + ' course library') + ' · ' + courseNm(c) + ' nm</span></div>' +
       '<div class="xrow"><button class="btn primary" id="rSave">' + (S.myId ? 'Save changes' : 'Save as my race') + '</button><button class="btn" id="rEdit">Edit on the chart</button><button class="btn" id="rMarks">Edit the marks</button><button class="btn" id="rNew">New course</button></div></div>';
     h += '<h3>My races</h3>' + (mine.length ? mine.map(function (r) { return '<div class="ritem' + (r.id === S.myId ? ' on' : '') + '"><div><b>' + r.name + '</b><span class="note">' + new Date(tzMs(r.savedAt)).toUTCString().slice(5, 22) + (r.summary ? ' · ' + r.summary : '') + (r.page !== HERE ? ' · on the ' + r.page + ' forecasts' : '') + '</span></div><div class="xrow"><button class="btn" data-open="' + r.id + '">Open</button><button class="btn" data-del="' + r.id + '" aria-label="Delete ' + r.name + '">Delete</button></div></div>'; }).join('') : '<p class="note">None yet. Save the race on screen, or build a new course, and it is kept here on this device.</p>');
-    var olds = oldRoutes(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(tzMs(o.savedAt)).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
+    var olds = oldShown(); if (olds.length) h += '<h3>Old routes</h3>' + olds.map(function (o) { return '<div class="ritem"><div><b>' + wizEsc(o.name) + '</b><span class="note">Kept ' + new Date(tzMs(o.savedAt)).toUTCString().slice(5, 22) + (o.summary ? ' · ' + wizEsc(o.summary) : '') + '</span></div><div class="xrow"><button class="btn" data-old="' + o.id + '">Open</button><button class="btn" data-olddel="' + o.id + '">Delete</button></div></div>'; }).join('');
     var gAt = h.length;   /* Stuart 22 Nov 07:03: a race menu (Sydney Hobart, RORC, JOG) opens on its races; your own course and races follow */
     var orgs = mode === 'rorc' ? ['RORC'] : mode === 'jog' ? ['JOG'] : mode === 'other' ? ['CYCA'] : ['RORC', 'JOG', 'CYCA'];   /* CYCA: the Sydney Hobart (Stuart 21 Nov 15:28) */
     orgs.forEach(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); if (!rs.length) return;
@@ -1679,7 +1684,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     return o;
   }
   function openOld(id) {
-    var o = oldRoutes().filter(function (x) { return x.id === id; })[0]; if (!o) return;
+    var o = oldRoutes().filter(function (x) { return x.id === id; })[0]; if (!o || !sameProd(o.page)) return;
     var r = Object.assign({}, o, { until: Date.now() + 24 * 3600 * 1000 }); delete r.id; delete r.name; delete r.page; delete r.savedAt; delete r.summary;
     try { localStorage.setItem('fs-sess-' + o.page, JSON.stringify(r)); localStorage.setItem('fs-last-' + o.page, JSON.stringify({ race: o.race, my: o.my, start: +o.startVal || null, chosen: true })); } catch (e) {}
     try { sessionStorage.setItem('fs-wiz', ''); } catch (e) {} WIZ.on = false;   /* the set-up must not take over: old routes open as they were */
@@ -1843,7 +1848,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('raceBtn').onclick = function (e) {
       if (window.FS_SOLENT) { if (window.FSSolent) FSSolent.start(); return; }   /* FirstShift Solent: the race button opens the course card */
       var m = $('raceMenu'); if (!m.hidden) { m.hidden = true; return; }
-      var n = myRaces().length + oldRoutes().length; $('rmSaved').textContent = '☰ Saved routes' + (n ? ' (' + n + ')' : '');
+      var n = myShown().length + oldShown().length; $('rmSaved').textContent = '☰ Saved routes' + (n ? ' (' + n + ')' : '');
       var r = $('raceBtn').getBoundingClientRect(); m.style.left = Math.max(8, Math.min(innerWidth - 250, r.left)) + 'px'; m.style.top = (r.bottom + 6) + 'px'; m.style.bottom = ''; m.hidden = false; if (e) e.stopPropagation();
     };
     ['raceTitle', 'raceShort'].forEach(function (id) { $(id).onclick = function (e) { $('raceBtn').onclick(e); }; });   /* the name itself is a tap target, so a phone does not nudge the tap onto the start chip below it */
