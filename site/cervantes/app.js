@@ -2301,7 +2301,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     window.__navOff.ready().then(function () { clearInterval(t); S.offNoteAt = Date.now(); offCheck(); if (then) then(); }, function () { clearInterval(t); S.offNoteAt = Date.now(); offCheck(); }); setTimeout(function () { try { setupRender(); } catch (e) {} }, 50); }
   function offMb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
   function offCheck() { try { if (!window.__navOff || !S.routes || !S.routes.length) return; window.__navOff.status().then(function (st) { S.offSt = st; try { setupRender(); } catch (e) {} }, function () {}); } catch (e) {} }
-  FSBeat.set(offCheck, 60000); setTimeout(offCheck, 8000);
+  FSBeat.set(offCheck, 60000); setTimeout(offCheck, 8000);   window.__fsOffCheck = offCheck;   /* 26 Nov 18:15 (Stuart's iPhone): the chip stayed on SAVE FOR OFFLINE after Settings, Make ready for offline had finished; the download now asks for a fresh check at once */
   function chipAt(ch) { var rb = $('raceBtn'); if (!rb || !ch) return; var R = rb.getBoundingClientRect(); ch.style.left = Math.round(R.left + 6) + 'px'; ch.style.top = Math.round(R.bottom - 8) + 'px'; ch.style.display = R.width ? '' : 'none'; }
   function readyChip(rows) {
     var rb = $('raceBtn'); if (!rb || window.FS_MARK) return; var ch = $('readyChip'), miss = rows.filter(function (r) { return !r.ok || r.flag; });
@@ -2340,14 +2340,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var open = S.suOpen || !all || !has || flagged;   /* routed and all ready: one line, tap to open */
     if (!open) { el.innerHTML = '<button class="srow" id="suOpen"><span class="sic">✓</span><span class="stx"><b>Set-up: all ' + rows.length + ' ready</b><span>' + wizEsc(rows.map(function (r) { return r.s.split(' · ')[0]; }).join(' · ')) + '</span></span><span class="sgo">Show</span></button>'; $('suOpen').onclick = function () { S.suOpen = true; setupRender(); }; return; }
     el.innerHTML = '<div class="shd"><b>Race set-up</b><span>' + ready + ' of ' + rows.length + ' ready' + (all && has ? ' · <a href="#" id="suHide">Hide</a>' : '') + '</span></div>' + rows.map(function (r) { return '<button class="srow' + (r.ok && !r.flag ? '' : ' warn') + '" data-su="' + r.k + '"><span class="sic">' + (r.ok && !r.flag ? '✓' : '!') + '</span><span class="stx"><b>' + r.t + '</b><span>' + wizEsc(r.s) + '</span></span><span class="sgo">' + (r.ok && !r.flag ? 'Change' : 'Set') + '</span></button>'; }).join('') +
-      '<button class="sroute" id="suRoute"' + (all || onlySoft ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : onlySoft ? 'Save, then route' : 'Route (' + rows.filter(function (r) { return !r.ok && !r.soft; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
+      '<button class="sroute" id="suRoute"' + (all || onlySoft ? '' : ' disabled') + '>' + (all ? (has ? 'Route again' : 'Route') : onlySoft ? 'Route, and save for offline' : 'Route (' + rows.filter(function (r) { return !r.ok && !r.soft; }).map(function (r) { return r.t.toLowerCase(); }).join(', ') + ' first)') + '</button>';
     [].forEach.call(el.querySelectorAll('[data-su]'), function (b) { b.onclick = function (ev) { var k = b.dataset.su;
       if (k === 'course') { if (ev) ev.stopPropagation(); $('raceMenu').hidden = true; $('raceBtn').onclick({ stopPropagation: function () {} }); }   /* the tap must not reach the page, which closes the menu */
       else if (k === 'boat') cardSettings('boat');
       else if (k === 'start') cardStep(3);
       else if (k === 'off') offSave();
       else cardSettings('fc'); }; });
-    $('suRoute').onclick = function () { if (onlySoft) { offSave(function () { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); }); return; } S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); };
+    $('suRoute').onclick = function () { if (onlySoft) { S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); setTimeout(function () { try { offSave(); } catch (e) {} }, 1500); return; }   /* 26 Nov 18:20 (Stuart: the app would not route while the offline save was not recognised): routing never waits for the optional save; it starts at once and the save follows */ S.suOpen = false; S.from = null; S.preBad = true; S.routes = []; userRun(); };
     if ($('suHide')) $('suHide').onclick = function (e) { e.preventDefault(); S.suOpen = false; setupRender(); };
   }
   /* how far each forecast reaches against the race (wireframe A4): a bar per wind model from the start, the white tick the estimated finish */

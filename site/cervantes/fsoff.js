@@ -61,7 +61,7 @@
         S.note = bad.length ? 'Not downloaded: ' + bad.join(', ') + '. Try again with a better signal.' : 'Ready for offline: ' + mb(st.tot) + ' on this device.';
         try { localStorage.setItem(PLUS ? 'nav-offline-at' : 'fs-offline-at', String(Date.now())); } catch (e) {}
       });
-    }).then(function () { S.busy = false; return status(); }).then(paint, function () { S.busy = false; paint(); });
+    }).then(function () { S.busy = false; return status(); }).then(function (st) { paint(st); try { if (window.__fsOffCheck) window.__fsOffCheck(); } catch (e) {} }, function () { S.busy = false; paint(); });
   }
   function paint() {
     var box = $('navOffBody'); if (!box) return; var st = S.last, h = '';
