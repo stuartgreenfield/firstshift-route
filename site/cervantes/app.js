@@ -1526,9 +1526,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   window.__fsSavedList = function (n) { try { return myShown().map(function (r) { return { kind: 'my', id: r.id, name: r.name, at: r.savedAt, sum: r.summary || '' }; }).concat(oldShown().map(function (o) { return { kind: 'old', id: o.id, name: o.name, at: o.savedAt, sum: o.summary || '' }; })).sort(function (a, b) { return (b.at || 0) - (a.at || 0); }).slice(0, n || 4); } catch (e) { return []; } };
   window.__fsOpenSaved = function (kind, id) { if (kind === 'old') openOld(id); else { archiveRoutes(); openMy(id); } };
   window.__fsStoredRaces = function () { racesSheet('saved'); $('races').hidden = false; };   /* Mark (Stuart 17 Nov 09:18): Stored races from the race button */
+  var INTL = [{ n: 'Rolex Middle Sea Race', a: 'middlesea-area' }, { n: 'RORC Caribbean 600', a: 'caribbean-area' }, { n: 'RORC Transatlantic Race', a: 'atlantic-area' }];
   function racesSheet(mode) {
     var c = meta.course, mine = myShown(), h = '';
-    $('racesH').textContent = mode === 'new' ? 'Start new course' : mode === 'saved' ? 'Saved routes' : mode === 'rorc' ? 'RORC races' : mode === 'jog' ? 'JOG races' : mode === 'other' ? groupName('CYCA') : 'Races';
+    $('racesH').textContent = mode === 'new' ? 'Start new course' : mode === 'saved' ? 'Saved routes' : mode === 'rorc' ? 'RORC races' : mode === 'jog' ? 'JOG races' : mode === 'other' ? 'International race courses' : 'Races';
     if (mode === 'new') {   /* one question, then the whole area and the set-up steps */
       h = '<p class="note">The routes on the chart now are kept under Saved routes.</p>' +
         '<div class="ritem"><div><b>A RORC race</b><span class="note">Pick from the RORC course library, then the set-up steps</span></div><div class="xrow"><button class="btn primary" id="nRorc">Choose a RORC race</button></div></div>' +
@@ -1564,9 +1565,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var orgs = mode === 'rorc' ? ['RORC'] : mode === 'jog' ? ['JOG'] : mode === 'other' ? ['CYCA'] : ['RORC', 'JOG', 'CYCA'];   /* CYCA: the Sydney Hobart (Stuart 21 Nov 15:28) */
     orgs.forEach(function (o) { var rs = RACES.filter(function (r) { return orgOf(r) === o; }); if (!rs.length) return;
     h += '<h3>' + groupName(o) + '</h3>' + (o === 'CYCA' ? '<p class="note">Run by the Cruising Yacht Club of Australia. The course is from the 2023 Sailing Instructions until the 2026 ones are published. Choose the entry for your start line: the route starts at that line’s seamark (Line 1 Mark Z, Lines 2 and 3 Mark Y, Line 4 Mark W).</p>' : '') + (o === 'JOG' ? '<p class="note">2027 dates from the JOG programme. JOG has not published its 2027 courses: coastal races are set on the day, and most passage races show the start and finish only.</p>' : '') + rs.map(function (r) { var pg = r.page || r.id, ready = READY[pg], yv = yourVersion(r.id); return '<div class="ritem"><div><b>' + r.name + '</b>' + (yv ? ' <span class="yourtag">your course</span>' : '') + '<span class="note">' + (r.date2027 ? r.date2027.split('-').reverse().slice(0, 2).join('/') + ' ' + r.date2027.slice(0, 4) + ' · ' : '') + (r.series ? r.series + ' · ' : '') + raceReady(r, ready) + '</span></div><div class="xrow"><button class="btn" data-race="' + r.id + '">' + (ready ? 'Open' : 'Show course') + '</button><button class="btn" data-redit="' + r.id + '" aria-label="Edit ' + r.name + '">Edit</button></div></div>'; }).join(''); });
+    if (mode === 'other') {   /* Stuart 26 Nov 08:31: every race that is not RORC or JOG sits under International race courses. The three new areas show greyed out with an OFF tag while their area is switched off; each opens once its area is on and its forecasts are on the site */
+      h += '<h3>More international courses</h3>' + INTL.map(function (x) { var live = !!(READY[x.a] && RACES.some(function (r) { return (r.page || r.id) === x.a; }));
+        return '<div class="ritem' + (live ? '' : ' rmoff') + '"><div><b>' + x.n + (live ? '' : '<i class="rmtag">off</i>') + '</b><span class="note">' + (live ? 'Opens this race area' : 'This race area is switched off for now') + '</span></div><div class="xrow"><button class="btn" data-intl="' + x.a + '"' + (live ? '' : ' disabled aria-disabled="true"') + '>' + (live ? 'Open' : 'Off') + '</button></div></div>'; }).join('');
+    }
     if (mode === 'rorc' || mode === 'jog' || mode === 'other') h = h.slice(gAt) + '<h3>This course</h3>' + h.slice(0, gAt);
     h += bcBox();
     $('raceList').innerHTML = h; bcWire();
+    [].forEach.call($('raceList').querySelectorAll('[data-intl]'), function (b) { b.onclick = function () { if (!b.disabled) location.href = '../' + b.dataset.intl + '/'; }; });
     $('rSave').onclick = function () { var n = $('rName') ? $('rName').value : ''; var rec = saveMyRace(n); racesSheet(); busy('Saved as ' + rec.name); setTimeout(function () { busy(''); }, 1800); };
     $('rEdit').onclick = function () { startEdit(courseCopy()); };
     $('rMarks').onclick = function () { startEdit(courseCopy()); editForm(); };

@@ -52,11 +52,13 @@
   var M = { el: null, id: null, from: null, drag: null, ut: null }, swallow = 0;
   function apply() {
     var all = ld(), b = all[bucket()] || {};
-    PANELS.forEach(function (p) { var el = $(p[0]); if (!el || el === M.el) return; if (p[2] === 'win') el.classList.toggle('fsstashed', !!b['~' + p[0]]); var v = b[p[0]]; set(el, v ? v[0] : 0, v ? v[1] : 0); if (v && shown(el)) { var s = settle(el); if (s) set(el, s[0], s[1]); } });
+    PANELS.forEach(function (p) { var el = $(p[0]); if (!el || el === M.el) return; if (p[2] === 'win') stashMark(el, !!b['~' + p[0]]); var v = b[p[0]]; set(el, v ? v[0] : 0, v ? v[1] : 0); if (v && shown(el)) { var s = settle(el); if (s) set(el, s[0], s[1]); } });
     place();
   }
   function save(id, dx, dy) { var all = ld(), k = bucket(); all[k] = all[k] || {}; if (Math.abs(dx) < 1 && Math.abs(dy) < 1) delete all[k][id]; else all[k][id] = [Math.round(dx), Math.round(dy)]; sv(all); }
   function stashOf(id) { var b = ld()[bucket()] || {}; return b['~' + id] || null; }
+  /* a window put away is marked twice, by class and by attribute: some windows rewrite their own class list every second (the boat strip), which brought them back beside their tab (seen 26 Nov on a phone on its side) */
+  function stashMark(el, on) { el.classList.toggle('fsstashed', !!on); if (on) el.setAttribute('data-fsstash', '1'); else el.removeAttribute('data-fsstash'); }
   function setStash(id, v) { var all = ld(), k = bucket(); all[k] = all[k] || {}; if (v) all[k]['~' + id] = v; else delete all[k]['~' + id]; sv(all); }
   function opt(k, d) { try { var v = localStorage.getItem('fs-win-' + k); return v == null ? d : v; } catch (e) { return d; } }
   function setOpt(k, v) { try { localStorage.setItem('fs-win-' + k, v); } catch (e) {} }
@@ -82,10 +84,10 @@
   var tabs = {};
   function tabFor(p) {
     var el = $(p[0]), st = stashOf(p[0]), t = tabs[p[0]];
-    var ssc = $('solStartScr'), want = el && st && !el.hidden && !(ssc && !ssc.hidden) && (function () { el.classList.remove('fsstashed'); var on = shown(el); el.classList.add('fsstashed'); return on; })();
+    var ssc = $('solStartScr'), want = el && st && !el.hidden && !(ssc && !ssc.hidden) && (function () { stashMark(el, false); var on = shown(el); stashMark(el, true); return on; })();
     if (!want) { if (t) t.hidden = true; return; }
     if (!t) { t = document.createElement('button'); t.type = 'button'; t.className = 'fswtab'; t.setAttribute('aria-label', 'Bring back the ' + p[1].toLowerCase()); t.title = 'Bring back the ' + p[1].toLowerCase();
-      t.textContent = p[3] || p[1].split(' ')[0]; t.addEventListener('click', function () { setStash(p[0], null); el.classList.remove('fsstashed'); t.hidden = true; apply(); try { window.dispatchEvent(new Event('resize')); } catch (x) {} }); document.body.appendChild(t); tabs[p[0]] = t; }
+      t.textContent = p[3] || p[1].split(' ')[0]; t.addEventListener('click', function () { setStash(p[0], null); stashMark(el, false); t.hidden = true; apply(); try { window.dispatchEvent(new Event('resize')); } catch (x) {} }); document.body.appendChild(t); tabs[p[0]] = t; }
     var s = ins(); t.hidden = false; t.classList.toggle('r', st[0] === 'r'); t.classList.toggle('l', st[0] !== 'r');
     /* at the height it went, or the nearest height where it covers no bar or button */
     var list = obstacles(t), x0 = st[0] === 'r' ? innerWidth - s.r - 26 : s.l, y0 = Math.max(s.t + 8, Math.min(innerHeight - s.b - 80, st[1])), y = y0;
@@ -181,7 +183,7 @@
     var r = M.el.getBoundingClientRect(), offL = -r.left / r.width, offR = (r.right - innerWidth) / r.width, edge = offL > 0.45 ? 'l' : offR > 0.45 ? 'r' : null;
     if (!edge && dg.moved && performance.now() - (dg.pt || 0) < 120 && Math.abs(dg.vx || 0) > 0.9) edge = dg.vx > 0 ? 'r' : 'l';
     if (!edge) return false;
-    var el = M.el, id = M.id, from = M.from; setStash(id, [edge, Math.round(r.top)]); set(el, from[0], from[1]); save(id, from[0], from[1]); el.classList.remove('navmove-on'); el.classList.add('fsstashed');
+    var el = M.el, id = M.id, from = M.from; setStash(id, [edge, Math.round(r.top)]); set(el, from[0], from[1]); save(id, from[0], from[1]); el.classList.remove('navmove-on'); stashMark(el, true);
     M.el = null; M.id = null; M.drag = null; place(); try { window.dispatchEvent(new Event('resize')); } catch (x) {}
     var b = $('navUndo'); if (b) { clearTimeout(M.ut); b.hidden = false; b.innerHTML = '<span>' + p[1] + ' put away. Tap its tab on the edge to bring it back.</span><button class="btn" type="button" id="navUndoB">Undo</button>'; var sa = Date.now(); $('navUndoB').onclick = function () { if (Date.now() - sa < 700) return; setStash(id, null); el.classList.remove('fsstashed'); b.hidden = true; apply(); }; M.ut = setTimeout(function () { b.hidden = true; }, 10000); }
     return true;
@@ -215,7 +217,7 @@
     '@keyframes navflash{50%{outline-color:rgba(242,178,51,.15)}}@media (prefers-reduced-motion:reduce){.navmove-on{animation:none}}' +
     '.navundo{position:fixed;z-index:61;left:50%;translate:-50% 0;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;background:var(--panel,#0f2235);color:var(--ink,#fff);border:1px solid #F2B233;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.35);font:600 13px var(--f-body,system-ui);max-width:calc(100% - 24px);box-sizing:border-box}' +
     '.navundo[hidden]{display:none}' +
-    '.fsstashed{display:none!important}.fswtab{position:fixed;z-index:57;width:26px;height:72px;padding:0;background:#6FA9E0;color:#042D5E;border:1px solid #042D5E;font:700 11px/1 var(--f-body,system-ui);letter-spacing:.04em;writing-mode:vertical-rl;box-shadow:0 4px 12px rgba(0,0,0,.4);cursor:pointer;touch-action:manipulation}' +
+    '.fsstashed,[data-fsstash]{display:none!important}.fswtab{position:fixed;z-index:57;width:26px;height:72px;padding:0;background:#6FA9E0;color:#042D5E;border:1px solid #042D5E;font:700 11px/1 var(--f-body,system-ui);letter-spacing:.04em;writing-mode:vertical-rl;box-shadow:0 4px 12px rgba(0,0,0,.4);cursor:pointer;touch-action:manipulation}' +
     '.fswtab.l{left:env(safe-area-inset-left,0px);border-radius:0 10px 10px 0}.fswtab.r{right:env(safe-area-inset-right,0px);border-radius:10px 0 0 10px}.fswtab[hidden]{display:none}';
   var st = document.createElement('style'); st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
@@ -236,5 +238,5 @@
     $('fsWinHand').value = opt('hand', 'c'); $('fsWinHand').onchange = function () { setOpt('hand', this.value); place(); };
     FSBeat.clear(bt);
   }, 500);
-  window.NavDrag = { stash: function (id, edge) { setStash(id, edge ? [edge, 200] : null); apply(); }, stashed: stashOf, reset: reset, resetAll: resetAll, apply: apply, bucket: bucket, begin: function (id) { var el = $(id); if (el) begin(el, id); }, lock: lock, settle: settle, moving: function () { return M.id; }, start: function () {}, on: function () { return !!M.el; } };
+  window.NavDrag = { stash: function (id, edge, y) { setStash(id, edge ? [edge, y || 200] : null); apply(); }, stashed: stashOf, reset: reset, resetAll: resetAll, apply: apply, bucket: bucket, begin: function (id) { var el = $(id); if (el) begin(el, id); }, lock: lock, settle: settle, moving: function () { return M.id; }, start: function () {}, on: function () { return !!M.el; } };
 })();
