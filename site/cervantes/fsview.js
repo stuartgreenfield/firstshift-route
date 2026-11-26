@@ -36,7 +36,7 @@
     /* Route's demo: its label and Stop stay, beside man overboard like the PRACTICE label; its commentary is for the upright screen */
     'body.fsview #fsDemo{left:calc(max(10px,env(safe-area-inset-left,0px)) + 54px)!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 8px)!important;transform:none!important;width:auto!important;max-width:calc(100vw - 330px);padding:4px 8px!important;z-index:24}body.fsview #fsDemo>*:not(.dmhd){display:none!important}body.fsview #fsDemo .dmhd{gap:6px;margin:0}body.fsview #fsDemo .dmhd [data-d="again"]{display:none!important}body.fsview #fsDemo .dmhd .btn{min-height:34px!important;height:34px}' +
     /* the three things this screen adds: VIEW, help, and the line that says where the menus are */
-    '.fsv{display:none}body.fsview .fsv{display:flex}body.fsview .fsv[hidden]{display:none}body.fsview.fsss .fsv,body.fsview:has(#mob:not([hidden])) .fsv{display:none!important}' +
+    '.fsv{display:none}body.fsview .fsv{display:flex}body.fsview .fsv[hidden]{display:none}body.fsview.fsss .fsv,body.fsview:has(#mob:not([hidden])) .fsv,body.fsview:has(.sheet:not([hidden])) .fsv{display:none!important}' +
     '#fsvTop{position:fixed;z-index:75;right:max(10px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 8px);gap:8px;align-items:center}' +
     '#fsvTop button{height:44px;min-width:44px;border-radius:12px;border:1px solid var(--line,#2E4860);background:var(--panel,#182D40);color:var(--ink,#E2EBF0);font:600 13px var(--f-data,ui-monospace,monospace);padding:0 14px;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer}#fsvTop #fsvHelp{border-radius:50%;padding:0;font-size:18px}#fsvTop #fsvView i{font-style:normal;color:var(--muted);margin-left:6px}' +
     '#fsvHint{position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:8px;height:28px;padding:0 14px;align-items:center;border-radius:14px;border:1px solid var(--line,#2E4860);background:var(--panel,#182D40);color:var(--muted,#9fb0c6);font:400 12px var(--f-body,system-ui);white-space:nowrap;pointer-events:none;opacity:1;transition:opacity .6s}#fsvHint.gone{opacity:0}' +
@@ -46,6 +46,8 @@
     '#fsvCard{position:fixed;z-index:76;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:14px}#fsvCard .in{background:var(--panel,#182D40);color:var(--ink,#E2EBF0);border:1px solid var(--line,#2E4860);border-radius:14px;max-width:560px;max-height:calc(100vh - 28px);overflow:auto;padding:12px 16px;font:400 14px/1.4 var(--f-body,system-ui)}#fsvCard h3{margin:0 0 6px;font:600 16px var(--f-head,var(--f-body,system-ui))}#fsvCard p{margin:0 0 8px}#fsvCard button{min-height:42px;padding:0 18px;border-radius:10px;border:1px solid var(--line,#2E4860);background:var(--route,#5B9BD5);color:#06121f;font:600 14px var(--f-body,system-ui)}' +
     /* a touch on the route still shows the plan at that point; the buttons in that box that change things are upright only */
     'body.fsview #tipBody button:not(#tipBack):not(#tipFwd):not(#tipNext){display:none!important}body.fsview #tipBody input,body.fsview #tipBody select,body.fsview #tipBody label,body.fsview #tipBody :has(>input),body.fsview #tipBody :has(>select){display:none!important}' +
+    /* the box itself, squeezed together (Stuart 26 Nov 11:27, picture of a tablet on its side: names hard left, figures hard right, the whole width of the chart): a card between MOB and VIEW, two columns, each name beside its figure, and short enough to leave the chart in sight */
+    'body.fsview #tip.docked{left:calc(max(10px,env(safe-area-inset-left,0px)) + 52px)!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 6px)!important;width:min(560px,calc(100vw - 252px));max-width:none;max-height:calc(100% - 12px);overflow-y:auto;overscroll-behavior:contain;padding:4px 10px 6px;line-height:1.42}body.fsview #tip.docked #tipBody{columns:2 200px;column-gap:18px;column-rule:1px solid var(--line,#2E4860)}body.fsview #tip.docked #tipBody>*{break-inside:avoid}body.fsview #tip.docked .r{flex-wrap:wrap;gap:0 12px}body.fsview #tip.docked .r span:last-child{text-align:right;margin-left:auto}body.fsview #tip.docked .tipgrip{margin:-2px -10px 0}body.fsview #tip.docked .tipstep{margin:2px 0 4px}body.fsview #tip.docked .tipsec{margin:5px 0 1px;padding-top:4px}' +
     /* 20/20 on its side: the four figures across the whole width, two by two; which figures is chosen upright */
     'body.fsview.fsdeck #app{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important}body.fsview.fsdeck #app>.chart,body.fsview.fsdeck #app>#panel{display:none!important}' +
     'body.fsview.fsdeck #deckNums{grid-column:1!important;grid-row:1!important;display:grid!important;grid-template-columns:1fr 1fr!important;grid-template-rows:0 0 minmax(0,1fr) minmax(0,1fr)!important;gap:6px!important;border:0!important;padding:calc(env(safe-area-inset-top,0px) + 46px) max(8px,env(safe-area-inset-right,0px)) 6px max(8px,env(safe-area-inset-left,0px))!important}' +
@@ -60,8 +62,9 @@
   /* is the SCREEN on its side, not just the page wider than tall? */
   function scrSide() { try { var o = screen.orientation && screen.orientation.type; if (o) return /^landscape/.test(o); } catch (e) {} if (typeof window.orientation === 'number') return Math.abs(window.orientation) === 90; return true; }
   /* something open that belongs to the working screen: it stays, and view only waits */
-  var OPEN = '.sheet:not([hidden]), #help:not([hidden]), #layers:not([hidden]), #splash:not([hidden]), .solstep, #fsTour:not([hidden]), .dkpick:not([hidden]), #fsZoom:not([hidden]), #raceMenu:not([hidden]), #wiz:not([hidden]), #races:not([hidden])';
-  function busy() { var l = document.querySelectorAll(OPEN); for (var i = 0; i < l.length; i++) if (vis(l[i])) return true; var a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'range'); }
+  var OPEN = '.sheet:not([hidden]), #help:not([hidden]), #layers:not([hidden]), #splash:not([hidden]), .solstep, #fsTour:not([hidden]), .dkpick:not([hidden]), #fsZoom:not([hidden]), #raceMenu:not([hidden]), #wiz:not([hidden]), #races:not([hidden]), #solList:not([hidden])';
+  function sheetOpen() { var l = document.querySelectorAll(OPEN); for (var i = 0; i < l.length; i++) if (vis(l[i])) return true; return false; }
+  function busy() { if (sheetOpen()) return true; var a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'range'); }   /* typing a name counts as open */
   function helmEl() { var a = $('navHelm'), b = $('fsHelm'); return vis(a) ? a : vis(b) ? b : null; }
   function deckOn() { try { return !!(window.FSDeck && window.FSDeck.on()); } catch (e) { return false; } }
   function view() { return helmEl() ? 'helm' : deckOn() ? 'deck' : 'chart'; }
@@ -124,7 +127,7 @@
     document.body.classList.remove('fsview'); if (ui) ui.card.hidden = true; kick();
   }
   function beat() {
-    var side = MQ.matches && scrSide(), want = side && (on || !busy());
+    var side = MQ.matches && scrSide(), want = side && (on ? !sheetOpen() : !busy());   /* a sheet that opens while this screen is up takes it down: the sheet needs the working screen's room */
     if (want !== on) { if (want === want0) { if (want) enter(); else leave(); } }   /* the same answer twice running, a second apart: a phone swinging on a lanyard does not flip the screen */
     want0 = want; if (!on) return;
     paint();
@@ -133,7 +136,7 @@
   }
   document.addEventListener('pointerup', function (e) { if (!on) return; var c = document.querySelector('.chart'); if (c && c.contains(e.target)) folAt = Date.now(); }, true);
   if (MQ.addEventListener) MQ.addEventListener('change', function () { setTimeout(beat, 50); });
-  function boot() { beat(); if (window.FSBeat && window.FSBeat.set) window.FSBeat.set(beat, 1000); else setInterval(beat, 1000); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 800); }); else setTimeout(boot, 800);
+  function boot() { want0 = MQ.matches && scrSide() && !busy();   /* opened already on its side: no second's wait, straight to this screen */ beat(); if (window.FSBeat && window.FSBeat.set) window.FSBeat.set(beat, 1000); else setInterval(beat, 1000); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 300); }); else setTimeout(boot, 300);
   window.FSView = { on: function () { return on; }, view: view, set: setView };
 })();

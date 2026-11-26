@@ -28,7 +28,7 @@
   function build() {
     el = document.createElement('div'); el.className = 'fshelm'; el.id = 'fsHelm'; el.hidden = true; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Helm view');
     el.innerHTML = '<div class="fhbar"><div class="fhseg" role="group" aria-label="How many figures"><button data-n="3">3</button><button data-n="6">6</button><button data-n="9">9</button></div>' +
-      '<span class="fhutc" id="fhUtc"></span><button class="fhbtn fhmob" id="fhMob" aria-label="Man overboard: press and hold one second">MOB</button><button class="fhbtn" id="fhRed" aria-label="Red night screen">RED</button><button class="fhbtn" id="fhX" aria-label="Close the helm view">✕</button></div>' +
+      '<span class="fhutc" id="fhUtc"></span><button class="fhbtn fhmob" id="fhMob" aria-label="Man overboard: press and hold one second"><svg viewBox="0 0 48 48" aria-hidden="true" style="width:42px;height:42px;display:block;margin:auto"><path d="M34.07 10.08A18 18 0 1 1 13.93 10.08" fill="none" stroke="#FF5A1F" stroke-width="9" stroke-linecap="round"/><path d="M36.59 29.58L45.24 32.73M11.41 29.58L2.76 32.73M33.96 16.03L40.8 9.88M14.04 16.03L7.2 9.88" stroke="#FBFBF8" stroke-width="2.8"/><text x="24" y="29.6" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="10.5" letter-spacing="-.4" fill="#FBFBF8" stroke="#06111A" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">MOB</text></svg></button><button class="fhbtn" id="fhRed" aria-label="Red night screen">RED</button><button class="fhbtn" id="fhX" aria-label="Close the helm view">✕</button></div>' +
       '<p class="fhwarn" id="fhWarn" hidden></p><div class="fhstart" id="fhStart" hidden></div><div class="fhgrid" id="fhGrid"></div>';
     document.body.appendChild(el);
     el.querySelector('#fhX').onclick = close;
@@ -48,7 +48,7 @@
     el.querySelector('#fhWarn').textContent = w; el.querySelector('#fhWarn').hidden = !w;
     var st = el.querySelector('#fhStart'), pr = c && c.pre, show = pr && pr.secs >= 0 && pr.secs <= 600;
     st.hidden = !show; el.classList.toggle('starting', !!show);
-    if (show) { var s = Math.round(pr.secs), ln = pr.line || {}; st.innerHTML = '<b>' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + '</b><span>' + (ln.d != null ? (ln.over ? 'OVER ' : 'Line ') + nm(ln.d) + (ln.burn != null ? ', burn ' + Math.round(ln.burn) + ' s' : '') : 'to the gun') + '</span>'; }
+    if (show) { var s = Math.round(pr.secs), ln = pr.line || {}; st.innerHTML = '<b>' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) + '</b><span>' + (ln.d != null ? (ln.over ? 'OVER ' : 'Line ') + nm(ln.d) + (ln.burn != null ? ', burn ' + Math.round(ln.burn) + ' s' : '') : 'to the gun') + '</span><i class="fhgo">Start screen \u203a</i>'; }
     if (g.dataset.k !== String(k)) { g.dataset.k = String(k); g.className = 'fhgrid n' + k; g.innerHTML = F.slice(0, k).map(function (x) { return '<div' + (x[4] ? ' class="plan"' : '') + '><span>' + x[1] + '</span><b data-f="' + x[0] + '">--</b><i></i></div>'; }).join(''); }
     F.slice(0, k).forEach(function (x, i) { var cell = g.children[i]; cell.querySelector('b').textContent = x[2](f, c, p); cell.querySelector('i').textContent = x[3](f, c, p); });
   }

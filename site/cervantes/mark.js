@@ -103,8 +103,12 @@
   /* after the gun the course is locked: Edit course first (Stuart 17 Nov 05:41: "if you are running a race after the start you must
      have to push a change or edit button before being able to add more marks or buoys") */
   function locked() { return stage() === 'race' && !M.editing; }
-  function twdNow() { if (M.wind && M.wind.twd != null) return +M.wind.twd; try { var nw = plus && window.__navWind ? window.__navWind() : null; return nw && nw[1] != null ? +nw[1] : null; } catch (e) { return null; } }
-  function windKnown() { if (M.wind && M.wind.twd != null && M.wind.tws > 0) return true; try { var nw = plus && window.__navWind ? window.__navWind() : null; return !!(nw && nw[1] != null && nw[0] > 0); } catch (e) { return false; } }
+  /* the race wind, best first: typed, the boat's on Mark+, then the forecast the route is using (Stuart 26 Nov 11:40: "it kept on asking for a wind direction ... it should take the wind direction from the grid file, from the routing file that it was using"). One source for the bias, the ladder, the laylines, header or lift and the Racing tab */
+  function windNow() { if (M.wind && M.wind.twd != null) return { twd: +M.wind.twd, tws: M.wind.tws > 0 ? +M.wind.tws : null, src: 'typed' };
+    try { var nw = plus && window.__navWind ? window.__navWind() : null; if (nw && nw[1] != null) return { twd: +nw[1], tws: nw[0] > 0 ? +nw[0] : null, src: 'boat' }; } catch (e) {}
+    try { var r = window.FSSolent && FSSolent.windRef ? FSSolent.windRef() : null; if (r && r.twd != null) return { twd: +r.twd, tws: r.tws > 0 ? +r.tws : null, src: r.src || 'forecast' }; } catch (e) {} return null; }
+  function twdNow() { var w = windNow(); return w ? w.twd : null; }
+  function windKnown() { var w = windNow(); return !!(w && w.tws > 0); }
   function stage() { var g = gunAt(), now = Date.now() / 1000; if (M.finAt) return 'after'; if (g && now >= g) return 'race'; if (g && g - now <= 600) return 'start'; return 'course'; }
   var lastStage = null;
   function tick() {
@@ -157,6 +161,7 @@
     var w = M.wind || {}, t = M.tide || {}, nw = null; try { nw = plus && window.__navWind ? window.__navWind() : null; } catch (e) {}
     var h = '<h3>Wind and tide on the water</h3>';
     if (nw && nw[1] != null) h += '<p class="note">From the boat: ' + Math.round(nw[0] || 0) + ' kn from ' + p3(nw[1]) + '. Typed figures replace it.</p>';
+    else { var fw0 = windNow(); if (fw0 && fw0.src === 'forecast') h += '<p class="note">From the forecast: ' + Math.round(fw0.tws || 0) + ' kn from ' + p3(fw0.twd) + ' at the line. Type the wind you see on the water and it replaces this.</p>'; }
     h += '<div class="row"><label>Wind</label><input class="mkin" id="mkTwd" type="number" inputmode="numeric" min="0" max="360" value="' + (w.twd == null ? '' : w.twd) + '" placeholder="from °T" aria-label="Wind from, degrees true"><input class="mkin" id="mkTws" type="number" inputmode="decimal" min="0" max="60" step="0.5" value="' + (w.tws == null ? '' : w.tws) + '" placeholder="kn" aria-label="Wind speed, knots"><button class="btn" data-k="hdw">Head to wind</button></div>';
     h += '<div class="row"><label>Tide</label>' + seg('tmode', 'model', 'Tide model', !t.mode || t.mode === 'model') + seg('tmode', 'steady', 'As I see it', t.mode === 'steady') + '</div>';
     if (t.mode === 'steady') h += '<div class="row"><label></label><input class="mkin" id="mkTspd" type="number" inputmode="decimal" min="0" max="8" step="0.1" value="' + (t.spd == null ? '' : t.spd) + '" placeholder="kn" aria-label="Tide, knots"><input class="mkin" id="mkTdir" type="number" inputmode="numeric" min="0" max="360" value="' + (t.dir == null ? '' : t.dir) + '" placeholder="to °T" aria-label="Tide runs towards, degrees true"></div>';
@@ -164,7 +169,7 @@
   }
   function legsHtml() {
     var c = null; try { c = window.FSSolent && FSSolent.build ? FSSolent.build(true) : null; } catch (e) {} if (!c || !c.start || !c.marks || !c.marks.length) return '';
-    var pts = [c.start].concat(c.marks, c.finish ? [c.finish] : []), tw = M.wind && M.wind.twd != null ? M.wind.twd : null, tot = 0, rows = '';
+    var pts = [c.start].concat(c.marks, c.finish ? [c.finish] : []), tw = twdNow(), tot = 0, rows = '';
     for (var i = 1; i < pts.length; i++) { var r = rh(pts[i - 1], pts[i]); tot += r.nm; rows += '<tr><td>' + i + '</td><td>' + esc(String(pts[i].name || '').replace(/^(Start|Finish), /, '')) + (pts[i].side ? ' <small>' + (/^s/.test(pts[i].side) ? 'S' : 'P') + '</small>' : '') + (tw != null && FSSolent.legType ? '<br><small>' + FSSolent.legType(r.brg, tw) + '</small>' : '') + '</td><td><b>' + p3(r.brg) + 'T</b></td><td>' + dist(r.nm) + '</td></tr>'; }
     return '<h3>The course: ' + (pts.length - 1) + ' legs, ' + tot.toFixed(1) + ' nm' + (tw == null ? '' : '') + '</h3>' + (tw == null ? '<p class="note">Give the wind for beat, reach or run on each leg.</p>' : '') + '<table class="mklegs"><tbody>' + rows + '</tbody></table>';
   }
@@ -263,7 +268,7 @@
       } else h += '<div><small>To the line</small><b>--</b><span>' + (f ? 'needs both ends of the line' : 'waiting for the GPS') + '</span></div>';
       /* the bias at once, from the line and the wind (typed, or the boat's on Mark+), with or without GPS; tap it: zoom to the line and the picture (Stuart 05:49) */
       var L0 = (window.__fsLine && window.__fsLine()) || {}, bw = twdNow();
-      if (L0.boat && L0.pin && bw != null) { var b = bias(L0, bw); h += '<div class="mkbias" data-k="biasview" role="button" tabindex="0" title="Zoom into the line and show the bias"><small>Bias · tap to see it</small><b>' + b.end + ' ' + b.m + ' m</b><span>' + b.deg + '° for wind ' + p3(bw) + '</span></div>'; }
+      if (L0.boat && L0.pin && bw != null) { var b = bias(L0, bw); h += '<div class="mkbias" data-k="biasview" role="button" tabindex="0" title="Zoom into the line and show the bias"><small>Bias · tap to see it</small><b>' + b.end + ' ' + b.m + ' m</b><span>' + b.deg + '° for wind ' + p3(bw) + ((windNow() || {}).src === 'forecast' ? ' (forecast)' : '') + '</span></div>'; }
       else h += '<div><small>Bias</small><b>--</b><span>' + (!(L0.boat && L0.pin) ? 'set the line' : 'give the wind direction') + '</span></div>';
       $('mkStartBig').innerHTML = h;
     }
@@ -288,7 +293,7 @@
         h2 += '<div><small>COG · SOG</small><b>' + (pc.cog != null ? p3(pc.cog) + 'T' : '--') + '</b><span>' + (sog != null ? sog.toFixed(1) + ' kn' : '') + (pc.vmc != null ? ' · VMC ' + pc.vmc.toFixed(1) + ' kn' : '') + '</span></div>';
       }
       if (plus) { var dp = sh('dpt'); h2 += '<div><small>Depth</small><b class="' + (dp != null && dp < 3 ? 'bad' : '') + '">' + (dp != null ? dp.toFixed(1) + ' m' : '--') + '</b><span>' + (dp != null ? 'from the boat' : 'no depth from the boat') + '</span></div>'; }
-      var shf = cl && cl.shift; h2 += '<div><small>Header or lift</small><b class="' + (shf && shf.kind === 'header' ? 'bad' : shf && shf.kind === 'lift' ? 'ok' : '') + '">' + (shf && !shf.off ? (shf.kind === 'steady' ? 'Steady' : (shf.kind === 'lift' ? 'Lift ' : 'Header ') + shf.deg + '°') : '--') + '</b><span>' + (shf && !shf.off ? shf.tack + ' tack' : M.wind && M.wind.twd != null ? 'on a beat' : 'give the wind') + '</span></div>';
+      var shf = cl && cl.shift; h2 += '<div><small>Header or lift</small><b class="' + (shf && shf.kind === 'header' ? 'bad' : shf && shf.kind === 'lift' ? 'ok' : '') + '">' + (shf && !shf.off ? (shf.kind === 'steady' ? 'Steady' : (shf.kind === 'lift' ? 'Lift ' : 'Header ') + shf.deg + '°') : '--') + '</b><span>' + (shf && !shf.off ? shf.tack + ' tack' : twdNow() != null ? 'on a beat' : 'give the wind') + '</span></div>';
       var td = f && window.__fsTideAt ? window.__fsTideAt(f.la, f.lo) : null; if (!td && M.tide && M.tide.mode === 'steady' && M.tide.spd != null) td = [+M.tide.spd, +M.tide.dir];
       h2 += '<div><small>Tide here</small><b>' + (td ? (+td[0]).toFixed(1) + ' kn' : '--') + '</b><span>' + (td ? 'to ' + p3(td[1]) : f ? 'no tide model here' : 'waiting for the GPS') + '</span></div>';
       if (plus) h2 += plusHtml();
@@ -378,7 +383,7 @@
     else if (k === 'del') { var a2 = (B.marks || []).slice(); a2.splice(+v, 1); solSet({ marks: a2 }); }
     else if (k === 'fin') solSet({ fin: v });
     else if (k === 'wk' || k === 'lk' || k === 'laps' || k === 'wfin' || k === 'wside') { var w = Object.assign({}, B.wl); if (k === 'wk') w.wkind = v; if (k === 'lk') w.lkind = v; if (k === 'laps') w.laps = +v; if (k === 'wfin') w.fin = v; if (k === 'wside') w.side = v; solSet({ wl: w }); }
-    else if (k === 'wbrgwind') { if (!M.wind || M.wind.twd == null) { toast('Give the wind first, under Wind and tide.'); return; } var w2 = Object.assign({}, B.wl, { brg: Math.round(M.wind.twd), wkind: 'brg' }); if (!(w2.dist > 0)) w2.dist = 1; solSet({ wl: w2 }); }
+    else if (k === 'wbrgwind') { if (twdNow() == null) { toast('Give the wind first, under Wind and tide.'); return; } var w2 = Object.assign({}, B.wl, { brg: Math.round(twdNow()), wkind: 'brg' }); if (!(w2.dist > 0)) w2.dist = 1; solSet({ wl: w2 }); }
     else if (k === 'pickpt') { PICK = v; pickBar(v === 'wpt' ? 'Tap the windward mark: a buoy or any point on the chart' : 'Tap gate buoy ' + (v === 'g1' ? 'A' : 'B')); }
     else if (k === 'tmode') { M.tide = Object.assign({}, M.tide, { mode: v }); save(); pushFix(); }
     else if (k === 'hdw') return headToWind();
@@ -459,7 +464,7 @@
      (Stuart 17 Nov 05:04: "From typed wind") */
   function laylines(ctx, X, Y) {
     if (M.tab !== 'race') return; var nw = null; try { nw = plus && window.__navWind ? window.__navWind() : null; } catch (e) {}
-    if ((!nw || nw[1] == null) && M.wind && M.wind.twd != null) nw = [M.wind.tws || 0, M.wind.twd]; if (!nw || nw[1] == null) return;
+    if (!nw || nw[1] == null) { var wn = windNow(); if (wn) nw = [wn.tws || 0, wn.twd]; } if (!nw || nw[1] == null) return;
     var pc = null; try { pc = window.__fsPlot && window.__fsPlot.calc ? window.__fsPlot.calc() : null; } catch (e) {} if (!pc || !pc.ok) return;
     var twa = sh('twa'), ba = twa != null && Math.abs(twa) < 60 ? Math.abs(twa) : (window.FSSolent && FSSolent.windRef && FSSolent.windRef() && FSSolent.windRef().ba) || 42, up = Math.abs(((pc.btw - nw[1] + 540) % 360) - 180) < 90; if (!up) return;
     var m = pc.m, L = Math.max(0.5, pc.dtw * 1.3);
