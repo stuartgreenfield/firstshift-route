@@ -110,6 +110,13 @@
       'For example: 6 knots on 180 degrees true for one hour, with a 2 knot tide setting 090 degrees. DR is 6 nm south of the fix; the EP is a further 2 nm east of it: 6.3 nm from the fix, on 162 degrees true.',
       'To steer a course that makes good a chosen track, draw it the other way round: the tide first from the fix, then the boat’s speed reaching the track line; that direction is the course to steer.',
       'Route does the same at every step of every route, with the tide for that place and time from the forecast.']]
+    ,['ref-depth', 'Safety depth: what it is measured from', [
+      'The safety depth is measured down from lowest astronomical tide (LAT), the chart datum on UK charts: the lowest level the tide is predicted to reach. Set to 3.0 m, it means 3 m below LAT.',
+      'It is not measured from mean low water springs (MLWS). MLWS is above LAT, by the height given for your port in the tide tables, so at low water springs there is more water than the figure by that much.',
+      'No height of tide is added. At any moment the real depth is the depth below LAT plus the height of tide at that time. The router does not count on the tide.',
+      'In the picture: the cream line is the real seabed. The blocks are what the router knows: one average depth for each square about 115 m across. Red squares are shallower than the safety depth and the routes keep out. The pale red square beside them is the Keep clear by margin (Settings, Course): a rock or the edge of a bank can sit inside a square that reads deep.',
+      'Near the start, each mark and the finish (within 0.4 nm) only the safety depth applies, so they can still be reached.',
+      'Source: EMODnet Bathymetry digital terrain model, whose depths refer to lowest astronomical tide. Planning aid, not for navigation: check the chart.']]
     ,['ref-routing', 'How the routing works', [
       'Route uses isochrones: lines joining the furthest the boat can get in a given time. In the picture each coloured line is one time step from the start.',
       'From every point on the last line, the router tries headings every 5 degrees, and the best angle upwind and downwind on each side.',
@@ -120,6 +127,27 @@
       'The marks must be rounded on their side: a gate from the buoy stops a route crossing the wrong way.']]
   ];
 
+  /* the safety depth picture (Stuart 26 Nov 2026 06:35 "Draw a picture to explain the min depth"; 06:44 yes to Help and a quick reference page):
+     water levels, the safety depth below LAT, the real seabed against the depth squares, the no-go and keep-clear squares */
+  function depthSvg() {
+    var F = 'font-family="Arial,sans-serif"', LAT = 112, M = 26, y = function (d) { return LAT + d * M; }, x0 = 20, w = 54, av = [7.0, 5.6, 4.4, 3.3, 2.3, 1.1, -0.4], SAFE = 3, B = 322, g = '';
+    g += '<rect width="420" height="370" fill="#0B1B30"/><rect x="' + x0 + '" y="52" width="' + 7 * w + '" height="' + (LAT - 52) + '" fill="#1b4668" opacity=".55"/><rect x="' + x0 + '" y="' + LAT + '" width="' + 7 * w + '" height="' + (B - LAT) + '" fill="#12304a"/>';
+    av.forEach(function (d, i) { var c = d < 0 ? '#5c6b3a' : d < SAFE ? '#b23a3a' : av[i + 1] < SAFE ? '#7d4a52' : '#1d5a7a', xx = x0 + i * w, yy = y(d);
+      g += '<rect x="' + xx + '" y="' + yy.toFixed(0) + '" width="' + w + '" height="' + (B - yy).toFixed(0) + '" fill="' + c + '" stroke="#0B1B30" stroke-width="1.5"/><text x="' + (xx + w / 2) + '" y="' + (B - 8) + '" ' + F + ' font-size="12" font-weight="700" fill="#fff" text-anchor="middle">' + (d < 0 ? 'dries' : d.toFixed(1) + ' m') + '</text>'; });
+    g += '<polyline points="20,' + y(7.6) + ' 74,' + y(6.3) + ' 128,' + y(5.0) + ' 182,' + y(3.8) + ' 200,' + y(3.6) + ' 208,' + y(1.3) + ' 216,' + y(3.4) + ' 236,' + y(2.9) + ' 290,' + y(1.7) + ' 344,' + y(0.4) + ' 398,' + y(-1.1) + '" fill="none" stroke="#f1d9a0" stroke-width="2.5"/>';
+    var L = function (yy, c, t, dash, bold) { return '<line x1="' + x0 + '" x2="' + (x0 + 7 * w) + '" y1="' + yy + '" y2="' + yy + '" stroke="' + c + '" stroke-width="' + (bold ? 2.5 : 1.8) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/><text x="' + (x0 + 4) + '" y="' + (yy - 5) + '" ' + F + ' font-size="12" font-weight="700" fill="' + c + '">' + t + '</text>'; };
+    g += L(52, '#8fc7ef', 'High water', '2 5') + L(92, '#8fc7ef', 'Mean low water springs', '7 5') + L(LAT, '#ffffff', '', '', 1) + '<text x="' + (x0 + 4) + '" y="' + (LAT + 15) + '" ' + F + ' font-size="12" font-weight="700" fill="#fff">LAT = chart datum</text>';
+    g += '<line x1="' + x0 + '" x2="' + (x0 + 7 * w) + '" y1="' + y(SAFE) + '" y2="' + y(SAFE) + '" stroke="#FFCC1A" stroke-width="2.5" stroke-dasharray="9 6"/><text x="' + (x0 + 4) + '" y="' + (y(SAFE) - 6) + '" ' + F + ' font-size="12" font-weight="700" fill="#FFCC1A">Safety depth 3.0 m</text>';
+    var ar = function (x, y1, y2, c) { return '<line x1="' + x + '" x2="' + x + '" y1="' + (y1 + 3) + '" y2="' + (y2 - 3) + '" stroke="' + c + '" stroke-width="2"/><path d="M' + (x - 5) + ' ' + (y1 + 9) + 'L' + x + ' ' + (y1 + 2) + 'L' + (x + 5) + ' ' + (y1 + 9) + 'M' + (x - 5) + ' ' + (y2 - 9) + 'L' + x + ' ' + (y2 - 2) + 'L' + (x + 5) + ' ' + (y2 - 9) + '" fill="none" stroke="' + c + '" stroke-width="2"/>'; };
+    g += ar(150, LAT, y(SAFE), '#FFCC1A') + '<text x="143" y="' + (LAT + 46) + '" ' + F + ' font-size="13" font-weight="700" fill="#FFCC1A" text-anchor="end">3.0 m</text>';
+    g += ar(196, 52, LAT, '#8fc7ef') + '<text x="204" y="74" ' + F + ' font-size="12" font-weight="700" fill="#8fc7ef">Height of tide:</text><text x="204" y="88" ' + F + ' font-size="12" fill="#8fc7ef">not added</text>';
+    g += '<circle cx="208" cy="' + y(1.3) + '" r="9" fill="none" stroke="#fff" stroke-width="1.5"/><text x="222" y="' + (y(1.3) + 4) + '" ' + F + ' font-size="11" fill="#fff">a rock</text>';
+    var br = function (a, b2, c, t, end) { return '<path d="M' + a + ' 32H' + b2 + 'M' + a + ' 27v10M' + b2 + ' 27v10" stroke="' + c + '" stroke-width="2.5" fill="none"/><text x="' + (end ? b2 : a) + '" y="22" ' + F + ' font-size="12" font-weight="700" fill="' + c + '" text-anchor="' + (end ? 'end' : 'start') + '">' + t + '</text>'; };
+    g += br(x0 + 3 * w + 2, x0 + 4 * w - 4, '#e8a0a8', 'Keep clear', 1) + br(x0 + 4 * w + 4, x0 + 7 * w, '#ff7b7b', 'No-go: under 3.0 m');
+    g += '<line x1="20" x2="44" y1="338" y2="338" stroke="#f1d9a0" stroke-width="2.5"/><text x="50" y="342" ' + F + ' font-size="11" fill="#c9d6e4">real seabed</text><rect x="20" y="349" width="24" height="13" fill="#1d5a7a"/><text x="50" y="360" ' + F + ' font-size="11" fill="#c9d6e4">depth square, about 115 m across: its average is all the router knows</text>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 370">' + g + '</svg>');
+  }
+  var DEPTH_ALT = 'A slice from deep water to the shore: high water, mean low water springs and lowest astronomical tide; the safety depth 3 m below lowest astronomical tide; the real seabed against the depth squares; the no-go squares and the keep-clear square';
   /* the vector pictures for the true wind, estimated position and routing topics */
   function vecSvg(k) {
     var A = function (x1, y1, x2, y2, c, lab, lx, ly) { var a = Math.atan2(y2 - y1, x2 - x1), h = 10; return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + c + '" stroke-width="3.5"/><polygon points="' + x2 + ',' + y2 + ' ' + (x2 - h * Math.cos(a - 0.4)) + ',' + (y2 - h * Math.sin(a - 0.4)) + ' ' + (x2 - h * Math.cos(a + 0.4)) + ',' + (y2 - h * Math.sin(a + 0.4)) + '" fill="' + c + '"/>' + (lab ? '<text x="' + lx + '" y="' + ly + '" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="' + c + '">' + lab + '</text>' : ''); };
@@ -199,10 +227,13 @@
   function build() {
     var list = $('helpList'); if (!list) return false; if ($('fsRef')) return true;
     var sec = document.createElement('section'); sec.id = 'fsRef'; sec.className = 'fsref';
-    sec.innerHTML = '<h3 class="navhelph">Quick reference at sea</h3>' + T.map(function (t) { return '<div class="htopic" data-k="' + t[0] + '"><h3>' + esc(t[1]) + '</h3>' + t[2].map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + (t[0] === 'ref-flags' ? '<img class="hpic" alt="The signal flags A to Z, the answering pennant, the first substitute and the black flag" src="' + flagSvg() + '">' : /^ref-(twa|ep|routing)$/.test(t[0]) ? '<img class="hpic" alt="Vector picture: ' + esc(t[1]) + '" src="' + vecSvg(t[0]) + '">' : '') + '</div>'; }).join('');
+    sec.innerHTML = '<h3 class="navhelph">Quick reference at sea</h3>' + T.map(function (t) { return '<div class="htopic" data-k="' + t[0] + '"><h3>' + esc(t[1]) + '</h3>' + t[2].map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + (t[0] === 'ref-flags' ? '<img class="hpic" alt="The signal flags A to Z, the answering pennant, the first substitute and the black flag" src="' + flagSvg() + '">' : t[0] === 'ref-depth' ? '<img class="hpic" alt="' + DEPTH_ALT + '" src="' + depthSvg() + '">' : /^ref-(twa|ep|routing)$/.test(t[0]) ? '<img class="hpic" alt="Vector picture: ' + esc(t[1]) + '" src="' + vecSvg(t[0]) + '">' : '') + '</div>'; }).join('');
     list.parentNode.insertBefore(sec, list.nextSibling);
     return true;
   }
+  /* the same picture in Settings, under the safety depth and its note (both the Course tab's and the Charts tab's sliders) */
+  function setPic() { var done = false; ['depth', 'depth2'].forEach(function (id) { var d = document.getElementById(id); if (!d) return; done = true; if (document.getElementById(id + 'Pic')) return; var row = d.closest('.row'), nx = row && row.nextElementSibling, im = document.createElement('img'); im.id = id + 'Pic'; im.alt = DEPTH_ALT; im.src = depthSvg(); im.style.cssText = 'display:block;width:100%;max-width:520px;height:auto;margin:8px 0;border-radius:10px'; (nx && nx.matches && nx.matches('p.note') ? nx : row).insertAdjacentElement('afterend', im); }); return done; }
+  var n2 = 0, tm2 = setInterval(function () { if (setPic() || ++n2 > 60) clearInterval(tm2); }, 500);
   var n = 0, tm = setInterval(function () { if (build() || ++n > 60) clearInterval(tm); }, 500);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) setTimeout(build, 30); }, true);
   window.FSRef = { titles: T.map(function (t) { return t[1]; }) };
