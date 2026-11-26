@@ -64,6 +64,7 @@
   function set(m) {
     M.mode = m; save(); apply();
     if (m === 'race' && !liveOn()) { var l = $('liveBtn'); if (l) l.click(); }   /* RACE brings in the GPS and the LIVE line */
+    if (m === 'race' && !gun() && window.__fsStartStep) { try { if (window.NavToast) window.NavToast('Set your class start time: the start box and the start screen follow it.'); } catch (e) {} setTimeout(function () { try { window.__fsStartStep(); } catch (e) {} }, 350); }   /* J2 (Stuart 26 Nov 14:23): RACE with no start time asks for it */
     try { window.dispatchEvent(new Event('resize')); } catch (e) {}
   }
   function hm(ep) { var d = new Date(ep * 1000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
