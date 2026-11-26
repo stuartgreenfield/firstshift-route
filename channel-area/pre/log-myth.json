@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-26T09:01:40.304Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 79,
+   "note": "Finer routes in 59.7 s. Also worth knowing: in ECMWF wind, the GFS route is 1.9 min faster than ECMWF’s own route. Gaps "
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 148,
+   "note": "Finer routes in 54.7 s. Also worth knowing: in ECMWF wind, the AIFS route is 1.4 min faster than ECMWF’s own route. Gaps"
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 215,
+   "note": "Finer routes in 53.0 s. Times: first routes 1.7 s, standard 13.1 s, finer 66.1 s. The faint line is the standard route. "
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T09:03:49.050Z",
+ "log": [
+  {
+   "race": "northsea-area",
+   "h": 0,
+   "s": 104,
+   "note": "Finer routes in 78.1 s. Times: first routes 7.4 s, standard 23.6 s, finer 101.8 s. The faint line is the standard route."
+  },
+  {
+   "race": "northsea-area",
+   "h": 1,
+   "s": 193,
+   "note": "Finer routes in 71.5 s. Times: first routes 2.4 s, standard 16.4 s, finer 87.9 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 2,
+   "s": 278,
+   "note": "Finer routes in 70.2 s. Times: first routes 2.3 s, standard 15.0 s, finer 85.3 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 3,
+   "s": 364,
+   "note": "Finer routes in 71.0 s. Times: first routes 2.3 s, standard 14.6 s, finer 85.6 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 4,
+   "s": 449,
+   "note": "Finer routes in 68.6 s. Times: first routes 2.2 s, standard 15.3 s, finer 83.9 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 5,
+   "s": 532,
+   "note": "Finer routes in 67.6 s. Also worth knowing: in UKV wind, the GFS route is 88 min faster than UKV’s own route; in ICON-EU"
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T09:10:55.938Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 174,
+   "note": "Finer routes in 94.8 s. Times: first routes 12.3 s, standard 75.8 s, finer 170.6 s. The faint line is the standard route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 335,
+   "note": "Finer routes in 93.4 s. Times: first routes 9.9 s, standard 67.4 s, finer 160.8 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 497,
+   "note": "Finer routes in 93.2 s. Times: first routes 9.9 s, standard 67.7 s, finer 161.0 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 657,
+   "note": "Finer routes in 90.4 s. Times: first routes 11.1 s, standard 67.9 s, finer 158.4 s. The faint line is the standard route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 823,
+   "note": "Finer routes in 91.1 s. Times: first routes 10.3 s, standard 74.1 s, finer 165.3 s. The faint line is the standard route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 986,
+   "note": "Finer routes in 90.7 s. Times: first routes 10.6 s, standard 70.8 s, finer 161.6 s. The faint line is the standard route"
+  }
+ ]
+}

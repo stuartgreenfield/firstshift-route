@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-26T09:06:55.461Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 2,
+   "s": 473,
+   "note": "Finer routes in 182.9 s. Also worth knowing: in UKV wind, the ECMWF route is 3.5 min faster than UKV’s own route. Gaps t"
+  },
+  {
+   "race": "fastnet",
+   "h": 3,
+   "s": 709,
+   "note": "Finer routes in 187.7 s. Times: first routes 7.1 s, standard 47.3 s, finer 235.0 s. The faint line is the standard route"
+  }
+ ]
+}

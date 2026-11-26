@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T09:06:07.689Z",
+ "log": [
+  {
+   "race": "biscay-area",
+   "h": 0,
+   "s": 126,
+   "note": "Finer routes in 99.2 s. Times: first routes 4.7 s, standard 24.6 s, finer 123.9 s. The faint line is the standard route."
+  },
+  {
+   "race": "biscay-area",
+   "h": 1,
+   "s": 241,
+   "note": "Finer routes in 92.9 s. Also worth knowing: in AROME HD wind, the Combined (6 models) route is 938 min faster than AROME"
+  },
+  {
+   "race": "biscay-area",
+   "h": 2,
+   "s": 341,
+   "note": "Finer routes in 80.7 s. Combined (6 models): No way through on the leg to Finish, Torre de Hercules, A Coruna near 48.38"
+  },
+  {
+   "race": "biscay-area",
+   "h": 3,
+   "s": 422,
+   "note": "Finer routes in 66.7 s. DWD ICON-EU: No way through on the leg to Finish, Torre de Hercules, A Coruna near 48.38 N 4.98 "
+  },
+  {
+   "race": "biscay-area",
+   "h": 4,
+   "s": 521,
+   "note": "Finer routes in 79.3 s. NOAA GFS: No way through on the leg to Finish, Torre de Hercules, A Coruna near 48.36 N 4.94 W a"
+  },
+  {
+   "race": "biscay-area",
+   "h": 5,
+   "s": 635,
+   "note": "Finer routes in 92.8 s. Times: first routes 3.1 s, standard 21.3 s, finer 114.2 s. The faint line is the standard route."
+  }
+ ]
+}
