@@ -76,8 +76,11 @@
   var WINS = ['navStrip', 'navPlot', 'fsPlot', 'tgPop', 'liveBox'], done = {};
   function stashAll() { var D = window.NavDrag; if (!D || !D.stash) return; WINS.forEach(function (id, i) { var k = D.bucket() + id; if (done[k]) return; done[k] = 1; try { if (!D.stashed(id)) D.stash(id, 'l', 60 + i * 78); } catch (e) {} }); }   /* each tab at its own height, so none lies on another */
   var topH = 0;
+  /* is the SCREEN on its side, not just the page wider than tall? In the Android app the keyboard shrinks the page (adjustResize), so a small phone
+     held upright with the keyboard open is wider than it is tall for a moment; that must never bring up the on-its-side layout while someone types */
+  function scrSide() { try { var o = screen.orientation && screen.orientation.type; if (o) return /^landscape/.test(o); } catch (e) {} if (typeof window.orientation === 'number') return Math.abs(window.orientation) === 90; return true; }
   function beat() {
-    var want = MQ.matches && !document.body.classList.contains('fsdeck'); if (want !== on) { if (want) enter(); else leave(); } if (!on) return;
+    var want = MQ.matches && scrSide() && !document.body.classList.contains('fsdeck'); if (want !== on) { if (want) enter(); else leave(); } if (!on) return;
     /* the head of the side column is one row on Route and two on Mark (its three steps): the figures and the panel start under whatever height it really is */
     var tp = document.querySelector('.top'), tb = tp && tp.getClientRects().length ? Math.round(tp.getBoundingClientRect().bottom) : 0; if (tb && tb !== topH) { topH = tb; document.body.style.setProperty('--toph', (tb + 5) + 'px'); document.body.style.setProperty('--toph2', (tb + 1) + 'px'); }
     var alarm = false; try { alarm = !!(window.FSClear && window.FSClear.alarm && window.FSClear.alarm()); } catch (e) {}
