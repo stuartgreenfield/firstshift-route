@@ -1,23 +1,23 @@
 {
- "at": "2026-11-26T11:25:39.685Z",
+ "at": "2026-11-26T13:01:20.172Z",
  "log": [
   {
    "race": "myth",
    "h": 0,
-   "s": 99,
-   "note": "Finer routes in 74.7 s. Also worth knowing: in AIFS wind, the GFS route is 2.2 min faster than AIFS’s own route. Gaps th"
+   "s": 123,
+   "note": "Finer routes in 92.9 s. Times: first routes 4.0 s, standard 27.4 s, finer 120.3 s. The faint line is the standard route."
   },
   {
    "race": "myth",
    "h": 1,
-   "s": 193,
-   "note": "Finer routes in 75.1 s. Times: first routes 2.5 s, standard 18.7 s, finer 93.9 s. The faint line is the standard route. "
+   "s": 249,
+   "note": "Finer routes in 101.9 s. Times: first routes 3.4 s, standard 23.9 s, finer 125.9 s. The faint line is the standard route"
   },
   {
    "race": "myth",
    "h": 2,
-   "s": 294,
-   "note": "Finer routes in 80.6 s. Times: first routes 2.8 s, standard 20.1 s, finer 100.7 s. The faint line is the standard route."
+   "s": 387,
+   "note": "Finer routes in 110.6 s. Times: first routes 3.6 s, standard 26.8 s, finer 137.4 s. The faint line is the standard route"
   }
  ]
 }

@@ -1,17 +1,17 @@
 {
- "at": "2026-11-26T11:37:45.706Z",
+ "at": "2026-11-26T13:07:50.773Z",
  "log": [
   {
    "race": "fastnet",
    "h": 4,
-   "s": 683,
-   "note": "Finer routes in 282.3 s. Times: first routes 9.4 s, standard 65.8 s, finer 348.3 s. The faint line is the standard route"
+   "s": 477,
+   "note": "Finer routes in 192.0 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 213 min faster than ICON-"
   },
   {
    "race": "fastnet",
    "h": 5,
-   "s": 1024,
-   "note": "Finer routes in 272.7 s. Also worth knowing: in ICON-EU wind, the ECMWF route is 210 min faster than ICON-EU’s own route"
+   "s": 723,
+   "note": "Finer routes in 195.7 s. Times: first routes 6.8 s, standard 48.4 s, finer 244.2 s. The faint line is the standard route"
   }
  ]
 }
