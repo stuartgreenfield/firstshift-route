@@ -125,7 +125,7 @@
     if (!bar) return; bar.hidden = !C.on; document.body.classList.toggle('rplot', !!C.on); if (!C.on) return;
     var P = shell();
     var name = o.ok && o.m.route ? '<b>' + esc(o.m.name) + '</b><small>' + (o.after != null ? 'then ' + brg(o.after) : 'the end of the route') + '</small>' : !o.ok ? '<b>Plotter</b><small>' + esc(o.why) + '</small>' : '<b>' + esc(o.m.name || (o.m.finish ? 'Finish' : 'Mark')) + '</b><small>' + (o.m.finish ? 'Finish' : 'Mark ' + (o.i + 1) + ' of ' + (o.n - 1)) + (o.m.side && !o.m.finish ? ', leave to ' + o.m.side : '') + '</small>';
-    var x = o.xte, mini = !!(C.mini && o.ok);
+    var x = o.xte, mini = !!((C.mini || (window.__fsPanelUp && window.__fsPanelUp())) && o.ok);   /* with the panel open on a phone upright the plotter is short (Stuart 26 Nov 06:58) */
     bar.classList.toggle('mini', mini);
     var key = (mini ? 'mini' : 'full') + '|' + C.mode + '|' + (C.view || 'deck') + '|' + (window.FS_HIDE || 'Hide');
     if (P.key !== key) { P.key = key; P.name = null;
