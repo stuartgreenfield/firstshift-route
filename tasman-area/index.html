@@ -800,6 +800,8 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <h3>Start and manoeuvres</h3>
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>
       <div class="row"><label for="ssOpenSel">Start screen opens</label><select id="ssOpenSel"><option value="10">10 min before the gun</option><option value="5">5 min before</option><option value="3">3 min before</option><option value="0">Off: by hand</option></select></div>
+      <div class="row"><label for="ssLaySel">Start screen layout (trial)</label><select id="ssLaySel"><option value="">Today's layout</option><option value="a">A: picture half the screen</option><option value="b">B: picture fills the screen</option></select></div>
+      <p class="note">A phone held upright only. A and B are on trial: three large figures, the rest small.</p>
       <div class="row"><label for="ssBarSel">Countdown box appears</label><select id="ssBarSel"><option value="15">15 min before the gun</option><option value="30">30 min before</option><option value="60">1 hour before</option></select></div>
       <div class="row"><label for="tackS">Tack loss</label><input type="number" id="tackS" value="60" min="0" max="300"> s</div>
       <div class="row"><label for="boatLoa">Boat length</label><input type="number" id="boatLoa" value="" min="3" max="40" step="0.1" inputmode="decimal" placeholder="LOA"> m</div>
