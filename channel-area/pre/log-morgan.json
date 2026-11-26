@@ -1,23 +1,23 @@
 {
- "at": "2026-11-26T05:17:33.165Z",
+ "at": "2026-11-26T08:21:07.689Z",
  "log": [
   {
    "race": "morgan",
    "h": 0,
-   "s": 72,
-   "note": "Finer routes in 52.8 s. Also worth knowing: in ECMWF wind, the GFS route is 2.2 min faster than ECMWF’s own route. Gaps "
+   "s": 83,
+   "note": "Finer routes in 59.5 s. Times: first routes 2.9 s, standard 20.6 s, finer 80.2 s. The faint line is the standard route. "
   },
   {
    "race": "morgan",
    "h": 1,
-   "s": 136,
-   "note": "Finer routes in 50.2 s. Also worth knowing: in GFS wind, the ECMWF route is 2.7 min faster than GFS’s own route. Gaps th"
+   "s": 155,
+   "note": "Finer routes in 57.7 s. Times: first routes 2.1 s, standard 14.8 s, finer 72.6 s. The faint line is the standard route. "
   },
   {
    "race": "morgan",
    "h": 2,
-   "s": 196,
-   "note": "Finer routes in 47.1 s. Times: first routes 1.5 s, standard 12.6 s, finer 59.7 s. The faint line is the standard route. "
+   "s": 226,
+   "note": "Finer routes in 54.3 s. Times: first routes 2.0 s, standard 15.7 s, finer 70.0 s. The faint line is the standard route. "
   }
  ]
 }
