@@ -1395,6 +1395,9 @@
     top = Math.max(8, Math.min(innerHeight - (ins.b || 0) - h - 8, top));
     var sqb = $('solSeq'); if (pr && sqb && !sqb.hidden && sqb.getClientRects().length && sqb.getBoundingClientRect().bottom > top - 4) { RB.el.hidden = true; return; }   /* D: a phone with the panel open and the countdown bar showing: no room for them, and the bar has its own Start screen button */
     RB.el.style.top = Math.round(top) + 'px';
+    var tp = $('tip'), under = false; if (tp && !tp.hidden && tp.getClientRects().length) { var tr = tp.getBoundingClientRect(), rr = RB.el.getBoundingClientRect(); under = tr.left < rr.right && tr.right > rr.left && tr.top < rr.bottom && tr.bottom > rr.top; }
+    RB.el.style.visibility = under ? 'hidden' : '';   /* Stuart 26 Nov 15:37 (photo): the data window goes over the two race buttons; they come back when it closes or moves clear */
+    if (tp && !RB.tipObs && window.MutationObserver) { RB.tipObs = new MutationObserver(function () { clearTimeout(RB.tipT); RB.tipT = setTimeout(rbRender, 60); }); RB.tipObs.observe(tp, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] }); }
   }
   FSBeat.set(rbRender, 1000, true);
   (function () { var st = document.createElement('style'); st.textContent = 'body.fsdeck #solSeq{display:none}' /* F44: the deck screen has its own GUN box; the bar covered its MENU button */ + '.solrb{position:fixed;z-index:56;left:50%;translate:-50% 0;display:flex;gap:8px;pointer-events:none}.solrb .btn{pointer-events:auto;font:700 13px/1 var(--f-body,system-ui);letter-spacing:.06em;padding:11px 16px;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}.solrb .solrbseq{background:#6FA9E0;color:#042D5E;border:1px solid #042D5E}.solrb .solrbstop{background:#C8372D;color:#fff;border:1px solid #7a1c16}.solrb .solrbstop.armed{background:#fff;color:#C8372D;border:2px solid #C8372D}'; document.head.appendChild(st); })();
