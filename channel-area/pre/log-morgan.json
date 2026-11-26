@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-26T14:33:14.908Z",
+ "log": [
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 45,
+   "note": "Finer routes in 33.8 s. Times: first routes 1.6 s, standard 9.5 s, finer 43.3 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 89,
+   "note": "Finer routes in 34.5 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 1.2 min faster than ICON-E"
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 134,
+   "note": "Finer routes in 35.7 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 1.3 min faster than GFS’s own "
+  }
+ ]
+}

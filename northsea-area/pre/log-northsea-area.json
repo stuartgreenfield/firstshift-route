@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T14:35:57.426Z",
+ "log": [
+  {
+   "race": "northsea-area",
+   "h": 0,
+   "s": 54,
+   "note": "Finer routes in 38.0 s. Times: first routes 5.3 s, standard 14.0 s, finer 52.0 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea-area",
+   "h": 1,
+   "s": 105,
+   "note": "Finer routes in 41.5 s. Also worth knowing: in GFS wind, the ECMWF route is 9.2 min faster than GFS’s own route. Compare"
+  },
+  {
+   "race": "northsea-area",
+   "h": 2,
+   "s": 155,
+   "note": "Finer routes in 39.9 s. Times: first routes 1.6 s, standard 9.5 s, finer 49.4 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 3,
+   "s": 204,
+   "note": "Finer routes in 39.6 s. Times: first routes 1.6 s, standard 8.9 s, finer 48.5 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 4,
+   "s": 253,
+   "note": "Finer routes in 39.7 s. Times: first routes 1.6 s, standard 9.6 s, finer 49.3 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 5,
+   "s": 304,
+   "note": "Finer routes in 41.1 s. Times: first routes 1.5 s, standard 8.9 s, finer 50.0 s. The faint line is the standard route. F"
+  }
+ ]
+}

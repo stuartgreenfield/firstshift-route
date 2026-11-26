@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T14:45:18.662Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 138,
+   "note": "Finer routes in 103.4 s. Times: first routes 7.6 s, standard 33.0 s, finer 136.5 s. The faint line is the standard route"
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 281,
+   "note": "Finer routes in 112.6 s. Times: first routes 4.6 s, standard 29.2 s, finer 141.9 s. The faint line is the standard route"
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 426,
+   "note": "Finer routes in 113.8 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 3.4 min faster than UKV’s own"
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 575,
+   "note": "Finer routes in 116.6 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 92 min faster than ICON-E"
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 720,
+   "note": "Finer routes in 113.0 s. Times: first routes 4.9 s, standard 31.4 s, finer 144.4 s. The faint line is the standard route"
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 862,
+   "note": "Finer routes in 111.3 s. Times: first routes 4.6 s, standard 29.6 s, finer 141.0 s. The faint line is the standard route"
+  }
+ ]
+}
