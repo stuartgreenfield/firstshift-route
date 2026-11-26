@@ -44,7 +44,7 @@
   function grouped() { var all = topics(); SECTIONS.forEach(function (s) { s.items = []; }); all.forEach(function (tp) { var s = secOf(tp); tp.sec = s; s.items.push(tp); }); SECTIONS.forEach(function (s) { s.items.sort(function (a, b) { var i = s.titles.indexOf(a.t), j = s.titles.indexOf(b.t); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); }); }); return all; }
   /* pictures: the topic's own screen picture if it has one, else the screenshot made for it; a section uses its own */
   function picOf(tp) { var im = tp.el.querySelector('img.hpic,img[data-pic]'); if (im && im.getAttribute('src')) return im.getAttribute('src'); return MEDIA + 'shots/' + tp.s + '.webp'; }
-  function secPic(s) { return s.id === 'more' && s.items && s.items[0] ? picOf(s.items[0]) : MEDIA + 'shots/sec-' + s.id + '.webp'; }   /* no sec-more picture: More shows its first topic's (button test 21 Nov) */
+  function secPic(s) { if (s.id === 'ref' && window.FSRef && window.FSRef.head) return window.FSRef.head();   /* the start picture for nautical knowledge (Stuart 25 Nov 23:13) */ return s.id === 'more' && s.items && s.items[0] ? picOf(s.items[0]) : MEDIA + 'shots/sec-' + s.id + '.webp'; }   /* no sec-more picture: More shows its first topic's (button test 21 Nov) */
   function img(src, alt, cls) { return '<img class="' + cls + '" loading="lazy" alt="' + esc(alt) + '" src="' + esc(src) + '" onerror="this.hidden=true">'; }
   function css() {
     if ($('hfCss')) return; var s = document.createElement('style'); s.id = 'hfCss';
