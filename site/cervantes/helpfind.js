@@ -159,8 +159,8 @@
       var body = tp.el.cloneNode(true); [].forEach.call(body.querySelectorAll('h3,h2,button.say,[data-nsay],img.hpic,img[data-pic]'), function (x) { x.remove(); });
       [].forEach.call(body.querySelectorAll('button[id],a[id],input[id],select[id]'), function (x) { var id = x.id; x.removeAttribute('id'); x.setAttribute('data-hfid', id); if (x.tagName === 'BUTTON' || x.tagName === 'A') x.addEventListener('click', function (e) { var o = $(id); if (o && o !== x) { e.preventDefault(); o.click(); } }); });   /* button test 21 Nov: a copied button keeps no handler (Show me round, Watch the film did nothing); it now presses the real one */
       h = '<div class="hfnav"><button class="btn" type="button" data-go="' + (V.from === 'find' ? 'find' : V.from === 'path' ? 'path' : 'sec') + '">‹ ' + (V.from === 'find' ? 'Results' : V.from === 'path' ? esc((PATHS.filter(function (x) { return x.id === V.path; })[0] || {}).name || 'Back') : esc(tp.sec.name)) + '</button></div>' +
-        '<article class="hftopic"><h2>' + esc(tp.t) + '</h2></article>' + img(picOf(tp), 'Screen picture: ' + tp.t, 'hfhero') +
-        '<div><button class="btn hfplay" type="button" id="hfPlay" aria-pressed="false">▶ Play</button></div><div class="hftext" id="hfText"></div>' +
+        '<article class="hftopic"><h2>' + esc(tp.t) + '</h2></article>' + img(picOf(tp), 'Screen picture: ' + tp.t, 'hfhero') + (/^data:image\/svg/.test(picOf(tp)) ? '<p class="hfzoom">Tap the picture to enlarge it</p>' : '') +
+        '<div' + (tp.sec && tp.sec.id === 'ref' ? ' style="display:none"' : '') + '><button class="btn hfplay" type="button" id="hfPlay" aria-pressed="false">▶ Play</button></div><div class="hftext" id="hfText"></div>' +
         '<div class="hfpn">' + (pv ? '<button class="btn" type="button" data-t="' + pv.s + '">‹ ' + esc(pv.t) + '</button>' : '<span></span>') + (nx ? '<button class="btn" type="button" data-t="' + nx.s + '">' + esc(nx.t) + ' ›</button>' : '') + '</div>';
       vw.innerHTML = h; $('hfText').appendChild(body); $('hfPlay').onclick = function () { play(tp); }; vw.parentNode.scrollTop = 0; vw.scrollIntoView({ block: 'start' }); return;
     }

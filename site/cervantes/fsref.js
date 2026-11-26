@@ -343,5 +343,25 @@
   var n2 = 0, tm2 = setInterval(function () { if (setPic() || ++n2 > 60) clearInterval(tm2); }, 500);
   var n = 0, tm = setInterval(function () { if (build() || ++n > 60) clearInterval(tm); }, 500);
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#helpBtn,[data-help]')) setTimeout(build, 30); }, true);
-  window.FSRef = { titles: T.map(function (t) { return t[1]; }), head: headSvg, pics: PIC };
+  /* Zoom (Stuart 26 Nov 2026 07:55: "The vector images on the quick reference pages need to zoom so they can be read more easily"): a tap on
+     any of these pictures opens it over the whole screen; pinch, the + and − buttons or a double tap enlarge it up to five times, a drag
+     moves it, × closes. The pictures are drawn as vectors, so they stay sharp at any size. */
+  function zoomCss() { if (document.getElementById('fsZoomCss')) return; var st = document.createElement('style'); st.id = 'fsZoomCss'; st.textContent = '.fszoom{position:fixed;inset:0;z-index:300;background:#06101c;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}.fszoom[hidden]{display:none}.fszbar{display:flex;gap:8px;align-items:center;padding:8px 10px;flex:none}.fszbar span{flex:1;min-width:0;font:600 13px var(--f-body,system-ui);color:#9AB0C6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fszbar button{min-width:48px;min-height:44px;border:1px solid #2c4866;border-radius:10px;background:#1b2c44;color:#E8F0F8;font:600 20px var(--f-body,system-ui)}.fszsc{flex:1;min-height:0;overflow:auto;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}.fszsc img{display:block;width:100%;height:auto;max-width:none}.hfzoom{margin:4px 0 0;font:600 12px var(--f-body,system-ui);color:var(--muted,#9AB0C6)}img.hfhero[src^="data:image/svg"],#depthPic,#depth2Pic{cursor:zoom-in}'; document.head.appendChild(st); }
+  zoomCss();
+  function zoomOpen(src, alt) {
+    var v = document.getElementById('fsZoom'), s = 1;
+    zoomCss(); if (!v) {
+      v = document.createElement('div'); v.id = 'fsZoom'; v.className = 'fszoom'; v.setAttribute('role', 'dialog'); v.setAttribute('aria-label', 'Picture, enlarged'); v.innerHTML = '<div class="fszbar"><span>Pinch, double tap or use + and −</span><button type="button" data-z="out" aria-label="Smaller">−</button><button type="button" data-z="in" aria-label="Larger">+</button><button type="button" data-z="x" aria-label="Close">×</button></div><div class="fszsc"><img alt=""></div>'; document.body.appendChild(v);
+      var sc = v.querySelector('.fszsc'), im = v.querySelector('img');
+      v.__set = function (n, cx, cy) { n = Math.max(1, Math.min(5, n)); var r = sc.getBoundingClientRect(); cx = cx == null ? r.width / 2 : cx; cy = cy == null ? r.height / 2 : cy; var k = n / v.__s, x = (sc.scrollLeft + cx) * k - cx, y = (sc.scrollTop + cy) * k - cy; v.__s = n; im.style.width = (n * 100) + '%'; sc.scrollLeft = x; sc.scrollTop = y; };
+      v.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-z]'); if (!b) return; if (b.dataset.z === 'x') v.hidden = true; else v.__set(v.__s * (b.dataset.z === 'in' ? 1.5 : 1 / 1.5)); });
+      var last = 0; sc.addEventListener('click', function (e) { var t = Date.now(); if (t - last < 320) { var r = sc.getBoundingClientRect(); v.__set(v.__s > 1.01 ? 1 : 2.5, e.clientX - r.left, e.clientY - r.top); last = 0; } else last = t; });
+      var p0 = null; sc.addEventListener('touchstart', function (e) { if (e.touches.length === 2) { var a = e.touches[0], b2 = e.touches[1], r = sc.getBoundingClientRect(); p0 = { d: Math.hypot(a.clientX - b2.clientX, a.clientY - b2.clientY) || 1, s: v.__s, cx: (a.clientX + b2.clientX) / 2 - r.left, cy: (a.clientY + b2.clientY) / 2 - r.top }; } }, { passive: true });
+      sc.addEventListener('touchmove', function (e) { if (p0 && e.touches.length === 2) { e.preventDefault(); var a = e.touches[0], b2 = e.touches[1]; v.__set(p0.s * Math.hypot(a.clientX - b2.clientX, a.clientY - b2.clientY) / p0.d, p0.cx, p0.cy); } }, { passive: false });
+      sc.addEventListener('touchend', function (e) { if (e.touches.length < 2) p0 = null; });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !v.hidden) v.hidden = true; }); }
+    var img = v.querySelector('img'); img.src = src; img.alt = alt || ''; v.__s = 1; img.style.width = '100%'; v.hidden = false; var sc2 = v.querySelector('.fszsc'); sc2.scrollLeft = 0; sc2.scrollTop = 0;
+  }
+  document.addEventListener('click', function (e) { var t = e.target; if (!t || t.tagName !== 'IMG' || t.closest('#fsZoom')) return; var src = t.getAttribute('src') || ''; if (src.indexOf('data:image/svg') !== 0) return; if (!(t.classList.contains('hfhero') || t.classList.contains('hpic') || t.id === 'depthPic' || t.id === 'depth2Pic')) return; e.preventDefault(); e.stopPropagation(); zoomOpen(src, t.alt); }, true);
+  window.FSRef = { titles: T.map(function (t) { return t[1]; }), head: headSvg, pics: PIC, zoom: zoomOpen };
 })();
