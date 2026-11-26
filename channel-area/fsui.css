@@ -170,7 +170,7 @@ body.gpsstrip #liveBox{display:none!important}
 .fhbar{display:flex;align-items:center;gap:8px}.fhutc{font:600 13px var(--f-data,monospace);color:#9FB2CC;white-space:nowrap}
 .fhseg{display:flex;flex:1;border:1px solid #2A3B55;border-radius:10px;overflow:hidden}.fhseg button{flex:1;min-height:44px;border:0;background:transparent;color:#9FB2CC;font:600 15px inherit}.fhseg button[aria-pressed="true"]{background:#2F80D8;color:#fff}
 .fhbtn{min-width:52px;min-height:44px;border-radius:10px;border:1px solid #2A3B55;background:transparent;color:#F4F7FB;font:700 15px inherit}
-.fhmob{background:#E5484D;border-color:#E5484D;color:#fff;font-weight:700}.fhmob.holding{background:#8B0000}
+.fhmob{background:none;border:0;padding:0;min-width:48px;min-height:44px;border-radius:50%}.fhmob.holding{background:#8B0000}/* Stuart 26 Nov 11:50: the lifebuoy as everywhere else, not the word */.fhstart{cursor:pointer}.fhstart .fhgo{font:600 12px var(--f-body,system-ui);font-style:normal;color:#9FB2CC;align-self:center;white-space:nowrap}
 .fhwarn{margin:8px 0 0;padding:8px;border-radius:10px;background:#E5484D;color:#fff;font:700 15px inherit;text-align:center}
 .fhstart{margin-top:8px;border:1px solid #2A3B55;border-radius:14px;padding:6px;display:flex;align-items:baseline;justify-content:center;gap:12px}.fhstart b{font:700 clamp(40px,14vw,96px)/1 var(--f-data,monospace)}.fhstart span{font:600 clamp(14px,4vw,22px) inherit;color:#9FB2CC}
 .fhgrid{flex:1;display:grid;grid-template-rows:repeat(3,1fr);gap:6px;margin-top:8px;min-height:0}
@@ -183,7 +183,7 @@ body.gpsstrip #liveBox{display:none!important}
 .fhgrid .plan{opacity:.62}.fhgrid .plan span::after{content:' PLAN';font-size:.7em;letter-spacing:.04em}
 .fshelm.starting .fhgrid b{font-size:clamp(36px,12vw,120px)}
 @media (orientation:landscape){.fhgrid{grid-template-rows:none;grid-template-columns:repeat(3,1fr)}.fhgrid.n6,.fhgrid.n9{grid-template-rows:1fr 1fr;grid-template-columns:repeat(3,1fr)}.fhgrid.n9{grid-template-rows:repeat(3,1fr)}.fhgrid>div{border-bottom:0;border-right:1px solid #1C2B42}.fhgrid b{font-size:min(12vw,34vh)}.fhgrid.n6 b{font-size:min(8vw,19vh)}.fhgrid.n9 b{font-size:min(5.5vw,11vh)}.fhgrid.n9 span,.fhgrid.n9 i{font-size:clamp(10px,3.2vh,16px);margin-top:0}}
-.fshelm.red{background:#000;color:#E01010}.fshelm.red .fhgrid span,.fshelm.red .fhgrid i,.fshelm.red .fhseg button,.fshelm.red .fhbtn,.fshelm.red .fhutc,.fshelm.red .fhstart span{color:#A00808;border-color:#400}.fshelm.red .fhseg{border-color:#400}.fshelm.red .fhseg button[aria-pressed="true"]{background:#600;color:#F02020}.fshelm.red .fhgrid>div{border-color:#300}.fshelm.red .fhmob{background:#600;color:#F02020}
+.fshelm.red{background:#000;color:#E01010}.fshelm.red .fhgrid span,.fshelm.red .fhgrid i,.fshelm.red .fhseg button,.fshelm.red .fhbtn,.fshelm.red .fhutc,.fshelm.red .fhstart span{color:#A00808;border-color:#400}.fshelm.red .fhseg{border-color:#400}.fshelm.red .fhseg button[aria-pressed="true"]{background:#600;color:#F02020}.fshelm.red .fhgrid>div{border-color:#300}.fshelm.red .fhmob{background:none;opacity:.75}
 /* Stuart 22 Nov: DECK | NAV on the plotter bar. On a phone the buttons take their own short row and the mark name and the one-line readout
    the full width under them, so no button sits on the figures. */
 @media (max-width:600px){.rphead{flex-wrap:wrap;justify-content:center;row-gap:4px}.rphead .rpname{order:2;flex:1 1 100%}.rphead .rpnav{min-height:30px;font-size:11px}.rpnav.rpview span{min-width:36px}.rpline{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}}

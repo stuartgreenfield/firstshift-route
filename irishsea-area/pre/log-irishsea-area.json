@@ -1,41 +1,41 @@
 {
- "at": "2026-11-26T10:33:15.392Z",
+ "at": "2026-11-26T11:21:53.710Z",
  "log": [
   {
    "race": "irishsea-area",
    "h": 0,
-   "s": 15,
-   "note": "Finer routes in 10.0 s. Times: first routes 1.4 s, standard 3.1 s, finer 13.1 s. The faint line is the standard route. F"
+   "s": 16,
+   "note": "Finer routes in 10.4 s. Also worth knowing: in UKV wind, the GFS route is 0.8 min faster than UKV’s own route; in ECMWF "
   },
   {
    "race": "irishsea-area",
    "h": 1,
    "s": 28,
-   "note": "Finer routes in 9.9 s. Times: first routes 0.7 s, standard 2.6 s, finer 12.6 s. The faint line is the standard route. Fi"
+   "note": "Finer routes in 9.1 s. Also worth knowing: in AIFS wind, the GFS route is 0.9 min faster than AIFS’s own route; in AROME"
   },
   {
    "race": "irishsea-area",
    "h": 2,
-   "s": 38,
-   "note": "Finer routes in 7.9 s. Also worth knowing: in AIFS wind, the ECMWF route is 0.7 min faster than AIFS’s own route. Gaps t"
+   "s": 37,
+   "note": "Finer routes in 7.6 s. Also worth knowing: in ECMWF wind, the AROME HD route is 0.5 min faster than ECMWF’s own route. G"
   },
   {
    "race": "irishsea-area",
    "h": 3,
-   "s": 48,
-   "note": "Finer routes in 7.3 s. Times: first routes 0.6 s, standard 1.9 s, finer 9.3 s. The faint line is the standard route. Fir"
-  },
-  {
-   "race": "irishsea-area",
-   "h": 4,
-   "s": 57,
+   "s": 46,
    "note": "Finer routes in 6.9 s. Times: first routes 0.6 s, standard 1.8 s, finer 8.8 s. The faint line is the standard route. Fir"
   },
   {
    "race": "irishsea-area",
+   "h": 4,
+   "s": 55,
+   "note": "Finer routes in 6.8 s. Times: first routes 0.6 s, standard 1.9 s, finer 8.8 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
    "h": 5,
-   "s": 66,
-   "note": "Finer routes in 7.0 s. Times: first routes 0.6 s, standard 1.9 s, finer 8.9 s. The faint line is the standard route. Fir"
+   "s": 64,
+   "note": "Finer routes in 6.7 s. Also worth knowing: in AIFS wind, the GFS route is 0.7 min faster than AIFS’s own route; in AROME"
   }
  ]
 }

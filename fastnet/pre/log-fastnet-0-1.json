@@ -1,17 +1,17 @@
 {
- "at": "2026-11-26T10:39:06.736Z",
+ "at": "2026-11-26T11:27:52.491Z",
  "log": [
   {
    "race": "fastnet",
    "h": 0,
-   "s": 214,
-   "note": "Finer routes in 167.0 s. Times: first routes 8.9 s, standard 44.0 s, finer 211.0 s. The faint line is the standard route"
+   "s": 194,
+   "note": "Finer routes in 151.3 s. Times: first routes 7.6 s, standard 39.6 s, finer 191.0 s. The faint line is the standard route"
   },
   {
    "race": "fastnet",
    "h": 1,
-   "s": 421,
-   "note": "Finer routes in 165.1 s. Times: first routes 6.7 s, standard 41.0 s, finer 206.2 s. The faint line is the standard route"
+   "s": 399,
+   "note": "Finer routes in 165.1 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 38 min faster than ECMWF’s "
   }
  ]
 }

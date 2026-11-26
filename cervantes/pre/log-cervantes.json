@@ -1,41 +1,41 @@
 {
- "at": "2026-11-26T10:44:28.977Z",
+ "at": "2026-11-26T11:34:32.013Z",
  "log": [
   {
    "race": "cervantes",
    "h": 0,
-   "s": 124,
-   "note": "Finer routes in 92.5 s. Times: first routes 5.5 s, standard 29.4 s, finer 122.0 s. The faint line is the standard route."
+   "s": 128,
+   "note": "Finer routes in 96.3 s. Times: first routes 6.0 s, standard 29.9 s, finer 126.2 s. The faint line is the standard route."
   },
   {
    "race": "cervantes",
    "h": 1,
-   "s": 243,
-   "note": "Finer routes in 92.5 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 6.8 min faster than ECMWF’s "
+   "s": 251,
+   "note": "Finer routes in 96.4 s. Times: first routes 4.8 s, standard 26.0 s, finer 122.4 s. The faint line is the standard route."
   },
   {
    "race": "cervantes",
    "h": 2,
-   "s": 361,
-   "note": "Finer routes in 91.3 s. Times: first routes 4.6 s, standard 25.4 s, finer 116.7 s. The faint line is the standard route."
+   "s": 370,
+   "note": "Finer routes in 94.4 s. Times: first routes 4.0 s, standard 24.4 s, finer 118.9 s. The faint line is the standard route."
   },
   {
    "race": "cervantes",
    "h": 3,
-   "s": 483,
-   "note": "Finer routes in 96.8 s. Also worth knowing: in AROME HD wind, the Combined (6 models) route is 2.7 min faster than AROME"
+   "s": 497,
+   "note": "Finer routes in 99.5 s. Also worth knowing: in ICON-EU wind, the AIFS route is 34 min faster than ICON-EU’s own route. C"
   },
   {
    "race": "cervantes",
    "h": 4,
-   "s": 611,
-   "note": "Finer routes in 100.9 s. Also worth knowing: in ICON-EU wind, the AIFS route is 34 min faster than ICON-EU’s own route. "
+   "s": 637,
+   "note": "Finer routes in 108.1 s. Times: first routes 4.6 s, standard 31.7 s, finer 139.9 s. The faint line is the standard route"
   },
   {
    "race": "cervantes",
    "h": 5,
-   "s": 745,
-   "note": "Finer routes in 105.3 s. Times: first routes 4.5 s, standard 28.4 s, finer 133.8 s. The faint line is the standard route"
+   "s": 783,
+   "note": "Finer routes in 114.6 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 139 min faster than ICON-"
   }
  ]
 }
