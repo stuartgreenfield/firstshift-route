@@ -48,6 +48,10 @@
     'body.fsview #tipBody button:not(#tipBack):not(#tipFwd):not(#tipNext){display:none!important}body.fsview #tipBody input,body.fsview #tipBody select,body.fsview #tipBody label,body.fsview #tipBody :has(>input),body.fsview #tipBody :has(>select){display:none!important}' +
     /* the box itself, squeezed together (Stuart 26 Nov 11:27, picture of a tablet on its side: names hard left, figures hard right, the whole width of the chart): a card between MOB and VIEW, two columns, each name beside its figure, and short enough to leave the chart in sight */
     'body.fsview #tip.docked{left:calc(max(10px,env(safe-area-inset-left,0px)) + 52px)!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 6px)!important;width:min(560px,calc(100vw - 252px));max-width:none;max-height:calc(100% - 12px);overflow-y:auto;overscroll-behavior:contain;padding:4px 10px 6px;line-height:1.42}body.fsview #tip.docked #tipBody{columns:2 200px;column-gap:18px;column-rule:1px solid var(--line,#2E4860)}body.fsview #tip.docked #tipBody>*{break-inside:avoid}body.fsview #tip.docked .r{flex-wrap:wrap;gap:0 12px}body.fsview #tip.docked .r span:last-child{text-align:right;margin-left:auto}body.fsview #tip.docked .tipgrip{margin:-2px -10px 0}body.fsview #tip.docked .tipstep{margin:2px 0 4px}body.fsview #tip.docked .tipsec{margin:5px 0 1px;padding-top:4px}' +
+    /* header or lift on the strip (Stuart 26 Nov 12:30, yes): first on the tide line, green for a lift, red for a header */
+    '#fsvTide #fsvTl{display:contents}#fsvTide #fsvSh b{font-weight:700}#fsvTide #fsvSh.lift b{color:#3DDC84}#fsvTide #fsvSh.header b{color:#E5484D}#fsvTide #fsvSh:empty{display:none}' +
+    /* the whole screen (Stuart 26 Nov 12:30, yes): a button beside ? where the browser allows a page to take the whole screen (Android Chrome; not Safari on an iPhone), on a phone only, so the screen stays under 500 high and this screen stays up */
+    '#fsvTop #fsvFull{padding:0;width:44px}#fsvTop #fsvFull svg{width:20px;height:20px;display:block;margin:auto;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}#fsvTop #fsvFull[aria-pressed="true"]{background:var(--route,#5B9BD5);color:#06121f}body.fsview.fsvfs #tip.docked{width:min(560px,calc(100vw - 304px))}body.fsview.fsvfs #solSeq{width:min(420px,calc(100vw - 322px))!important}body.fsview.fsvfs #navHelm .nhbar,body.fsview.fsvfs #fsHelm .fhbar{padding-right:248px!important}' +
     /* 20/20 on its side: the four figures across the whole width, two by two; which figures is chosen upright */
     'body.fsview.fsdeck #app{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr) auto!important}body.fsview.fsdeck #app>.chart,body.fsview.fsdeck #app>#panel{display:none!important}' +
     'body.fsview.fsdeck #deckNums{grid-column:1!important;grid-row:1!important;display:grid!important;grid-template-columns:1fr 1fr!important;grid-template-rows:0 0 minmax(0,1fr) minmax(0,1fr)!important;gap:6px!important;border:0!important;padding:calc(env(safe-area-inset-top,0px) + 46px) max(8px,env(safe-area-inset-right,0px)) 6px max(8px,env(safe-area-inset-left,0px))!important}' +
@@ -65,6 +69,10 @@
   var OPEN = '.sheet:not([hidden]), #help:not([hidden]), #layers:not([hidden]), #splash:not([hidden]), .solstep, #fsTour:not([hidden]), .dkpick:not([hidden]), #fsZoom:not([hidden]), #raceMenu:not([hidden]), #wiz:not([hidden]), #races:not([hidden]), #solList:not([hidden])';
   function sheetOpen() { var l = document.querySelectorAll(OPEN); for (var i = 0; i < l.length; i++) if (vis(l[i])) return true; return false; }
   function busy() { if (sheetOpen()) return true; var a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'range'); }   /* typing a name counts as open */
+  var tideH = '', shH = '', fullBy = false;
+  function standalone() { try { return !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || (window.matchMedia && matchMedia('(display-mode: fullscreen)').matches)); } catch (e) { return false; } }
+  function canFull() { try { var d = document.documentElement; return !!(d.requestFullscreen && document.fullscreenEnabled !== false && !standalone() && !window.NativeLink && Math.min(screen.width, screen.height) <= 500); } catch (e) { return false; } }
+  function iosTab() { try { return /iPhone|iPod/.test(navigator.userAgent) && !standalone() && !window.NativeLink && !(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.NativeLink); } catch (e) { return false; } }
   function helmEl() { var a = $('navHelm'), b = $('fsHelm'); return vis(a) ? a : vis(b) ? b : null; }
   function deckOn() { try { return !!(window.FSDeck && window.FSDeck.on()); } catch (e) { return false; } }
   function view() { return helmEl() ? 'helm' : deckOn() ? 'deck' : 'chart'; }
@@ -83,17 +91,18 @@
   var NAMES = { chart: 'Chart', deck: '20/20', helm: 'HELM' };
   function build() {
     if (ui) return; ui = {};
-    var top = document.createElement('div'); top.id = 'fsvTop'; top.className = 'fsv'; top.innerHTML = '<button type="button" id="fsvHelp" aria-label="What this screen does">?</button><button type="button" id="fsvView" aria-label="Change the view">VIEW<i></i></button>'; document.body.appendChild(top);
+    var top = document.createElement('div'); top.id = 'fsvTop'; top.className = 'fsv'; top.innerHTML = '<button type="button" id="fsvFull" aria-label="Whole screen" aria-pressed="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><button type="button" id="fsvHelp" aria-label="What this screen does">?</button><button type="button" id="fsvView" aria-label="Change the view">VIEW<i></i></button>'; document.body.appendChild(top);
     var hint = document.createElement('div'); hint.id = 'fsvHint'; hint.className = 'fsv'; hint.setAttribute('role', 'status'); hint.textContent = 'Turn the phone upright to change anything'; (document.querySelector('.chart') || document.body).appendChild(hint);   /* at the foot of the chart, clear of everything at the top */
     var rd = document.createElement('button'); rd.type = 'button'; rd.id = 'fsvRound'; rd.className = 'fsv'; rd.hidden = true; rd.textContent = 'Rounded'; rd.title = 'Count this mark as rounded'; document.body.appendChild(rd);
     var card = document.createElement('div'); card.id = 'fsvCard'; card.className = 'fsv'; card.hidden = true; card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'On its side: watching');
-    card.innerHTML = '<div class="in"><h3>Upright to work, on its side to watch</h3><p>On its side the phone shows what you need to watch: the chart or the start, your figures along the foot, and man overboard.</p><p><b>VIEW</b> steps between the chart, 20/20 and HELM. Move the line above the figures to look ahead along the plan. Touch the route for the plan at that point. Pinch to zoom; drag the chart and it goes back to the boat after 10 seconds.</p><p>To change anything else (the course, routes, layers, settings, which figures show), turn the phone upright: every menu is there.</p><button type="button" id="fsvCardX">OK</button></div>'; document.body.appendChild(card);
-    var tide = document.createElement('div'); tide.id = 'fsvTide'; tide.hidden = true; tide.setAttribute('aria-label', 'Tide'); var bar = $('bar'); if (bar) bar.appendChild(tide);
+    card.innerHTML = '<div class="in"><h3>Upright to work, on its side to watch</h3><p>On its side the phone shows what you need to watch: the chart or the start, your figures along the foot, and man overboard.</p><p><b>VIEW</b> steps between the chart, 20/20 and HELM. Move the line above the figures to look ahead along the plan. Touch the route for the plan at that point. Pinch to zoom; drag the chart and it goes back to the boat after 10 seconds.</p><p>To change anything else (the course, routes, layers, settings, which figures show), turn the phone upright: every menu is there.</p>' + (canFull() ? '<p><b>The whole screen:</b> the square button beside ? hides the browser\'s bars. Tap it again to bring them back.</p>' : iosTab() ? '<p><b>The whole screen on an iPhone:</b> tap Share, then Add to Home Screen, and open it from its icon. It opens with no Safari bars. Safari does not let a page do this by itself.</p>' : '') + '<button type="button" id="fsvCardX">OK</button></div>'; document.body.appendChild(card);
+    var tide = document.createElement('div'); tide.id = 'fsvTide'; tide.hidden = true; tide.setAttribute('aria-label', 'Header or lift, and the tide'); tide.innerHTML = '<span id="fsvSh" role="status"></span><span id="fsvTl"></span>'; var bar = $('bar'); if (bar) bar.appendChild(tide);
+    var fb = $('fsvFull'); if (canFull()) { fb.hidden = false; document.body.classList.add('fsvfs'); fb.addEventListener('click', function (e) { e.stopPropagation(); try { if (document.fullscreenElement) document.exitFullscreen(); else { fullBy = true; document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(function () {}); } } catch (x) {} setTimeout(paint, 300); }); document.addEventListener('fullscreenchange', function () { paint(); kick(); }); }
     $('fsvView').addEventListener('click', function (e) { e.stopPropagation(); next(); });
     $('fsvHelp').addEventListener('click', function (e) { e.stopPropagation(); card.hidden = false; hintShow(); });
     card.addEventListener('click', function (e) { if (e.target === card || e.target.id === 'fsvCardX') card.hidden = true; });
     rd.addEventListener('click', function (e) { e.stopPropagation(); var b = $('mkSkip'); if (b) b.click(); setTimeout(paint, 200); });
-    ui.top = top; ui.hint = hint; ui.round = rd; ui.card = card; ui.tide = tide;
+    ui.top = top; ui.hint = hint; ui.round = rd; ui.card = card; ui.tide = tide; ui.sh = $('fsvSh'); ui.tl = $('fsvTl');
   }
   function hintShow() { hintAt = Date.now(); if (ui) ui.hint.classList.remove('gone'); }
   function tideLine() {
@@ -107,13 +116,17 @@
         if (r.T1.t) { h += '<span>turns ' + r.T1.to + ' <b>' + hm(r.T1.t) + '</b></span>'; if (r.margin != null && isFinite(r.margin)) { var m = Math.round(Math.abs(r.margin)), mm = m >= 60 ? Math.floor(m / 60) + ' h ' + ('0' + m % 60).slice(-2) : m + ' min'; h += '<span>you arrive <b>' + mm + '</b> ' + (r.margin >= 0 ? 'before' : 'after') + '</span>'; } }
         else h += '<span>no turn in the next 12 hours</span>';
       } } catch (e) { h = ''; }
-    ui.tide.innerHTML = h; ui.tide.hidden = !h;
+    ui.tl.innerHTML = h; tideH = h; ui.tide.hidden = !(tideH || shH);
   }
+  /* header or lift, every second, from the same sum as the label beside the boat and the live box (app.js shiftCalc) */
+  function shiftLine() { if (!ui) return; var h = '', k = ''; try { var c = window.__fsCalc ? window.__fsCalc() : null, s = c && c.shift; if (s && !s.off) { k = s.kind; h = '<b>' + (k === 'steady' ? 'ON THE WIND' : (k === 'lift' ? '\u25b2 LIFT ' : '\u25bc HEADER ') + s.deg + '\u00b0') + '</b> ' + (s.tack || '') + ' tack'; } } catch (e) { h = ''; }
+    if (h !== shH) { shH = h; ui.sh.innerHTML = h; ui.sh.className = k; ui.tide.hidden = !(tideH || shH); } }
   function paint() {
     if (!ui) return; var v = view(); var i = $('fsvView').querySelector('i'); if (i) i.textContent = NAMES[v] + ' ›';
     ui.round.hidden = !(v === 'chart' && $('mkSkip'));
     if (Date.now() - hintAt > 8000) ui.hint.classList.add('gone');
-    if (v === 'chart') tideLine();
+    if (v === 'chart') { tideLine(); shiftLine(); }
+    var fb = $('fsvFull'); if (fb && !fb.hidden) fb.setAttribute('aria-pressed', String(!!document.fullscreenElement));
   }
   function enter() {
     if (on) return; if (!$('app') || !$('bar') || !$('now')) return;
@@ -124,6 +137,7 @@
     if (!on) return; on = false;
     /* what this screen opened, it closes: upright comes back as it was left */
     if (opened.helm && helmEl()) helmClose(); if (opened.deck && deckOn()) { try { window.FSDeck.set(false); } catch (e) {} }
+    if (fullBy) { fullBy = false; try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} }
     document.body.classList.remove('fsview'); if (ui) ui.card.hidden = true; kick();
   }
   function beat() {

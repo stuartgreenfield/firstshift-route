@@ -83,6 +83,8 @@
     s.textContent = 'body.fsdeck .app{grid-template-rows:minmax(0,42%) minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}' +
       'body.fsdeck #deckNums{grid-row:1;grid-column:1}body.fsdeck .app>.chart{grid-row:2;grid-column:1}body.fsdeck .app>.panel{grid-row:2;grid-column:1;width:auto;max-height:none;border-left:0;border-top:1px solid var(--line);border-radius:0}' +
       'body.fsdeck .app>:not(#deckNums):not(.chart):not(.panel){grid-column:1}' +
+      /* Stuart 26 Nov 11:42 and 12:40: with the buttons cleared, 20/20's Routes, Plan, Fleet and Data views were "just a blank black screen": the cleared screen hides the panel, and 20/20 shows those views in the panel. In 20/20 the view asked for wins */
+      'body.navclear.fsdeck.fsdeckv #panel{display:flex!important}' +
       'body.fsdeck.fsdeckv .app>.chart{display:none}body.fsdeck:not(.fsdeckv) .app>.panel{display:none!important}' +
       '@media (orientation:landscape){body.fsdeck .app{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,40%) minmax(0,1fr)}body.fsdeck #deckNums{grid-row:1;grid-column:1}body.fsdeck .app>.chart,body.fsdeck .app>.panel{grid-row:1;grid-column:2}body.fsdeck .app>:not(#deckNums):not(.chart):not(.panel){grid-column:1 / span 2}}' +
       '#deckNums{display:none;min-height:0;background:var(--panel);border-bottom:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-right,0px)) 6px max(6px,env(safe-area-inset-left,0px));gap:6px;grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr 1fr;touch-action:pan-y}' +
