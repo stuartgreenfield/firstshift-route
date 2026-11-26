@@ -6,7 +6,7 @@ set -e
 # The apps go into site/android of this branch, then main moves up to it (fast-forward only: stops if main has something this branch lacks).
 cd /tmp/claude-0/night; [ -n "$2" ] && cp "$2" site/android/navigate.apk; [ -n "$3" ] && cp "$3" site/android/markplus.apk
 git add site/android; git diff --cached --quiet || git commit -qm "Apps for the live release
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_011G6Dp4mrjFjgEiUjrYpsea"
 git diff --quiet HEAD -- site || { echo "STOP: site/ has changes not committed; commit them so main and the live site get the same code"; exit 1; }
 git push -q origin HEAD:main || { echo "STOP: main has commits this branch lacks; merge them first"; exit 1; }
@@ -20,7 +20,7 @@ rm -rf helpmedia && cp -r $N/helpmedia helpmedia; mkdir -p courses && cp $N/cour
 [ -n "$2" ] && cp "$2" android/navigate.apk; [ -n "$3" ] && cp "$3" android/markplus.apk
 git add -A; git commit -qm "$MSG
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_011G6Dp4mrjFjgEiUjrYpsea" || true
 git push -q origin HEAD:site; H=$(git rev-parse --short HEAD)
 for i in $(seq 1 40); do s=$(gh api repos/stuartgreenfield/firstshift-route/commits/$H/check-runs --jq '.check_runs[] | .status + " " + (.conclusion // "")' 2>/dev/null); case "$s" in *completed*) echo "$H $s"; break;; esac; timeout 8 tail -f /dev/null; done
