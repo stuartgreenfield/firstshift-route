@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-26T17:54:10.163Z",
+ "log": [
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 71,
+   "note": "Finer routes in 52.1 s. Also worth knowing: in UKV wind, the AROME HD route is 3.4 min faster than UKV’s own route. Gaps"
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 133,
+   "note": "Finer routes in 49.5 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 2.3 min faster than ICON-E"
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 195,
+   "note": "Finer routes in 48.7 s. Times: first routes 1.7 s, standard 12.9 s, finer 61.7 s. The faint line is the standard route. "
+  }
+ ]
+}

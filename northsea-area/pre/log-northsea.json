@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-26T17:54:46.708Z",
+ "log": [
+  {
+   "race": "northsea",
+   "h": 0,
+   "s": 90,
+   "note": "Finer routes in 66.0 s. Times: first routes 7.1 s, standard 21.9 s, finer 87.9 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea",
+   "h": 1,
+   "s": 172,
+   "note": "Finer routes in 66.2 s. Times: first routes 2.2 s, standard 14.8 s, finer 81.1 s. The faint line is the standard route. "
+  },
+  {
+   "race": "northsea",
+   "h": 2,
+   "s": 253,
+   "note": "Finer routes in 65.7 s. Also worth knowing: in AIFS wind, the AROME HD route is 18 min faster than AIFS’s own route. Com"
+  }
+ ]
+}
