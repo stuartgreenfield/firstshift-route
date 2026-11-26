@@ -1,0 +1,204 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Try the start screen</title>
+<style>
+/* Layout: one phone-width column, the start picture as the hero, numbers in a strip beneath, demo controls last. Single dark look, as the app's start screen at sea. */
+:root{
+ --bg:#0b1626; --panel:#14233a; --cell:#1b2a40; --line:#3b5f86; --ink:#e6edf6; --mute:#9fb0c6; --accent:#2563eb; --you:#facc15; --early:#f87171; --late:#60a5fa; --good:#4CC38A; --wind:#8DB8DC; --tide:#55D1AE;
+ --mono:ui-monospace,"JetBrains Mono",Menlo,monospace; --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+ color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font:14px/1.4 var(--sans);margin:0}
+.wrap{max-width:560px;margin:0 auto;padding-block:10px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.test{background:#a16207;color:#fff;font-weight:800;font-size:12px;letter-spacing:.06em;border-radius:6px;padding:4px 8px;align-self:flex-start}
+.top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.clk{font:800 44px/1 var(--mono);font-variant-numeric:tabular-nums}.clk.red{color:var(--early)}.clk.go{color:var(--good)}
+.g{color:var(--mute);font-size:12px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{white-space:nowrap;font:700 12.5px var(--sans);color:var(--ink);background:var(--cell);border:1px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer}
+button.on{background:var(--accent);border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--you);outline-offset:2px}
+button.ap{border-color:#dc2626}button.ap.on{background:#dc2626}
+.fl{display:inline-flex;align-items:center;gap:5px;border-radius:8px}
+.pic{background:var(--panel);border-radius:12px;overflow:hidden;position:relative}
+svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.zoom{position:absolute;right:8px;bottom:34px;display:flex;flex-direction:column;gap:4px}.zoom button{width:34px;height:34px;padding:0;font-size:18px;border-radius:8px}
+.cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.c{background:var(--cell);border-radius:8px;padding:6px 8px;min-width:0}
+.c i{font-style:normal;color:var(--mute);font-size:10px;letter-spacing:.06em;display:block}
+.c b{display:block;font:800 21px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c s{text-decoration:none;color:var(--mute);font-size:10.5px}
+.c.big b{font-size:30px}
+@media (max-width:420px){.cells{grid-template-columns:repeat(2,minmax(0,1fr))}.clk{font-size:38px}}
+@media (min-width:900px){.wrap{max-width:1180px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);column-gap:18px;align-items:start}.wrap>*{grid-column:2}.wrap>.pic{grid-column:1;grid-row:1 / span 9}}
+[hidden]{display:none!important}
+.demo{border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
+.note{color:var(--mute);font-size:12px;max-width:65ch}
+.bset{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:var(--cell);border-radius:10px;padding:8px 10px}.bset label{font-size:12.5px;font-weight:700}.bset input{width:4.2em;font:700 13px var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 5px}.lbl{color:var(--mute);font-size:11.5px;font-weight:700;letter-spacing:.04em}
+</style>
+</head><body>
+<div class="wrap">
+ <span class="test">TRY IT · simulated boats, example wind and tide · not for navigation</span>
+ <div class="top"><span class="clk" id="clk">2:30</span><span class="g" id="gunTxt">Gun 14:10 · 5-4-1-0</span></div>
+ <div class="row">
+  <button id="bWind" class="on">Wind up</button><button id="bNorth">North up</button>
+  <button id="bPred">Predictor OFF</button><button id="bAis">AIS OFF</button>
+  <button id="bAp" class="ap">AP</button><button id="bBoat">Boat settings</button>
+ </div>
+ <div class="bset" id="bset" hidden><span class="lbl">BOAT SETTINGS · used by the burn time and the predictor</span><label>Tack <input id="sTack" type="number" min="2" max="30" value="8"> s</label><label>Gybe <input id="sGybe" type="number" min="2" max="30" value="6"> s</label><label>Speed-up <input id="sAcc" type="number" min="2" max="40" value="10"> s</label><label>Close-hauled <input id="sCl" type="number" min="2" max="15" step="0.1" value="6.0"> kn</label><span class="note">Speed-up: seconds from stopped to full speed. In the app these are the existing Boat settings (speed-up can be typed, set by boat size, or learnt from your boat).</span></div>
+ <div class="row" id="flags"><span class="lbl">START FLAG</span></div>
+ <div class="pic"><svg id="sv" viewBox="0 0 400 440" role="img" aria-label="Start line picture"></svg>
+  <div class="zoom"><button id="zIn" aria-label="Zoom in">+</button><button id="zOut" aria-label="Zoom out">−</button></div></div>
+ <div class="cells" id="cells"></div>
+ <div class="row demo"><span class="lbl">DEMO</span><button id="dRe">Restart at 2:30</button><button id="dRe5">Restart at 5:00</button><button data-sp="1" class="on">×1</button><button data-sp="2">×2</button><button data-sp="4">×4</button><button id="dPause">Pause</button></div>
+ <p class="note">A boat (yellow) does a timed run: away on port, back on starboard, luffing to burn time, then sails for the line. Tide 1.1 kn sets towards the line here, so watch it push the boat up while it waits. The burn line is where you would need to be to hit the line at the gun at close-hauled speed with this tide. Try AP: the countdown stops, and after AP comes down the warning signal is 1 minute later and a new 5 minute sequence starts. With Z, U or the black flag, the triangle to the first mark shows in the last minute.</p>
+</div>
+<script>
+(function(){
+const R=Math.PI/180, TWD=235, HALF=90, LINEW=157-TWD;                // line bearing 157°T, wind 235°T
+let VCL=3.1; const TWA=42, TIDE={x:0,y:0.57};                            // close-hauled 6 kn; tide 1.1 kn to 235°T = straight up the course here
+const MARK={x:Math.sin(13*R)*3519,y:Math.cos(13*R)*3519};             // windward mark 248°T 1.9 nm
+const PIN={x:Math.sin(LINEW*R)*HALF,y:Math.cos(LINEW*R)*HALF}, COM={x:-PIN.x,y:-PIN.y};
+const NRM=(LINEW+90)*R, NX=Math.sin(NRM), NY=Math.cos(NRM);           // unit normal to the line, towards the course side
+const HDG_APP=-TWA; let VPERP;
+const BS={tack:8,gybe:6,acc:10,cl:6.0};   /* boat settings: the app's Settings, Boat (tack, gybe and speed-up seconds already exist in Mark: speed-up typed, by boat size, or learnt) */
+function setBoat(){VCL=BS.cl/1.944; VPERP=VCL*Math.cos((-TWA-(LINEW+90))*R)+TIDE.x*NX+TIDE.y*NY;} setBoat();   // speed made good towards the line on starboard
+const accLoss=v=>BS.acc*Math.pow(Math.max(0,1-v/VCL),2)/2*(VPERP-(TIDE.x*NX+TIDE.y*NY))/VPERP;   /* only the boat's own share of the speed towards the line is lost; the tide keeps carrying */   /* seconds lost speeding up from v to close-hauled speed */
+const BIAS=PIN.y-COM.y;
+const FLAG={P:'<rect width="24" height="16" fill="#1e40af"/><rect x="7" y="4.5" width="10" height="7" fill="#fff"/>',
+ I:'<rect width="24" height="16" fill="#facc15"/><circle cx="12" cy="8" r="4.5" fill="#000"/>',
+ Z:'<path d="M0 0H24L12 8z" fill="#facc15"/><path d="M0 0V16L12 8z" fill="#000"/><path d="M0 16H24L12 8z" fill="#dc2626"/><path d="M24 0V16L12 8z" fill="#1e40af"/>',
+ U:'<rect width="24" height="16" fill="#fff"/><rect width="12" height="8" fill="#dc2626"/><rect x="12" y="8" width="12" height="8" fill="#dc2626"/>',
+ BLACK:'<rect width="24" height="16" fill="#000" stroke="#e6edf6" stroke-width="1"/>',
+ AP:'<path d="M0 0L24 4V12L0 16z" fill="#fff"/><path d="M4 .7V15.3M12 2V14M20 3.3V12.7" stroke="#dc2626" stroke-width="4"/>'};
+const FN={P:'P standard',I:'I',Z:'Z',U:'U',BLACK:'Black'};
+const S={north:false,pred:false,ais:false,flag:'P',k:1.15,sp:1,paused:false};
+let T, seq, boats;
+const $=id=>document.getElementById(id);
+
+function reset(sec){ T=0; seq={phase:'seq',gunAt:sec};
+  boats=[mk(40,-60,'away',1,'You')].concat(S.aisList=[[-90,-40,1.0,'GBR 1381'],[120,-80,0.95,'Jolly'],[0,-140,1.03,'Tigris'],[-160,-110,0.9,''],[170,-20,0.97,''],[60,-200,1.05,'']].map(a=>mk(a[0],a[1],'away',a[2],a[3])));
+  boats.forEach((b,i)=>{b.margin=i?6+i*3:12;}); }
+function mk(x,y,mode,f,name){return{x,y,h:165,v:2.6,mode,f,name,turnT:0,trail:[]}}
+
+/* timed-run autopilot: away on port, turn, back on starboard close-hauled; luff to burn time */
+function tGun(){return seq.phase==='seq'?seq.gunAt-T:null}
+function dPerp(b){return (b.x-PIN.x)*NX*-1+(b.y-PIN.y)*NY*-1}       // metres below the line (positive = pre-start side)
+function step(b,dt){
+  const tg=tGun(), d=dPerp(b), vp=VPERP*b.f;
+  let h=b.h,v=b.v;
+  if(tg===null){ b.mode='hover'; }
+  if(b.mode==='hover'){ if(tg!==null){b.mode='away';} else { h = (Math.floor(T/40)%2)? 100: -100; v=0.8; } }
+  if(b.mode==='away'){ h=165; v=2.6*b.f; if(tg!==null && tg-(BS.gybe+2+Math.max(0,d)/vp)<=b.margin) {b.mode='turn';b.turnT=0;} }
+  if(b.mode==='turn'){ b.turnT+=dt; h=165+(HDG_APP+360-165)*Math.min(1,b.turnT/BS.gybe); h=((h%360)+540)%360-180;   /* gybe round: 165 to 318 */ v=1.4; if(b.turnT>=BS.gybe){b.mode='app';} }
+  if(b.mode==='app'){ const burn=tg===null?99:tg-Math.max(0,d)/vp-accLoss(b.v);
+    if(tg!==null && tg>40 && burn>45){b.mode='away';}
+    else if(tg!==null && tg>2 && burn>-1 && d>0 && d<45){ if(d<22){h=165;v=0.8;} else {h=-12;v=0.3;} }   /* hold station: luff, or bear off against the tide when close */ else {h=HDG_APP;v=VCL*b.f;} }
+  const dh=((h-b.h)%360+540)%360-180; b.h=((b.h+dh*Math.min(1,dt*1.5))%360+540)%360-180; b.v+=Math.max(-1.5*dt,Math.min(VCL/BS.acc*dt,v-b.v));
+  b.x+=(Math.sin(b.h*R)*b.v+TIDE.x)*dt; b.y+=(Math.cos(b.h*R)*b.v+TIDE.y)*dt;
+}
+/* view */
+function view(){const th=S.north?TWD:0, c=Math.cos(th*R), s=Math.sin(th*R), k=S.k, cx=200, cy=190;
+  return {th,P:(x,y)=>{const X=x*c+y*s, Y=-x*s+y*c; return [cx+X*k, cy-Y*k]}, ang:a=>a+th};}
+const f1=n=>n.toFixed(1), mmss=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+('0'+s%60).slice(-2)};
+function boatPath(p,a,col,k,op){return `<path transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)}) rotate(${a.toFixed(1)}) scale(${k})" d="M0 -11 C6 -5 6 5 4 9 L-4 9 C-6 5 -6 -5 0 -11z" fill="${col}" fill-opacity="${op}" stroke="#0b1626" stroke-width="1"/>`}
+function inTri(b){const s=(a,c,p)=>(c.x-a.x)*(p.y-a.y)-(c.y-a.y)*(p.x-a.x), d1=s(PIN,COM,b),d2=s(COM,MARK,b),d3=s(MARK,PIN,b); return !((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0));}
+
+function draw(){
+  const V=view(), P=V.P, W=400, H=440, tg=tGun(), me=boats[0]; let s='';
+  const wv=a=>{const t=(a+V.th)*R;return[Math.sin(t),-Math.cos(t)]};   // screen unit vector for a wind-frame angle
+  // faint tide arrows, chart style, bigger = stronger
+  const td=wv(0);
+  for(let gy=40;gy<H;gy+=56)for(let gx=24+((gy/56)%2)*28;gx<W;gx+=56){const sp=1.1*(0.85+0.3*Math.sin(gx*0.013+gy*0.02)),L=12+sp*9,w=2+sp*3.2,hw=w*1.9,hl=5+sp*3,dx=td[0],dy=td[1];
+    const bx=gx-dx*L/2,by=gy-dy*L/2,tx=gx+dx*L/2,ty=gy+dy*L/2,nx=gx+dx*(L/2-hl),ny=gy+dy*(L/2-hl);
+    s+=`<path d="M${bx-dy*w/2} ${by+dx*w/2}L${nx-dy*w/2} ${ny+dx*w/2}L${nx-dy*hw/2} ${ny+dx*hw/2}L${tx} ${ty}L${nx+dy*hw/2} ${ny-dx*hw/2}L${nx+dy*w/2} ${ny-dx*w/2}L${bx+dy*w/2} ${by-dx*w/2}z" fill="#55D1AE" fill-opacity=".07" stroke="#55D1AE" stroke-opacity=".2" stroke-width=".9"/>`;
+    if((gx*7+gy*3)%5===0) s+=`<text x="${gx+9}" y="${gy+13}" fill="#55D1AE" fill-opacity=".4" font-size="8.5" font-family="ui-monospace,monospace">${f1(sp)}</text>`;}
+  // triangle in the last minute under Z, U or black flag
+  const last=tg!==null&&tg<=60&&tg>0;
+  if(last&&/Z|U|BLACK/.test(S.flag)){const a=P(PIN.x,PIN.y),b=P(COM.x,COM.y),m=P(MARK.x,MARK.y); s+=`<path d="M${a}L${b}L${m}z" fill="#ef4444" fill-opacity=".10" stroke="#ef4444" stroke-opacity=".55" stroke-dasharray="6 5"/>`;}
+  // ladder: rungs square to the wind every 25 m; rungs through each end labelled with distance to the windward mark
+  for(let k=-12;k<=16;k++){const a=P(-900,k*25),b=P(900,k*25); s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#93c5fd" stroke-opacity=".09"/>`;}
+  [[PIN,1],[COM,-1]].forEach(([q,sd])=>{const a=P(-900,q.y),b=P(900,q.y),t=P(sd*150,q.y); s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#93c5fd" stroke-opacity=".42" stroke-dasharray="4 4"/><text x="${Math.min(W-8,Math.max(8,t[0]))}" y="${t[1]+(sd>0?-5:13)}" fill="#93c5fd" font-size="10" font-weight="700" text-anchor="${sd>0?'end':'start'}">${((MARK.y-q.y)/1852).toFixed(2)} nm to mark</text>`;});
+  {const a=P(PIN.x-30,PIN.y),b=P(PIN.x-30,COM.y); s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#4CC38A" stroke-width="2"/><circle cx="${a[0]}" cy="${a[1]}" r="2.5" fill="#4CC38A"/><text x="${(a[0]+b[0])/2-5}" y="${(a[1]+b[1])/2+4}" fill="#4CC38A" font-size="10.5" font-weight="800" text-anchor="end">BIAS ${Math.round(BIAS)} m</text>`;}
+  {const a=P(0,0),m=P(Math.sin(13*R)*170,Math.cos(13*R)*170); s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${m[0]}" y2="${m[1]}" stroke="#facc15" stroke-opacity=".55" stroke-dasharray="2 6" stroke-width="2"/><text x="${m[0]+5}" y="${m[1]}" fill="#facc15" fill-opacity=".8" font-size="10" font-weight="700">MARK 1 · 248° 1.9 nm</text>`;}
+  // AIS fleet, faint
+  if(S.ais) boats.slice(1).forEach(b=>{const p=P(b.x,b.y); s+=boatPath(p,V.ang(b.h),'#cbd5e1',0.85,0.3); if(b.name) s+=`<text x="${p[0]+9}" y="${p[1]+4}" fill="#cbd5e1" fill-opacity=".45" font-size="9">${b.name}</text>`;});
+  // burn line: where you need to be now to reach the line at the gun at close-hauled speed with this tide
+  if(tg!==null&&tg>0){const off=VPERP*tg, a=P(PIN.x-NX*off,PIN.y-NY*off), b=P(COM.x-NX*off,COM.y-NY*off), onScr=Math.max(a[1],b[1])<H-6;
+    const awy=Math.cos(me.h*R)*NY+Math.sin(me.h*R)*NX<0, burn=tg-(awy?BS.gybe+2:accLoss(me.v))-Math.max(0,dPerp(me))/VPERP, txt=burn>=0?'EARLY':'LATE';
+    if(onScr) s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#ef4444" stroke-width="3"/><text x="${Math.min(a[0],b[0])+4}" y="${Math.max(a[1],b[1])+16}" fill="#f87171" font-size="11" font-weight="800">BURN LINE · YOU ${mmss(Math.abs(burn))} ${txt}</text>`;
+    else s+=`<text x="10" y="${H-30}" fill="#f87171" font-size="11" font-weight="800">BURN LINE ${Math.round(off)} m BELOW THE LINE ↓</text>`;}
+  // predictor
+  if(S.pred&&tg!==null&&tg>0){const gx=me.x+(Math.sin(me.h*R)*me.v+TIDE.x)*tg, gy=me.y+(Math.cos(me.h*R)*me.v+TIDE.y)*tg, over=dPerp({x:gx,y:gy})<0, col=over?'#f87171':'#f8fafc', a=P(me.x,me.y), g=P(gx,gy);
+    s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${g[0]}" y2="${g[1]}" stroke="${col}" stroke-width="2.5" stroke-dasharray="2 5" stroke-linecap="round"/><circle cx="${g[0]}" cy="${g[1]}" r="5.5" fill="none" stroke="${col}" stroke-width="2.5"/><text x="${g[0]<140?g[0]+9:g[0]-9}" y="${g[1]+4}" fill="${col}" font-size="10.5" font-weight="800" text-anchor="${g[0]<140?'start':'end'}">AT THE GUN${over?' · OVER':''}</text>`;}
+  // start line, pin, committee boat with its hoist
+  {const a=P(PIN.x,PIN.y),b=P(COM.x,COM.y); s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#4CC38A" stroke-width="4" stroke-linecap="round"/><circle cx="${a[0]}" cy="${a[1]}" r="6" fill="#f97316" stroke="#0b1626"/><text x="${a[0]}" y="${a[1]+20}" fill="#e6edf6" font-size="10" font-weight="700" text-anchor="middle">PIN</text>`;
+    s+=boatPath(b,V.ang(90),'#f8fafc',2.1,1)+`<line x1="${b[0]}" y1="${b[1]}" x2="${b[0]}" y2="${b[1]-48}" stroke="#e6edf6" stroke-width="1.5"/>`;
+    const hoist=flagsUp(); hoist.forEach((f,i)=>{s+= f==='IRC'?`<rect x="${b[0]+1}" y="${b[1]-48+i*17}" width="24" height="15" fill="#0ea5e9"/><text x="${b[0]+13}" y="${b[1]-37+i*17}" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">IRC</text>`:`<g transform="translate(${b[0]+1} ${b[1]-48+i*17})">${FLAG[f]}</g>`;});
+    s+=`<text x="${b[0]}" y="${b[1]+26}" fill="#e6edf6" font-size="10" font-weight="700" text-anchor="middle">COMMITTEE</text>`;}
+  // your boat with a short wake
+  me.trail.forEach((q,i)=>{const p=P(q[0],q[1]); s+=`<circle cx="${p[0]}" cy="${p[1]}" r="1.4" fill="#facc15" fill-opacity="${(i/me.trail.length*0.5).toFixed(2)}"/>`;});
+  {const p=P(me.x,me.y); if(p[0]<0||p[0]>W||p[1]<0||p[1]>H){const q=[Math.min(W-14,Math.max(14,p[0])),Math.min(H-14,Math.max(14,p[1]))]; s+=`<circle cx="${q[0]}" cy="${q[1]}" r="9" fill="#facc15"/><text x="${q[0]}" y="${q[1]-13}" fill="#facc15" font-size="10" font-weight="800" text-anchor="middle">YOU</text>`;} else s+=boatPath(p,V.ang(me.h),'#facc15',1.6,1);}
+  // wind: the chart's barb with number
+  const up=wv(0); [W*0.22,W*0.5,W*0.78].forEach(x=>{const y=58, ex=x+up[0]*22, ey=y+up[1]*22, px=-up[1], py=up[0];
+    s+=`<g stroke="#8DB8DC" stroke-width="1.6" stroke-linecap="round"><circle cx="${x}" cy="${y}" r="2" fill="#8DB8DC"/><line x1="${x}" y1="${y}" x2="${ex}" y2="${ey}"/><line x1="${ex}" y1="${ey}" x2="${ex+px*11-up[0]*4}" y2="${ey+py*11-up[1]*4}"/></g><text x="${x+5}" y="${y+13}" fill="#8DB8DC" font-size="10" font-family="ui-monospace,monospace">12</text>`;});
+  s+=`<text x="200" y="16" fill="#8DB8DC" font-size="10.5" font-weight="700" text-anchor="middle">WIND 235° 12 kn · FORECAST AT THE LINE</text>`;
+  {const n=wv(-TWD); s+=`<g transform="translate(${W-22} 36)"><circle r="13" fill="#0b1626" stroke="#3b5f86"/><path d="M${n[0]*9} ${n[1]*9}L${-n[1]*5-n[0]*5} ${n[0]*5-n[1]*5}L${n[1]*5-n[0]*5} ${-n[0]*5-n[1]*5}z" fill="#ef4444"/><text x="${n[0]*22}" y="${n[1]*22+4}" fill="#e6edf6" font-size="10" font-weight="800" text-anchor="middle">N</text></g>`;}
+  s+=`<text x="10" y="${H-12}" fill="#55D1AE" font-size="10" font-weight="700">TIDE 1.1 kn to 235°</text><line x1="${W-110}" y1="${H-12}" x2="${W-110+50*S.k}" y2="${H-12}" stroke="#e6edf6" stroke-width="2"/><text x="${W-110}" y="${H-17}" fill="#9fb0c6" font-size="9.5">50 m</text>`;
+  // rule messages
+  let msg='';
+  if(last&&/Z|U|BLACK/.test(S.flag)) msg=(inTri(me)?'IN THE TRIANGLE · ':'')+{Z:'Z FLAG: keep out of the triangle · 20% penalty',U:'U FLAG: keep out of the triangle · DSQ',BLACK:'BLACK FLAG: keep out of the triangle · DSQ'}[S.flag];
+  else if(last&&S.flag==='I'&&dPerp(me)<0) msg='I FLAG: over in the last minute, go round an end (RRS 30.1)';
+  else if(tg!==null&&tg<=0&&tg>-20&&me.ocs) msg='OVER AT THE GUN: return and start correctly';
+  if(msg) s+=`<rect x="8" y="${H-62}" width="${W-16}" height="22" rx="6" fill="#7f1d1d" fill-opacity=".9"/><text x="${W/2}" y="${H-47}" fill="#fff" font-size="10.5" font-weight="800" text-anchor="middle">${msg}</text>`;
+  $('sv').innerHTML=s;
+  // clock and numbers
+  const clk=$('clk'); clk.className='clk';
+  let cTxt, burnTxt='', burnSub='', toLine='', tlSub='';
+  if(seq.phase==='ap'){cTxt='AP';clk.classList.add('red');$('gunTxt').textContent='Postponed · tap "AP down" when the pennant is lowered';}
+  else if(seq.phase==='apdown'){const w=seq.warnAt-T; cTxt=mmss(w); $('gunTxt').textContent='AP down · warning signal in '+mmss(w)+' (RRS race signals)';}
+  else if(tg>0){cTxt=mmss(tg); if(tg<=60)clk.classList.add('red'); $('gunTxt').textContent='Gun 14:10 · 5-4-1-0';}
+  else {cTxt='+'+mmss(-tg); clk.classList.add('go'); $('gunTxt').textContent='Started';}
+  clk.textContent=cTxt;
+  const d=dPerp(me);
+  if(tg!==null&&tg>0){const away=Math.cos(me.h*R)*NY+Math.sin(me.h*R)*NX<0, burn=tg-(away?BS.gybe+2:accLoss(me.v))-Math.max(0,d)/VPERP; burnTxt=mmss(Math.abs(burn)); burnSub=burn>=0?'early: slow down':'late: sail fast';}
+  else {burnTxt='–';burnSub=seq.phase==='seq'?'started':'waiting';}
+  toLine=d>=0?Math.round(d)+' m':'OVER '+Math.round(-d)+' m'; tlSub='at '+f1(me.v*1.944)+' kn';
+  const early=burnSub.startsWith('early');
+  $('cells').innerHTML=`<div class="c big"><i>BURN</i><b style="color:${burnTxt==='–'?'var(--ink)':early?'var(--early)':'var(--late)'}">${burnTxt}</b><s>${burnSub}</s></div><div class="c"><i>TO THE LINE</i><b>${toLine}</b><s>${tlSub}</s></div><div class="c"><i>BIAS</i><b>PIN +${Math.round(BIAS)} m</b><s>${Math.round(Math.abs(LINEW+90))}° off square</s></div><div class="c"><i>GUN</i><b>${seq.phase==='seq'?cTxt:'AP'}</b><s>${seq.phase==='seq'?'14:10':'postponed'}</s></div>`;
+}
+function flagsUp(){ if(seq.phase==='ap') return ['AP']; if(seq.phase==='apdown') return [];
+  const tg=tGun(); if(tg>300) return []; if(tg>240) return ['IRC']; if(tg>60) return ['IRC',S.flag]; if(tg>0) return ['IRC']; return []; }
+
+let last=performance.now(), acc=0;
+function tick(now){ let dt=Math.min(0.1,(now-last)/1000); last=now;
+  if(!S.paused){ dt*=S.sp; T+=dt;
+    if(seq.phase==='apdown'&&T>=seq.warnAt){seq={phase:'seq',gunAt:T+300};}
+    const tg=tGun();
+    if(!(tg!==null&&tg<-40)) boats.forEach(b=>step(b,dt));
+    const me=boats[0]; if(tg!==null&&tg<=0&&me.ocs===undefined) me.ocs=dPerp(me)<0;
+    acc+=dt; if(acc>1){acc=0; me.trail.push([me.x,me.y]); if(me.trail.length>40) me.trail.shift();}
+  }
+  draw(); requestAnimationFrame(tick); }
+
+// controls
+const flagsEl=$('flags'); Object.keys(FN).forEach(k=>{const b=document.createElement('button'); b.id='f'+k; b.innerHTML=`<span class="fl"><svg width="20" height="13" viewBox="0 0 24 16">${FLAG[k]}</svg>${FN[k]}</span>`; b.onclick=()=>{S.flag=k; sync();}; flagsEl.appendChild(b);});
+function sync(){ $('bWind').classList.toggle('on',!S.north); $('bNorth').classList.toggle('on',S.north);
+  $('bPred').classList.toggle('on',S.pred); $('bPred').textContent='Predictor '+(S.pred?'ON':'OFF');
+  $('bAis').classList.toggle('on',S.ais); $('bAis').textContent='AIS '+(S.ais?'ON':'OFF');
+  Object.keys(FN).forEach(k=>$('f'+k).classList.toggle('on',S.flag===k));
+  $('bAp').classList.toggle('on',seq&&seq.phase!=='seq'); $('bAp').textContent=seq&&seq.phase==='ap'?'AP down':'AP';
+  document.querySelectorAll('[data-sp]').forEach(b=>b.classList.toggle('on',+b.dataset.sp===S.sp)); $('dPause').textContent=S.paused?'Play':'Pause'; }
+$('bWind').onclick=()=>{S.north=false;sync()}; $('bNorth').onclick=()=>{S.north=true;sync()};
+$('bPred').onclick=()=>{S.pred=!S.pred;sync()}; $('bAis').onclick=()=>{S.ais=!S.ais;sync()};
+$('bAp').onclick=()=>{ if(seq.phase==='seq'&&tGun()>0) seq={phase:'ap'}; else if(seq.phase==='ap') seq={phase:'apdown',warnAt:T+60}; sync(); };
+$('zIn').onclick=()=>{S.k=Math.min(3,S.k*1.25)}; $('zOut').onclick=()=>{S.k=Math.max(0.35,S.k/1.25)};
+$('dRe').onclick=()=>{reset(150);sync()}; $('dRe5').onclick=()=>{reset(300);sync()};
+document.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{S.sp=+b.dataset.sp;sync()});
+$('bBoat').onclick=()=>{$('bset').hidden=!$('bset').hidden;$('bBoat').classList.toggle('on',!$('bset').hidden)};
+[['sTack','tack'],['sGybe','gybe'],['sAcc','acc'],['sCl','cl']].forEach(([id,k])=>{$(id).oninput=()=>{const v=parseFloat($(id).value); if(v>0){BS[k]=v; setBoat();}}});
+$('dPause').onclick=()=>{S.paused=!S.paused;sync()};
+reset(150); sync(); requestAnimationFrame(tick);
+})();
+</script>
+
+</body></html>
