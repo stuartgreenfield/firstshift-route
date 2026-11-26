@@ -17,7 +17,8 @@ const ALL = [['iPhone SE upright, Safari', 375, 553, 1], ['iPhone 13 upright, Sa
 const QUICK = ['iPhone 13 upright, Safari', 'iPhone 13 on its side, Safari', 'iPhone on its side, Safari with the tab bar', 'iPad on its side', 'MacBook 13, Chrome'];
 const MODE = process.argv.includes('full') ? 'full' : 'quick';
 const PHONES = MODE === 'full' ? ALL : ALL.filter(d => QUICK.includes(d[0]));
-const TOOLS = { route: ['http://localhost:8779', '/fastnet/'], routeplus: ['http://localhost:8778', '/fastnet/'], mark: ['http://localhost:8779', '/mark/'], markplus: ['http://localhost:8778', '/mark/'] };
+const PR = process.env.P_ROUTE || 8779, PP = process.env.P_PLUS || 8778;   /* 26 Nov: other ports, so the check can run on a frozen copy while work goes on */
+const TOOLS = { route: ['http://localhost:' + PR, '/fastnet/'], routeplus: ['http://localhost:' + PP, '/fastnet/'], mark: ['http://localhost:' + PR, '/mark/'], markplus: ['http://localhost:' + PP, '/mark/'] };
 const want = process.argv.slice(2).filter(a => TOOLS[a]); const tools = want.length ? want : Object.keys(TOOLS);
 let pass = 0, fail = 0; const probs = [];
 const ok = (c, m, d) => { if (c) pass++; else { fail++; probs.push(m + (d ? ' | ' + d : '')); console.log('FAIL ' + m + (d ? ' | ' + d : '')); } };
@@ -64,7 +65,7 @@ const click = (p, sel) => p.evaluate(s => { const e = document.querySelector(s);
       await p.evaluate(() => { FSSolent.test(false); const s = document.getElementById('solCard'); if (s) s.hidden = true; FSSolent.chain(true); }); await p.waitForTimeout(1200);
       if (await click(p, '#solChain [data-k="list"]')) { await p.waitForTimeout(1200); await look(p, L('All the buoys'), tag + '-10list'); }
     } else {
-      await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running; }, null, { timeout: 300000 }).catch(() => {}); await p.waitForTimeout(800); await hideSheets(p);
+      await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel; }, null, { timeout: 300000 }).catch(() => {}); await p.waitForFunction(() => { const f = window.__navFc && window.__navFc(); return f && f.sel && !f.running; }, null, { timeout: 30000 }).catch(() => {});   /* 26 Nov: with six models the finer routes take minutes; the first routes are enough for the screens, and the progress card is then part of what is checked */ await p.waitForTimeout(800); await hideSheets(p);
       await look(p, L('routes ready'), tag + '-1ready');
       await click(p, '#liveBtn'); await p.waitForTimeout(2500); await click(p, '#fsPlotBtn') || await click(p, '#navPlotBtn'); await p.waitForTimeout(800); await hideSheets(p); await look(p, L('GPS and plotter'), tag + '-2plot');
       if (await click(p, '#fsDeckBtn')) { await look(p, L('20/20'), tag + '-3twenty'); await click(p, '#fsDeckBtn'); }

@@ -11,6 +11,7 @@ rm -rf helpmedia && cp -r $N/helpmedia helpmedia; mkdir -p courses && cp $N/cour
    # 21 Nov: the course list too (the corrected St Malo waited for the next forecast run)
  cp $N/index.html index.html; cp $N/_routes.json _routes.json; cp -r $N/functions/. functions/; mkdir -p follow && cp $N/follow/* follow/;   # 20 Nov: the server functions (boat code, follow) and the follow page go too
  mkdir -p lab && cp $N/lab/* lab/
+ mkdir -p zones && cp $N/zones/*.json zones/   # 26 Nov: the keep-out data (traffic separation, race marks, wind farms) goes with the test copy too; live gets it from main with each forecast run
 [ -n "$2" ] && cp "$2" android/navigate.apk; [ -n "$3" ] && cp "$3" android/markplus.apk
 git add -A; git commit -qm "$MSG
 
