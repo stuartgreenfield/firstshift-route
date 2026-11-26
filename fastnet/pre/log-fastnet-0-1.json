@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-26T15:46:32.308Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 287,
+   "note": "Finer routes in 224.7 s. Times: first routes 10.5 s, standard 58.4 s, finer 283.2 s. The faint line is the standard rout"
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 557,
+   "note": "Finer routes in 216.3 s. Also worth knowing: in ICON-EU wind, the Combined (6 models) route is 46 min faster than ICON-E"
+  }
+ ]
+}
