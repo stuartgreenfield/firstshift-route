@@ -207,6 +207,7 @@
     M.ut = setTimeout(function () { b.hidden = true; }, 10000);
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && M.el) { var b = $('navUndoB'); if (b) b.click(); } });
+  window.__fsDragEnd = function () { if (M.el) { var el = M.el; set(el, M.from[0], M.from[1]); el.classList.remove('navmove-on'); M.el = null; M.id = null; M.drag = null; } var b = $('navUndo'); if (b && !b.hidden) { clearTimeout(M.ut); b.hidden = true; } };   /* Stuart 26 Nov 15:52 (photo): a window left in its moving state when the start screen opened kept the "Moving: drag it" bar over the start screen. The start screen ends a move, the window back where it was */
 
   /* round buttons: the button itself is the grip */
   function wireButtons() { PANELS.forEach(function (p) { if (p[2] === 'win') return; var el = $(p[0]); if (!el || el.__fsHold) return; el.__fsHold = 1; hold(el, function () { return el; }, p[0]); }); }
