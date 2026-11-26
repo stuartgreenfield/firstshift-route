@@ -20,9 +20,9 @@ async function recentRun(env, mins, orRunning) {
   const j = await r.json(), since = Date.now() - mins * 60000;
   return (j.workflow_runs || []).find(x => (orRunning && x.status !== 'completed') || (Date.parse(x.created_at) > since && x.conclusion !== 'cancelled')) || null;
 }
-async function start(env, why) {
-  const r = await gh(env, '/actions/workflows/' + WF + '/dispatches', { method: 'POST', body: JSON.stringify({ ref: 'main' }) });
-  return r.status === 204 ? 'started a Forecasts run (' + why + ')' : 'could not start a run: GitHub said ' + r.status + ' ' + (await r.text()).slice(0, 200);
+async function start(env, why, only) {   // F3 (26 Nov): only = the models that landed, so the run builds those and carries the rest across (F4)
+  const r = await gh(env, '/actions/workflows/' + WF + '/dispatches', { method: 'POST', body: JSON.stringify(only ? { ref: 'main', inputs: { only: only } } : { ref: 'main' }) });
+  return r.status === 204 ? 'started a Forecasts run (' + why + (only ? '; only ' + only : '') + ')' : 'could not start a run: GitHub said ' + r.status + ' ' + (await r.text()).slice(0, 200);
 }
 async function tick(env, why) {
   const run = await recentRun(env, why === 'check' ? 25 : 15);
@@ -34,12 +34,17 @@ async function tick(env, why) {
 const p2 = n => String(n).padStart(2, '0');
 function cyc(hoursAgo) { const t = new Date(Date.now() - hoursAgo * 3600000); t.setUTCMinutes(0, 0, 0); t.setUTCHours(t.getUTCHours() - t.getUTCHours() % 6);
   return { d: t.getUTCFullYear() + p2(t.getUTCMonth() + 1) + p2(t.getUTCDate()), r: p2(t.getUTCHours()) }; }
-const ecStream = c => (c.r === '00' || c.r === '12') ? 'oper' : 'scda';   // ECMWF open data: 00Z and 12Z are "oper", 06Z and 18Z "scda"
+const ecLast = c => (c.r === '00' || c.r === '12') ? 240 : 144;   // F3 (26 Nov): ECMWF publishes every run under "oper" now; 06Z and 18Z end at 144 h (as scripts/landed.py)
+const MO = 'https://met-office-atmospheric-model-data.s3-eu-west-2.amazonaws.com';
+function ukvFile(c) { const t = new Date(Date.UTC(+c.d.slice(0, 4), +c.d.slice(4, 6) - 1, +c.d.slice(6), +c.r) + 54 * 3600000), vt = t.getUTCFullYear() + p2(t.getUTCMonth() + 1) + p2(t.getUTCDate()) + 'T' + p2(t.getUTCHours()) + '00Z'; return `${MO}/uk-deterministic-2km/${c.d}T${c.r}00Z/${vt}-PT0054H00M-wind_speed_at_10m.nc`; }
+/* the models a landed run brings with it in the build (scripts/build.py SOURCES) */
+const FAMILY = { ecmwf: 'ecmwf,ecmet,ecwav,ens' };
 /* A late file of each run, at the same providers as scripts/fetch.py: when it is there, the run is complete enough for the build. */
 const LAST = {
   gfs: c => `https://noaa-gfs-bdp-pds.s3.amazonaws.com/gfs.${c.d}/${c.r}/atmos/gfs.t${c.r}z.pgrb2.0p25.f120.idx`,
-  ecmwf: c => `https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com/${c.d}/${c.r}z/ifs/0p25/${ecStream(c)}/${c.d}${c.r}0000-90h-${ecStream(c)}-fc.index`,
-  aifs: c => `https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com/${c.d}/${c.r}z/aifs-single/0p25/oper/${c.d}${c.r}0000-90h-oper-fc.index`,
+  ukv: ukvFile,
+  ecmwf: c => `https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com/${c.d}/${c.r}z/ifs/0p25/oper/${c.d}${c.r}0000-${ecLast(c)}h-oper-fc.index`,
+  aifs: c => `https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com/${c.d}/${c.r}z/aifs-single/0p25/oper/${c.d}${c.r}0000-240h-oper-fc.index`,
   icon: c => `https://opendata.dwd.de/weather/nwp/icon-eu/grib/${c.r}/u_10m/icon-eu_europe_regular-lat-lon_single-level_${c.d}${c.r}_078_U_10M.grib2.bz2`,
   arome: c => { const iso = `${c.d.slice(0, 4)}-${c.d.slice(4, 6)}-${c.d.slice(6)}T${c.r}:00:00Z`; return `https://meteofrance-pnt.s3.rbx.io.cloud.ovh.net/pnt/${iso}/arome/001/SP1/arome__001__SP1__48H__${iso}.grib2`; }
 };
@@ -49,19 +54,19 @@ async function siteRuns() {   // the run each model has on the site now (status.
   const j = await r.json(), out = {}; Object.keys(LAST).forEach(id => { const x = (j.received || {})[id]; if (x && x.run) out[id] = String(x.run); }); return out;
 }
 async function watch(env) {
-  const have = await siteRuns(), newer = [];
+  const have = await siteRuns(), newer = [], ids = [];
   for (const id of Object.keys(LAST)) {
     for (let k = 0; k < 4; k++) {   // the newest of the last four runs whose late file is out
       const c = cyc(k * 6), run = c.d + c.r;
       if (have[id] && run <= have[id]) break;
-      if (await exists(LAST[id](c))) { newer.push(id + ' ' + run + ' (site ' + (have[id] || 'none') + ')'); break; }
+      if (await exists(LAST[id](c))) { newer.push(id + ' ' + run + ' (site ' + (have[id] || 'none') + ')'); ids.push(FAMILY[id] || id); break; }
     }
   }
   let act = 'nothing newer than the site (' + Object.keys(have).map(k => k + ' ' + have[k]).join(', ') + ')';
   if (newer.length) {
-    const busy = await recentRun(env, 40, true);
+    const busy = await recentRun(env, 10, true);   /* F3: a build of the landed models takes minutes, so the wait after a start is 10 minutes, not 40; the next check picks up anything still newer */
     if (busy) act = 'newer: ' + newer.join(', ') + '; a Forecasts run is under way or started at ' + busy.created_at;
-    else act = env.WATCH === 'start' ? await start(env, 'new run: ' + newer.join(', ')) : 'WOULD START (log only): ' + newer.join(', ');
+    else act = env.WATCH === 'start' ? await start(env, 'new run: ' + newer.join(', '), ids.join(',')) : 'WOULD START (log only): ' + newer.join(', ') + ' (only ' + ids.join(',') + ')';
   }
   const line = new Date().toISOString().slice(0, 16) + 'Z ' + act;
   if (env.LOG) { const old = (await env.LOG.get('watch')) || ''; await env.LOG.put('watch', (line + '\n' + old).slice(0, 20000)); }
