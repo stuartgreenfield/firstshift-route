@@ -2300,7 +2300,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function offSave(then) { if (!window.__navOff) { if (then) then(); return; } var t = setInterval(function () { try { setupRender(); } catch (e) {} }, 600);
     window.__navOff.ready().then(function () { clearInterval(t); S.offNoteAt = Date.now(); offCheck(); if (then) then(); }, function () { clearInterval(t); S.offNoteAt = Date.now(); offCheck(); }); setTimeout(function () { try { setupRender(); } catch (e) {} }, 50); }
   function offMb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
-  function offCheck() { try { if (!window.__navOff || !S.routes || !S.routes.length) return; window.__navOff.status().then(function (st) { S.offSt = st; try { setupRender(); } catch (e) {} }, function () {}); } catch (e) {} }
+  function offCheck() { try { if (!window.__navOff || !S.routes || !S.routes.length) return; window.__navOff.status().then(function (st) { S.offSt = st; try { setupRender(); } catch (e) {} try { if (window.__fsOffAuto && !(S.running || (window.__navFc && window.__navFc().running))) window.__fsOffAuto(st); } catch (e) {} }, function () {}); } catch (e) {} }
   FSBeat.set(offCheck, 60000); setTimeout(offCheck, 8000);   window.__fsOffCheck = offCheck;   /* 26 Nov 18:15 (Stuart's iPhone): the chip stayed on SAVE FOR OFFLINE after Settings, Make ready for offline had finished; the download now asks for a fresh check at once */
   function chipAt(ch) { var rb = $('raceBtn'); if (!rb || !ch) return; var R = rb.getBoundingClientRect(); ch.style.left = Math.round(R.left + 6) + 'px'; ch.style.top = Math.round(R.bottom - 8) + 'px'; ch.style.display = R.width ? '' : 'none'; }
   function readyChip(rows) {

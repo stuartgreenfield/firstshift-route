@@ -72,8 +72,13 @@
     h += '<div class="xrow"><button class="btn primary" id="navOffGo" type="button"' + (S.busy ? ' disabled' : '') + '>' + (st && !st.offline && !st.miss.length ? 'Check again' : 'Make ready for offline') + '</button></div>';
     h += '<p class="note" role="status">' + (S.note || '') + '</p>';
     h += '<p class="note">Uses the forecast plan in Settings, Forecasts (Full or Lite for each model). Do this in harbour on Wi-Fi. At sea, new forecasts under ' + AUTO_MB + ' MB come in by themselves when there is signal; bigger ones ask first.</p>';
-    box.innerHTML = h; $('navOffGo').onclick = function () { ready(); };
+    h += '<label class="navrow navtick"><input type="checkbox" id="navOffAuto"' + (autoOn() ? ' checked' : '') + '> Save for offline by itself after every route (on, Stuart 26 Nov 18:19)</label>';
+    box.innerHTML = h; $('navOffGo').onclick = function () { ready(); }; $('navOffAuto').onchange = function () { try { localStorage.setItem('fs-offauto', this.checked ? '1' : '0'); } catch (e) {} };
   }
+  /* Stuart 26 Nov 18:19, "always": once a race is routed, everything it needs is kept on the phone without a tap, whatever the connection. Once per forecast run; a failed try is repeated after 10 minutes. */
+  function autoOn() { try { return localStorage.getItem('fs-offauto') !== '0'; } catch (e) { return true; } }
+  var AUTO = { key: '', at: 0 };
+  window.__fsOffAuto = function (st) { try { if (!autoOn() || S.busy || !st || st.offline || !st.miss || !st.miss.length) return; var k = String(st.run) + ':' + st.list.length; if (AUTO.key === k && Date.now() - AUTO.at < 600000) return; AUTO = { key: k, at: Date.now() }; try { if (window.NavToast) window.NavToast('Saving this race for offline: ' + mb(st.need) + '.'); } catch (e) {} ready(); } catch (e) {} };
   function build() {
     var pr = $('navPrefs'), link = $(PLUS ? 'navSetLink' : 's-mine'); if (!link || $('navOff')) return !!$('navOff');
     var d = document.createElement('details'); d.className = 'navprefs navoff'; d.id = 'navOff';
