@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T09:56:53.398Z",
+ "log": [
+  {
+   "race": "irishsea-area",
+   "h": 0,
+   "s": 13,
+   "note": "Finer routes in 8.2 s. Also worth knowing: in AIFS wind, the ICON-EU route is 1.4 min faster than AIFS’s own route. Gaps"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 1,
+   "s": 22,
+   "note": "Finer routes in 7.3 s. Times: first routes 0.6 s, standard 2.0 s, finer 9.3 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 2,
+   "s": 30,
+   "note": "Finer routes in 6.5 s. Times: first routes 0.5 s, standard 1.7 s, finer 8.2 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 3,
+   "s": 38,
+   "note": "Finer routes in 5.9 s. Also worth knowing: in AIFS wind, the ECMWF route is 0.7 min faster than AIFS’s own route. Gaps t"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 4,
+   "s": 45,
+   "note": "Finer routes in 5.5 s. Times: first routes 0.4 s, standard 1.5 s, finer 7.0 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 5,
+   "s": 52,
+   "note": "Finer routes in 5.1 s. Times: first routes 0.4 s, standard 1.4 s, finer 6.6 s. The faint line is the standard route. Fir"
+  }
+ ]
+}

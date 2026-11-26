@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-26T10:08:36.312Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 137,
+   "note": "Finer routes in 104.9 s. Times: first routes 7.0 s, standard 30.5 s, finer 135.4 s. The faint line is the standard route"
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 257,
+   "note": "Finer routes in 93.0 s. Times: first routes 4.9 s, standard 26.3 s, finer 119.3 s. The faint line is the standard route."
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 381,
+   "note": "Finer routes in 96.9 s. Also worth knowing: in ECMWF wind, the Combined (6 models) route is 2.2 min faster than ECMWF’s "
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 505,
+   "note": "Finer routes in 98.7 s. Times: first routes 4.9 s, standard 25.0 s, finer 123.8 s. The faint line is the standard route."
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 624,
+   "note": "Finer routes in 94.5 s. Also worth knowing: in AROME HD wind, the Combined (6 models) route is 1.5 min faster than AROME"
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 750,
+   "note": "Finer routes in 98.8 s. Also worth knowing: in ICON-EU wind, the AIFS route is 34 min faster than ICON-EU’s own route. C"
+  }
+ ]
+}
