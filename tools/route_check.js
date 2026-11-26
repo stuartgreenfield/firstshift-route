@@ -34,6 +34,12 @@ const V90 = sp(12, 90), d10 = 10 - r01;
 { const ring = [[50 + 3 / 60, -2.1], [50 + 3 / 60, -1.9], [50 + 4 / 60, -1.9], [50 + 4 / 60, -2.1]];
   const r = run({ legs: [{ name: 'F', point: to(50, -2, 0, 8), r: r01 }], wind: () => [12, 90], tide: () => [0, 0], dt: 300, nogo: [ring] });
   const inside = r.path.some(p => p.la > ring[0][0] && p.la < ring[2][0] && p.lo > -2.1 && p.lo < -1.9); ok(!inside, 'No-go zone across the course: the route goes round it'); }
+/* 5b. A thin exclusion zone (Stuart 26 Nov 2026 12:46, exclusion zones drawn by the crew): a wall 0.02 nm thick across the course. Checked at 8 points a
+   step it slipped between two of them at 10 minute steps; the test is now exact (does the step cross an edge of the zone). */
+[600, 300, 180].forEach(dt => { const la0 = 50 + 3 / 60, la1 = 50 + 3.02 / 60, ring = [[la0, -2.1], [la0, -1.9], [la1, -1.9], [la1, -2.1]], mid = (la0 + la1) / 2;
+  const r = run({ legs: [{ name: 'F', point: to(50, -2, 0, 8), r: r01 }], wind: () => [12, 90], tide: () => [0, 0], dt, nogo: [ring] });
+  let crossed = 0; for (let i = 1; i < r.path.length; i++) { const a = r.path[i - 1], b = r.path[i]; if ((a.la - mid) * (b.la - mid) < 0) { const lo = a.lo + (b.lo - a.lo) * (mid - a.la) / (b.la - a.la); if (lo > -2.1 && lo < -1.9) crossed++; } }
+  ok(crossed === 0, 'Thin exclusion zone across the course, ' + dt + ' s steps: no step of the route crosses it', crossed + ' crossings'); });
 /* 6. A forecast that ends before the finish: an honest error, or a partial route that says how far is left. */
 { let msg = ''; try { run({ legs: [{ name: 'F', point: to(50, -2, 0, 30), r: r01 }], wind: (la, lo, t) => t < 2 ? [12, 90] : [0, 0], tide: () => [0, 0], dt: 600 }); } catch (e) { msg = e.message; }
   ok(/forecasts end/i.test(msg), 'Forecast ends before the finish: says so', msg.slice(0, 80));

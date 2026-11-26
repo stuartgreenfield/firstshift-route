@@ -296,7 +296,15 @@
   function nogoZones(o) { return (o.nogo || []).map(function (ring) { var b = [90, -90, 180, -180]; ring.forEach(function (q) { b[0] = Math.min(b[0], q[0]); b[1] = Math.max(b[1], q[0]); b[2] = Math.min(b[2], q[1]); b[3] = Math.max(b[3], q[1]); }); return { r: ring, b: b }; }); }
   function inRing(ring, la, lo) { var c = false; for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) { var a = ring[i], q = ring[j]; if ((a[0] > la) !== (q[0] > la) && lo < (q[1] - a[1]) * (la - a[0]) / (q[0] - a[0]) + a[1]) c = !c; } return c; }
   function inNogo(nogo, la, lo) { for (var i = 0; i < nogo.length; i++) { var b = nogo[i].b; if (la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3] && inRing(nogo[i].r, la, lo)) return true; } return false; }
-  function nogoLine(nogo, la0, lo0, la1, lo1) { for (var k = 1; k <= 8; k++) if (inNogo(nogo, la0 + (la1 - la0) * k / 8, lo0 + (lo1 - lo0) * k / 8)) return true; return false; }
+  /* Exact from 26 Nov 2026 (Stuart 12:46, exclusion zones drawn by the crew): a step is refused if it ends inside a zone or crosses any edge of one.
+     Until then it was tested at 8 points along the step, and a zone thinner than the gap between two points, or a corner, could be stepped over
+     (tools/route_check.js 5b failed at 600, 300 and 180 s steps). The middle of the step is tested too, for a step that enters exactly through a corner. */
+  function segX(ax, ay, bx, by, cx, cy, dx, dy) { var d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax), d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax), d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx), d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx); return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)); }
+  function nogoLine(nogo, la0, lo0, la1, lo1) { var s = Math.min(la0, la1), n = Math.max(la0, la1), w = Math.min(lo0, lo1), e = Math.max(lo0, lo1);
+    for (var i = 0; i < nogo.length; i++) { var b = nogo[i].b; if (n < b[0] || s > b[1] || e < b[2] || w > b[3]) continue; var r = nogo[i].r;
+      if (inRing(r, la1, lo1) || inRing(r, (la0 + la1) / 2, (lo0 + lo1) / 2)) return true;
+      for (var k = 0, j = r.length - 1; k < r.length; j = k++) if (segX(lo0, la0, lo1, la1, r[j][1], r[j][0], r[k][1], r[k][0])) return true; }
+    return false; }
 
   /* water deep enough, as a ready-made map of cells: built once per depth layer and safety depth, so each step is a lookup rather than a search */
   function wetMask(depth, safety) {
