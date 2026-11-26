@@ -8,10 +8,13 @@ const { chromium } = require('playwright'); const fs = require('fs');
 const OUT = process.env.OUT || '/tmp/screens'; fs.mkdirSync(OUT, { recursive: true });
 /* [name, width, height, touch]: the size the page gets (the screen less the browser's bars). Chrome at 125% on a 13-inch MacBook gives the page 1152 by 608. */
 const ALL = [['iPhone SE upright, Safari', 375, 553, 1], ['iPhone 13 upright, Safari', 390, 664, 1], ['iPhone 14 Plus upright, Safari', 428, 746, 1], ['Galaxy S8 upright, Chrome', 360, 640, 1], ['Pixel 7 upright, Chrome', 412, 839, 1], ['Android app upright', 412, 891, 1],
-  ['iPhone SE on its side, Safari', 667, 323, 1], ['iPhone 13 on its side, Safari', 844, 340, 1], ['iPhone 14 Plus on its side, Safari', 926, 376, 1], ['Pixel 7 on its side, Chrome', 915, 356, 1], ['Android app on its side', 915, 388, 1],
+  ['iPhone SE on its side, Safari', 667, 323, 1], ['iPhone on its side, Safari with the tab bar', 750, 293, 1], ['iPhone 13 on its side, Safari', 844, 340, 1], ['iPhone 14 Plus on its side, Safari', 926, 376, 1], ['Pixel 7 on its side, Chrome', 915, 356, 1], ['Android app on its side', 915, 388, 1],
+  ['iPhone Duo closed, upright', 466, 678, 1], ['iPhone Duo closed, on its side', 678, 466, 1], ['iPhone Duo open, upright', 626, 890, 1], ['iPhone Duo open, on its side', 890, 626, 1], ['Galaxy Z Fold7 open, upright', 984, 1092, 1], ['Galaxy Z Fold7 open, on its side', 1092, 984, 1],
   ['iPad mini upright', 744, 1069, 1], ['iPad mini on its side', 1133, 680, 1], ['iPad upright', 820, 1106, 1], ['iPad on its side', 1180, 746, 1], ['iPad Pro 12.9 on its side', 1366, 950, 1], ['Android tablet upright', 800, 1216, 1], ['Android tablet on its side', 1280, 736, 1],
   ['MacBook 13, Chrome', 1440, 760, 0], ['MacBook 13, Chrome at 125%', 1152, 608, 0], ['MacBook 13, Safari', 1440, 790, 0], ['Laptop 1366, Chrome', 1366, 625, 0], ['Desktop 1920, Chrome', 1920, 960, 0], ['Desktop 2560, Chrome', 2560, 1300, 0]];
-const QUICK = ['iPhone 13 upright, Safari', 'iPhone 13 on its side, Safari', 'iPad on its side', 'MacBook 13, Chrome'];
+/* 26 Nov 2026: Stuart's own iPhone on its side in Safari with the tab bar showing gives the page about 750 by 293, lower than anything here before; it is in the quick set.
+   The folding phones (iPhone Duo from Apple's figures at three pixels to the point; Galaxy Z Fold7 inner screen) are in the full set. */
+const QUICK = ['iPhone 13 upright, Safari', 'iPhone 13 on its side, Safari', 'iPhone on its side, Safari with the tab bar', 'iPad on its side', 'MacBook 13, Chrome'];
 const MODE = process.argv.includes('full') ? 'full' : 'quick';
 const PHONES = MODE === 'full' ? ALL : ALL.filter(d => QUICK.includes(d[0]));
 const TOOLS = { route: ['http://localhost:8779', '/fastnet/'], routeplus: ['http://localhost:8778', '/fastnet/'], mark: ['http://localhost:8779', '/mark/'], markplus: ['http://localhost:8778', '/mark/'] };
