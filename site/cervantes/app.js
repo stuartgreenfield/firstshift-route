@@ -3718,8 +3718,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   var LB = [];
   function lbFit(x, y, w, h, steps, up) { var st = h + 3, n = steps == null ? 3 : steps; for (var k = 0; k <= 2 * n; k++) { var dy = k === 0 ? 0 : (k % 2 ? 1 : -1) * (up ? -1 : 1) * Math.ceil(k / 2) * st, yy = y + dy; if (!LB.some(function (t) { return x < t[0] + t[2] && x + w > t[0] && yy < t[1] + t[3] && yy + h > t[1]; })) { LB.push([x, yy, w, h]); return dy; } } return null; }
   window.__fsLabelFit = lbFit; window.__fsLabelTake = function (x, y, w, h) { LB.push([x, y, w, h]); };
+  /* 26 Nov 2026: while the start screen's picture covers the whole chart, the chart is not redrawn (it was drawn in full every second, unseen:
+     the speed check found the two canvases' frame as one pause of 725 ms on its slowed processor, over the 700 ms limit). It is drawn
+     again the moment the start screen closes or goes to See chart (solent.js calls __fsUncover at the end of every render of the start box). */
+  function chartCovered() { var s = $('solStartScr'); return !!(s && !s.hidden && !s.classList.contains('ssthru') && s.getClientRects().length); }
+  window.__fsUncover = function () { if (drawNow.skipped && !chartCovered()) { drawNow.skipped = false; draw(); } };
   function drawNow() {
     if (!W || !meta) return;
+    if (chartCovered()) { drawNow.skipped = true; return; }
     LB.length = 0;
     if ((ptrs && ptrs.size > 0) || (SV && Date.now() - SV.touch < 300)) settle();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
