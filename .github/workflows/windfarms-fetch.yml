@@ -1,0 +1,17 @@
+name: Wind farms fetch
+# One-off helper on its own branch: builds zones/windfarms.json from EMODnet on GitHub's network and hands it back as an artifact. Not on main; changes nothing live.
+on:
+  push:
+    branches: [windfarms-fetch]
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: python3 tools/make_windfarms.py windfarms.json && ls -la windfarms.json && sha256sum windfarms.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windfarms
+          path: windfarms.json
