@@ -11,7 +11,7 @@
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function PL() { return window.__fsPlot || window.__navPlot || null; }
   function plus() { return !!window.NAV_VERSION; }
-  function name() { return plus() ? 'Route+' : 'Route'; }
+  function name() { return window.FSTool(); }
   /* what each part shows, said as the boat reaches it (fraction of the way along the route) */
   function STEPS() { return [
     [0.00, 'Demo: a practice boat sails your chosen route, about two minutes start to finish. Nothing is sent anywhere and the GPS is not used.'],

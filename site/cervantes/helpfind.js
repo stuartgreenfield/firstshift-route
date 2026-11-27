@@ -117,7 +117,7 @@
     if (v('liveBox')) w.push('live gps'); if (v('sheet')) w.push('settings'); if (v('navHelm')) w.push('helm'); if (v('fsPlot')) w.push('plotter'); if (v('solCard') || v('solLegs')) w.push('course');
     var tab = document.querySelector('#panel .tabs .tab[aria-selected="true"]'); if (tab && !$('panel').hidden) w.push(tab.textContent.trim().toLowerCase()); return w; }
   function hereTopics() { var seen = {}, out = []; hereWords().forEach(function (w) { search(w).slice(0, 2).forEach(function (tp) { if (!seen[tp.s]) { seen[tp.s] = 1; out.push(tp); } }); }); return out.slice(0, 4); }
-  function tool() { var plus = !!window.NAV_VERSION; return window.FS_MARK ? (plus ? 'Mark+' : 'Mark') : (plus ? 'Route+' : 'Route'); }
+  function tool() { return window.FSTool(); }
   function waUrl(q) { var ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || window.FS_VERSION || (document.querySelector('#sheet .shead h2 span') || {}).textContent || '') || [])[1] || '', here = hereWords().join(', ');
     return 'https://wa.me/447788662697?text=' + encodeURIComponent('FirstShift ' + tool() + (ver ? ' v' + ver : '') + ' question' + (here ? ' (screen: ' + here + ')' : '') + ': ' + (q || '')); }   /* never the race or the boat's position */
   var MAILTO = 'stuart@greenfield.co.uk';   /* Stuart 21 Nov 18:50: the Help email goes here */

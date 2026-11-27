@@ -20,5 +20,9 @@
   setInterval(beat, BASE);
   window.addEventListener('pointerdown', function () { finger = Date.now() + 300; }, true);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) beat(); });
+  /* The tool's own name, set in this one place (Stuart 27 Nov 2026 08:06: each tool names only itself, everywhere). Mark and Mark+ are the
+     /mark/ page (FS_MARK, set in the page head); Route+ and Mark+ set FS_PLUS in navigate.js, loaded straight after this file. Every sentence
+     that means "this tool" takes the name from here. */
+  window.FSTool = function () { return (window.FS_MARK ? 'Mark' : 'Route') + (window.FS_PLUS || window.NAV_VERSION ? '+' : ''); };
   window.FSBeat = { set: set, clear: clear, count: function () { return jobs.length; }, list: function () { return jobs.map(function (j) { return { id: j.id, ms: j.ms, always: j.always }; }); } };
 })();

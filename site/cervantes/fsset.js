@@ -9,7 +9,7 @@
    The search box finds a setting by name in any tab, opens that tab and shows the setting. */
 (function () {
   'use strict';
-  var PLUS = !!window.FS_PLUS, TOOL = PLUS ? 'Route+' : 'Route';
+  var PLUS = !!window.FS_PLUS, TOOL = window.FSTool();
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var SUM = {

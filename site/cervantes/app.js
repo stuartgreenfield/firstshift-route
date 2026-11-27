@@ -3391,7 +3391,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
      produce very focused results due to an in built prompt". The link opens Claude (claude.ai/new?q=, the documented prefill) with a prompt
      that names the product, its version, what it does, where the user is in it and how to answer; the user adds the question and sends it. */
   function askClaudeUrl() {
-    var plus = !!window.NAV_VERSION, P = window.FS_MARK ? (plus ? 'Mark+' : 'Mark') : (plus ? 'Route+' : 'Route'), ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || VERSION) || [])[1] || '';
+    var plus = !!window.NAV_VERSION, P = window.FSTool(), ver = (/v([0-9.]+)/.exec(window.NAV_VERSION || VERSION) || [])[1] || '';
     var what = { 'Route': 'Route is a free web app for offshore race routing: several forecast models, tidal streams, depth, boat speed from a boat type or IRC TCC, routes to compare, a plan and crew brief, live GPS with a start-line tool and a basic plotter.',
       'Route+': 'Route+ is the Android app version of Route that also connects to the boat\'s instruments, learns and improves the boat\'s polars, and adds deck and helm views, a logbook, laylines with the tide and offline forecasts.',
       'Mark': 'Mark is FirstShift\'s inshore racing tool for the Solent, built on Route: round the cans and windward-leeward courses from the JOG / SCRA Solent mark list, start line tools (tap the ends, square to the wind, lat and long, ping) with the line bias, a start sequence timer, a racing window, laylines from the typed wind, crew sync by boat code and quick routing.',

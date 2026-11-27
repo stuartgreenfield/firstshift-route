@@ -5,7 +5,7 @@
    never lose data. Loading reloads the screen, which then carries on where it left off. */
 (function () {
   'use strict';
-  var PLUS = !!window.FS_PLUS, NAME = PLUS ? 'Route+' : 'Route';
+  var PLUS = !!window.FS_PLUS, NAME = window.FSTool();
   var KEY = 'nav-setups', VER = 1;
   /* data, not settings: never saved in a set-up, never overwritten by one */
   var SKIP = ['fs-terms', 'fs-lastpage', 'fs-oldroutes', 'fs-mob', 'fs-moment-seen', 'fs-myraces', 'fs-mymarks', 'fs-race', 'fs-boatcode', 'fs-boatcode-at',

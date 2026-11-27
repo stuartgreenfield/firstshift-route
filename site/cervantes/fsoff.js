@@ -7,7 +7,7 @@
    because a phone on mobile data at sea can run up a bill. Never during a MOB, and never while routing. */
 (function () {
   'use strict';
-  var PLUS = !!window.FS_PLUS, NAME = PLUS ? 'Route+' : 'Route';   /* Route+ keeps its own store name, so nothing already on a phone is lost */
+  var PLUS = !!window.FS_PLUS, NAME = window.FSTool();   /* Route+ keeps its own store name, so nothing already on a phone is lost */
   var STORE = PLUS ? 'nav-offline-v1' : 'fs-offline-v1', AUTO_MB = 20;
   function $(id) { return document.getElementById(id); }
   function mb(b) { return b >= 1e6 ? (b / 1e6).toFixed(b >= 1e7 ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1e3)) + ' kB'; }
