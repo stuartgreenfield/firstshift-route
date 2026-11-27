@@ -553,6 +553,10 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 @media (max-width:560px) and (orientation:portrait){.bar .pgrp{max-width:calc(100vw - var(--gut) - var(--gutR) - 62px)}}
 @media (max-width:430px) and (orientation:portrait){.bar .pgrp{max-width:calc(100vw - var(--gut) - var(--gutR) - 54px)}}
 @media (max-width:340px) and (orientation:portrait){.bar .pgrp{max-width:none}}
+/* Stuart 27 Nov 08:33 (Mark, iPhone photo IMG_0123: "10:5" and "before sta" off the right edge): the room kept for the clock fits the time, but the label
+   "before start" under it is wider (76 px in 46). On a phone held upright the clock is now only as wide as its widest word: the label goes onto two
+   lines (before / start) and the short "+0h 00" form stays on one. Fourth fault in this row since 22 Nov; tools/edge_check.js now tests it at every build. */
+@media (max-width:560px) and (orientation:portrait){.bar .clock{min-width:min-content}.bar .clock small{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.05}.bar .clock .cks{white-space:nowrap}}
 
 /* fleet table (22 Nov 19:20): boat names read from the left; ahead or behind under the minutes, so five columns fit a phone */
 .lsol{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0 2px}.lsol .seg button{min-width:44px;min-height:32px}#fleet td:nth-child(2),#fleet th:nth-child(2){text-align:left}#fleet td:nth-child(n+3){white-space:nowrap}#fleet td,#fleet th{padding-left:6px;padding-right:6px}
