@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-27T08:18:15.288Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 73,
+   "note": "Finer routes in 52.3 s. Times: first routes 3.6 s, standard 18.5 s, finer 70.9 s. The faint line is the standard route. "
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 133,
+   "note": "Finer routes in 47.1 s. Times: first routes 1.7 s, standard 12.5 s, finer 59.6 s. The faint line is the standard route. "
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 191,
+   "note": "Finer routes in 45.2 s. Times: first routes 1.7 s, standard 12.2 s, finer 57.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 246,
+   "note": "Finer routes in 43.8 s. Times: first routes 1.6 s, standard 11.2 s, finer 55.0 s. The faint line is the standard route. "
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 301,
+   "note": "Finer routes in 42.5 s. Times: first routes 1.6 s, standard 11.9 s, finer 54.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 355,
+   "note": "Finer routes in 41.9 s. Times: first routes 1.5 s, standard 11.8 s, finer 53.8 s. The faint line is the standard route. "
+  }
+ ]
+}

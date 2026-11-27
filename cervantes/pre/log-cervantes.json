@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-27T08:22:47.420Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 122,
+   "note": "Finer routes in 90.7 s. Times: first routes 5.5 s, standard 29.5 s, finer 120.2 s. The faint line is the standard route."
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 235,
+   "note": "Finer routes in 88.5 s. Times: first routes 4.7 s, standard 23.7 s, finer 112.3 s. The faint line is the standard route."
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 342,
+   "note": "Finer routes in 82.0 s. Times: first routes 4.2 s, standard 24.7 s, finer 106.7 s. The faint line is the standard route."
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 444,
+   "note": "Finer routes in 78.7 s. Times: first routes 4.7 s, standard 22.8 s, finer 101.5 s. The faint line is the standard route."
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 543,
+   "note": "Finer routes in 78.7 s. Also worth knowing: in AROME HD wind, the Combined (6 models) route is 13 min faster than AROME "
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 641,
+   "note": "Finer routes in 76.9 s. Times: first routes 4.2 s, standard 20.1 s, finer 97.1 s. The faint line is the standard route. "
+  }
+ ]
+}

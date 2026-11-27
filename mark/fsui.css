@@ -1,0 +1,208 @@
+/* FirstShift Route: styles for the newer screens (shared with Route+, 13 Nov 2026) */
+.nrnote{font-size:13px;color:var(--brand);margin:4px 0;min-height:1em}
+/* clear screen: just the chart, MOB and MENU */
+.navmenub{display:none;min-width:64px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--brand);color:var(--panel);font:700 13px var(--f-data);letter-spacing:.06em;cursor:pointer}
+.fabhelp.navclearb{bottom:208px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.navclearb svg{width:18px;height:18px}
+.navclearb span{font:700 9px var(--f-data);letter-spacing:.04em;line-height:1}
+body.navclear #panel,body.navclear #navClearBtn,body.navclear #editFab,body.navclear #helpBtn,body.navclear #boatWarn,body.navclear .cbanner{display:none!important}
+.navtoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;max-width:min(92vw,460px);padding:10px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font:400 14px var(--f-body);box-shadow:0 8px 24px rgba(0,0,0,.35);text-align:center}
+.navtoast{white-space:pre-line}
+/* the plotter bar never runs under the bottom menu: it fits the chart and scrolls inside (Stuart 13 Nov) */
+/* clear screen: no blue strip, a small MOB and MENU floating over the chart (Stuart 13 Nov) */
+body.navtip .livebox{visibility:hidden}
+:root[data-night] .navtoast{border-color:#3A0A08}
+:root[data-night] .navmenub{background:#2A0302;color:#B4231B;border-color:#6A0F0B}
+/* the chart's information box (tap on the chart) sits above the strip and plotter bar, so its buttons can be used (Stuart 13 Nov, Android) */
+.tip.docked{z-index:26;max-height:calc(100% - 130px);overflow-y:auto;overscroll-behavior:contain}
+/* Help: forecast models guide, one block per source so it reads on a phone */
+.navmodels{margin:8px 0}
+.navmodels h4{margin:12px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--brand,var(--ink))}
+.navmodels dl{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+.navmodels .nm{border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-width:0}
+.navmodels dt{font-weight:700;font-size:13px}
+.navmodels dd{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.navmodels dd.nmg{font-family:var(--f-data);color:var(--ink)}
+.navsetlink,.navprefs{flex-shrink:0;height:auto!important}
+/* My defaults card in Settings */
+.navprefs{border:1px solid var(--line);border-radius:10px;margin:0 0 12px;background:var(--panel)}
+.navprefs summary{cursor:pointer;padding:10px 12px;display:flex;flex-direction:column;gap:2px;list-style:none}
+.navprefs summary::-webkit-details-marker{display:none}
+.navprefs summary b{font-size:15px}
+.navprefs summary small{font-size:12px;color:var(--muted)}
+.navprefs[open] summary{border-bottom:1px solid var(--line)}
+.navprefs .npbody{padding:4px 12px 12px}
+.navprefs h4{margin:12px 0 4px;font-size:13px}
+.navprefs .xrow{flex-wrap:wrap}
+.navprefs select,.navprefs input[type=text]{min-height:40px;min-width:0;flex:1 1 160px;font:inherit;color:var(--ink);background:var(--bg,var(--panel));border:1px solid var(--line);border-radius:10px;padding:0 8px}
+.navprefs .nprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.navprefs .npask{border:1px solid var(--brand,var(--line));border-radius:10px;padding:8px 10px;margin-top:10px}
+.navprefs .npask p{margin:0 0 6px;font-size:13px}
+/* the tap box never runs off the chart: it scrolls, and its buttons sit near the top */
+#tip.docked{max-height:calc(100% - 96px);overflow-y:auto}
+/* wind entered by hand */
+.nrman{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:4px 0 10px}
+.nrman label{font-weight:700;font-size:13px}
+.nrmanrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
+.nrmanrow input{width:72px;min-height:40px;font:600 16px var(--f-data);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 8px}
+/* Ready for offline */
+.navoff .nook{color:#2E9E6A;font-weight:700;font-size:13px;margin:6px 0}
+html[data-night] .navoff .nook{color:#9A2A1A}
+/* TWA side in words, not S or P (Stuart 13 Nov) */
+.nside{font:700 9px var(--f-body);font-style:normal;letter-spacing:.04em;margin-left:4px;vertical-align:middle}
+.nside.s,.nsides{color:#2E9E6A}
+.nside.p,.nsidep{color:#E5484D}
+html[data-night] .nside.s,html[data-night] .nsides,html[data-night] .nside.p,html[data-night] .nsidep{color:#9A2A1A}
+/* model run ages */
+.fin .navage{display:block;font:400 10px var(--f-data);color:var(--muted);margin-top:2px}
+#models .navage{font:400 10px var(--f-data);color:var(--muted);margin-left:6px}
+.navage.old{color:#E5484D}
+html[data-night] .navage.old{color:#9A2A1A}
+.navagerow{margin:8px 0;font-size:13px}
+.navagerow select{min-height:36px;margin-left:6px;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px}
+/* moving the panels */
+.navgrip{position:fixed;z-index:60;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--brand,#5B8DEF);color:#fff;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:grab;touch-action:none;padding:0}
+.navgrip:active{cursor:grabbing}
+.navmovebar{position:fixed;z-index:61;left:50%;translate:-50% 0;top:calc(env(safe-area-inset-top,0px) + 8px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;max-width:calc(100% - 32px);background:var(--panel);border:1px solid var(--brand,var(--line));border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,.4);font-size:13px}
+html[data-night] .navgrip{background:#5A1410;border-color:#9A2A1A;color:#E8B0A8}
+.tabsum{margin:0 0 12px;padding:8px 10px;font-size:13px;line-height:1.45;color:var(--muted);background:color-mix(in srgb,var(--line) 35%,transparent);border-radius:10px}
+#s-mine .navprefs{margin-bottom:12px}
+.setfind{position:relative;padding:8px 14px 4px}
+.setfind input{width:100%;box-sizing:border-box;min-height:40px;font:inherit;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0 12px}
+.setfindres{position:absolute;left:14px;right:14px;top:100%;z-index:20;max-height:50vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.setfindres button{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:10px 12px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font:inherit;cursor:pointer}
+.setfindres button span{color:var(--muted);font-size:12px;white-space:nowrap}
+.setfindres .note{padding:10px 12px;margin:0}
+.sethit{outline:2px solid var(--brand,#5B8DEF);outline-offset:3px;border-radius:6px;transition:outline-color .3s}
+/* help section */
+.navhelph{margin:16px 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--brand,var(--ink))}
+.navhelp .hpic{display:block;max-width:100%;border:1px solid var(--line);border-radius:10px;margin-top:6px}
+/* Route's basic plotter (fsplot.js, 14 Nov 2026) */
+.rplotbar{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 64px);z-index:5;width:min(calc(100% - 20px),520px);padding:6px 8px 4px;border-radius:14px;border:1px solid var(--line);background:var(--glass,rgba(16,30,48,.92));box-shadow:0 6px 24px rgba(0,0,0,.35);max-height:calc(100% - env(safe-area-inset-top,0px) - 74px);overflow-y:auto}
+.rphead{display:flex;align-items:center;gap:6px}
+.rpname{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;background:none;border:0;color:var(--ink);font:inherit;cursor:pointer;padding:0}
+.rpname b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rpname small{font-size:11px;color:var(--muted)}
+.rpname em{font:600 10px var(--f-body);font-style:normal;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.rpline{font:600 15px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* Stuart 23 Nov 13:39 (iPhone on its side): the line ran on under MARK and over the XTE figure. It stays inside its own space, a little smaller on a short screen */
+.rpline{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media (max-height:500px){.rpline{font-size:13px}.rpname b{font-size:13px}}
+.rpnav{flex:none;min-width:44px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--brand);font:700 20px var(--f-data);cursor:pointer}
+.rpnav.rpmin{font:700 11px var(--f-data);letter-spacing:.06em}
+.rpgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 6px;margin-top:4px}
+.rpl{display:flex;flex-direction:column;align-items:center;min-width:0;padding:2px 0}
+.rpl span{font:600 10px var(--f-data);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.rpl b{font:600 20px var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rpl i{font-style:normal;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rpl.bad b{color:#FF6B6B}
+.rpfoot{margin:2px 0 0;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.npdr{color:#b45309;letter-spacing:.03em}
+.rplotbar.mini{padding:3px 6px}
+.rplotb[aria-pressed="true"]{background:var(--brand);color:var(--panel)}
+@media (min-width:900px){.rplotbar{left:auto;right:var(--gutR,10px);transform:none;width:460px}}
+@media (max-width:600px){.rpnav{min-height:34px;min-width:40px;font-size:18px}.rpname b{font-size:14px}.rpl span{font-size:9px}.rpl b{font-size:18px}}
+:root[data-night] .rpl b,:root[data-night] .rpname b,:root[data-night] .rpline{color:#E0322A}
+:root[data-night] .rplotb[aria-pressed="true"]{background:#3A0A08!important;color:#E0322A!important}
+img.hpic:not([src]){display:none}
+.rpmode{font-size:11px;padding:0 6px;letter-spacing:.04em}
+.rpnav.rpview{display:flex;gap:3px;padding:3px;font:700 12px/1 var(--f-data,inherit);letter-spacing:.04em}.rpview span{display:flex;align-items:center;justify-content:center;min-width:40px;padding:0 5px;border-radius:6px;color:var(--muted)}.rpview span.on{background:var(--brand,var(--route));color:var(--panel)}   /* F8: MARK or ROUTE */
+
+/* M20 (Stuart 17 Nov 06:05): in clear screen the product's logo top left, with a line turning round it while it is working and receiving; M5: Mark's logo box has the line all the time */
+@property --fsA{syntax:'<angle>';initial-value:0deg;inherits:false}
+#fsBadge{display:none;position:fixed;z-index:30;left:calc(env(safe-area-inset-left,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 10px);width:50px;height:50px;padding:0;border-radius:14px;align-items:center;justify-content:center;cursor:pointer;border:3px solid transparent;background:linear-gradient(var(--panel,#0B1B30),var(--panel,#0B1B30)) padding-box,conic-gradient(from var(--fsA),#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f) border-box;animation:fsring 4s linear infinite;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+#fsBadge svg,#fsBadge img{width:36px;height:auto;display:block}
+body.navclear #fsBadge{display:flex}
+#fsBadge.off{animation:none;background:linear-gradient(var(--panel,#0B1B30),var(--panel,#0B1B30)) padding-box,linear-gradient(#64748b,#64748b) border-box}
+.logobox.mkring{position:relative;isolation:isolate;border:2px solid transparent;background:transparent;animation:none}
+.logobox.mkring>.mkdisc{position:absolute;inset:-2px;border-radius:10px;overflow:hidden;z-index:-1;pointer-events:none}
+.logobox.mkring>.mkdisc::before{content:'';position:absolute;left:50%;top:50%;width:250%;aspect-ratio:1;background:conic-gradient(#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f);transform:translate(-50%,-50%);animation:mkspin 6s linear infinite;will-change:transform}
+.logobox.mkring>.mkdisc::after{content:'';position:absolute;inset:2px;border-radius:10px;background:linear-gradient(var(--panel),var(--panel)),var(--bg,#0B1B30)}
+@keyframes mkspin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes fsring{to{--fsA:360deg}}
+@media (prefers-reduced-motion:reduce){#fsBadge,.logobox.mkring>.mkdisc::before{animation:none}}
+/* 17 Nov 22:55: the clear-screen badge turns on the graphics side too */
+#fsBadge{isolation:isolate;background:transparent!important;animation:none!important}
+#fsBadge>.mkdisc{position:absolute;inset:-3px;border-radius:14px;overflow:hidden;z-index:-1;pointer-events:none}
+#fsBadge>.mkdisc::before{content:'';position:absolute;left:50%;top:50%;width:250%;aspect-ratio:1;background:conic-gradient(#ff8a1f,#ff8a1f 18%,#8b5cf6 35%,#ff4fa3 55%,#3574BA 75%,#ff8a1f);transform:translate(-50%,-50%);animation:mkspin 4s linear infinite;will-change:transform}
+#fsBadge>.mkdisc::after{content:'';position:absolute;inset:3px;border-radius:10px;background:var(--panel,#0B1B30)}
+#fsBadge.off>.mkdisc::before{animation:none;background:#64748b}
+@media (prefers-reduced-motion:reduce){#fsBadge>.mkdisc::before{animation:none}}
+.logobox.mkring{isolation:isolate}.logobox.mkring:not(.rx)>.mkdisc::before{animation:none;background:#64748b}   /* F49: still and grey with no GPS arriving */
+#fsBadge.off>.mkdisc::before{animation:none;background:#64748b}
+.navhidecard{position:fixed;z-index:60;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);font:400 14px var(--f-body);max-width:min(300px,calc(100vw - 16px))}
+.navhidecard label{display:flex;flex-direction:column;gap:6px}
+.navhidecard select{min-height:40px;font-size:15px}
+/* 21 Nov: full-height next-mark arrows either side of the plotter panel; swipe the panel for the next mark */
+.rplotbar{display:flex;align-items:stretch;gap:6px;touch-action:pan-y}
+.rplotbar[hidden]{display:none}
+.rpbody{flex:1;min-width:0}
+.rparrow{flex:none;width:56px;align-self:stretch;min-height:44px;border-radius:10px;border:1px solid var(--line);background:none;color:var(--brand);font:700 28px var(--f-data);cursor:pointer;padding:0}
+.rparrow:active{background:var(--line)}
+.rplotbar button *{pointer-events:none}
+@media (max-width:600px){.rparrow{width:52px;font-size:26px}}
+:root[data-night] .rparrow{color:#E0322A}
+.navclearb *{pointer-events:none}
+.navhiderow{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+/* F101: your version of a stored race */
+.yourtag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;border:1px solid var(--brand);color:var(--brand);font:600 10px var(--f-data);letter-spacing:.05em;text-transform:uppercase;vertical-align:middle}
+.yourc{display:block;margin:0 0 6px}.yourc .btn{margin-left:4px}
+/* F104 (21 Nov): no floating GPS window; the strip at the foot shows the live figures, the GPS button opens a short menu */
+body.gpsstrip #liveBox{display:none!important}
+.now.live::before{content:'LIVE';color:#2FA36B}
+.now.live.alarm b,.now .warnc b{color:#FF6B6B}
+.now .gpserr{align-self:center;font:400 12px var(--f-body);color:var(--muted);white-space:normal;max-width:60vw}
+.gpsmenu{position:fixed;z-index:60;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;width:min(360px,calc(100vw - 16px));box-shadow:0 8px 24px rgba(0,0,0,.35);max-height:70vh;overflow-y:auto}
+.gpsmenu[hidden]{display:none}
+.gpsmenu .btn{min-height:44px}
+.gpsmenu .gmh{width:100%;display:flex;justify-content:space-between;align-items:center;font:600 13px var(--f-data)}
+.gpsmenu .gmh .close{position:static}
+.gpsmenu .gminfo{width:100%;font-size:13px}
+/* F110 (21 Nov, found by tests/gps-strip.js): on a phone the routing progress box spanned the top of the chart and covered the round buttons
+   (CLEAR). It now keeps clear of the column of round buttons on the right. */
+@media (max-width:899px){#prog{left:var(--gut,16px);transform:none;width:auto;max-width:calc(100% - var(--gut,16px) - 70px)}}
+/* M93: the strip tagged RHUMB while the slider runs the rhumb-line boat on Mark */
+.now.rhumb::before{content:'RHUMB'}
+.battnote{display:flex;flex-direction:column;gap:8px;text-align:left}.battnote .xrow{display:flex;gap:8px;justify-content:flex-end}
+/* HELM (fshelm.js, Stuart 22 Nov 10:36): the helmsman's full screen on the phone's GPS; PLAN figures dimmer */
+.fshelm{position:fixed;inset:0;z-index:70;background:#05101E;color:#F4F7FB;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.fshelm[hidden]{display:none!important}
+.fhbar{display:flex;align-items:center;gap:8px}.fhutc{font:600 13px var(--f-data,monospace);color:#9FB2CC;white-space:nowrap}
+.fhseg{display:flex;flex:1;border:1px solid #2A3B55;border-radius:10px;overflow:hidden}.fhseg button{flex:1;min-height:44px;border:0;background:transparent;color:#9FB2CC;font:600 15px inherit}.fhseg button[aria-pressed="true"]{background:#2F80D8;color:#fff}
+.fhbtn{min-width:52px;min-height:44px;border-radius:10px;border:1px solid #2A3B55;background:transparent;color:#F4F7FB;font:700 15px inherit}
+.fhmob{background:none;border:0;padding:0;min-width:48px;min-height:44px;border-radius:50%}.fhmob.holding{background:#8B0000}/* Stuart 26 Nov 11:50: the lifebuoy as everywhere else, not the word */.fhstart{cursor:pointer}.fhstart .fhgo{font:600 12px var(--f-body,system-ui);font-style:normal;color:#9FB2CC;align-self:center;white-space:nowrap}
+.fhwarn{margin:8px 0 0;padding:8px;border-radius:10px;background:#E5484D;color:#fff;font:700 15px inherit;text-align:center}
+.fhstart{margin-top:8px;border:1px solid #2A3B55;border-radius:14px;padding:6px;display:flex;align-items:baseline;justify-content:center;gap:12px}.fhstart b{font:700 clamp(40px,14vw,96px)/1 var(--f-data,monospace)}.fhstart span{font:600 clamp(14px,4vw,22px) inherit;color:#9FB2CC}
+.fhgrid{flex:1;display:grid;grid-template-rows:repeat(3,1fr);gap:6px;margin-top:8px;min-height:0}
+.fhgrid.n6,.fhgrid.n9{grid-template-columns:1fr 1fr}.fhgrid.n6{grid-template-rows:repeat(3,1fr)}.fhgrid.n9{grid-template-columns:repeat(3,1fr)}
+.fhgrid>div{display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid #1C2B42;min-height:0;min-width:0;overflow:hidden}
+.fhgrid span{font:700 clamp(13px,3.6vw,22px) inherit;letter-spacing:.08em;color:#9FB2CC}
+.fhgrid b{font:700 clamp(56px,22vw,200px)/1 var(--f-data,monospace);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fhgrid.n6 b{font-size:min(13vw,10vh)}.fhgrid.n9 b{font-size:min(9vw,7vh)}
+.fhgrid i{font:600 clamp(12px,3.4vw,24px) inherit;font-style:normal;color:#9FB2CC;margin-top:4px;text-align:center}
+.fhgrid .plan{opacity:.62}.fhgrid .plan span::after{content:' PLAN';font-size:.7em;letter-spacing:.04em}
+.fshelm.starting .fhgrid b{font-size:clamp(36px,12vw,120px)}
+@media (orientation:landscape){.fhgrid{grid-template-rows:none;grid-template-columns:repeat(3,1fr)}.fhgrid.n6,.fhgrid.n9{grid-template-rows:1fr 1fr;grid-template-columns:repeat(3,1fr)}.fhgrid.n9{grid-template-rows:repeat(3,1fr)}.fhgrid>div{border-bottom:0;border-right:1px solid #1C2B42}.fhgrid b{font-size:min(12vw,34vh)}.fhgrid.n6 b{font-size:min(8vw,19vh)}.fhgrid.n9 b{font-size:min(5.5vw,11vh)}.fhgrid.n9 span,.fhgrid.n9 i{font-size:clamp(10px,3.2vh,16px);margin-top:0}}
+.fshelm.red{background:#000;color:#E01010}.fshelm.red .fhgrid span,.fshelm.red .fhgrid i,.fshelm.red .fhseg button,.fshelm.red .fhbtn,.fshelm.red .fhutc,.fshelm.red .fhstart span{color:#A00808;border-color:#400}.fshelm.red .fhseg{border-color:#400}.fshelm.red .fhseg button[aria-pressed="true"]{background:#600;color:#F02020}.fshelm.red .fhgrid>div{border-color:#300}.fshelm.red .fhmob{background:none;opacity:.75}
+/* Stuart 22 Nov: DECK | NAV on the plotter bar. On a phone the buttons take their own short row and the mark name and the one-line readout
+   the full width under them, so no button sits on the figures. */
+@media (max-width:600px){.rphead{flex-wrap:wrap;justify-content:center;row-gap:4px}.rphead .rpname{order:2;flex:1 1 100%}.rphead .rpnav{min-height:30px;font-size:11px}.rpnav.rpview span{min-width:36px}.rpline{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}}
+
+/* 25 Nov 2026 (Stuart, BRIEF-CLEAR-BUTTON-ROW): CLEAR takes only the row of big buttons; the bar keeps the LIVE and ROUTE lines and the slider (fsclear.js) */
+body.navclear .bar>.navmenub{min-width:56px;height:40px;font-size:12px}
+/* Stuart 25 Nov 17:41 (laptop picture): the next mark's name was cut short ("Finish, Cher..."); it now takes up to two lines */
+.rpname b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.15;overflow:hidden;text-overflow:clip;overflow-wrap:anywhere}
+/* PLOT window, layout A (Stuart 25 Nov 2026 20:5x, mockup-plot-window-AB.png): name between the arrows, one row of controls, the figures,
+   then the model routes; hidden, one line with the arrows */
+.rplotbar{display:block;padding:8px 8px 6px}
+.rplotbar.mini{padding:4px 6px}
+.rptop{display:flex;align-items:center;gap:8px}
+.rptop .rphead{flex:1;min-width:0;display:block}
+.rptop .rphead .rpname{width:100%;align-items:flex-start;text-align:left}
+.rptop .rparrow{width:40px;height:40px;min-height:40px;align-self:center;font-size:22px;flex:none}
+.rplotbar.mini .rptop .rparrow{width:34px;height:34px;min-height:34px;font-size:19px}
+.rpctl{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px}
+.rpctl:empty{display:none}
+.rpctl .rpnav{min-height:34px;font-size:11px;letter-spacing:.05em}
+.rpctl .rpnav.rpmin{padding:0 10px}
+.rptop .rpname b{font-size:16px}

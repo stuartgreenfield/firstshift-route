@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-27T08:15:14.915Z",
+ "log": [
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 77,
+   "note": "Finer routes in 55.3 s. Times: first routes 3.8 s, standard 19.6 s, finer 75.0 s. The faint line is the standard route. "
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 144,
+   "note": "Finer routes in 51.7 s. Times: first routes 2.0 s, standard 14.6 s, finer 66.3 s. The faint line is the standard route. "
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 210,
+   "note": "Finer routes in 51.9 s. Also worth knowing: in UKV wind, the ICON-EU route is 20 min faster than UKV’s own route; in GFS"
+  }
+ ]
+}

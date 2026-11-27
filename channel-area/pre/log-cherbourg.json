@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-27T08:15:01.576Z",
+ "log": [
+  {
+   "race": "cherbourg",
+   "h": 0,
+   "s": 60,
+   "note": "Finer routes in 44.1 s. Times: first routes 2.2 s, standard 13.7 s, finer 57.8 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cherbourg",
+   "h": 1,
+   "s": 110,
+   "note": "Finer routes in 39.1 s. Times: first routes 1.4 s, standard 10.5 s, finer 49.6 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cherbourg",
+   "h": 2,
+   "s": 158,
+   "note": "Finer routes in 36.9 s. Times: first routes 1.4 s, standard 10.7 s, finer 47.7 s. The faint line is the standard route. "
+  }
+ ]
+}

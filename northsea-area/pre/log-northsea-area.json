@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-27T08:17:01.293Z",
+ "log": [
+  {
+   "race": "northsea-area",
+   "h": 0,
+   "s": 62,
+   "note": "Finer routes in 43.6 s. Also worth knowing: in ECMWF wind, the GFS route is 2.4 min faster than ECMWF’s own route; in GF"
+  },
+  {
+   "race": "northsea-area",
+   "h": 1,
+   "s": 114,
+   "note": "Finer routes in 42.4 s. Times: first routes 1.6 s, standard 9.5 s, finer 51.9 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 2,
+   "s": 166,
+   "note": "Finer routes in 42.2 s. Times: first routes 1.6 s, standard 9.5 s, finer 51.7 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 3,
+   "s": 218,
+   "note": "Finer routes in 41.8 s. Times: first routes 1.6 s, standard 9.8 s, finer 51.6 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea-area",
+   "h": 4,
+   "s": 269,
+   "note": "Finer routes in 40.4 s. Also worth knowing: in ICON-EU wind, the AROME HD route is 11 min faster than ICON-EU’s own rout"
+  },
+  {
+   "race": "northsea-area",
+   "h": 5,
+   "s": 319,
+   "note": "Finer routes in 40.2 s. Times: first routes 1.6 s, standard 9.8 s, finer 50.0 s. The faint line is the standard route. F"
+  }
+ ]
+}
