@@ -2716,6 +2716,8 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     draw();
   }
   window.__fsEndRace = endRace;
+  /* Stuart 27 Nov 2026 11:48 to 11:56: "Delete last race ... start with a clean sheet"; "when you delete a race, you should delete the start line"; a new race must not show the last one's information. The start line (both ends and their ages), the chosen gun and the line figures are forgotten; filed tracks and results stay in Stored races. Reverses "start line ... kept between" Solent races (16 Nov) for a deleted race. */
+  window.__fsRaceWipe = function () { try { store(lineKey(), ''); store('fs-line-solent', ''); } catch (e) {} try { store(futureKey(), ''); startChosen(false); } catch (e) {} try { if (LIVE.calc) LIVE.calc.pre = null; } catch (e) {} try { draw(); } catch (e) {} };
   function escMk(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function markTrack(f) {
     var legs = S.legs || (meta && meta.course ? legsFor(null) : null); if (!legs || !legs.length || !f) return null;

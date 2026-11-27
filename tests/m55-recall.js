@@ -11,6 +11,6 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   ok(btn, '20 s after the gun: Recall on the sequence bar');
   if (btn) { await p.evaluate(() => document.querySelector('#solSeq [data-q="recall"]').click()); await p.waitForTimeout(1500);
     const r = await p.evaluate(() => ({ rem: FSSolent.state().startAt - Date.now() / 1000, route: window.FS_MARK ? null : window.__fsGunAt() - Date.now() / 1000 }));
-    ok(Math.abs(r.rem - 300) < 5, 'Recall: a new 5-4-1-0 sequence, gun 5 minutes on', r);
-    if (r.route != null) ok(Math.abs(r.route - 300) < 5, 'Route\'s class start follows the recall', r); }
+    ok(Math.abs(r.rem - 360) < 5, 'Recall: a new 5-4-1-0 sequence, gun 6 minutes on (R2, 26 Nov 15:43: the warning signal is 1 minute after the First Substitute comes down, RRS 29.2)', r);
+    if (r.route != null) ok(Math.abs(r.route - 360) < 5, 'Route\'s class start follows the recall', r); }
   ok(!p.errs.length, 'no script errors', p.errs.slice(0, 2)); await b.close(); console.log(pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0); })();

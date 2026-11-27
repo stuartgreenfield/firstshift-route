@@ -19,7 +19,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.click('#solSeq [data-q=m1]'); await p.waitForTimeout(300); const rem2 = await p.evaluate(() => FSSolent.state().startAt - Date.now() / 1000); ok(Math.abs(rem2 - 240) < 3, '−1 min', Math.round(rem2));
   await p.click('#solSeq [data-q=flag]'); await p.waitForTimeout(200); ok(await p.evaluate(() => FSSolent.state().flag) === 'I', 'the flag changes P to I');
   await p.click('#solSeq [data-q=seq]'); await p.waitForTimeout(200); ok(await p.evaluate(() => FSSolent.state().seq) === 3, '3-2-1-0 sequence');
-  await p.click('#solSeq [data-q=recall]'); await p.waitForTimeout(300); const rem3 = await p.evaluate(() => FSSolent.state().startAt - Date.now() / 1000); ok(Math.abs(rem3 - 180) < 3, 'General recall: a new sequence', Math.round(rem3));
+  await p.click('#solSeq [data-q=recall]'); await p.waitForTimeout(300); const rem3 = await p.evaluate(() => FSSolent.state().startAt - Date.now() / 1000); ok(Math.abs(rem3 - 240) < 3, 'General recall: a new sequence, 1 minute plus its length (R2, 26 Nov)', Math.round(rem3));
   await p.click('#solSeq [data-q=ap]'); await p.waitForTimeout(300); t = await box(); ok(/AP/.test(t) && /Warning signal now/.test(t), 'Postpone shows AP with Warning signal now');
   await p.click('#solSeq [data-q=warn]'); await p.waitForTimeout(300); t = await box(); ok(t && /2:5\d|3:00/.test(t), 'Warning signal now starts the sequence', t && t.slice(0, 40));
   /* stacking with the plotter */

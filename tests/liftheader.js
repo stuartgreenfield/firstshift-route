@@ -11,6 +11,8 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
     await p.waitForFunction(() => window.FSLift && window.__navBoat, null, { timeout: 300000 }); await p.waitForTimeout(2000);
     const set = (twd, twa) => p.evaluate(([twd, twa]) => { window.__LB = { twd, twa }; window.__navBoat = () => ({ twd: window.__LB.twd, twa: window.__LB.twa, age: { twd: 0, twa: 0 } }); }, [twd, twa]);
     await set(235, -40);
+    /* 27 Nov (F4): Mark+ shows the box only with a course on the chart; stand one in here, and take it away again at the end */
+    if (page === '/mark/') await p.evaluate(() => { window.__realCourse = window.__navCourse; window.__navCourse = () => ({ key: 't' }); });
     await p.evaluate(() => { const H = window.FSLift.H(), t = Date.now(); H.length = 0; for (let i = 120; i >= 1; i--) H.push([t - i * 5000, 235]); if (window.FSSolent && window.FSSolent.set) window.FSSolent.set({ startAt: Math.round(Date.now() / 1000) - 60 }); });
     await set(243, -40); await p.evaluate(() => window.FSLift.render()); await p.waitForTimeout(300);
     const read = () => p.evaluate(() => { const e = document.getElementById('lhPop'); return e && !e.hidden ? { w: e.querySelector('.lhtop b').textContent, fold: e.classList.contains('fold'), svg: e.querySelectorAll('svg').length } : null; });
@@ -20,6 +22,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { c ? pass++ : fail++; console.l
     await p.evaluate(() => document.getElementById('lhFold').click()); r = await read(); ok(r && !r.fold && r.svg === 2, page + ' opens again', r);
     await set(243, 120); await p.evaluate(() => window.FSLift.render()); r = await read(); ok(!r, page + ' on a reach it stays away');
     if (page === '/mark/') { await set(243, -40); await p.evaluate(() => { window.FSSolent.set({ startAt: Math.round(Date.now() / 1000) + 120 }); window.FSLift.render(); }); r = await read(); ok(!r, 'Mark+: not before the start', r); }
+    if (page === '/mark/') { await set(243, -40); await p.evaluate(() => { window.FSSolent.set({ startAt: Math.round(Date.now() / 1000) - 60 }); window.FSLift.render(); }); r = await read(); ok(r, 'Mark+: back after the start, with a course', r); await p.evaluate(() => { window.__navCourse = () => null; window.FSLift.render(); }); r = await read(); ok(!r, 'Mark+ (F4): no course on the chart, no lift box', r); }
     ok(!errs.length, page + ' no script errors', errs.slice(0, 3)); await p.close();
   }
   console.log(pass + ' passed, ' + fail + ' failed'); await b.close(); process.exit(fail ? 1 : 0); })();

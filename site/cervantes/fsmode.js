@@ -30,7 +30,7 @@
       if (k !== 'course') { try { if (sol().legsShut) sol().legsShut(); } catch (e) {} }   /* 8a (Stuart 26 Nov 14:34): the course list closes by itself when START or RACE begins */
       if (k === 'course') { Mk.pick = null; try { sol().start(); } catch (e) {} }
       else if (k === 'start') { Mk.pick = null; try { if (sol().ssHold) sol().ssHold(false); if (window.__fsStartScreen) window.__fsStartScreen(); else if (sol().ssOpen && !sol().ssOpen()) { if (window.NavToast) window.NavToast(window.__navCourse && window.__navCourse() ? 'The gun has gone. Set the next start time: the start screen opens when it is set.' : 'Set the course first: 1 COURSE.'); if (window.__navCourse && window.__navCourse() && window.__fsStartStep) window.__fsStartStep(); } } catch (e) {} }   /* 26 Nov (D25): 2 START did nothing that could be seen with the gun more than 10 minutes off; the screen it should open was only wired on Route */
-      else { Mk.pick = 'race'; try { if (sol().ssHold) sol().ssHold(true); } catch (e) {} ['solCard', 'solStartScr'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; }); if (!liveOn()) { var l = $('liveBtn'); if (l) l.click(); } }
+      else { Mk.pick = 'race'; try { if (sol().ssHold) sol().ssHold(true); } catch (e) {} ['solCard', 'solStartScr'].forEach(function (id) { var e = $(id); if (e) e.hidden = true; }); if (!liveOn()) { var l = $('liveBtn'); if (l) l.click(); } try { var PLr = window.__fsPlot || window.__navPlot; if (PLr && !PLr.C.on) PLr.toggle(true); } catch (e) {} }   /* Stuart 27 Nov 12:05: RACE brings the race view at once, before the gun too: the plotter to the first mark, the live figures, the countdown as one small line */
       paint();
     }
     function build() {

@@ -558,6 +558,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
    lines (before / start) and the short "+0h 00" form stays on one. Fourth fault in this row since 22 Nov; tools/edge_check.js now tests it at every build. */
 @media (max-width:560px) and (orientation:portrait){.bar .clock{min-width:min-content}.bar .clock small{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.05}.bar .clock .cks{white-space:nowrap}}
 /* 27 Nov (edge check, 320 px wide): the Start button at the end of the time row was 3 to 6 px over the edge; the row closes up a little there */
+@media (max-width:340px){.top{gap:3px}.top .lead{gap:2px!important;max-width:calc(100% - 116px)!important}.top .tools{gap:2px}.top .tools>button,.top .tools>a{width:34px;min-width:34px;padding:0}.top .logobox{width:42px!important;padding:0 3px}.top .logobox .mk-s{width:36px}.top #raceBtn{min-width:26px!important;padding:0 2px}}
 @media (max-width:340px){#bar #tzRow{gap:2px;flex-wrap:wrap;row-gap:4px}#bar #tzRow .tzl{gap:2px}#tzRow #tzRace{padding:3px 4px;margin-left:auto}}   /* a longer start ("Start 14h 31") goes onto its own line at the right instead of off the edge */
 
 /* fleet table (22 Nov 19:20): boat names read from the left; ahead or behind under the minutes, so five columns fit a phone */
