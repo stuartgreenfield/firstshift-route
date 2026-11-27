@@ -24,5 +24,7 @@
      /mark/ page (FS_MARK, set in the page head); Route+ and Mark+ set FS_PLUS in navigate.js, loaded straight after this file. Every sentence
      that means "this tool" takes the name from here. */
   window.FSTool = function () { return (window.FS_MARK ? 'Mark' : 'Route') + (window.FS_PLUS || window.NAV_VERSION ? '+' : ''); };
+  /* fixed text in the page marks each such name with class "tn"; filled once when the page has loaded */
+  document.addEventListener('DOMContentLoaded', function () { var nm = window.FSTool(), l = document.querySelectorAll('.tn'); for (var i = 0; i < l.length; i++) if (l[i].textContent !== nm) l[i].textContent = nm; });
   window.FSBeat = { set: set, clear: clear, count: function () { return jobs.length; }, list: function () { return jobs.map(function (j) { return { id: j.id, ms: j.ms, always: j.always }; }); } };
 })();

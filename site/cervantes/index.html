@@ -568,8 +568,8 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 <div class="splash" id="splash" role="dialog" aria-label="FirstShift Route"><div class="sp-img" role="img" aria-label="Morning After racing upwind in the Solent"></div><div class="sp-shade"></div>
   <div class="sp-txt"><img class="sp-logo" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><h1>Route<span>.</span><sup class="tm" aria-label="trade mark">™</sup></h1>
   <p class="sp-lead">Race routing for offshore sailors.</p><ul class="sp-list"><li>Eight forecast models, tidal streams and sea state</li><li>On your phone, tablet or computer</li><li>The route, the plan and the crew brief, ready before you slip the lines</li></ul>
-  <span class="sp-mail" id="spMail">firstshiftsailing.com · stuart@greenfield.co.uk</span><span class="sp-go">Planning aid · not for navigation</span><span class="sp-first" id="spFirst" hidden>First time? Set your boat and your class start in Race set-up. Route routes as soon as both are set.</span>
-  <button class="sp-film" id="spFilm" type="button" aria-label="Watch the two-minute film: how to use Route"><img src="../films/route-how-to.jpg" alt="" width="160" height="90"><span><b>Watch: how to use Route</b><i>2 minutes, with sound</i></span></button>
+  <span class="sp-mail" id="spMail">firstshiftsailing.com · stuart@greenfield.co.uk</span><span class="sp-go">Planning aid · not for navigation</span><span class="sp-first" id="spFirst" hidden>First time? Set your boat and your class start in Race set-up. <span class="tn">Route</span> routes as soon as both are set.</span>
+  <button class="sp-film" id="spFilm" type="button" aria-label="Watch the two-minute film: how to use Route"><img src="../films/route-how-to.jpg" alt="" width="160" height="90"><span><b>Watch: how to use <span class="tn">Route</span></b><i>2 minutes, with sound</i></span></button>
   <div class="sp-tour" id="spTour"><button class="sp-ch" type="button" id="spTourNo"><b>Set up a race</b><i>Pick a RORC or JOG race, edit a stored course, or draw your own on the chart</i></button><button class="sp-ch sp-try" type="button" id="spTry"><b>Try a practice race</b><i>Practice first: nothing is sent anywhere</i></button><button class="sp-link" type="button" id="spTourYes">Show me round first</button></div>
   <div class="sp-terms" id="spTerms" hidden role="alertdialog" aria-label="Before you use Route"><b>Before you use Route</b><p>Route is a planning aid, not for navigation. Its forecasts, tidal streams, depths and routes come from computer models and can be wrong, late or incomplete. Check official charts, the sailing instructions and the latest forecasts, and keep a proper lookout. The skipper alone is responsible for the safety of the boat and crew. You use Route at your own risk.</p><div class="sp-tb"><a href="../help/terms.html">Full terms and data sources</a><div class="sp-tb2"><button class="btn" id="spAgreeTour" type="button">I understand, show me round</button><button class="btn primary" id="spAgree">I understand</button></div></div></div></div></div>
 <div class="app" id="app">
@@ -603,7 +603,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
     <div class="tip" id="tip" hidden><div class="tipgrip" id="tipGrip" title="Drag to move the card"><span></span></div><button class="x" id="tipX" aria-label="Close">×</button><div id="tipBody"></div></div>
     <div class="busy" id="busy" hidden></div>
     <button class="boatwarn" id="boatWarn" hidden>Generic boat in use: set up your boat</button>
-    <button class="updbar" id="updBar" hidden>Route has been updated. Tap to update.</button>
+    <button class="updbar" id="updBar" hidden><span class="tn">Route</span> has been updated. Tap to update.</button>
     <div class="errbox" id="errBox" hidden role="alert"><span id="errMsg"></span><button class="btn primary" id="errDepth" hidden></button><button class="btn" id="errRetry">Try again</button><button class="btn" id="errX" aria-label="Close">✕</button></div>
     <div class="sessbox" id="sessBox" hidden role="dialog" aria-label="Carry on"><span>Start a new race or boat?</span><button class="btn" id="sessNo">No</button><button class="btn primary" id="sessYes">Yes</button></div>
     <div class="prog" id="prog" role="status" aria-live="polite" hidden><div class="pg-t"><span id="pgT"></span><b id="pgP"></b><button class="pgmin" id="pgMin" type="button" aria-label="Minimise the routing progress" title="Minimise">–</button></div><div class="pg-bar"><i id="pgBar"></i></div><div class="pg-d" id="pgD"></div></div>
@@ -630,7 +630,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="tw"><table id="compare"></table></div>
       <p class="note" data-i>Each route sailed in its own forecast: time on each point of sail, the most wind and sea it meets, and the work for the crew. Upwind is under 60° true wind angle, downwind over 120°.</p>
       <h4 class="xh">How sure is the forecast?</h4>
-      <p class="note" data-i>The ECMWF ensemble: the same model run 10 times with small changes to today's weather. Route sails your course in each one. When the 10 routes and finish times agree, trust the forecast; when they spread, keep your options open.</p>
+      <p class="note" data-i>The ECMWF ensemble: the same model run 10 times with small changes to today's weather. <span class="tn">Route</span> sails your course in each one. When the 10 routes and finish times agree, trust the forecast; when they spread, keep your options open.</p>
       <div class="xrow"><button class="btn" id="ensRun">Route the ensemble</button></div>
       <div id="ensOut"></div>
       <h4 class="xh">When to leave</h4>
@@ -646,7 +646,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Routes. Sails from the crossover chart in Settings.</p>
       <h4 class="xh">Send to the crew</h4>
       <div class="xrow"><button class="btn primary" id="xCrew">Send to crew…</button><button class="btn" id="xCopy">Copy text</button><button class="btn" id="xMoment" title="Shows on every phone, tablet and computer on your boat code">Send to boat code devices</button></div><p class="note" id="xMomentNote"></p>
-      <ol class="steps"><li>Tap <b>Send to crew</b>. On a phone, choose WhatsApp (or Messages, or email) and the crew group.</li><li>The crew get the message below. When they tap the link, Route opens on their phone with the same course and start, and works out the same routes.</li><li>No app to install and no login: the link is all they need.</li></ol>
+      <ol class="steps"><li>Tap <b>Send to crew</b>. On a phone, choose WhatsApp (or Messages, or email) and the crew group.</li><li>The crew get the message below. When they tap the link, <span class="tn">Route</span> opens on their phone with the same course and start, and works out the same routes.</li><li>No app to install and no login: the link is all they need.</li></ol>
       <details class="sltext"><summary>See the message</summary><pre class="crewpre" id="crewPre"></pre></details>
       <h4 class="xh">Put the route on the plotter or a chart app</h4>
       <p class="note"><b>For a plotter</b> (Zeus, Axiom, Garmin): the plotter cannot take the route over the internet, so it goes on a memory card.</p>
@@ -663,8 +663,8 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
         <p class="note">Menu names change with software versions; if yours differ, look for Import in the plotter's user data or routes menu. Sources: Navico Waypoints &amp; Routes guide (software 2.1), Raymarine LightHouse help, Garmin GPSMAP help.</p>
       </div></div>
     <div class="pbody" id="t-fleet" hidden>
-      <p class="note aisnet" id="aisNet"><b>AIS needs a data connection.</b> Route's AIS comes from the internet, so it shows targets only while this phone or tablet is online: through the boat's Wi-Fi when that has internet (Starlink, a 4G or 5G router or satellite), or through the mobile network. With no connection, no AIS targets show.</p>
-      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><p class="aiswarn" id="aisWarn" hidden><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
+      <p class="note aisnet" id="aisNet"><b>AIS needs a data connection.</b> <span class="tn">Route</span>'s AIS comes from the internet, so it shows targets only while this phone or tablet is online: through the boat's Wi-Fi when that has internet (Starlink, a 4G or 5G router or satellite), or through the mobile network. With no connection, no AIS targets show.</p>
+      <div id="aisBox" hidden><h3 class="aish">AIS targets <span class="note" id="aisNote"></span></h3><p class="aiswarn" id="aisWarn" hidden><b>Free online AIS, when <span class="tn">Route</span> is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect <span class="tn">Route</span> to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisShow">Show</label><select id="aisShow"><option value="all">All targets</option></select></div><div class="tw"><table id="aisTable"></table></div></div>
       <p class="note">Every boat you are racing, from its AIS position, each row saying where that boat is against you on corrected time. Now: ahead or behind you at this point. Finish: ahead or behind at the finish if it sails on through the forecast at its TCC (the routed finish). CPA: how close it comes and when. Pos is the place on corrected time now, you included. A boat not yet seen on AIS shows --.</p>
       <p class="note warnt" id="fleetEmpty" hidden><span class="offsh">No entry list for this race yet. </span>Add the boats you are racing below, or tap Race boat on an AIS target.</p>
       <div class="tw"><table id="fleet"></table></div>
@@ -721,7 +721,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
     <div class="sbody shareb">
       <p class="note" id="shareWhat"></p>
       <div class="qrwrap"><canvas id="shareQr" width="264" height="264" aria-label="QR code: scan with a phone camera"></canvas></div>
-      <p class="note">Crew: point the phone camera at the code and tap the link. Route opens on its first page with the same race and start.</p>
+      <p class="note">Crew: point the phone camera at the code and tap the link. <span class="tn">Route</span> opens on its first page with the same race and start.</p>
       <div class="xrow"><button class="btn primary" id="shareSys">Share…</button><button class="btn" id="shareCopy">Copy link</button></div>
       <input id="shareUrl" readonly aria-label="Link" class="shareurl">
     </div>
@@ -735,10 +735,10 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
 </div>
 <div class="sheet" id="help" hidden>
   <div class="in" role="dialog" aria-label="Help">
-    <div class="shead"><h2 class="hbrand"><img class="lock lg-l" src="../brand/lockup-light.svg" alt="FirstShift: Yacht Racing Intelligence"><img class="lock lg-d" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><span>Route help</span></h2><button class="close" id="helpX" aria-label="Close help">×</button></div>
+    <div class="shead"><h2 class="hbrand"><img class="lock lg-l" src="../brand/lockup-light.svg" alt="FirstShift: Yacht Racing Intelligence"><img class="lock lg-d" src="../brand/lockup-dark.svg" alt="FirstShift: Yacht Racing Intelligence"><span><span class="tn">Route</span> help</span></h2><button class="close" id="helpX" aria-label="Close help">×</button></div>
     <div class="sbody">
       <div class="xrow"><button class="btn primary" id="sayAll">Listen to the tour</button><button class="btn" id="sayStop" hidden>Stop</button></div>
-      <p class="note">Each topic has its own Listen button. Route is a planning aid, not for navigation.</p>
+      <p class="note">Each topic has its own Listen button. <span class="tn">Route</span> is a planning aid, not for navigation.</p>
       <div id="helpList"></div>
     </div>
   </div>
@@ -779,7 +779,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="row"><label for="polZ">Polar wind speeds at</label><select id="polZ"><option value="10">10 m (ORC, designer, FirstShift)</option><option value="mast">The masthead</option></select></div>
       <div class="row" id="mastRow" hidden><label for="mastZ">Wind sensor height</label><input type="number" id="mastZ" value="" min="3" max="60" step="0.5" placeholder="enter"> m above the water</div>
       <div class="row"><label class="chk"><input type="checkbox" id="stabOn" checked> Allow for warm or cold air over the sea</label></div>
-      <p class="note" data-i>Forecast wind is the wind 10 m above the sea, the height ORC and most designers use for polars, so a 10 m polar needs no change. A polar made from your own instruments is against the masthead wind, which is stronger: about 3% to 5% at 15 to 18 m in ordinary air, 1% to 4% when the air is colder than the sea (autumn and winter), and 5% to 20% when warm air lies over a cold sea in spring and early summer, most in light winds. Choose The masthead and enter the sensor height, and Route raises the forecast wind to that height, using the ECMWF air and sea temperatures where it has them. In light stable air the raise is held to 10% at most, because neither the theory nor the forecasts are reliable there.</p>
+      <p class="note" data-i>Forecast wind is the wind 10 m above the sea, the height ORC and most designers use for polars, so a 10 m polar needs no change. A polar made from your own instruments is against the masthead wind, which is stronger: about 3% to 5% at 15 to 18 m in ordinary air, 1% to 4% when the air is colder than the sea (autumn and winter), and 5% to 20% when warm air lies over a cold sea in spring and early summer, most in light winds. Choose The masthead and enter the sensor height, and <span class="tn">Route</span> raises the forecast wind to that height, using the ECMWF air and sea temperatures where it has them. In light stable air the raise is held to 10% at most, because neither the theory nor the forecasts are reliable there.</p>
       <h3>Tuning for the day</h3>
       <div class="row tune"><label for="tuUp">Upwind</label><input type="range" id="tuUp" min="85" max="110" step="1" value="100"><b id="tuUpV">100%</b></div>
       <div class="row tune"><label for="tuReach">Reaching</label><input type="range" id="tuReach" min="85" max="110" step="1" value="100"><b id="tuReachV">100%</b></div>
@@ -796,7 +796,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="row"><label for="adjWhere">Where</label><select id="adjWhere"><option value="all">The whole race</option><option value="box">Only an area I draw on the chart</option></select><input type="hidden" id="adjBox" value=""></div>
       <div class="row" id="adjBoxRow" hidden><button class="btn" id="adjDraw">Draw the area</button><span class="note" id="adjBoxTxt">No area yet.</span></div>
       <p class="note" id="adjBoxNote" hidden>Local knowledge: the changes apply inside the area and fade out over 3 nm beyond its edge. Use it for a sea breeze that the forecast misses, or a headland where the tide runs harder.</p>
-      <div class="row"><button class="btn" id="adjReset">Back to the forecast</button><span class="note" id="adjNote" hidden>Overrides on: Route works them in when you close Settings.</span></div>
+      <div class="row"><button class="btn" id="adjReset">Back to the forecast</button><span class="note" id="adjNote" hidden>Overrides on: <span class="tn">Route</span> works them in when you close Settings.</span></div>
       <h3>Start and manoeuvres</h3>
       <div class="row"><label for="startSel">Class start</label><select id="startSel"></select><input type="time" id="startExact" step="60" aria-label="Exact start time, UTC" title="Exact class start, UTC" style="width:110px"></div><p class="note" id="startExactErr" style="color:var(--warn)"></p>
       <div class="row"><label for="ssOpenSel">Start screen opens</label><select id="ssOpenSel"><option value="10">10 min before the gun</option><option value="5">5 min before</option><option value="3">3 min before</option><option value="0">Off: by hand</option></select></div>
@@ -807,7 +807,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="row"><label for="bowOff">Phone to that point</label><input type="number" id="bowOff" value="0" min="-40" max="40" step="0.5"> m</div>
       <p class="note" data-i>F55 (Stuart 18 Nov): when the bowman calls the ping but the phone is aft, the ping would land a boat length short of the line. Give the boat length and where the ping is called from: the distance from the phone forward to that point fills in (the bow: the boat length, as if the phone is at the stern; change it if the phone is nearer the middle; behind the phone is minus). Each ping is moved by it along the heading (J3; Raymarine's start line help gives the same warning).</p>
       <div class="row"><label for="gybeS">Gybe loss</label><input type="number" id="gybeS" value="40" min="0" max="300"> s</div>
-      <p class="note" data-i>Each tack or gybe costs this many seconds of sailing. Route charges it at every change of tack, so it only tacks or gybes when the gain pays for it.</p>
+      <p class="note" data-i>Each tack or gybe costs this many seconds of sailing. <span class="tn">Route</span> charges it at every change of tack, so it only tacks or gybes when the gain pays for it.</p>
       <div class="row"><label for="tackLenL">Start: tack, light</label><input type="number" id="tackLenL" value="4" min="0" max="20" step="0.5" inputmode="decimal" style="width:4.5em"> boat lengths</div>
       <div class="row"><label for="tackLenM">Start: tack, medium</label><input type="number" id="tackLenM" value="2" min="0" max="20" step="0.5" inputmode="decimal" style="width:4.5em"> boat lengths</div>
       <div class="row"><label for="tackLenS">Start: tack, strong</label><input type="number" id="tackLenS" value="3" min="0" max="20" step="0.5" inputmode="decimal" style="width:4.5em"> boat lengths</div>
@@ -815,29 +815,29 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="row"><label for="tackWHi">Strong wind over</label><input type="number" id="tackWHi" value="16" min="4" max="50" step="1" inputmode="numeric" style="width:4.5em"> kn</div>
       <p class="note" data-i>The start screen in all four tools counts a tack in boat lengths at the speed you are sailing (Stuart, 19 Nov: 4, 2 and 3 for a boat like Morning After). A gybe costs a quarter of a tack. Used for the turn time in the time to the line, and by the test boat in Mark. Routes use the tack and gybe loss in seconds above. A time learnt from the instruments, or typed in the start kit, is used instead. Needs the boat length above.</p>
       <div class="row"><label for="leeway">Leeway upwind</label><input type="number" id="leeway" value="0" min="0" max="10" step="0.5"> °</div>
-      <p class="note" data-i>Optional. Polars measure the wind angle against the boat's track through the water, so the route already allows for leeway and this does not change it. Enter your boat's leeway close-hauled (from your instruments, Polar Live or the sailmaker) and Route shows a <b>Steer</b> heading to windward of the track, tapering to none on a beam reach. 0 leaves it off.</p>
+      <p class="note" data-i>Optional. Polars measure the wind angle against the boat's track through the water, so the route already allows for leeway and this does not change it. Enter your boat's leeway close-hauled (from your instruments, Polar Live or the sailmaker) and <span class="tn">Route</span> shows a <b>Steer</b> heading to windward of the track, tapering to none on a beam reach. 0 leaves it off.</p>
     </div>
     <div class="sbody" id="s-fc" hidden>
       <div id="fcCover"></div>
       <h3>Wind models to route on</h3>
       <div id="models"></div>
-      <p class="note" data-i>Each wind model is a separate forecast from a different weather service, and Route sails a route in each one. Combined averages the wind of every chosen model at each place and hour. Finest first uses the most detailed model that covers each place and hour, then the next. When a model’s forecast runs out, the others carry on.</p>
+      <p class="note" data-i>Each wind model is a separate forecast from a different weather service, and <span class="tn">Route</span> sails a route in each one. Combined averages the wind of every chosen model at each place and hour. Finest first uses the most detailed model that covers each place and hour, then the next. When a model’s forecast runs out, the others carry on.</p>
       <h3>Routing detail</h3>
       <div class="row"><label for="rDetail">Detail</label><select id="rDetail"><option value="auto">Auto</option><option value="quick">Quick</option><option value="fine">Fine</option><option value="finest">Finest</option></select></div>
       <p class="note" id="rDetailNote"></p>
-      <p class="note" data-i>How finely Route searches. It keeps the best point in each slice of the compass as it fans out: more slices, a longer wait, a quicker route for the boat. On the Fastnet (20 Nov) 2000 slices found routes up to 104 hours quicker than 360 in two models; 4000 adds a few minutes more for twice the wait. Auto: 2000 on a computer, 1000 on a phone or tablet. Quick: no finer pass. The server's ready-made routes use 2000.</p>
+      <p class="note" data-i>How finely <span class="tn">Route</span> searches. It keeps the best point in each slice of the compass as it fans out: more slices, a longer wait, a quicker route for the boat. On the Fastnet (20 Nov) 2000 slices found routes up to 104 hours quicker than 360 in two models; 4000 adds a few minutes more for twice the wait. Auto: 2000 on a computer, 1000 on a phone or tablet. Quick: no finer pass. The server's ready-made routes use 2000.</p>
       <div class="row"><label for="tideSel">Tidal stream</label><select id="tideSel"></select></div>
       <div class="row tune"><label for="adjTtime">Tide timing</label><input type="range" id="adjTtime" min="-120" max="120" step="5" value="0"><b id="adjTtimeV"></b></div>
       <div class="row"><label class="chk"><input type="checkbox" id="adjTon" checked> Tide on time</label></div>
       <p class="note" data-i>Stuart, 19 Nov: moves the tidal stream earlier or later, in minutes. The rates and directions stay the same; only the time they apply moves. Routes, the tide arrows on the chart and Mark's start screen all use it.</p>
       <div class="row"><label class="chk"><input type="checkbox" id="tideWind" checked> Sail on the wind over the water</label></div>
-      <p class="note" data-i>On: Route takes the tide out of the forecast wind, so the boat sails on the wind it feels. Wind against tide blows harder, wind with tide softer, and a cross-tide shifts it. Off: the forecast wind as it is.</p>
+      <p class="note" data-i>On: <span class="tn">Route</span> takes the tide out of the forecast wind, so the boat sails on the wind it feels. Wind against tide blows harder, wind with tide softer, and a cross-tide shifts it. Off: the forecast wind as it is.</p>
       <div class="row"><label for="waveSel">Sea state</label><select id="waveSel"></select></div>
       <h3>Sea state effect</h3>
       <div class="row"><label for="seaUp">Upwind loss</label><input type="number" id="seaUp" value="4" step="0.5"> % per m</div>
       <div class="row"><label for="seaReach">Reaching loss</label><input type="number" id="seaReach" value="1.5" step="0.5"> % per m</div>
       <div class="row"><label for="seaSurf">Downwind gain</label><input type="number" id="seaSurf" value="3" step="0.5"> % in 1.5 m+</div>
-      <p class="note" data-i>Waves come from the sea-state forecast. Heading into them, Route takes the upwind loss off the polar speed for every metre of wave height above half a metre; with the waves on the beam, the reaching loss. Running before waves over 1.5 m, it adds up to the downwind gain for surfing.</p>
+      <p class="note" data-i>Waves come from the sea-state forecast. Heading into them, <span class="tn">Route</span> takes the upwind loss off the polar speed for every metre of wave height above half a metre; with the waves on the beam, the reaching loss. Running before waves over 1.5 m, it adds up to the downwind gain for surfing.</p>
       <p class="note">Only downloaded models can be used. Choose what to download under Results, Data.</p>
     </div>
     <div class="sbody" id="s-course" hidden>
@@ -850,15 +850,15 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div class="row"><label for="drOn" class="chk"><input type="checkbox" id="drOn" checked> Dead reckoning when GPS is lost</label></div>
       <div class="row"><label for="drPct">Circle of doubt grows by</label><input type="range" id="drPct" min="5" max="25" step="1" value="10" style="width:150px"><b id="drPctV" style="font-family:var(--f-data)">10%</b></div>
       <p class="note" data-i>Of the distance run since the last fix, plus 50 m to start. At 10%, after 6 nm of reckoning the circle has a radius of about 0.65 nm. Larger is more cautious: use it with a log you do not trust or a strong, uncertain tide.</p>
-      <p class="note" data-i>If no GPS fix arrives for 10 seconds (45 seconds in Save battery mode), the boat carries on along its last course and speed, drawn hollow with a widening circle of doubt, and a warning says how long it has been. In Route+ the boat's own heading and log speed are used while the instruments still send them, with the forecast tidal stream added. When the GPS comes back the boat jumps to the true position and Route says how far out the reckoning was. Not for navigation.</p>
+      <p class="note" data-i>If no GPS fix arrives for 10 seconds (45 seconds in Save battery mode), the boat carries on along its last course and speed, drawn hollow with a widening circle of doubt, and a warning says how long it has been. In Route+ the boat's own heading and log speed are used while the instruments still send them, with the forecast tidal stream added. When the GPS comes back the boat jumps to the true position and <span class="tn">Route</span> says how far out the reckoning was. Not for navigation.</p>
       <div class="row"><label for="xteLim">Alert off track by (nm)</label><input type="number" id="xteLim" min="0" max="50" step="0.1" value="1.0"></div>
       <div class="row"><label for="behLim">Alert behind plan by (min)</label><input type="number" id="behLim" min="0" max="600" step="1" value="15"></div>
       <div class="row"><label class="chk"><input type="checkbox" id="liveSound" checked> Sound an alert</label></div>
       <p class="note" data-i>Live GPS (the GPS button by the timeline) shows the boat on the chart from this phone's own GPS and compares it with the chosen route: off track left or right, ahead or behind the plan, the course and distance to where the plan says you should be now, and the fastest way back. It needs no boat wifi, but the page must stay open with the screen on. Heading is the GPS course over the ground. Alerts are 0 to turn off. Not for navigation.</p>
       <div class="row"><label for="autoFrom">Reroute from GPS</label><select id="autoFrom"><option value="0">Only when I press From here</option><option value="10">Every 10 minutes</option><option value="20">Every 20 minutes</option><option value="30">Every 30 minutes</option></select></div>
-      <p class="note" data-i>After From here has found the boat by GPS, Route routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
+      <p class="note" data-i>After From here has found the boat by GPS, <span class="tn">Route</span> routes again from the new position on this timer, while the screen is on. It stops if the GPS fix is lost or the position leaves the forecast area.</p>
       <div class="row"><label class="chk"><input type="checkbox" id="shareTrack"> Let family and friends follow the boat</label></div>
-      <p class="note" id="shareNote">Needs a boat code (tap the race name, Boat code). While Route is open it sends the boat's GPS position every 15 minutes and the chosen route to FirstShift's server; with no signal the positions wait on this phone and go when the signal returns. Family follow with the boat's own follow code, which can only watch. Nothing is sent when this is off.</p>
+      <p class="note" id="shareNote">Needs a boat code (tap the race name, Boat code). While <span class="tn">Route</span> is open it sends the boat's GPS position every 15 minutes and the chosen route to FirstShift's server; with no signal the positions wait on this phone and go when the signal returns. Family follow with the boat's own follow code, which can only watch. Nothing is sent when this is off.</p>
       <div class="xrow"><button class="btn" id="shareLink">Send the follow link</button></div>
       <h3 class="offsh">Race</h3>
       <div class="row offsh"><label for="raceSel">RORC race</label><select id="raceSel"><option value="">Loading races…</option></select></div>
@@ -873,7 +873,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <div id="fixCourse" class="fixbox"></div>
     </div>
     <div class="sbody" id="s-sails" hidden>
-      <p class="note" data-i="hSails">Copy each sail from your sail log or your sailmaker’s crossover chart: the true wind angles and true wind speeds you use it in. Route names the sail and the reef for every stretch of the route. Rows are checked from the top and the first that fits wins, so put the special cases first.</p>
+      <p class="note" data-i="hSails">Copy each sail from your sail log or your sailmaker’s crossover chart: the true wind angles and true wind speeds you use it in. <span class="tn">Route</span> names the sail and the reef for every stretch of the route. Rows are checked from the top and the first that fits wins, so put the special cases first.</p>
       <div class="row" style="gap:8px;flex-wrap:wrap"><select id="slPreset" style="flex:1 1 220px;min-width:0"></select><button class="btn" id="slUse" hidden>Undo</button></div>
       <h3 id="hSails">Headsails and downwind sails</h3>
       <div id="slTable" class="sltab"></div>
@@ -891,7 +891,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <p class="note" id="slMiss"></p>
       <p class="note" id="slAt">Tap the chart to see which sail it picks for that wind.</p>
       <details class="sltext"><summary>Edit as text, or paste a chart</summary>
-        <p class="note" data-i>One sail per line: name, TWA from, TWA to, TWS from, TWS to. You can also paste a grid from Expedition, PredictWind or SailGrib (first line the wind speeds, then one line per wind angle with the sail for each speed) and Route turns it into rows.</p>
+        <p class="note" data-i>One sail per line: name, TWA from, TWA to, TWS from, TWS to. You can also paste a grid from Expedition, PredictWind or SailGrib (first line the wind speeds, then one line per wind angle with the sail for each speed) and <span class="tn">Route</span> turns it into rows.</p>
         <textarea id="sails" spellcheck="false" style="min-height:200px"># sail, twa from, twa to, tws from, tws to
 J1, 0, 65, 0, 13
 J2, 0, 65, 13, 19
@@ -947,10 +947,10 @@ A4, 125, 180, 18, 60</textarea>
       <h3>Times</h3>
       <div class="row"><label for="timeMode">Show and enter times in</label><select id="timeMode"><option value="utc">UTC</option><option value="local">Local time</option></select></div>
       <div class="row"><label for="keepOn">Keep the screen on</label><select id="keepOn"><option value="always">Always</option><option value="gps">While the GPS is on</option><option value="off">Off: the phone decides</option></select></div>
-      <p class="note" data-i>One setting for every time Route shows (start, finish, plan, fleet, crew brief, start screen) and every start time you type. Local is this device's time zone, or the offset you set with − and + in the time bar. Sailing instructions usually give UTC in winter and local time (BST) in summer: choose the one your instructions use.</p>
+      <p class="note" data-i>One setting for every time <span class="tn">Route</span> shows (start, finish, plan, fleet, crew brief, start screen) and every start time you type. Local is this device's time zone, or the offset you set with − and + in the time bar. Sailing instructions usually give UTC in winter and local time (BST) in summer: choose the one your instructions use.</p>
       <h3>AIS</h3>
       <p class="note aisnet">AIS needs a data connection: the boat's Wi-Fi when it has internet, or the mobile network.</p>
-      <p class="aiswarn"><b>Free online AIS, when Route is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect Route to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Free online AIS (not for navigation)</option></select></div>
+      <p class="aiswarn"><b>Free online AIS, when <span class="tn">Route</span> is online.</b> It shows targets over a wide area but not all of them, so never use it for navigation at sea. At sea, always connect <span class="tn">Route</span> to the yacht&#39;s own AIS receiver: the connect tool comes with the Route apps for Apple and Android in 2027.</p><div class="row"><label for="aisSrc">AIS source</label><select id="aisSrc"><option value="off">Off</option><option value="test">Test fleet (emulated AIS)</option><option value="live">Free online AIS (not for navigation)</option></select></div>
       <div class="row"><label for="cpaNm">CPA alarm inside</label><input type="number" id="cpaNm" value="0.5" min="0.1" max="5" step="0.1"> nm</div>
       <div class="row"><label for="tcpaMin">and within</label><input type="number" id="tcpaMin" value="15" min="2" max="60" step="1"> min</div>
       <label class="chk"><input type="checkbox" id="cpaSound" checked><span>Sound the CPA alarm</span></label>
@@ -966,7 +966,7 @@ A4, 125, 180, 18, 60</textarea>
       <div class="row"><label for="windShow">Wind shown from</label><select id="windShow"></select></div>
       <div class="row"><label for="speed">Play speed</label><select id="speed"><option value="0.5">30 min a second</option><option value="1" selected>1 hour a second</option><option value="3">3 hours a second</option><option value="6">6 hours a second</option></select></div>
       <h3>Data sources</h3>
-      <details class="sltext"><summary>Forecasts, tides, depths and charts used by Route</summary><p class="note">Wind: Met Office UKV and Global (British Crown copyright, Met Office, CC BY-SA 4.0); ECMWF IFS, AIFS and ensemble (ECMWF, CC BY 4.0); NOAA GFS; DWD ICON-EU (Deutscher Wetterdienst); Meteo-France AROME and ARPEGE (Licence Ouverte); Open-Meteo when the device fetches wind itself (CC BY 4.0). Tides and waves: Generated using E.U. Copernicus Marine Service Information (NW Shelf and Iberia-Biscay-Ireland models); Ifremer MARS2D (Licence Ouverte); ECMWF waves. Depths: EMODnet Bathymetry. Lanes and lights: OpenStreetMap contributors, Shom and Rijkswaterstaat (CC0). Outline coastline: Natural Earth. Each source is provided without warranty. Route is not for navigation.</p></details>
+      <details class="sltext"><summary>Forecasts, tides, depths and charts used by <span class="tn">Route</span></summary><p class="note">Wind: Met Office UKV and Global (British Crown copyright, Met Office, CC BY-SA 4.0); ECMWF IFS, AIFS and ensemble (ECMWF, CC BY 4.0); NOAA GFS; DWD ICON-EU (Deutscher Wetterdienst); Meteo-France AROME and ARPEGE (Licence Ouverte); Open-Meteo when the device fetches wind itself (CC BY 4.0). Tides and waves: Generated using E.U. Copernicus Marine Service Information (NW Shelf and Iberia-Biscay-Ireland models); Ifremer MARS2D (Licence Ouverte); ECMWF waves. Depths: EMODnet Bathymetry. Lanes and lights: OpenStreetMap contributors, Shom and Rijkswaterstaat (CC0). Outline coastline: Natural Earth. Each source is provided without warranty. <span class="tn">Route</span> is not for navigation.</p></details>
       <p class="note">Copyright © 2026 Stuart Greenfield, FirstShift. All rights reserved. FirstShift Route, Route+, Mark and Mark+ may not be copied, changed or reused without written permission. The data sources above keep their own terms.</p>
     </div>
   </div>
