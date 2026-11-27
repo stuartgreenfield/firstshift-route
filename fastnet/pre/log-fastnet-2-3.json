@@ -1,17 +1,17 @@
 {
- "at": "2026-11-27T06:02:51.692Z",
+ "at": "2026-11-27T09:48:51.052Z",
  "log": [
   {
    "race": "fastnet",
    "h": 2,
-   "s": 442,
-   "note": "Finer routes in 172.7 s. Times: first routes 6.1 s, standard 40.8 s, finer 213.6 s. The faint line is the standard route"
+   "s": 486,
+   "note": "Finer routes in 185.3 s. Times: first routes 7.0 s, standard 46.0 s, finer 231.3 s. The faint line is the standard route"
   },
   {
    "race": "fastnet",
    "h": 3,
-   "s": 649,
-   "note": "Finer routes in 167.6 s. Also worth knowing: in AROME HD wind, the Finest first route is 2.0 min faster than AROME HD’s "
+   "s": 721,
+   "note": "Finer routes in 189.9 s. Times: first routes 7.0 s, standard 43.6 s, finer 233.5 s. The faint line is the standard route"
   }
  ]
 }
