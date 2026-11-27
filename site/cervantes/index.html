@@ -557,6 +557,8 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
    "before start" under it is wider (76 px in 46). On a phone held upright the clock is now only as wide as its widest word: the label goes onto two
    lines (before / start) and the short "+0h 00" form stays on one. Fourth fault in this row since 22 Nov; tools/edge_check.js now tests it at every build. */
 @media (max-width:560px) and (orientation:portrait){.bar .clock{min-width:min-content}.bar .clock small{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.05}.bar .clock .cks{white-space:nowrap}}
+/* 27 Nov (edge check, 320 px wide): the Start button at the end of the time row was 3 to 6 px over the edge; the row closes up a little there */
+@media (max-width:340px){#bar #tzRow{gap:2px;flex-wrap:wrap;row-gap:4px}#bar #tzRow .tzl{gap:2px}#tzRow #tzRace{padding:3px 4px;margin-left:auto}}   /* a longer start ("Start 14h 31") goes onto its own line at the right instead of off the edge */
 
 /* fleet table (22 Nov 19:20): boat names read from the left; ahead or behind under the minutes, so five columns fit a phone */
 .lsol{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:6px 0 2px}.lsol .seg button{min-width:44px;min-height:32px}#fleet td:nth-child(2),#fleet th:nth-child(2){text-align:left}#fleet td:nth-child(n+3){white-space:nowrap}#fleet td,#fleet th{padding-left:6px;padding-right:6px}
@@ -644,7 +646,7 @@ inside the app do not add it a second time (it squeezed the top bar on a phone h
       <p class="note" id="runNote"></p>
     </div>
     <div class="pbody" id="t-plan" hidden>
-      <h4 class="xh" style="margin-top:0">Ask Route</h4>
+      <h4 class="xh" style="margin-top:0">Ask <span class="tn">Route</span></h4>
       <div class="askrow" id="askRow"><button class="btn" data-q="next">What next?</button><button class="btn" data-q="tack">Next tack or gybe</button><button class="btn" data-q="sail">Next sail change</button><button class="btn" data-q="shift">Biggest wind shift ahead</button><button class="btn" data-q="mark">Next mark</button><button class="btn" data-q="tide">Tide now</button><button class="btn" data-q="brief">Race briefing</button></div>
       <div class="ans" id="askAns" hidden><p id="askTxt"></p><button class="btn say" id="askSay">Read it out</button></div>
       <div class="tw"><table id="plan"></table></div><p class="note">For the route selected under Routes. Sails from the crossover chart in Settings.</p>
