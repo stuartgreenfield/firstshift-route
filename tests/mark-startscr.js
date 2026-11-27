@@ -8,17 +8,17 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   await p.evaluate(() => { const x = document.getElementById('solCardX'); if (x) x.click(); FSSolent.set({ type: 'marks', start: { code: null, name: 'Start line', lat: 50.770, lon: -1.2925, line: true }, marks: FSSolent.board('3F P, 2C S').marks, plan: 'list' }); window.__fsSetLine('boat', 50.7700, -1.2950); window.__fsSetLine('pin', 50.7700, -1.2895); FSSolent.go(); const s = FSSolent.state(); s.startAt = Math.round(Date.now() / 1000 + 287); FSSolent.set({ startAt: s.startAt }); });
   await p.waitForTimeout(1500);
   const ss = () => p.evaluate(() => { const e = document.getElementById('solStartScr'); return e && !e.hidden ? e.innerText.replace(/\s+/g, ' ') : null; });
-  let s = await ss(); ok(s && /To the line/i.test(s) && /burn/i.test(s) && /Bias/i.test(s), 'inside 10 minutes the start screen opens with line, burn and bias', s && s.slice(0, 160));
+  let s = await ss(); ok(s && /To the line/i.test(s) && /burn/i.test(s) && /Bias/i.test(s), 'inside 10 minutes the start screen opens with line, burn and bias, even with the course list open (F10, Stuart 27 Nov 13:39), and the list closes', s && s.slice(0, 160));
   const cv = await p.evaluate(() => { const c = document.querySelector('#solStartScr canvas'); return c && c.width > 50 && c.height > 50; }); ok(cv, 'the line picture is drawn');
   await p.screenshot({ path: '/tmp/claude-0/ui/m2/start-screen.png' });
-  await p.selectOption('#solStartScr select[data-ssmin]', '5'); await p.waitForTimeout(300); ok(await p.evaluate(() => FSSolent.state().ssMin) === 5, 'Opens: 10 min before changed to 5 min before (the list replaced the cycling button, M80)');
+  /* 27 Nov: the Opens list left the start screen; the choice is now the 10, 5, 3, Off buttons in the course list (nxss). Set here through the state. */ await p.evaluate(() => FSSolent.set({ ssMin: 5 })); await p.waitForTimeout(300); ok(await p.evaluate(() => FSSolent.state().ssMin) === 5, 'Opens: 10 min before changed to 5 min before');
   await p.click('#solStartScr [data-q=small]'); await p.waitForTimeout(400); s = await ss(); const sm = await p.evaluate(() => { const e = document.getElementById('solSeq'); return e && !e.hidden; });
   ok(!s && sm, 'Chart takes it back to the small box');
   await p.click('#solSeq [data-q=big]').catch(() => {}); await p.waitForTimeout(400); ok(!!(await ss()), 'Start screen on the small box opens it again');
   /* M30 race menu */
   await p.evaluate(() => FSSolent.start()); await p.waitForTimeout(600);
-  const m = await p.evaluate(() => { const c = document.querySelector('.solmenu, #solCardS'); const t = document.body.innerText; return { start: /Start new race/.test(t), stop: /Stop race/.test(t), stored: /Stored races/.test(t) }; });
-  ok(m.start && m.stop && m.stored, 'the race button offers Start new race, Stop race and Stored races', JSON.stringify(m));
+  const m = await p.evaluate(() => { const c = document.querySelector('.solmenu, #solCardS'); const t = document.body.innerText; return { start: /Start new race/.test(t), stop: /End race/.test(t), stored: /Stored races/.test(t) }; });
+  ok(m.start && m.stop && m.stored, 'the race button offers Start new race, End race and Stored races', JSON.stringify(m));
   await p.screenshot({ path: '/tmp/claude-0/ui/m2/race-menu.png' });
   const stopB = await p.$('#solCardS, #solCardStop'); if (stopB) { await stopB.click(); await p.waitForTimeout(600); }
   ok(stopB && !(await ss()) && await p.evaluate(() => { const e = document.getElementById('solSeq'); return !e || e.hidden; }), 'Stop race closes the start screen and the box');
