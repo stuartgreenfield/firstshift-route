@@ -600,11 +600,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     });
     $('models').innerHTML = h;
   }
+  /* 27 Nov 2026 (Stuart 13:54: "it just gives UKV ... it should be looking at the model that has been chosen or is the fastest"; his four answers 15:00):
+     "Wind shown from" opens on Selected route. The arrows and the chart box then use the model of the route selected, or of the fastest route
+     when none is selected. A model picked by hand in Layers still wins. One function answers "which wind model is shown" for the arrows and the box. */
+  function windRoute() { var rs = S.routes || []; return S.sel || rs.filter(function (s) { return s.best; })[0] || rs[0] || null; }
+  function windShown() { var v = $('windShow').value; if (v !== 'sel') return v; var s = windRoute(), ms = s ? s.models.filter(function (m) { return m !== 'chain' && P.wind[m]; }) : []; return ms[0] || Object.keys(P.wind)[0] || ''; }
+  window.__fsWindShown = function () { return { choice: $('windShow').value, model: windShown(), route: (windRoute() || {}).id || null, routes: (S.routes || []).map(function (r) { var q = r.r.path; return { id: r.id, models: r.models, combined: !!r.combined, best: !!r.best, pts: q.filter(function (x, i) { return i % 6 === 0; }).map(function (x) { return [x.la, x.lo]; }) }; }) }; };   /* for tests/chart-box-wind.js */
   function selects() {
     function opts(kind, none) { return meta.layers.filter(function (l) { return l.kind === kind && P[kind][l.id]; }).map(function (l) { return '<option value="' + l.id + '">' + l.name + '</option>'; }).join('') + '<option value="">' + none + '</option>'; }
     var t = $('tideSel').value, w = $('waveSel').value, ws = $('windShow').value;
-    $('tideSel').innerHTML = opts('tide', 'No tide'); $('waveSel').innerHTML = opts('wave', 'Ignore sea state'); $('windShow').innerHTML = opts('wind', 'No arrows');
-    if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws && P.wind[ws]) $('windShow').value = ws;
+    $('tideSel').innerHTML = opts('tide', 'No tide'); $('waveSel').innerHTML = opts('wave', 'Ignore sea state'); $('windShow').innerHTML = '<option value="sel">Selected route</option>' + opts('wind', 'No arrows');
+    if (t && P.tide[t]) $('tideSel').value = t; if (w && P.wave[w]) $('waveSel').value = w; if (ws === 'sel' || (ws && P.wind[ws])) $('windShow').value = ws;
   }
   /* Screen rules (UI review step 1, 16 Nov): a window opens below the top bar, never over its second row of buttons (tablet sideways, PC) */
   function popBelowTop(p) { try { var t = document.querySelector('.top'), par = p.offsetParent || document.body; if (!t) return; var mt = document.getElementById('mkTop'), tb = t.getClientRects().length ? t.getBoundingClientRect().bottom : mt ? mt.getBoundingClientRect().bottom : par.getBoundingClientRect().top - 54;   /* Mark: under Mark's floating top bar */ ['navStrip', 'fsPlot', 'astroLine'].forEach(function (id) { var ns = document.getElementById(id); if (ns && !ns.hidden && ns.getClientRects().length) tb = Math.max(tb, ns.getBoundingClientRect().bottom); }); tb = tb - par.getBoundingClientRect().top + 6; p.style.top = Math.max(window.FS_MARK ? 8 : 60, Math.round(tb)) + 'px'; p.style.maxHeight = 'calc(100% - ' + (Math.max(window.FS_MARK ? 8 : 60, Math.round(tb)) + 20) + 'px)'; } catch (e) {} }
@@ -3755,7 +3761,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     grid();
     if (S.show.band) bandEdge();
     if (S.show.tide) { ctx.save(); ctx.globalAlpha = (+$('tideDim').value || 0) / 100; arrows('tide'); ctx.restore(); }
-    if (S.show.wind && $('windShow').value) { ctx.save(); ctx.globalAlpha = (+$('windDim').value || 0) / 100; arrows('wind'); ctx.restore(); }
+    if (S.show.wind && windShown()) { ctx.save(); ctx.globalAlpha = (+$('windDim').value || 0) / 100; arrows('wind'); ctx.restore(); }
     (window.__fsLabelFirst || []).forEach(function (fn) { try { fn(ctx, X, Y); } catch (e) {} });   /* A14: the labels that matter most here (the line's bias on the start screen) take their places first */
     try { chartDraw('cmarks'); } catch (e) {}
     zonesDraw(); lightsDraw();
@@ -3894,7 +3900,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function arrows(kind) {
     var A0 = ctx.globalAlpha;   /* the brightness slider; symbols' own transparency multiplies it */
-    var f = kind === 'wind' ? P.wind[$('windShow').value] : P.tide[$('tideSel').value]; if (!f) return;
+    var f = kind === 'wind' ? P.wind[windShown()] : P.tide[$('tideSel').value]; if (!f) return;
     var sym = kind === 'wind' ? $('windSym').value : $('tideSym').value;
     var sp = kind === 'wind' ? (sym === 'W5' ? 30 : 60) : ({ T5: 46, T6: 46, T1: 38, T3: 42 }[sym] || 40);
     ctx.strokeStyle = css[kind === 'wind' ? '--wind' : '--tide']; ctx.fillStyle = ctx.strokeStyle; ctx.font = '10px "JetBrains Mono", monospace'; ctx.lineCap = 'round';
@@ -4271,12 +4277,17 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var onR = !!(best && S.legs && S.legs.length);
     if (onR) { la = best.la; lo = best.lo; t = best.t; }
     var z = P.depth ? P.depth.nearest('z', la, lo) : NaN;
-    if (!onR) rows.push('<b>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + '</b><div class="tiphere">Here at ' + clockH(t).slice(-5) + ' ' + tzS1() + ' (the time slider)</div>');
+    if (!onR) rows.push('<b>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + '</b><div class="tiphere">Here at ' + clockH(t) + ' ' + tzS1() + ' (the time slider)</div>');
     var depthTxt = z === z ? (z > 0 ? 'land' : z <= -99 ? 'over 20 m' : (-z).toFixed(1) + ' m') : 'outside forecast band';
     if (!onR) {
     rows.push(r2('Depth', depthTxt));
-    var wm = $('windShow').value || (S.sel ? S.sel.models[0] : Object.keys(P.wind)[0]), wf = P.wind[wm], tws = 0, twd = 0;
-    if (wf) { var u = wf.sample('u', la, lo, t), v = wf.sample('v', la, lo, t); tws = Math.hypot(u, v) / KN; twd = (Math.atan2(-u, -v) / R + 360) % 360; rows.push(r2('Wind ' + short(wm), tws === tws ? tws.toFixed(1) + ' kn from ' + pad(twd) + '°' : 'no forecast here')); }
+    /* the wind row: the model shown (windShown). On Selected route: Finest first names the model in use at this point and hour (the router's own
+       hand-over order); Combined shows the mean the router sailed, and says so */
+    var wm = windShown() || Object.keys(P.wind)[0], wf = P.wind[wm], tws = 0, twd = 0, wlab = wm ? short(wm) : '', wr = $('windShow').value === 'sel' ? windRoute() : null, wmix = null;
+    if (wr && wr.models[0] === 'chain') { var wch = wr.models.slice(1).filter(function (m) { return P.wind[m]; }); for (var wi = 0; wi < wch.length; wi++) { var wq = P.wind[wch[wi]], wh = wq.hours; if (wh && wh.length > 1 && t > wh[wh.length - 1]) continue; var wa = wq.sample('u', la, lo, t); if (wa === wa) { wm = wch[wi]; wf = wq; wlab = short(wm) + ' (finest first)'; break; } } }
+    else if (wr && wr.combined) { try { wmix = FSRouter.windSampler(P, wr.models)(la, lo, t); } catch (e) {} if (wmix && wmix[0] === wmix[0]) wlab = 'Combined (mean of ' + wr.models.length + ')'; else wmix = null; }
+    if (wmix) { tws = wmix[0]; twd = wmix[1]; rows.push(r2('Wind ' + wlab, tws.toFixed(1) + ' kn from ' + pad(twd) + '°')); }
+    else if (wf) { var u = wf.sample('u', la, lo, t), v = wf.sample('v', la, lo, t); tws = Math.hypot(u, v) / KN; twd = (Math.atan2(-u, -v) / R + 360) % 360; rows.push(r2('Wind ' + wlab, tws === tws ? tws.toFixed(1) + ' kn from ' + pad(twd) + '°' : 'no forecast here')); }
     var tf = P.tide[$('tideSel').value];
     if (tf) { var cu = tf.sample('u', la, lo, t), cv2 = tf.sample('v', la, lo, t); if (cu === cu) rows.push(r2('Tide', (Math.hypot(cu, cv2) / KN).toFixed(1) + ' kn to ' + pad(Math.atan2(cu, cv2) / R) + '°')); }
     var wv = P.wave[$('waveSel').value], hsv = 0, wdv = NaN;
@@ -4298,13 +4309,14 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       rows.push(r2(Math.abs(best.twa) < 90 ? 'Upwind target' : 'Downwind target', Math.abs(best.twa) < 90 ? bu[0] + '\u00b0 · ' + bu[1].toFixed(1) + ' kn · VMG ' + bu[2].toFixed(1) + ' towards the wind' : bdn[0] + '\u00b0 · ' + bdn[1].toFixed(1) + ' kn · VMG ' + bdn[2].toFixed(1) + ' away from the wind'));
       var sl = FSRouter.sailFor(best, sailsList()), rf = reefOf(best); if (sl || rf) rows.push(r2('Sail', (sl || '-') + (rf ? ', ' + rf.toLowerCase() : '')));
       if (best.tack) rows.push(r2('Manoeuvre', Math.abs(best.twa) > 90 ? 'gybe' : 'tack'));
-      var hhm = clockH(best.t).slice(-5), nM = bs.models.filter(function (m) { return m !== 'chain'; }).length;
+      var hhm = clockH(best.t), nM = bs.models.filter(function (m) { return m !== 'chain'; }).length;
       var gw = null; try { gw = FSRouter.windSampler(P, bs.models, o.blend)(la, lo, t); } catch (e) {}
       var wOver = o.tide && o.tideWind !== false, wMast = o.polZ && o.polZ !== 10;
       rows.push('<div class="tipsec">Wind here at ' + hhm + '</div>');
       rows.push(r2(wOver ? 'Over the water (sailed)' : 'Sailed in', best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '\u00b0' + (wMast ? ' at ' + o.polZ + ' m' : '')));
       rows.push(r2('Over the ground (forecast)', gw && gw[0] === gw[0] ? gw[0].toFixed(1) + ' kn from ' + pad(gw[1]) + '\u00b0' : 'no forecast here'));
-      rows.push(r2('Model', bs.models[0] === 'chain' ? 'finest first (' + nM + ' models)' : nM > 1 ? 'mean of ' + nM + ' models' : short(bs.models[0])));
+      var chNow = ''; if (bs.models[0] === 'chain') { var chm = bs.models.slice(1).filter(function (m) { return P.wind[m]; }); for (var ci = 0; ci < chm.length; ci++) { var cq = P.wind[chm[ci]], chh = cq.hours; if (chh && chh.length > 1 && t > chh[chh.length - 1]) continue; var cu0 = cq.sample('u', la, lo, t); if (cu0 === cu0) { chNow = short(chm[ci]); break; } } }   /* 27 Nov: name the model in use at this point and hour */
+      rows.push(r2('Model', bs.models[0] === 'chain' ? (chNow ? chNow + ' here (finest first, ' + nM + ' loaded)' : 'finest first (' + nM + ' models)') : nM > 1 ? 'mean of ' + nM + ' models' : short(bs.models[0])));
       rows.push('<div class="tipsec">Sea and tide here at ' + hhm + '</div>');
       rows.push(r2('Tide', best.cu != null ? Math.hypot(best.cu, best.cv).toFixed(1) + ' kn to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '\u00b0' : 'none in this route'));
       var wvR = o.wave && P.wave[o.wave]; if (wvR) { var hsR = wvR.sample('hs', la, lo, t), wdR = wvR.sampleDir(la, lo, t), tpR = wvR.sample('tp', la, lo, t); if (hsR === hsR) rows.push(r2('Sea', hsR.toFixed(1) + ' m from ' + pad(wdR) + '\u00b0' + (tpR === tpR ? ', ' + tpR.toFixed(0) + ' s' : ''))); }
