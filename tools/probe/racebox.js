@@ -1,0 +1,8 @@
+const { chromium } = require('playwright'); const BASE = process.argv[2];
+(async () => { const b = await chromium.launch();
+  for (const W of [600, 700, 820, 899, 1000]) { const c = await b.newContext({ viewport: { width: W, height: 1000 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true, serviceWorkers: 'block' });
+    await c.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const n = document.getElementById('spTourNo'); if (n) setTimeout(() => n.click(), 200); }); if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1'); localStorage.clear(); const d = new Date(); localStorage.setItem('fs-terms', d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()); ['fs-wizdone', 'fs-boatset', 'fs-autostart'].forEach(k => localStorage.setItem(k, '1')); });
+    const p = await c.newPage(); await p.goto(BASE + '/mark/'); await p.waitForFunction(() => window.__navFc && window.__navFc().P, null, { timeout: 300000 }); await p.waitForTimeout(3000);
+    console.log(W, JSON.stringify(await p.evaluate(() => { const rb = document.getElementById('raceBtn'), r = rb.getBoundingClientRect(); return { box: Math.round(r.width) + 'x' + Math.round(r.height), kids: [...rb.children].map(k => (k.id || k.className) + ':' + (k.getClientRects().length ? Math.round(k.getBoundingClientRect().width) + 'x' + Math.round(k.getBoundingClientRect().height) + '@' + Math.round(k.getBoundingClientRect().top - r.top) : 'hidden') + ' "' + k.textContent.slice(0, 26) + '"') }; })));
+    await p.screenshot({ path: '/tmp/claude-0/probe/racebox' + W + '.png', clip: { x: 0, y: 0, width: W, height: 70 } }); await c.close(); }
+  await b.close(); })();
