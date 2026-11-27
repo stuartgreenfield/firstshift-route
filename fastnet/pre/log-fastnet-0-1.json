@@ -1,0 +1,17 @@
+{
+ "at": "2026-11-27T09:43:08.081Z",
+ "log": [
+  {
+   "race": "fastnet",
+   "h": 0,
+   "s": 183,
+   "note": "Finer routes in 143.1 s. Also worth knowing: in GFS wind, the ECMWF route is 82 min faster than GFS’s own route. Compare"
+  },
+  {
+   "race": "fastnet",
+   "h": 1,
+   "s": 354,
+   "note": "Finer routes in 137.6 s. Times: first routes 5.2 s, standard 32.4 s, finer 170.0 s. The faint line is the standard route"
+  }
+ ]
+}

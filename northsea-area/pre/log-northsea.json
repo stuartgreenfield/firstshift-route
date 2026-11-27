@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-27T09:39:51.384Z",
+ "log": [
+  {
+   "race": "northsea",
+   "h": 0,
+   "s": 60,
+   "note": "Finer routes in 41.4 s. Also worth knowing: in ICON-EU wind, the AROME HD route is 37 min faster than ICON-EU’s own rout"
+  },
+  {
+   "race": "northsea",
+   "h": 1,
+   "s": 113,
+   "note": "Finer routes in 42.5 s. Times: first routes 1.8 s, standard 9.9 s, finer 52.5 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "northsea",
+   "h": 2,
+   "s": 167,
+   "note": "Finer routes in 43.4 s. Times: first routes 1.7 s, standard 10.4 s, finer 53.8 s. The faint line is the standard route. "
+  }
+ ]
+}

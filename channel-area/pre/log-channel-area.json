@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-27T09:41:49.435Z",
+ "log": [
+  {
+   "race": "channel-area",
+   "h": 0,
+   "s": 50,
+   "note": "Finer routes in 36.4 s. Times: first routes 2.0 s, standard 11.1 s, finer 47.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "channel-area",
+   "h": 1,
+   "s": 91,
+   "note": "Finer routes in 32.7 s. Times: first routes 1.1 s, standard 8.3 s, finer 41.1 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "channel-area",
+   "h": 2,
+   "s": 130,
+   "note": "Finer routes in 30.7 s. Times: first routes 1.1 s, standard 7.8 s, finer 38.6 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "channel-area",
+   "h": 3,
+   "s": 169,
+   "note": "Finer routes in 29.9 s. Times: first routes 1.1 s, standard 8.7 s, finer 38.6 s. The faint line is the standard route. F"
+  },
+  {
+   "race": "channel-area",
+   "h": 4,
+   "s": 206,
+   "note": "Finer routes in 29.2 s. Also worth knowing: in ICON-EU wind, the UKV route is 12 min faster than ICON-EU’s own route. Co"
+  },
+  {
+   "race": "channel-area",
+   "h": 5,
+   "s": 246,
+   "note": "Finer routes in 31.9 s. Times: first routes 1.1 s, standard 8.2 s, finer 40.1 s. The faint line is the standard route. F"
+  }
+ ]
+}
