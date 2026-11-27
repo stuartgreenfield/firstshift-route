@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-27T17:37:59.172Z",
+ "log": [
+  {
+   "race": "morgan",
+   "h": 0,
+   "s": 47,
+   "note": "Finer routes in 32.6 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 0.9 min faster than UKV’s own "
+  },
+  {
+   "race": "morgan",
+   "h": 1,
+   "s": 89,
+   "note": "Finer routes in 32.5 s. Also worth knowing: in UKV wind, the ECMWF route is 1.2 min faster than UKV’s own route; in GFS "
+  },
+  {
+   "race": "morgan",
+   "h": 2,
+   "s": 129,
+   "note": "Finer routes in 31.4 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 3.1 min faster than UKV’s own "
+  }
+ ]
+}

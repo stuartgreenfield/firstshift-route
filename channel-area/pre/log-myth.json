@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-27T17:39:14.415Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 69,
+   "note": "Finer routes in 49.2 s. Times: first routes 3.6 s, standard 16.8 s, finer 66.0 s. The faint line is the standard route. "
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 131,
+   "note": "Finer routes in 49.3 s. Times: first routes 2.1 s, standard 12.4 s, finer 61.7 s. The faint line is the standard route. "
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 192,
+   "note": "Finer routes in 48.2 s. Also worth knowing: in AIFS wind, the Combined (6 models) route is 0.8 min faster than AIFS’s ow"
+  }
+ ]
+}
