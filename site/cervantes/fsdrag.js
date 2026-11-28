@@ -23,7 +23,15 @@
   var KEY = 'nav-pos', LONG = 500, GW = 44, GH = 28;
   var PANELS = [['liveBox', 'GPS window', 'win', 'GPS'], ['fsPlot', 'Plotter bar', 'win', 'PLOT'], ['navPlot', 'Plotter bar', 'win', 'PLOT'], ['solSeq', 'Start sequence', 'win', 'START'], ['solLegs', 'Course card', 'win', 'COURSE'], ['layers', 'Layers box', 'win', 'LAYERS'], ['navStrip', 'Instrument strip', 'win', 'BOAT'], ['tgPop', 'Tide window', 'win', 'TIDE'],   /* Stuart 25 Nov 17:45: the tide window moves and slides away like the plotter, in all four tools */
    
-    ['fsRulerBtn', 'Ruler button'], ['helpBtn', 'Help button'], ['oriBtn', 'North up button'], ['editFab', 'Edit course button'], ['fromHere', 'From here button'], ['navClearBtn', 'Clear screen button'], ['navMenuBtn', 'MENU button'], ['navCentreBtn', 'Centre on the boat button']];   /* man overboard stays where it is */
+  ];   /* man overboard stays where it is */
+  /* Stuart 28 Nov 17:53 (picture: the ruler alone in the middle of the chart above the row): "The measure tool is floating about please fix as
+     we decided in the last round". The round buttons used to move like the windows (17 Nov), and a press of half a second with the smallest
+     slip of the finger counted as a move: that button then left the one row or column of AP (27 Nov 23:00: "These icons must line up
+     vertically along the edge of the screen or horizontally across the bottom of map") and kept its stray place, even after a reload.
+     Now the round buttons do not move: they always stand in the one line. Any move saved for one before is forgotten here. The windows
+     still move as before. */
+  var ROUND = ['fsRulerBtn', 'helpBtn', 'oriBtn', 'editFab', 'fromHere', 'navClearBtn', 'navMenuBtn', 'navCentreBtn'];
+  (function () { try { var all = JSON.parse(localStorage.getItem(KEY) || '{}') || {}, ch = false; Object.keys(all).forEach(function (k) { var b = all[k]; if (!b || typeof b !== 'object') return; ROUND.forEach(function (id) { if (id in b) { delete b[id]; ch = true; } }); }); if (ch) localStorage.setItem(KEY, JSON.stringify(all)); } catch (e) {} })();
   function $(id) { return document.getElementById(id); }
   function ld() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
   function sv(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
@@ -230,7 +238,7 @@
   var bt = FSBeat.set(function () {
     var body = document.querySelector('#navPrefs .npbody'); if (!body || $('navMoveAll')) { if ($('navMoveAll')) FSBeat.clear(bt); return; }
     var h = document.createElement('div');
-    h.innerHTML = '<h4>Window positions</h4><p class="note">Drag the small dots on a window to move it; let go and it stays there. Hold a round button to move it, drag it, then hold again to lock it. It never covers another button: it slides to the nearest gap. While moving, drag a window most of the way off the left or right edge, or flick it towards one, to put it away; tap its tab on the edge to bring it back. Kept for each screen size and orientation, and saved with My set-up.</p>' +
+    h.innerHTML = '<h4>Window positions</h4><p class="note">Drag the small dots on a window to move it; let go and it stays there. It never covers a button: it slides to the nearest gap. The round buttons do not move: they always stand in one line. While moving, drag a window most of the way off the left or right edge, or flick it towards one, to put it away; tap its tab on the edge to bring it back. Kept for each screen size and orientation, and saved with My set-up.</p>' +
       '<label class="np-row"><input type="checkbox" id="fsWinLock"> Lock layout: nothing moves</label><label class="np-row">Grip on each window <select id="fsWinHand"><option value="c">In the middle</option><option value="l">On the left (left hand)</option><option value="r">On the right (right hand)</option></select></label>' +
       '<div class="xrow"><button class="btn" id="navMoveAll" type="button">Reset to FirstShift layout</button></div>';
     var note = $('npClearH'); body.insertBefore(h, note && note.parentNode === body ? note : null);   /* 22 Nov: before Clear screen (the confirm box now sits under the named set-ups) */

@@ -1,6 +1,5 @@
 /* Windows over the chart float and move (Stuart 17 Nov 05:30 to 05:33), on Route and on Mark:
-   a round button: a short tap still works it; a long touch starts the move (outline flashes), drag, a long press locks it;
-   dropped on the top bar it slides to the nearest gap; Undo puts it back; the GPS window has a small grip all the time and moves
+   a round button: a short tap still works it; since 28 Nov 17:53 a round button does not move at all; the GPS window has a small grip all the time and moves
    the same way; Reset to FirstShift layout clears every position.
    Run: node tests/move-windows.js http://localhost:8779 */
 const { chromium, devices } = require('playwright'); const BASE = process.argv[2] || 'http://localhost:8779';
@@ -20,32 +19,15 @@ async function hold(p, x, y, ms) { await p.mouse.move(x, y); await p.mouse.down(
     const o1 = await p.evaluate(() => document.querySelector('#oriBtn .orl') && document.querySelector('#oriBtn .orl').textContent);
     ok(o0 !== o1, name + ': a short tap on North up still works it', o0 + ' -> ' + o1);
     await p.click('#oriBtn'); await p.click('#oriBtn'); await p.waitForTimeout(300);   /* back to North up */
-    /* long touch: moving, outline flashes, Undo shows */
+    /* 28 Nov 17:53 (Stuart: "The measure tool is floating about please fix as we decided in the last round"): the round buttons no longer
+       move. A long touch and a drag, and a drop on the top bar, leave the button where it was; nothing is saved for it; no move starts. */
     let a = await box(p, '#oriBtn'); await hold(p, a.x, a.y);
-    let m = await box(p, '#oriBtn'); const ub = await p.evaluate(() => { const u = document.getElementById('navUndo'); return u && !u.hidden && /Undo/.test(u.textContent); });
-    ok(m.on && ub, name + ': a long touch starts the move: the outline flashes and Undo shows');
-    await p.mouse.move(a.x - 220, a.y - 60, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
-    const tap1 = await p.evaluate(() => document.querySelector('#oriBtn .orl').textContent);
-    a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.up(); await p.waitForTimeout(500);
-    m = await box(p, '#oriBtn'); const saved = await p.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('nav-pos') || '{}')));
-    ok(!m.on && /oriBtn/.test(saved) && m.tr, name + ': a long press locks it there and it is kept', m.tr + ' ' + saved.slice(0, 80));
-    ok(tap1 === 'N UP' && (await p.evaluate(() => document.querySelector('#oriBtn .orl').textContent)) === 'N UP', name + ': moving it did not also press it');
-    /* dropped on the top bar: slides to the nearest gap */
-    a = await box(p, '#oriBtn'); const tb = await p.evaluate(() => { const e = document.querySelector(window.FS_MARK ? '#setBtn' : '#setBtn'); const r = e.getBoundingClientRect(); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, l: r.left, t: r.top, r: r.right, b: r.bottom }; });
-    await hold(p, a.x, a.y); await p.mouse.move(tb.x, tb.y, { steps: 10 }); await p.mouse.up(); await p.waitForTimeout(200); a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.up(); await p.waitForTimeout(500);
-    m = await box(p, '#oriBtn'); const over = m.l < tb.r && m.r > tb.l && m.t < tb.b && m.b > tb.t;
-    ok(!over && m.t >= 0, name + ': dropped on the Settings button, it slides to the nearest gap', JSON.stringify({ btn: [m.l, m.t, m.r, m.b].map(Math.round), set: [tb.l, tb.t, tb.r, tb.b].map(Math.round) }));
-    /* Save new position (Stuart 19 Nov 14:43): the box says it, and it locks the move without a second long press */
-    await p.evaluate(() => { if (window.NavDrag && NavDrag.on && NavDrag.on() && NavDrag.lock) NavDrag.lock(); }); await p.waitForTimeout(1600);   /* 20 Nov: start this step with nothing being moved (the drop before may leave the button in its move, waiting for Save; a long press would then lock it) */
-    a = await box(p, '#oriBtn'); await hold(p, a.x, a.y); await p.mouse.move(a.x - 120, a.y + 40, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(300);
-    const sv1 = await p.evaluate(() => { const u = document.getElementById('navUndo'); return u && !u.hidden && /Save new position/.test(u.textContent) && /Undo/.test(u.textContent); });
-    await p.waitForTimeout(800); await p.click('#navSaveB'); await p.waitForTimeout(400); m = await box(p, '#oriBtn');
-    const sv2 = await p.evaluate(() => { const u = document.getElementById('navUndo'); return u && !u.hidden && /New position saved/.test(u.textContent); });
-    ok(sv1 && sv2 && !m.on && /oriBtn/.test(await p.evaluate(() => localStorage.getItem('nav-pos'))), name + ': the box says Save new position; tapping it locks the move and says New position saved', JSON.stringify({ sv1, sv2, on: m.on }));
-    /* Undo */
-    await p.waitForTimeout(800);   /* Undo ignores a tap in its first 0.7 s (the lifting finger) */
-    const before = m.tr; await p.click('#navUndoB'); await p.waitForTimeout(400); m = await box(p, '#oriBtn');
-    ok(m.tr !== before, name + ': Undo puts it back where it was', before + ' -> ' + (m.tr || 'home'));
+    const ub = await p.evaluate(() => { const u = document.getElementById('navUndo'); return !!(u && !u.hidden && /Undo/.test(u.textContent)); });
+    await p.mouse.move(a.x - 220, a.y - 60, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(600);
+    let m = await box(p, '#oriBtn'); const saved = await p.evaluate(() => localStorage.getItem('nav-pos') || '{}');
+    ok(!ub && !m.on && !m.tr && !/oriBtn/.test(saved), name + ': a long touch and a drag do not move a round button', JSON.stringify({ ub, on: m.on, tr: m.tr, dx: Math.round(m.x - a.x), dy: Math.round(m.y - a.y) }));
+    if (m.tr !== undefined) { const o2 = await p.evaluate(() => document.querySelector('#oriBtn .orl').textContent); if (o2 !== 'N UP') { await p.click('#oriBtn'); await p.waitForTimeout(300); } }
+    let m0;
     /* the GPS window: a small grip, all the time (Route) */
     if (name === 'Route') {
       await p.click('#liveBtn').catch(() => {}); await p.waitForTimeout(3000);

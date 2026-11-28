@@ -111,13 +111,13 @@
   function clearToast(t) { var e = document.getElementById('navToast'); if (!e) { e = el('div', 'navtoast'); e.id = 'navToast'; e.setAttribute('role', 'status'); document.body.appendChild(e); } var keep = !e.hidden && e._lines ? e._lines.filter(function (x) { return x !== t && !(/^Up to date|^Carried on/.test(x) && /^Up to date|^Carried on|^Boat link on|^Carried on\. No/.test(t)); }) : []; e._lines = keep.concat([t]).slice(-3); e.textContent = e._lines.join('\n'); e.hidden = false; clearTimeout(e._t); e._t = setTimeout(function () { e.hidden = true; e._lines = []; }, 8000); }   /* notes stack, so a no-signal note is not hidden by the next one */
   function hideChoice(near) {
     var o = document.getElementById('navHideCard'); if (o) { o.remove(); return; }
-    o = el('div', 'navhidecard', '<label>Clear the buttons by themselves after <select id="navHideSel" aria-label="Clear the buttons by themselves after"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="120">2 minutes</option></select></label><span class="navhiderow"><button type="button" class="btn" id="navHideMove">Move this button</button><button type="button" class="btn primary" id="navHideOk">Done</button></span>');
+    o = el('div', 'navhidecard', '<label>Clear the buttons by themselves after <select id="navHideSel" aria-label="Clear the buttons by themselves after"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="120">2 minutes</option></select></label><span class="navhiderow"><button type="button" class="btn primary" id="navHideOk">Done</button></span>');
     o.id = 'navHideCard'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Clear screen'); document.body.appendChild(o);
     var r = near.getBoundingClientRect(); o.style.right = Math.max(8, innerWidth - r.left + 8) + 'px'; o.style.top = Math.max(8, Math.min(innerHeight - o.offsetHeight - 8, r.top - 10)) + 'px';
     var sel = o.querySelector('select'); sel.value = String(hideV());
     sel.onchange = function () { var v = window.__navHide(+sel.value); clearToast(v ? 'The buttons clear by themselves after ' + (v < 60 ? v + ' seconds' : v / 60 + ' minute' + (v > 60 ? 's' : '')) + ' untouched.' : 'The buttons stay until you clear them.'); };
     o.querySelector('#navHideOk').onclick = function () { o.remove(); };
-    o.querySelector('#navHideMove').onclick = function () { o.remove(); if (window.NavDrag) NavDrag.begin(near.id); };   /* a long press on a round button moves it; on CLEAR the long press is this choice, so moving is here */
+    /* 28 Nov 17:53: the round buttons no longer move (fsdrag.js), so "Move this button" has gone from this card */
   }
   function clearBuild() {
     var bar = document.querySelector('.bar'); if (!bar) return;
