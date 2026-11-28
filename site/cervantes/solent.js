@@ -1483,6 +1483,11 @@
     top = Math.max(8, Math.min(innerHeight - (ins.b || 0) - h - 8, top));
     var sqb = $('solSeq'); if (pr && sqb && !sqb.hidden && sqb.getClientRects().length && sqb.getBoundingClientRect().bottom > top - 4) { RB.el.hidden = true; return; }   /* D: a phone with the panel open and the countdown bar showing: no room for them, and the bar has its own Start screen button */
     RB.el.style.top = Math.round(top) + 'px';
+    /* Stuart 28 Nov 18:30 (photo IMG_0155: START SCREEN and END RACE lay over the row of round buttons, CLEAR and the edit button behind them;
+       18:32 "Fix as well"). Since AP the round buttons may stand in one row along the bottom of the map, where these two sat too. Now, if any
+       round button showing lies under them, they go up to sit 8 px above the highest such button, never over it. */
+    (function () { var rr = RB.el.getBoundingClientRect(), hi = null; [].forEach.call(document.querySelectorAll('.fabhelp'), function (f) { if (f.hidden || !f.getClientRects().length) return; var cs = getComputedStyle(f); if (cs.display === 'none' || cs.visibility === 'hidden') return; var q = f.getBoundingClientRect(); if (q.width < 2) return; if (q.left < rr.right + 4 && q.right > rr.left - 4 && q.top < rr.bottom + 4 && q.bottom > rr.top - 4) hi = hi == null ? q.top : Math.min(hi, q.top); });
+      if (hi != null) { top = Math.max(8, hi - h - 8); RB.el.style.top = Math.round(top) + 'px'; } })();
     var tp = $('tip'), under = false; if (tp && !tp.hidden && tp.getClientRects().length) { var tr = tp.getBoundingClientRect(), rr = RB.el.getBoundingClientRect(); under = tr.left < rr.right && tr.right > rr.left && tr.top < rr.bottom && tr.bottom > rr.top; }
     RB.el.style.visibility = under ? 'hidden' : '';   /* Stuart 26 Nov 15:37 (photo): the data window goes over the two race buttons; they come back when it closes or moves clear */
     if (tp && !RB.tipObs && window.MutationObserver) { RB.tipObs = new MutationObserver(function () { clearTimeout(RB.tipT); RB.tipT = setTimeout(rbRender, 60); }); RB.tipObs.observe(tp, { attributes: true, attributeFilter: ['hidden', 'style', 'class'] }); }
