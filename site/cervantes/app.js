@@ -4274,6 +4274,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('gcRoute').onclick = function (e) { e.stopPropagation(); if (etaH == null) return; tip.hidden = true; S.from = { lat: q.lat, lon: q.lon, t: etaH, gate: q.name }; run(); };   /* reroute from the gate, at the time the route reaches it */
   }
   function hover(x, y, docked, tapped, force) {
+    $('tip').classList.remove('cb');   /* the card's own look goes on again below, only when it is the card */
     if (tapped && !force) { var gq = gateHit(x, y); if (gq) return gateCard(gq); }   /* force: { s, p } shows that route point (C2 steps), whatever is under the pointer */
     if (!meta) return;
     if (S.edit) { $('tip').hidden = true; return; }   /* editing a course: no info boxes over the marks */
@@ -4283,7 +4284,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.big) { var O = meta.overview, gy = Math.round((LA(y) - O.lat0) / O.dlat), gx = Math.round((LO(x) - O.lon0) / O.dlon); if (gy < 0 || gx < 0 || gy >= O.ny || gx >= O.nx) return;
       var pu = ovField('u')(gy, gx), pv = ovField('v')(gy, gx); $('tipBody').innerHTML = '<b>' + dm(LA(y), 'NS') + ' ' + dm(LO(x), 'EW') + '</b>' + r2('Pressure', ovField('msl')(gy, gx).toFixed(0) + ' hPa') + r2('Wind', (Math.hypot(pu, pv) / KN).toFixed(0) + ' kn from ' + pad(Math.atan2(-pu, -pv) / R) + '°');
       $('tip').hidden = false; $('tip').classList.toggle('docked', !!docked); if (!docked) { $('tip').style.left = Math.min(W - 230, x + 14) + 'px'; $('tip').style.top = Math.max(64, y + 14) + 'px'; } return; }
-    var la = LA(y), lo = LO(x), t = S.t, rows = [], tip = $('tip');
+    var la = LA(y), lo = LO(x), t = S.t, rows = [], tip = $('tip'), cardNew = false;
     /* boat figures only when the pointer is on a route: open water has no boat */
     var best = null, bs = null, bd2 = docked ? 26 : 16;
     if (force) { best = force.p; bs = force.s; }
@@ -4342,19 +4343,33 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         rows.push(r2(m[1].replace(' (isobars)', ''), m[2] === 'gust' ? Math.round(v / KN) + ' kn' : m[2] === 'msl' ? v.toFixed(0) + ' hPa' : m[2] === 'rain' ? v.toFixed(1) + ' mm an hour' : m[2] === 'cape' ? (v < 300 ? 'low' : v < 1000 ? 'some' : v < 2500 ? 'high' : 'very high') + ' (' + Math.round(v) + ' J/kg)' : m[2] === 'cloud' ? Math.round(v) + '%' : Math.round(v) + '°C')); });
       rows.push(r2('Position', dm(la, 'NS') + ' ' + dm(lo, 'EW')));
       /* C2: a tap pins the card to this point, puts the boat there (the time slider moves to it) and steps along the route */
-      if (tapped) rows.splice(rStart + 1, 0, '<div class="xrow tipstep"><button class="btn" id="tipBack" type="button">\u25c0 1 h</button><button class="btn" id="tipFwd" type="button">1 h \u25b6</button><button class="btn primary" id="tipNext" type="button">Next mark</button></div>');
-      rows = rows.splice(rStart).concat(rows);
+      if (tapped) {   /* 28 Nov, Stuart's go 13:44 (CHART-BOX-BUILD-BRIEF-2026-11-28): the card. A title, eight tiles, the steps, and everything the box held before under All figures */
+        cbCss(); cardNew = true;
+        var pC = bs.r.path, kC = pC.indexOf(best), dM = 0; while (kC > -1 && kC < pC.length - 1 && (pC[kC].leg || 0) === (best.leg || 0)) { dM += FSRouter.dist(pC[kC].la, pC[kC].lo, pC[kC + 1].la, pC[kC + 1].lo); kC++; }
+        var lgC = S.legs[Math.min(best.leg || 0, S.legs.length - 1)], toC = lgC && lgC.name ? lgC.name : 'the mark';
+        var hmC = function (h) { var mm = Math.round(Math.max(0, h) * 60); return Math.floor(mm / 60) + ' h ' + ('0' + mm % 60).slice(-2); }, nmC = bs.combined ? 'Combined' : bs.name || short(bs.id), sogC = Math.hypot(gx, gy), cogC = (Math.atan2(gx, gy) / R + 360) % 360;
+        var tlC = function (k, v, u, nw) { return '<div' + (nw ? ' class="new"' : '') + '><i>' + k + '</i><b>' + v + '</b><u>' + (u || '&nbsp;') + '</u></div>'; };
+        var headC = '<div class="cbh"><span class="cbd" style="background:' + col(bs) + '"></span><b>' + nmC + '</b><span class="cbs">' + clockH(best.t) + ' ' + tzS1() + ' · ' + hmC(best.t - pC[0].t) + ' in</span></div>';
+        var tilesC = '<div class="cbt">' + tlC('Heading', pad(best.hdg) + '°', best.tack ? (Math.abs(best.twa) > 90 ? 'gybe here' : 'tack here') : '') + tlC('TWA', Math.abs(Math.round(best.twa)) + '°', best.twa < 0 ? 'stbd' : 'port') + tlC('Boat speed', best.bsp.toFixed(1) + ' kn', sf < 0.995 || sf > 1.005 ? 'sea ' + (sf >= 1 ? '+' : '') + Math.round((sf - 1) * 100) + '%' : '') + tlC('SOG · COG', sogC.toFixed(1) + ' kn', pad(cogC) + '°')
+          + tlC('Wind', best.tws.toFixed(1) + ' kn', 'from ' + pad(best.twd) + '°') + tlC('Tide', best.cu != null ? Math.hypot(best.cu, best.cv).toFixed(1) + ' kn' : '-', best.cu != null ? 'to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '°' : 'none in this route') + tlC('Sail', sl || '-', rf ? rf.toLowerCase() : '') + tlC('To mark', dM.toFixed(dM < 10 ? 1 : 0) + ' nm', hmC(pC[Math.max(0, kC)].t - best.t), true) + '</div>';
+        var toRowC = r2('To ' + xEsc(toC), dM.toFixed(1) + ' nm · ' + hmC(pC[Math.max(0, kC)].t - best.t) + ' · ' + clockH(pC[Math.max(0, kC)].t).slice(4) + ' ' + tzS1());
+        /* look first (R2, Stuart 13:44 answer 6): a tap on a route that is not the chosen one shows its card; only this button chooses it */
+        var chooseC = bs !== S.sel ? '<div class="cbch"><button class="btn primary" id="tipChoose" type="button"' + (S.running ? ' disabled' : '') + '>Choose this route</button><span>The chosen route is still ' + (S.sel ? (S.sel.combined ? 'Combined' : S.sel.name || short(S.sel.id)) : 'none') + '.</span></div>' : '';
+        var stepsC = '<div class="xrow tipstep"><button class="btn" id="tipBack" type="button">◀ 1 h</button><button class="btn" id="tipFwd" type="button">1 h ▶</button><button class="btn" id="tipNext" type="button">Next mark</button><button class="btn primary" id="tipAllBtn" type="button">' + (S.tipAll ? 'Fewer' : 'All figures') + '</button></div>';
+        rows = [headC, tilesC, chooseC, stepsC, '<div class="cball" id="tipAll"' + (S.tipAll ? '' : ' hidden') + '>' + toRowC + rows.slice(rStart + 1).join('')];   /* the last one is closed below, after the action buttons join it */
+      } else rows = rows.splice(rStart).concat(rows);
     }
     cv.style.cursor = best ? 'default' : '';
     var near = null, nd = docked ? 16 : 10;
     ((S.show.ghosts && S.ghostXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ' if on your route (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
     ((S.show.real && S.realXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ', real position (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
-    if (near) rows.push('<b>' + near + '</b>');
+    if (near) { if (cardNew) rows[4] += '<b>' + near + '</b>'; else rows.push('<b>' + near + '</b>'); }
     var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
-    if (tapped && S.sel && wetHere && inData({ lat: la, lon: lo })) rows.splice(rows.length ? 1 : 0, 0, '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>');
-    $('tipBody').innerHTML = rows.join(''); if (tapped && tip.hidden) tip.dataset.at = Date.now(); tip.hidden = false; tip.classList.toggle('docked', !!docked);
-    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra($('tipBody'), la, lo); } catch (e) {}
-    if (tapped && window.__fsTipGate) try { window.__fsTipGate($('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */   /* waypoints.js: Save as waypoint, Measure from here */
+    var hereC = tapped && S.sel && wetHere && inData({ lat: la, lon: lo }) ? '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>' : '';
+    if (cardNew) rows[4] += hereC + '</div>'; else if (hereC) rows.splice(rows.length ? 1 : 0, 0, hereC);
+    $('tipBody').innerHTML = rows.join(''); if (tapped && tip.hidden) tip.dataset.at = Date.now(); tip.hidden = false; tip.classList.toggle('docked', !!docked); tip.classList.toggle('cb', cardNew); if (cardNew) cbFit();
+    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra(cardNew ? $('tipAll') : $('tipBody'), la, lo); } catch (e) {}   /* waypoints.js: Save as waypoint, Measure from here */
+    if (tapped && window.__fsTipGate) try { window.__fsTipGate(cardNew ? $('tipAll') : $('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
     if (tapped && onR) {
       var pth = bs.r.path, ix = pth.indexOf(best), go = function (k) { var q = pth[Math.max(0, Math.min(pth.length - 1, k))]; while (q && q.bsp == null && k < pth.length - 1) q = pth[++k]; if (q) hover(X(q.lo), Y(q.la), true, true, { s: bs, p: q }); };
@@ -4363,13 +4378,21 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if ($('tipFwd')) $('tipFwd').onclick = function (e) { e.stopPropagation(); go(at(best.t + 1)); };
       if ($('tipNext')) $('tipNext').onclick = function (e) { e.stopPropagation(); var k = ix; while (k < pth.length - 1 && (pth[k].leg || 0) === (best.leg || 0)) k++; go(k); };
       S.pin = { id: bs.id, t: best.t };
-      if (bs !== S.sel && !S.running) { S.sel = bs; ghosts().then(function () { matrix(); plan(); fleetTable(); setTime(best.t); }); } else setTime(best.t);   /* the boat goes there: the slider moves to the point's time, so the chart's arrows are for then */
+      if ($('tipAllBtn')) $('tipAllBtn').onclick = function (e) { e.stopPropagation(); S.tipAll = !S.tipAll; $('tipAll').hidden = !S.tipAll; this.textContent = S.tipAll ? 'Fewer' : 'All figures'; if (window.__fsTipPlace) window.__fsTipPlace(); };
+      if ($('tipChoose')) $('tipChoose').onclick = function (e) { e.stopPropagation(); if (S.running) return; S.sel = bs; ghosts().then(function () { matrix(); plan(); fleetTable(); setTime(best.t); go(ix); }); };   /* the only way a tap changes the chosen route (R2) */
+      setTime(best.t);   /* the boat goes there: the slider moves to the point's time, so the chart's arrows are for then */
     }
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
     else { tip.style.left = ''; tip.style.top = ''; if (window.__fsTipPlace) window.__fsTipPlace(); dot(la, lo, 5, 'transparent', css['--ink']); }
   }
   function r2(k, v) { return '<div class="r"><span>' + k + '</span><span>' + v + '</span></div>'; }
+  /* the card's styles (28 Nov): small text 9 px, figures 13 px, phone buttons 44 px high (Stuart 13:15 and 13:31; CHART-BOX-TEXT-SIZE-RESEARCH-2026-11-28) */
+  function cbFit() { [].forEach.call($('tipBody').querySelectorAll('.cbt b'), function (e) { var f = 13; while (e.scrollWidth > e.clientWidth + 0.5 && f > 9) { f -= 1; e.style.fontSize = f + 'px'; } if (e.scrollWidth > e.clientWidth + 0.5) e.title = e.textContent; }); }
+  function cbCss() { if ($('cbCss')) return; var c = document.createElement('style'); c.id = 'cbCss'; c.textContent = '.tip.cb{padding-top:12px}.tip.cb.docked .tipgrip{position:absolute;left:0;right:44px;top:0;height:32px;margin:0;align-items:flex-start;padding-top:3px;z-index:1}.tip.cb .tipgrip span{height:4px}.tip.cb .x{z-index:2;top:2px;min-width:36px;min-height:32px}.tip .cbh{display:flex;align-items:center;gap:7px;margin:0 30px 5px 0;min-width:0}.tip .cbd{width:10px;height:10px;border-radius:50%;flex:none}.tip .cbh b{font:600 12px var(--f-body);white-space:nowrap}.tip .cbs{flex:1;min-width:0;font:9px var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '.tip .cbt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -10px}.tip .cbt div{background:var(--panel);padding:2px 4px 3px 7px;min-width:0}.tip .cbt i{display:block;font:700 9px/11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip .cbt b{display:block;font:600 13px/15px var(--f-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip .cbt u{display:block;text-decoration:none;font:9px/11px var(--f-data);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip .cbt .new i{color:var(--warn)}'
+    + '.tip .tipstep{flex-wrap:nowrap;gap:5px;margin:6px 0 0}.tip .tipstep .btn{flex:1 1 auto;min-width:0;min-height:44px;padding:4px 6px;font-size:11.5px;white-space:nowrap}.tip .cbch{display:flex;align-items:center;gap:8px;margin:6px 0 0}.tip .cbch .btn{flex:none;min-height:44px}.tip .cbch span{font:9px/1.3 var(--f-body);color:var(--muted)}'
+    + '.tip .cball{margin-top:6px;padding-top:4px;border-top:1px solid var(--line);font-size:9px;line-height:1.5;max-height:38vh;overflow:auto;overscroll-behavior:contain}.tip .cball .tipsec{font-size:9px}.tip .cball .btn{font-size:11.5px}@media (hover:hover) and (pointer:fine){.tip .tipstep .btn,.tip .cbch .btn{min-height:28px}}'; document.head.appendChild(c); }
   /* ---------- the boat: type, TCC or own polar, tuning, saved boats ---------- */
   var boatSrc = 'type';
   function boatSpec() { return { src: boatSrc, type: $('boatType').value, tcc: +$('tcc').value || 1, text: $('polarTxt').value, tune: { up: +$('tuUp').value, reach: +$('tuReach').value, run: +$('tuRun').value } }; }
