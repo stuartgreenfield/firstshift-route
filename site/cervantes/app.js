@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.129';
+  var VERSION = 'FirstShift Route v0.12.130';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -407,7 +407,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.129 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.130 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -431,7 +431,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('depth').oninput = function () { depthSet($('depth').value); };
     if ($('depth2')) $('depth2').oninput = function () { depthSet($('depth2').value); };
     depthSet($('depth').value, true);
-    $('run').onclick = function () { S.from = null; userRun(); };
+    $('run').onclick = function () { S.from = null; userRun(); }; setTimeout(function () { try { rlInit(); } catch (e) {} }, 0);   /* the Routing log button beside Route again (after this file has run, so the log's own variables are set) */
     /* From here: with no position on this device (a Mac without location, or location turned off), it says so and you tap the chart where the boat is */
     try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(function (st) { var f = function () { var no = st.state === 'denied' || !navigator.geolocation; $('fromHere').classList.toggle('nogps', no); $('fromHere').title = no ? 'From here: no position on this device, so tap the chart where the boat is' : 'From here: route from where you are now (GPS), or tap the chart'; }; f(); st.onchange = f; }).catch(function () {}); } catch (e) {}
     $('fromHere').onclick = function () {   /* reroute from where the boat is now: the device's GPS first, else tap the chart */
@@ -1746,6 +1746,89 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('sessNo').onclick = function () { b.hidden = true; };
     $('sessYes').onclick = function () { b.hidden = true; S.resume = null; sessDrop(); startChosen(false); S.routes = []; S.sel = null; run(); };
   }
+  /* ---------- Routing log (Stuart 28 Nov 20:12: "We need a time log for all previous routings and re-routings so a user can look back and
+     re-launch previous routes if they don't like the newest one. These would need to be labelled with a time stamp when they are loaded from
+     the log list and easily over written if they then opted for a new routing"). Design: Records/ROUTING-LOG-DESIGN-2026-11-28.md.
+     Every routing that finishes is kept whole (the same snapshot as Carry on, about 0.9 MB for the Fastnet), newest first, 20 for each race
+     and 60 in all, in the device's database (IndexedDB: the ordinary storage is far too small). Routes brought back from the log or on
+     reopening are not logged again. Showing an earlier routing puts its routes back exactly as they were and labels them with their time;
+     the next routing of any kind replaces them, the label goes and the new routing goes to the top of the log. ---------- */
+  var RL = { db: null, ok: null, shown: null, ref: null, cur: null };
+  function rlDb() { if (RL.db) return RL.db;
+    RL.db = new Promise(function (ok, no) { try { var q = indexedDB.open('fs-rlog', 1); q.onupgradeneeded = function () { var d = q.result; if (!d.objectStoreNames.contains('runs')) d.createObjectStore('runs', { keyPath: 'id' }); }; q.onsuccess = function () { RL.ok = true; ok(q.result); }; q.onerror = function () { no(q.error); }; q.onblocked = function () { no(new Error('blocked')); }; } catch (e) { no(e); } });
+    RL.db.catch(function () { RL.db = null; RL.ok = false; }); return RL.db; }
+  function rlTx(mode, fn) { return rlDb().then(function (d) { return new Promise(function (ok, no) { var t = d.transaction('runs', mode), st = t.objectStore('runs'), out = fn(st); t.oncomplete = function () { ok(out && 'result' in out ? out.result : undefined); }; t.onerror = function () { no(t.error); }; t.onabort = function () { no(t.error || new Error('abort')); }; }); }); }
+  /* the list itself (time, how, start, fastest) is kept small in the ordinary storage, so the log can be listed and counted at once; the
+     routes themselves, about 0.9 MB each, are read from the database only when one is shown */
+  function rlIx() { try { return JSON.parse(store('fs-rlix') || '[]') || []; } catch (e) { return []; } }
+  function rlIxSet(a) { try { store('fs-rlix', JSON.stringify(a)); } catch (e) {} }
+  function rlAll() { return Promise.resolve(rlIx().slice().sort(function (x, y) { return y.at - x.at; })); }
+  function rlMine(a) { var rk = raceKey(); return a.filter(function (o) { return o.page === HERE && o.rk === rk; }); }
+  function rlStamp(ms) { var d = new Date(tzMs(ms)); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ' ' + tzS1(); }
+  function rlAdd(how) {
+    try { if (typeof indexedDB === 'undefined' || !S.routes || !S.routes.length) return; var o = sessSave(true); if (!o) return;
+      var done = S.routes.filter(function (s) { return s.r && !s.r.partial && s.r.finish != null; }), f = done.slice().sort(function (a, b) { return a.r.finish - b.r.finish; })[0];
+      o.id = 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); o.page = HERE; o.name = (meta.course && meta.course.name) || ''; o.at = Date.now();
+      o.how = how || (S.from ? (S.from.gps ? 'From the boat' : S.from.gate ? 'From the tide gate ' + S.from.gate : 'From a point on the way') : 'Routed');
+      o.startAt = S.start ? (T0 + S.start.t * 3600) * 1000 : null; o.fc = meta.built || meta.t0 || null; o.n = S.routes.length;
+      o.fast = f ? { name: f.combined ? 'Combined' : (f.name || short(f.id)), h: f.r.finish - (S.from ? S.from.t : S.start.t) } : null;
+      RL.cur = o.id; RL.shown = null; RL.ref = S.routes; rlTag();
+      var meta1 = { id: o.id, page: o.page, rk: o.rk, name: o.name, at: o.at, how: o.how, startVal: o.startVal, startAt: o.startAt, fc: o.fc, n: o.n, fast: o.fast };
+      rlTx('readwrite', function (st) { st.put(o); }).then(function () { var a = rlIx(); a.unshift(meta1); rlIxSet(a); }).then(rlPrune).then(rlCount).catch(function () { RL.ok = false; rlCount(); }); } catch (e) {} }
+  function rlPrune() { return rlAll().then(function (a) { var gone = [], keep = [], per = {}; a.forEach(function (o, i) { var k = o.page + '|' + o.rk; per[k] = (per[k] || 0) + 1; if (per[k] > 20 || i >= 60) gone.push(o.id); else keep.push(o); }); if (!gone.length) return; rlIxSet(keep); return rlTx('readwrite', function (st) { gone.forEach(function (id) { st.delete(id); }); }); }); }
+  function rlCount() { return rlAll().then(function (a) { var n = rlMine(a).length, b = $('rlBtn'), t = 'Routing log' + (n ? ' (' + n + ')' : ''); if (b && b.textContent !== t) b.textContent = t; return a; }); }
+  function rlRow(o, cur) {
+    var fc = o.fc ? new Date(o.fc * (o.fc > 1e11 ? 1 : 1000)) : null;
+    return '<div class="rlr' + (cur ? ' cur' : '') + '"><div class="rlt"><b>' + rlStamp(o.at).replace(/(\d\d:\d\d)/, function (m) { return m + ':' + String(new Date(o.at).getUTCSeconds()).padStart(2, '0'); }) + '</b><span>' + wizEsc(o.how || 'Routed') + '</span></div>'
+      + '<p>' + (o.fast ? 'Fastest ' + wizEsc(o.fast.name) + ' ' + fmtH(o.fast.h) + ' · ' : '') + o.n + ' route' + (o.n === 1 ? '' : 's') + (o.startAt ? ' · start ' + rlStamp(o.startAt).replace(/ UTC.*$/, '') : '') + (fc ? ' · forecast ' + String(fc.getUTCHours()).padStart(2, '0') + 'Z ' + fc.getUTCDate() + '/' + (fc.getUTCMonth() + 1) : '') + '</p>'
+      + (cur ? '<div class="rlon">On the chart</div>' : '<button class="btn" type="button" data-rl="' + o.id + '">Show</button>') + '</div>'; }
+  function rlOpen() {
+    var sh = $('rlSheet'); if (!sh) { sh = document.createElement('div'); sh.id = 'rlSheet'; sh.className = 'sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-label', 'Routing log'); document.body.appendChild(sh); rlCss(); }
+    sh.innerHTML = '<div class="in"><div class="shead"><h2>Routing log</h2><button class="close" id="rlX" aria-label="Close">×</button></div><div class="sbody" id="rlBody"><p class="note">Reading the log…</p></div></div>'; sh.hidden = false;
+    $('rlX').onclick = function () { sh.hidden = true; };
+    rlAll().then(function (a) { var m = rlMine(a), cur = RL.shown ? RL.shown.id : RL.cur;
+      $('rlBody').innerHTML = '<p class="note">Every routing of ' + wizEsc((meta.course && meta.course.name) || 'this race') + ' on this device, newest first, with the time it was routed. Show puts that routing back on the chart, labelled with its time; the next routing replaces it, and the log keeps both. The newest 20 are kept.</p>'
+        + (m.length ? m.map(function (o) { return rlRow(o, o.id === cur); }).join('') : RL.ok === false ? '<p class="note"><b>The routing log cannot be kept on this device</b> (its database is not available, as in private browsing). Routing works as before.</p>' : '<p class="note"><b>Nothing in the log yet.</b> Each routing from now on is kept here.</p>');
+      [].forEach.call($('rlBody').querySelectorAll('[data-rl]'), function (b) { b.onclick = function () { sh.hidden = true; rlShow(b.getAttribute('data-rl')); }; }); })
+      .catch(function () { $('rlBody').innerHTML = '<p class="note"><b>The routing log cannot be kept on this device</b> (its database is not available, as in private browsing). Routing works as before.</p>'; });
+  }
+  function rlShow(id) {
+    rlTx('readonly', function (st) { return st.get(id); }).then(function (o) { if (!o) { rlIxSet(rlIx().filter(function (x) { return x.id !== id; })); rlCount(); busy('That routing is no longer kept on this device.'); setTimeout(function () { busy(''); }, 4000); return; }
+      S.gen = (S.gen || 0) + 1; S.running = true; S.from = null; busy(''); prog(''); var at = o.at, how = o.how;
+      if (+o.startVal > 0 && o.startVal !== $('startSel').value) { try { setStart(+o.startVal, true); S.startChosen = true; } catch (e) {} }   /* its start as it was, as reopening does */
+      return sessRestore(o).then(function () { S.running = false; RL.shown = { id: id, at: at, how: how }; RL.ref = S.routes; RL.cur = RL.cur; rlTag(); sessSave();
+        $('runNote').textContent = 'From the routing log: routed ' + rlStamp(at) + ' (' + how + '). ' + (S.sessStale ? 'A newer forecast has arrived since: Route afresh to use it.' : 'Route afresh, or change any setting, to work them out again.'); draw(); }); })
+      .catch(function (e) { S.running = false; busy('Could not bring that routing back: ' + ((e && e.message) || 'unknown')); setTimeout(function () { busy(''); }, 4000); });
+  }
+  function rlNewest() { rlAll().then(function (a) { var m = rlMine(a); if (m[0]) rlShow(m[0].id); }); }
+  function rlTag() {
+    var t = $('rlTag'); if (!t) { var rr = document.querySelector('#t-decision .rerow'); if (!rr) return; t = document.createElement('div'); t.id = 'rlTag'; t.className = 'rltag'; t.setAttribute('role', 'status'); rr.parentNode.insertBefore(t, rr); }
+    var on = !!(RL.shown && RL.ref === S.routes && S.routes && S.routes.length); t.hidden = !on; document.body.classList.toggle('rllog', on); if (!on) return;
+    t.innerHTML = '<div><b>FROM THE LOG</b> · routed ' + rlStamp(RL.shown.at) + '</div><div class="xrow"><button class="btn" type="button" id="rlNew">Newest</button><button class="btn primary" type="button" id="rlFresh">Route afresh</button></div>';
+    $('rlNew').onclick = rlNewest; $('rlFresh').onclick = function () { RL.shown = null; rlTag(); var b = $('run'); if (b) b.click(); };   /* the same as Route again */
+    var pill = $('rlPill'); if (!pill) { pill = document.createElement('button'); pill.type = 'button'; pill.id = 'rlPill'; pill.className = 'rlpill'; pill.onclick = function () { openTab('decision'); var pn = $('panel'); if (pn) pn.classList.remove('collapsed'); }; document.body.appendChild(pill); }
+    pill.textContent = 'FROM THE LOG · ' + rlStamp(RL.shown.at).replace(/ UTC.*$/, '');
+  }
+  function rlCss() { if ($('rlCss')) return; var c = document.createElement('style'); c.id = 'rlCss';
+    c.textContent = '#rlSheet .rlr{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}#rlSheet .rlr.cur{border-color:var(--brand,#3574BA)}'
+      + '#rlSheet .rlt{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}#rlSheet .rlt b{font:700 16px/1.2 var(--f-data,monospace)}#rlSheet .rlt span{font-size:12px;color:var(--muted)}#rlSheet .rlr p{grid-column:1;margin:2px 0 0;font-size:12px;color:var(--muted)}'
+      + '#rlSheet .rlr .btn,#rlSheet .rlon{grid-column:2;grid-row:1/span 2}#rlSheet .rlon{font:700 11px/1 var(--f-body);color:var(--brand,#3574BA);letter-spacing:.04em}'
+      + '.rltag{border:1px solid #c98a1b;background:color-mix(in srgb,#c98a1b 14%,transparent);border-radius:10px;padding:8px 10px;margin:6px 0;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between}.rltag b{color:#e0a43a;letter-spacing:.05em}.rltag .xrow{margin:0}'
+      + '.rlpill{position:fixed;left:50%;translate:-50% 0;bottom:auto;z-index:55;font:700 11px/1 var(--f-body);letter-spacing:.05em;padding:6px 10px;border-radius:999px;border:1px solid #c98a1b;background:#2a2112;color:#f1c36b;box-shadow:0 2px 8px rgba(0,0,0,.35);display:none}body.rllog .rlpill{display:block}body.navclear .rlpill,body.fsdeck .rlpill{display:none}';
+    document.head.appendChild(c); }
+  function rlInit() { rlCss(); var r = $('run'); if (r && !$('rlBtn')) { var b = document.createElement('button'); b.className = 'btn'; b.id = 'rlBtn'; b.type = 'button'; b.textContent = 'Routing log'; b.title = 'Every routing of this race on this device, with its time: show an earlier one again'; b.onclick = rlOpen; r.parentNode.insertBefore(b, r.nextSibling); }
+    rlCount(); FSBeat.set(function () { if (RL.shown && RL.ref !== S.routes) { RL.shown = null; rlTag(); } rlPillPlace(); var k = raceKey(); if (k !== RL.rk) { RL.rk = k; rlCount(); } }, 1000); }
+  /* the chart label goes in the first clear strip below the top bar: only the chart under it, never over the course note, the route
+     chips, a window or a button (seen 20:36: over the "Check against the sailing instructions" note) */
+  function rlPillPlace() { var p = $('rlPill'); if (!p || !document.body.classList.contains('rllog')) return; var top0 = 8, mp = $('map');
+    ['.top', '#mkTop'].forEach(function (q) { var e = document.querySelector(q); if (e && e.getClientRects().length) top0 = Math.max(top0, e.getBoundingClientRect().bottom + 4); });
+    var w = p.offsetWidth || 220, h = p.offsetHeight || 26, x0 = innerWidth / 2 - w / 2, prev = p.style.visibility; p.style.visibility = 'hidden';
+    var obs = [].filter.call(document.querySelectorAll('button, a, input, select, [role=button], .tip, .sheet, .cbanner, .fabhelp, .fswz, #panel, .bar, .livebox, #liveBox, #fsPlot, #navPlot, #navStrip, #lhPop, #solStartScr, #solSeq, #tgPop, #solLegs, #solRaceBtns, #errBox, .folchip, .top, #mkTop, .readychip, #newData'), function (e) { if (e === p || p.contains(e) || !e.getClientRects().length) return false; var cs = getComputedStyle(e); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity > 0.05; }).map(function (e) { return e.getBoundingClientRect(); });
+    var cv0 = (document.querySelector('.chart') || mp || document.body).getBoundingClientRect();
+    var clear = function (y) { var l = x0 - 4, r = x0 + w + 4, t = y - 2, b = y + h + 2; if (t < cv0.top || b > cv0.bottom) return false; for (var i = 0; i < obs.length; i++) { var q = obs[i]; if (q.width < 1 || q.height < 1) continue; if (l < q.right && r > q.left && t < q.bottom && b > q.top) return false; } return true; };   /* by the rectangles of everything that may lie over the chart: a test by point missed the route chips, which let taps through */
+    var y = top0, found = null; if (p.__y != null && p.__y >= top0 && clear(p.__y)) found = p.__y; else for (; y < innerHeight * 0.85; y += 6) { if (clear(y)) { found = y; break; } } p.__y = found;   /* where it stood, if still clear: the search is not run every second */
+    p.style.visibility = prev; if (found == null) { p.style.display = 'none'; return; } p.style.display = ''; p.style.top = Math.round(found) + 'px'; }
+  window.FSRLog = { all: rlAll, show: rlShow, open: rlOpen, add: rlAdd, state: function () { return { shown: RL.shown, cur: RL.cur, ok: RL.ok }; } };
   function startChosen(v) { S.startChosen = v !== false; var l = lastGet() || { race: ($('raceSel') && $('raceSel').value) || null, my: S.myId || null };   /* F93 (21 Nov): a page opened for the first time had no record yet, so a start chosen before the first routes were saved was lost on Reload */
     l.chosen = S.startChosen; l.start = $('startSel').value; store('fs-last-' + HERE, JSON.stringify(l)); chipStart(); }
   function chipStart() { setTimeout(function () { try { setupRender(); } catch (e) {} }, 0); var c = $('startChip'); if (!c) return; var v = +$('startSel').value; c.classList.toggle('ask', !S.startChosen && store('fs-autostart') !== '1'); var fu0 = futureGet(); if (fu0) v = fu0.ep; var ok = (S.startChosen || store('fs-autostart') === '1' || fu0) && v, d = new Date((v + tzSh()) * 1000), hm = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
@@ -3153,7 +3236,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.resume && !S.from) { var rs = S.resume; S.resume = null; if (rs.rk === raceKey() && +rs.startVal > 0 && rs.startVal !== $('startSel').value && !(S.keptGun && S.keptGun !== +rs.startVal)) { setStart(+rs.startVal, true); S.startChosen = true; }   /* the same race: its start as it was, even an exact or past one the start list no longer holds */
       if (rs.rk !== raceKey() || rs.startVal !== $('startSel').value) { if (!(S.keptGun && S.keptGun === +$('startSel').value)) { S.startChosen = false; if (startGate()) return run(); } } else {   /* F93: a start kept for the countdown stays chosen; the routes are worked out again for it */
        S.running = true; chipStart(); sessRestore(rs).then(function () { S.running = false; sessAsk(); }, function () { S.running = false; S.routes = []; run(); }); return; } }
-    var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
+    var hit = !S.preBad && preEntry(true); if (hit) { S.running = true; usePre(hit, false).then(function () { S.running = false; setTimeout(sessSave, 0); setTimeout(function () { rlAdd('Ready-made'); }, 0); }, function (e) { S.running = false; S.preBad = true; console.warn('pre-route failed, routing fresh', e && e.message); run(); }); return; }
     var sp0 = S.from ? { lat: S.from.lat, lon: S.from.lon, from: true } : (meta && meta.course ? meta.course.start : null);   /* where this route leaves from, for F6's advice */
     S.running = true; S.runSince = Date.now(); S.progAt = 0; S.progF = null; busy(''); S.key = null; var gen = S.gen = (S.gen || 0) + 1;   /* a newer run, or a new course, abandons this one */
     var tq = Date.now(), estQ = +(store('fs-estQ-' + raceKey()) || 0), estF = +(store('fs-estF-' + raceKey()) || 0);
@@ -3163,7 +3246,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     S.ck = [{ k: 'fc', t: ms.length + ' forecast' + (ms.length > 1 ? 's' : '') + ' in', s: 'done' }, { k: 'q', t: 'First routes', s: 'wait' }, { k: 'std', t: 'Standard (360)', s: 'wait' }].concat(RD ? [{ k: 'fin', t: 'Finer (' + RD + ')', s: 'wait' }] : []).concat([{ k: 'chk', t: 'Checked in every forecast', s: 'wait' }]);
     S.cur = null; S.stdS = S.finS = null; pass(0).then(function () { try { var q = sessSave(true); if (q) store(sessKey(), JSON.stringify(q)); } catch (e) {} return pass(1); })   /* keep the quick routes too, in case Route is closed while it refines */
       .then(function () { if (gen !== S.gen) throw { abandoned: true }; S.stdS = ((Date.now() - tq) / 1000).toFixed(1); if (!RD) return; S.cur = S.routes.slice(); return pass(2, RD); })   /* the finer pass: the standard routes stay on the chart meanwhile, then faint under the finer ones */
-      .then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); var tot = ((Date.now() - tq) / 1000).toFixed(1); if (RD) S.finS = tot; store(rdKey(rdGet()), String(Math.round(+tot))); rdNote(); ckSet('chk', 'done');
+      .then(function () { if (gen !== S.gen) return; S.running = false; setTimeout(sessSave, 0); setTimeout(function () { rlAdd(); }, 0);   /* the routing log (28 Nov 20:12) */ prog(''); busy(''); store('fs-estF-' + raceKey(), String(Math.round((Date.now() - tq) / 1000 - (+S.quickS || 0)))); var tot = ((Date.now() - tq) / 1000).toFixed(1); if (RD) S.finS = tot; store(rdKey(rdGet()), String(Math.round(+tot))); rdNote(); ckSet('chk', 'done');
         $('runNote').textContent += (RD ? ' Times: first routes ' + S.quickS + ' s, standard ' + S.stdS + ' s, finer ' + S.finS + ' s. The faint line is the standard route.' : '') + ' First answer in ' + S.quickS + ' s.' + shallowStartNote(); draw(); })
     .catch(function (e) { if (e && e.abandoned || gen !== S.gen) return; S.running = false; busy(''); prog(''); openTab('decision'); var fromFail = !!S.from; S.from = null; $('runNote').textContent = (fromFail ? 'Could not route from that point: ' : '') + e.message + (fromFail ? ' Route again goes back to the start.' : ''); errShow('Route could not finish: ' + e.message); try { depthOffer(e, sp0); } catch (x) {} draw(); });
     function pass(mode, rsec) { var quick = mode === 0, finer = mode === 2;
