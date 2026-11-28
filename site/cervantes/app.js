@@ -4384,7 +4384,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       var fb = LIVE.on && LIVE.fix && LIVE.fix.la != null ? { la: LIVE.fix.la, lo: LIVE.fix.lo, how: 'GPS' } : null;
       if (!fb && S.sel) { var pb = posAt(tsOf(S.sel.r.path), S.sel.r.path, S.t); if (pb && pb.la != null) fb = { la: pb.la, lo: pb.lo, how: 'route' }; }
       var rngW = fb ? FSRouter.dist(fb.la, fb.lo, la, lo) : null, haveW = tws === tws && (wmix || wf);
-      var headW = '<div class="cbh"><span class="cbd" style="background:var(--brand,#3574BA)"></span><b>Open water</b><span class="cbs">' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + ' · time bar ' + clockH(t) + ' ' + tzS1() + '</span></div>'
+      var headW = '<div class="cbh"><span class="cbd" style="background:var(--brand,#3574BA)"></span><b>' + (z === z && z > 0 ? 'Land' : 'Open water') + '</b><span class="cbs">' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + ' · time bar ' + clockH(t) + ' ' + tzS1() + '</span></div>'
         + '<button class="cbdots" id="tipDots" type="button" aria-label="Actions" title="Actions"' + (S.tipAct ? ' aria-expanded="true"' : '') + '>⋯</button>';
       var tilesW = '<div class="cbt cbw">' + tlW('Wind ' + (wnames.length > 1 ? '▾ ' : '· ') + (wmix ? 'Combined' : wm ? short(wm) : 'none'), haveW ? tws.toFixed(1) + ' kn' : '-', haveW ? 'from ' + pad(twd) + '°' : 'no forecast here', 'tap' + (S.tipWl ? ' on' : ''), wnames.length > 1 ? ' id="tipWlBtn" role="button" tabindex="0" title="Every model here"' : '')
         + tlW('Tide', tf && cu === cu ? (Math.hypot(cu, cv2) / KN).toFixed(1) + ' kn' : '-', tf && cu === cu ? 'to ' + pad(Math.atan2(cu, cv2) / R) + '°' : 'none here')
@@ -4413,7 +4413,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (onR) { gl.push('<b style="color:' + col(bs) + '">' + (bs.combined ? 'Combined' : bs.name || short(bs.id)) + '</b> <span>' + clockH(best.t).slice(4) + ' ' + tzS1() + ' · ' + hmG(best.t - bs.r.path[0].t) + ' in</span>');
         gl.push('HDG ' + pad(best.hdg) + '°' + sp2 + 'TWA ' + Math.abs(Math.round(best.twa)) + '° ' + (best.twa < 0 ? 'stbd' : 'port') + sp2 + best.bsp.toFixed(1) + ' kn');
         gl.push('Wind ' + best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '°' + (best.cu != null ? sp2 + 'tide ' + Math.hypot(best.cu, best.cv).toFixed(1) + ' kn to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '°' : '')); }
-      else { gl.push('<b>Open water</b> <span>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + ' · here at ' + clockH(t) + ' ' + tzS1() + '</span>');
+      else { gl.push('<b>' + (z === z && z > 0 ? 'Land' : 'Open water') + '</b> <span>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + ' · here at ' + clockH(t) + ' ' + tzS1() + '</span>');
         gl.push('Wind ' + xEsc(wlab || '') + ' ' + (tws === tws && (wmix || wf) ? tws.toFixed(1) + ' kn from ' + pad(twd) + '°' : 'no forecast here') + (tf && cu === cu ? sp2 + 'tide ' + (Math.hypot(cu, cv2) / KN).toFixed(1) + ' kn to ' + pad(Math.atan2(cu, cv2) / R) + '°' : ''));
         var fbG = LIVE.on && LIVE.fix && LIVE.fix.la != null ? [LIVE.fix.la, LIVE.fix.lo] : null; if (!fbG && S.sel) { var pbG = posAt(tsOf(S.sel.r.path), S.sel.r.path, S.t); if (pbG && pbG.la != null) fbG = [pbG.la, pbG.lo]; }
         gl.push((fbG ? 'From the boat ' + FSRouter.dist(fbG[0], fbG[1], la, lo).toFixed(1) + ' nm, ' + pad(FSRouter.brg(fbG[0], fbG[1], la, lo)) + '°' + sp2 : '') + 'depth ' + depthTxt); }
