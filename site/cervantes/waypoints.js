@@ -108,7 +108,7 @@
       rows.push('Wind ' + r.tws.toFixed(0) + ' kn from ' + d3(r.twd) + ' at ' + ('0' + t.getUTCHours()).slice(-2) + ':' + ('0' + t.getUTCMinutes()).slice(-2) + ' UTC (time on the slider)');
       if (r.hdg != null) {
         var kindTxt = r.kind === 'beat' ? 'BEAT' : r.kind === 'run' && r.tack ? 'RUN (gybing)' : r.kind === 'fetch' ? 'FETCH' : r.kind === 'reach' ? 'REACH' : 'RUN';
-        rows.push('<b>' + kindTxt + '</b>: ' + (r.tack ? 'best VMG on ' + d3(r.hdg) + ' and ' + d3(r.other) + ', TWA ' + Math.abs(Math.round(r.twa)) + '°' : 'steer ' + d3(r.hdg) + ', TWA ' + Math.abs(Math.round(r.twa)) + '° ' + (r.twa < 0 ? 'port' : 'stbd')));
+        rows.push('<b>' + kindTxt + '</b>: ' + (r.tack ? 'best VMG on ' + d3(r.hdg) + ' and ' + d3(r.other) + ', TWA ' + Math.abs(Math.round(r.twa)) + '°' : 'steer ' + d3(r.hdg) + ', TWA ' + Math.abs(Math.round(r.twa)) + '° ' + (r.twa < 0 ? 'stbd' : 'port')));   /* 28 Nov: r.twa here is heading minus wind direction (app.js liveSteer, the router's sign): below 0 the wind is on the starboard side. It said port for starboard on every line sailed on one heading; proved and held by tests/measure-tack.js */
         rows.push('Boat speed ' + (r.bsp != null ? r.bsp.toFixed(1) : '--') + ' kn (polar) · VMC ' + (r.sog != null ? r.sog.toFixed(1) : '--') + ' kn · time ' + hm(r.tack && r.hoursAll != null ? r.hoursAll : r.hours));
         if (r.tack && r.nTurns) rows.push('Includes ' + r.nTurns + ' ' + (r.kind === 'beat' ? 'tack' : 'gybe') + (r.nTurns > 1 ? 's' : '') + ' at ' + r.turnS + ' s each (about one every 15 minutes; the loss is set in the Course tab)');
         if (r.sail) rows.push('Sail: ' + esc(r.sail));
