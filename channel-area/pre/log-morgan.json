@@ -1,23 +1,23 @@
 {
- "at": "2026-11-28T17:37:54.870Z",
+ "at": "2026-11-28T20:18:20.399Z",
  "log": [
   {
    "race": "morgan",
    "h": 0,
-   "s": 41,
-   "note": "Finer routes in 28.3 s. Times: first routes 2.0 s, standard 10.4 s, finer 38.8 s. The faint line is the standard route. "
+   "s": 70,
+   "note": "Finer routes in 51.4 s. Times: first routes 2.8 s, standard 16.3 s, finer 67.8 s. The faint line is the standard route. "
   },
   {
    "race": "morgan",
    "h": 1,
-   "s": 87,
-   "note": "Finer routes in 35.9 s. Times: first routes 1.3 s, standard 10.0 s, finer 45.9 s. The faint line is the standard route. "
+   "s": 127,
+   "note": "Finer routes in 44.4 s. Times: first routes 1.8 s, standard 12.1 s, finer 56.5 s. The faint line is the standard route. "
   },
   {
    "race": "morgan",
    "h": 2,
-   "s": 130,
-   "note": "Finer routes in 33.7 s. Times: first routes 1.3 s, standard 9.5 s, finer 43.2 s. The faint line is the standard route. F"
+   "s": 179,
+   "note": "Finer routes in 41.3 s. Times: first routes 1.6 s, standard 10.8 s, finer 52.2 s. The faint line is the standard route. "
   }
  ]
 }

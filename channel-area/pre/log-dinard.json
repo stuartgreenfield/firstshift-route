@@ -1,23 +1,23 @@
 {
- "at": "2026-11-28T17:40:04.568Z",
+ "at": "2026-11-28T20:17:57.586Z",
  "log": [
   {
    "race": "dinard",
    "h": 0,
-   "s": 83,
-   "note": "Finer routes in 59.9 s. Times: first routes 4.4 s, standard 20.6 s, finer 80.6 s. The faint line is the standard route. "
+   "s": 62,
+   "note": "Finer routes in 44.6 s. Times: first routes 3.0 s, standard 15.3 s, finer 59.9 s. The faint line is the standard route. "
   },
   {
    "race": "dinard",
    "h": 1,
-   "s": 173,
-   "note": "Finer routes in 69.9 s. Times: first routes 3.0 s, standard 19.6 s, finer 89.5 s. The faint line is the standard route. "
+   "s": 113,
+   "note": "Finer routes in 39.5 s. Also worth knowing: in AIFS wind, the ECMWF route is 91 min faster than AIFS’s own route. Compar"
   },
   {
    "race": "dinard",
    "h": 2,
-   "s": 263,
-   "note": "Finer routes in 69.9 s. Times: first routes 3.0 s, standard 18.8 s, finer 88.7 s. The faint line is the standard route. "
+   "s": 158,
+   "note": "Finer routes in 34.2 s. Times: first routes 1.6 s, standard 9.8 s, finer 44.0 s. The faint line is the standard route. F"
   }
  ]
 }
