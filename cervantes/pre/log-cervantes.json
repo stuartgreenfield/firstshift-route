@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-28T20:20:31.431Z",
+ "log": [
+  {
+   "race": "cervantes",
+   "h": 0,
+   "s": 71,
+   "note": "Finer routes in 51.6 s. Times: first routes 3.4 s, standard 18.0 s, finer 69.7 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cervantes",
+   "h": 1,
+   "s": 130,
+   "note": "Finer routes in 45.1 s. Times: first routes 2.1 s, standard 13.2 s, finer 58.3 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cervantes",
+   "h": 2,
+   "s": 186,
+   "note": "Finer routes in 43.9 s. Times: first routes 2.2 s, standard 12.4 s, finer 56.3 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cervantes",
+   "h": 3,
+   "s": 233,
+   "note": "Finer routes in 36.4 s. Times: first routes 2.0 s, standard 10.3 s, finer 46.7 s. The faint line is the standard route. "
+  },
+  {
+   "race": "cervantes",
+   "h": 4,
+   "s": 276,
+   "note": "Finer routes in 33.0 s. Also worth knowing: in AIFS wind, the ECMWF route is 1.2 min faster than AIFS’s own route. Gaps "
+  },
+  {
+   "race": "cervantes",
+   "h": 5,
+   "s": 318,
+   "note": "Finer routes in 32.4 s. Also worth knowing: in ICON-EU wind, the AIFS route is 1.2 min faster than ICON-EU’s own route. "
+  }
+ ]
+}
