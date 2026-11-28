@@ -17,7 +17,7 @@ let pass = 0, fail = 0, known = 0; const ok = (c, m, d, isKnown) => { if (c) pas
   for (const frac of [0.25, 0.5, 0.75]) {
     const i = Math.floor(N * frac);
     const pt = await p.evaluate(i => { const F = window.__navFc(), q = F.sel.path[i]; const xy = window.__fsXY(q.la, q.lo); return { q: { t: q.t, la: q.la, lo: q.lo, hdg: q.hdg, twa: q.twa, tws: q.tws, twd: q.twd, bsp: q.bsp, cu: q.cu, cv: q.cv }, xy, model: F.sel.models[0], T0: F.T0 }; }, i);
-    await p.mouse.move(pt.xy[0], pt.xy[1]); await p.waitForTimeout(400);
+    await p.evaluate(() => { const x = document.getElementById('tipX'); if (x && x.getClientRects().length) x.click(); }); await p.mouse.click(pt.xy[0], pt.xy[1]); await p.waitForTimeout(700);   /* 28 Nov: the rows are on the card (a click), under All figures; the pointer alone now gives the three-line chip */
     const card = await p.evaluate(() => { const t = document.getElementById('tip'); if (!t || t.hidden) return null; const rows = {}; t.querySelectorAll('#tipBody .r').forEach(r => { const s = r.querySelectorAll('span'); if (s.length >= 2) rows[s[0].textContent.trim()] = s[1].textContent.trim(); }); const head = (t.querySelector('#tipBody b') || {}).textContent || ''; return { rows, head }; });
     const tag = 'point ' + (frac * 100) + '%';
     if (!ok(card && card.rows.Heading, tag + ': the route card opens on the route', card && card.head)) continue;
