@@ -4463,7 +4463,16 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var vf = fabs.filter(function (f) { return f.offsetParent; }), host = vf[0] && vf[0].offsetParent;
     if (!host) return;   /* F77: no button showing (a window over them all): keep the last decision, so the hold below is not restarted */
     var room = host ? host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) : 999;
-    if (!ROWM && host) { var hb0 = host.getBoundingClientRect().bottom, mt = 1e9; vf.forEach(function (f) { if (f.dataset.fr) return; var r0 = f.getBoundingClientRect(); if (r0.height) mt = Math.min(mt, r0.top); }); if (mt < 1e9) { FROW.need = Math.round(hb0 - mt + 8); FROW.over = mt < underTop() + 4; } }   /* Stuart 20 Nov 16:22: with the plotter bar open the column ran up under it and its buttons were hidden: the column must start below everything under the top bar */   /* F77: the height the column needs (Route+ has more buttons than Route) */
+    /* AP, third part (Stuart 28 Nov 06:35: "2.one column", "3. Fit buttons"). With the buttons showing, Route's six round buttons stood in a
+       block two wide on the right-hand edge (each had its own fixed place in the style sheet, CLEAR alone at the top, the left column 2 px
+       out of line), and Route+'s seven did not fit its row, so BOAT sat alone above the end. Now the buttons that are showing are placed
+       here in both states: ONE column up the right-hand edge, one button above the next with no gaps, when the chart is tall enough for
+       it; otherwise ONE row along the bottom of the map. The height the column needs is counted from the number of buttons showing. */
+    /* a button hidden only because a window lies over it (fabcov) keeps its place in the column: if the column closed up over its place the
+       button would come out from under the window, be shown, be covered again, and the column would never settle */
+    function slot(f) { if (!f.classList.contains('fabcov')) return getComputedStyle(f).display !== 'none'; f.classList.remove('fabcov'); var d = getComputedStyle(f).display !== 'none'; f.classList.add('fabcov'); return d; }
+    var inCol = fabs.filter(slot), shown = fabs.filter(function (f) { return getComputedStyle(f).display !== 'none'; });
+    FROW.need = inCol.length * 52 + 52; FROW.over = false;   /* Stuart 20 Nov 16:22: with the plotter bar open the column ran up under it and its buttons were hidden: the column must start below everything under the top bar */   /* F77: the height the column needs (Route+ has more buttons than Route) */
     /* AP, second part (28 Nov, the same check on Route): with the button row cleared, three of Route's round buttons are hidden and the three
        left stood in an L in the middle of the right-hand edge, in neither a line up the edge nor a row along the foot. In the Clear state the
        round buttons that remain always go in the row on the bottom of the map, on every tool, and they go there (and come back) at once,
@@ -4474,17 +4483,27 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
        and the strips under the top bar come and go, and the pill flipped between the foot and the top each time. Now the change needs a
        margin (in below 300 px, out above 340) and has to hold for a second and a half before anything moves */
     var now0 = Date.now(); if (low0 !== FROW.want) { FROW.want = low0; FROW.since = now0; } var low = (clr !== !!FROW.clr || now0 - FROW.since >= 1500 || FROW.since === 0) ? low0 : FROW.low; FROW.clr = clr; FROW.low = low; if (FROW.since === 0) FROW.since = 1;
-    ROWM = !!(short.matches || low); if (!short.matches && !low) { fabFoot(0); fabs.forEach(function (f) { if (f.dataset.fr === '1') { f.style.removeProperty('bottom'); f.style.removeProperty('right'); delete f.dataset.fr; } }); return; }
+    ROWM = !!(short.matches || low);
+    if (!short.matches && !low) { fabFoot(0); var k = 0;
+      inCol.forEach(function (f) {
+        f.dataset.fr = 'c'; f.style.setProperty('bottom', (52 + k * 52) + 'px', 'important'); f.style.setProperty('right', 'max(12px, env(safe-area-inset-right, 0px))', 'important'); k++; });
+      return; }
     if (!host) return; var W = host.clientWidth, n = 0;
-    var perRow = Math.max(1, Math.floor((W - 60 - 12) / 52));   /* clear of man overboard on the left */
     /* AP (Stuart 27 Nov 23:00, photo IMG_0144: the round buttons in a row half way up the chart once the button row had cleared itself; "These
        icons must line up vertically along the edge of the screen or horizontally across the bottom of map"). The row was lifted by the foot
        bar's whole height, as if the bar always floated over the chart. It is lifted now only by as much of the chart's foot as the bar really
        covers, so the row sits on the bottom of the map in every state. */
     var bar = document.getElementById('bar'), base = document.body.classList.contains('navclear') && bar && bar.getClientRects().length && host ? Math.max(0, Math.round(host.getBoundingClientRect().bottom - bar.getBoundingClientRect().top)) : 0;
     if (!base && host) { var hb = innerHeight - host.getBoundingClientRect().bottom; base = Math.max(0, Math.round(insets().b - hb)); }   /* a chart that runs to the foot of the screen (Mark held sideways): keep clear of the home bar */   /* Clear screen: the play bar floats at the foot, so the row sits above it */
+    /* the row keeps clear of man overboard only where man overboard really floats over the foot of the chart (the Clear state on some
+       screens); elsewhere it may run to 12 px from the left edge. If the buttons still do not fit one row at the usual 52 px apart they
+       close up, to no less than 46 px apart (the buttons are 44 px, so they never touch); only below that does a second row start. */
+    var hr1 = host.getBoundingClientRect(), mob = document.getElementById('mobBtn'), mr = mob && mob.getClientRects().length ? mob.getBoundingClientRect() : null, left = 12;
+    if (mr && mr.left < hr1.left + W / 2 && mr.right > hr1.left && mr.bottom > hr1.bottom - base - 60 && mr.top < hr1.bottom - base) left = Math.max(12, Math.round(mr.right - hr1.left) + 8);
+    var avail = W - left - 12, pitch = 52, perRow = Math.max(1, Math.floor((avail - 44) / 52) + 1);
+    if (shown.length > perRow) { var pt = Math.floor((avail - 44) / (shown.length - 1)); if (pt >= 46) { pitch = pt; perRow = shown.length; } }
     fabs.forEach(function (f) { if (getComputedStyle(f).display === 'none') return; var row = Math.floor(n / perRow), col = n % perRow; n++;
-      f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); });
+      f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * pitch) + 'px', 'important'); });
     fabFoot(n ? 8 + base + Math.ceil(n / perRow) * 52 : 0); }
   /* the row of round buttons lies over the chart's bottom right corner, where the scale bar is drawn: the chart is told how high the row
      reaches and draws the scale bar just above it (28 Nov, seen in the AP pictures: "20 nm" hidden behind N UP) */
