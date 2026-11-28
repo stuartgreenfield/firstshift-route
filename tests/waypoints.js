@@ -40,7 +40,7 @@ let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; co
   // the chart shows the waypoints; the tap box offers Save as waypoint
   await p.evaluate(() => { const v = window.__navViewGet(); window.__navViewSet({ la: 50.75, lo: -1.35, s: 4000, follow: false }); }); await p.waitForTimeout(500);
   const tp = await p.evaluate(() => window.__fsScr(50.735, -1.42));
-  await p.mouse.click(tp[0], tp[1]); await p.waitForTimeout(500);
+  await p.mouse.click(tp[0], tp[1]); await p.waitForTimeout(500); await p.evaluate(() => { const d = document.getElementById('tipDots'), a = document.getElementById('tipAct'); if (d && a && a.hidden) d.click(); }); await p.waitForTimeout(250);   /* 28 Nov: the card's actions are in its list (three dots), Stuart's A1 */ 
   const tipB = await p.evaluate(() => !!document.querySelector('#tipBody [data-w="save"]') && !!document.querySelector('#tipBody [data-w="ruler"]'));
   ok(tipB, 'tapping the chart offers Save as waypoint and Measure from here');
   await p.click('#tipBody [data-w="save"]'); await p.waitForTimeout(300);

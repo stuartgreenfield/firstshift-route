@@ -532,10 +532,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     [].forEach.call($('plans').children, function (b) { b.onclick = function () { applyPlan(b.dataset.plan); }; });
     $('dlBtn').onclick = function () { download(); };
     $('ovChk').onchange = dataTable;
-    $('tipX').onclick = function () { $('tip').hidden = true; };
+    $('tipX').onclick = function () { $('tip').hidden = true; S.pin = null; try { draw(); } catch (e) {} };
     /* a tap that opens the card must not also press the button that appears under the finger (the browser's click follows the touch):
        found 24 Nov 23:40 with real taps, 'Save as waypoint' on a tablet and 'Route to here' on a phone pressed by the opening tap */
-    $('tip').addEventListener('click', function (e) { var at = +$('tip').dataset.at || 0; if (Date.now() - at < 450 && e.target.closest && e.target.closest('button,input,a,label')) { e.preventDefault(); e.stopPropagation(); } }, true);
+    $('tip').addEventListener('click', function (e) { var at = +$('tip').dataset.at || 0; if (Date.now() - at < 450 && e.target.closest && e.target.closest('button,input,a,label,[role=button]')) { e.preventDefault(); e.stopPropagation(); } }, true);
     /* the card moves by the dash line at its top (Stuart 24 Nov 23:20, as the start box's grip); kept for each screen size and way up */
     (function () { var g = $('tipGrip'), tp = $('tip'), d = null, key = function () { return (innerWidth > innerHeight ? 'L' : 'P') + Math.round(innerWidth / 100); };
       var all = function () { try { return JSON.parse(store('fs-tippos') || '{}') || {}; } catch (e) { return {}; } };
@@ -3362,7 +3362,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var h = '<tr><th>From</th><th>Sail</th><th>Hdg</th><th>TWS</th><th>TWA</th><th>BSP</th><th>SOG</th><th>Tacks</th></tr>', leg = -1;
     rows.forEach(function (r) {
       if (r.leg !== leg) { leg = r.leg; h += '<tr><td colspan="8" style="font-family:var(--f-body);color:var(--muted)">To ' + (S.legs && S.legs.length ? S.legs[Math.min(leg, S.legs.length - 1)].name : 'the next mark') + '</td></tr>'; }
-      h += '<tr><td>' + clockH(r.t0).slice(4) + '</td><td style="font-family:var(--f-body)">' + r.sail + '</td><td>' + pad(Math.atan2(r.hx, r.hy) / R) + '°</td><td>' + (r.tws / r.n).toFixed(1) + '</td><td>' + Math.round(r.twa / r.n) + '°</td><td>' + (r.bsp / r.n).toFixed(1) + '</td><td>' + ((r.sog || 0) / r.n).toFixed(1) + '</td><td>' + r.tacks + '</td></tr>';
+      h += '<tr data-t0="' + r.t0.toFixed(4) + '" data-t1="' + r.t1.toFixed(4) + '"><td>' + clockH(r.t0).slice(4) + '</td><td style="font-family:var(--f-body)">' + r.sail + '</td><td>' + pad(Math.atan2(r.hx, r.hy) / R) + '°</td><td>' + (r.tws / r.n).toFixed(1) + '</td><td>' + Math.round(r.twa / r.n) + '°</td><td>' + (r.bsp / r.n).toFixed(1) + '</td><td>' + ((r.sog || 0) / r.n).toFixed(1) + '</td><td>' + r.tacks + '</td></tr>';
     });
     s.r.arrivals.forEach(function (a) { h += '<tr><td>' + clockH(a.t).slice(4) + '</td><td colspan="7" style="font-family:var(--f-body)"><b>' + a.name + '</b> · ' + fmtH(a.t - S.start.t) + ' elapsed</td></tr>'; });
     $('plan').innerHTML = h; if (window.FSSails) FSSails.draw();
@@ -3814,7 +3814,9 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     S.routes.forEach(function (s) { if (s.hidden) return; var p = posAt(tsOf(s.r.path), s.r.path, S.t); if (!p) return; var hd = hdgAt(s.r.path, p.k), x = X(p.lo), y = Y(p.la); if (s === S.sel) { triMark(x, y, hd, 13, css['--panel'], col(s), 3); } else triMark(x, y, hd, 9, css['--panel'], col(s), 2); });
     if (rhumbOn()) { var rb = rhumbAt(S.t); if (rb && !rb.done) triMark(X(rb.lo), Y(rb.la), rb.brg || 0, 13, css['--panel'], css['--brand'] || '#3574BA', 3); }   /* M93: the rhumb-line boat */
     if (S.from) { ctx.strokeStyle = css['--ink']; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(S.from.lon), Y(S.from.lat), 10, 0, 7); ctx.stroke(); }
+    try { cbRing(); } catch (e) {}
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ORI.turned = false;   /* the scale bar stays square to the screen */
+    try { cbLead(); } catch (e) {}
     scale();
   }
   /* ---------- traffic separation schemes, keep-out areas, lighthouses and buoys (not for navigation) ---------- */
@@ -4173,7 +4175,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   function ZMAX() { var k = +($('zoomMax') ? $('zoomMax').value : 1) || 1; return 20000 * Math.max(1, Math.min(6, k)); }   /* closest zoom, screen points per degree of latitude: 20,000 is about 1.2 nm across a phone */
   function zoomAt(x, y, f) { var lo = LO(x), la = LA(y); view.s = Math.max(20, Math.min(ZMAX(), view.s * f)); view.lo = lo - (x - W / 2) / (K * view.s); view.la = la + (y - H / 2) / view.s; draw(); }
   cv.addEventListener('dblclick', function () { if (window.FSSolent && (FSSolent.isOn() || S.inshore)) return; fit(); draw(); });   /* Stuart 16 Nov 13:33: in Solent racing a quick second click on a buoy zoomed the whole chart out; a double click no longer re-frames the chart there */
-  cv.addEventListener('pointerdown', function (e) { if (e.isPrimary) { ptrs.clear(); pmid = null; S.drag = null; }   /* the first finger down starts a new gesture: a finger whose lift was never reported (Stuart 14 Nov 20:42, Android tablet: pinch stopped working) must not leave the chart thinking three fingers are down */ try { cv.setPointerCapture(e.pointerId); } catch (er) {} ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel(); });
+  cv.addEventListener('pointerdown', function (e) { if (e.isPrimary) { ptrs.clear(); pmid = null; S.drag = null; }   /* the first finger down starts a new gesture: a finger whose lift was never reported (Stuart 14 Nov 20:42, Android tablet: pinch stopped working) must not leave the chart thinking three fingers are down */ try { cv.setPointerCapture(e.pointerId); } catch (er) {} ptrs.set(e.pointerId, [evx(e), evy(e)]); moved = 0; if (ptrs.size === 2) pmid = pairNow(); else pmid = null; S.drag = (S.edit && !$('editBar').hidden && ptrs.size === 1) ? editHit(evx(e), evy(e)) : -1; if (S.drag < 0) S.drag = null; else { S.dragFrom = Object.assign({}, S.edit.pts[S.drag]); editSnap(); } closeLayers(); if (!wide() && !$('panel').classList.contains('collapsed')) closePanel();
+    clearTimeout(holdT); if (e.pointerType !== 'mouse' && ptrs.size === 1 && S.drag == null && !S.edit && !S.adjDraw && !S.mobTap && $('fromHere').getAttribute('aria-pressed') !== 'true') { var hx = evx(e), hy = evy(e), hid = e.pointerId; holdT = setTimeout(function () { if (!ptrs.has(hid) || ptrs.size !== 1 || moved > 6) return; moved = 99; S.holdAct = true; S.holdUp = true; try { if (navigator.vibrate) navigator.vibrate(12); } catch (er) {} tap(hx, hy, true); }, 520); } });
+  var holdT = 0;
+  cv.addEventListener('contextmenu', function (e) { e.preventDefault(); if (e.pointerType && e.pointerType !== 'mouse') return; if (S.edit || S.adjDraw || S.mobTap) return; S.holdAct = true; tap(evx(e), evy(e), false); });
   /* two fingers move the chart as well as zoom it, like a map app (Stuart 12 Nov): read both fingers together once a frame */
   var pairRaf = 0;
   function pairNow() { var v = Array.from(ptrs.values()); return { x: (v[0][0] + v[1][0]) / 2, y: (v[0][1] + v[1][1]) / 2, d: Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]) }; }
@@ -4230,9 +4235,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     cv.addEventListener('gestureend', function () { gMid = null; });
   }
   cv.addEventListener('pointerup', function (e) {
+    clearTimeout(holdT); if (S.holdUp) { S.holdUp = false; $('tip').dataset.at = Date.now(); }   /* the finger lifting after a press and hold must not press what has appeared under it */
     if (S.drag != null && moved < 6) { var ti = S.drag; S.drag = null; S.edit.hist.pop(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; markCard(ti); draw(); return; }   /* a tap on a mark, not a drag: open its card */
     if (S.drag != null) { var dq = S.edit.pts[S.drag]; if (!editOk(dq.lat, dq.lon)) { Object.assign(dq, S.dragFrom); S.edit.hist.pop(); } S.drag = null; editPrompt(); ptrs.delete(e.pointerId); pinch = 0, pmid = null; draw(); return; } if (ptrs.has(e.pointerId) && moved < 6 && ptrs.size === 1) tap(evx(e), evy(e), e.pointerType !== 'mouse'); ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
-  cv.addEventListener('pointercancel', function (e) { ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
+  cv.addEventListener('pointercancel', function (e) { clearTimeout(holdT); ptrs.delete(e.pointerId); pinch = 0, pmid = null; });
   cv.addEventListener('lostpointercapture', function (e) { ptrs.delete(e.pointerId); pmid = null; });
   cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !ptrs.size && !$('tip').classList.contains('docked')) $('tip').hidden = true; });
   function tap(x, y, touch) {
@@ -4253,6 +4259,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
       if (!(z <= -(+$('depth').value))) { busy('That is land or too shallow. Tap open water.'); return; }
       S.from = { lat: la, lon: lo, t: S.t }; $('fromHere').setAttribute('aria-pressed', 'false'); busy(''); run(); return;
     }
+    S.tipWm = null; S.tipWl = false; S.tipAct = !!S.holdAct; S.holdAct = false;   /* a new tap starts the card afresh; press and hold (or a right-click) opens it with its actions */
     hover(x, y, true, true);
   }
   /* tap anywhere on the water: route there from where the boat is at the slider time */
@@ -4274,7 +4281,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     $('gcRoute').onclick = function (e) { e.stopPropagation(); if (etaH == null) return; tip.hidden = true; S.from = { lat: q.lat, lon: q.lon, t: etaH, gate: q.name }; run(); };   /* reroute from the gate, at the time the route reaches it */
   }
   function hover(x, y, docked, tapped, force) {
-    $('tip').classList.remove('cb');   /* the card's own look goes on again below, only when it is the card */
+    $('tip').classList.remove('cb'); $('tip').classList.remove('cbchip');   /* the card's and the glance's own looks go on again below, only when it is one of them */
     if (tapped && !force) { var gq = gateHit(x, y); if (gq) return gateCard(gq); }   /* force: { s, p } shows that route point (C2 steps), whatever is under the pointer */
     if (!meta) return;
     if (S.edit) { $('tip').hidden = true; return; }   /* editing a course: no info boxes over the marks */
@@ -4284,7 +4291,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (S.big) { var O = meta.overview, gy = Math.round((LA(y) - O.lat0) / O.dlat), gx = Math.round((LO(x) - O.lon0) / O.dlon); if (gy < 0 || gx < 0 || gy >= O.ny || gx >= O.nx) return;
       var pu = ovField('u')(gy, gx), pv = ovField('v')(gy, gx); $('tipBody').innerHTML = '<b>' + dm(LA(y), 'NS') + ' ' + dm(LO(x), 'EW') + '</b>' + r2('Pressure', ovField('msl')(gy, gx).toFixed(0) + ' hPa') + r2('Wind', (Math.hypot(pu, pv) / KN).toFixed(0) + ' kn from ' + pad(Math.atan2(-pu, -pv) / R) + '°');
       $('tip').hidden = false; $('tip').classList.toggle('docked', !!docked); if (!docked) { $('tip').style.left = Math.min(W - 230, x + 14) + 'px'; $('tip').style.top = Math.max(64, y + 14) + 'px'; } return; }
-    var la = LA(y), lo = LO(x), t = S.t, rows = [], tip = $('tip'), cardNew = false;
+    var la = LA(y), lo = LO(x), t = S.t, rows = [], tip = $('tip'), cardNew = false, cardTop = null, cardAll = '', cardAct = '';
     /* boat figures only when the pointer is on a route: open water has no boat */
     var best = null, bs = null, bd2 = docked ? 26 : 16;
     if (force) { best = force.p; bs = force.s; }
@@ -4302,6 +4309,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     /* the wind row: the model shown (windShown). On Selected route: Finest first names the model in use at this point and hour (the router's own
        hand-over order); Combined shows the mean the router sailed, and says so */
     var wm = windShown() || Object.keys(P.wind)[0], wf = P.wind[wm], tws = 0, twd = 0, wlab = wm ? short(wm) : '', wr = $('windShow').value === 'sel' ? windRoute() : null, wmix = null;
+    if (tapped && S.tipWm && P.wind[S.tipWm]) { wm = S.tipWm; wf = P.wind[wm]; wlab = short(wm); wr = null; }   /* a model picked from the card's list: shown in this box only (Stuart 28 Nov 13:15, U11) */
     if (wr && wr.models[0] === 'chain') { var wch = wr.models.slice(1).filter(function (m) { return P.wind[m]; }); for (var wi = 0; wi < wch.length; wi++) { var wq = P.wind[wch[wi]], wh = wq.hours; if (wh && wh.length > 1 && t > wh[wh.length - 1]) continue; var wa = wq.sample('u', la, lo, t); if (wa === wa) { wm = wch[wi]; wf = wq; wlab = short(wm) + ' (finest first)'; break; } } }
     else if (wr && wr.combined) { try { wmix = FSRouter.windSampler(P, wr.models)(la, lo, t); } catch (e) {} if (wmix && wmix[0] === wmix[0]) wlab = 'Combined (mean of ' + wr.models.length + ')'; else wmix = null; }
     if (wmix) { tws = wmix[0]; twd = wmix[1]; rows.push(r2('Wind ' + wlab, tws.toFixed(1) + ' kn from ' + pad(twd) + '°')); }
@@ -4349,6 +4357,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         var lgC = S.legs[Math.min(best.leg || 0, S.legs.length - 1)], toC = lgC && lgC.name ? lgC.name : 'the mark';
         var hmC = function (h) { var mm = Math.round(Math.max(0, h) * 60); return Math.floor(mm / 60) + ' h ' + ('0' + mm % 60).slice(-2); }, nmC = bs.combined ? 'Combined' : bs.name || short(bs.id), sogC = Math.hypot(gx, gy), cogC = (Math.atan2(gx, gy) / R + 360) % 360;
         var tlC = function (k, v, u, nw) { return '<div' + (nw ? ' class="new"' : '') + '><i>' + k + '</i><b>' + v + '</b><u>' + (u || '&nbsp;') + '</u></div>'; };
+        var DOTS = '<button class="cbdots" id="tipDots" type="button" aria-label="Actions" title="Actions"' + (S.tipAct ? ' aria-expanded="true"' : '') + '>⋯</button>';
         var headC = '<div class="cbh"><span class="cbd" style="background:' + col(bs) + '"></span><b>' + nmC + '</b><span class="cbs">' + clockH(best.t) + ' ' + tzS1() + ' · ' + hmC(best.t - pC[0].t) + ' in</span></div>';
         var tilesC = '<div class="cbt">' + tlC('Heading', pad(best.hdg) + '°', best.tack ? (Math.abs(best.twa) > 90 ? 'gybe here' : 'tack here') : '') + tlC('TWA', Math.abs(Math.round(best.twa)) + '°', best.twa < 0 ? 'stbd' : 'port') + tlC('Boat speed', best.bsp.toFixed(1) + ' kn', sf < 0.995 || sf > 1.005 ? 'sea ' + (sf >= 1 ? '+' : '') + Math.round((sf - 1) * 100) + '%' : '') + tlC('SOG · COG', sogC.toFixed(1) + ' kn', pad(cogC) + '°')
           + tlC('Wind', best.tws.toFixed(1) + ' kn', 'from ' + pad(best.twd) + '°') + tlC('Tide', best.cu != null ? Math.hypot(best.cu, best.cv).toFixed(1) + ' kn' : '-', best.cu != null ? 'to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '°' : 'none in this route') + tlC('Sail', sl || '-', rf ? rf.toLowerCase() : '') + tlC('To mark', dM.toFixed(dM < 10 ? 1 : 0) + ' nm', hmC(pC[Math.max(0, kC)].t - best.t), true) + '</div>';
@@ -4356,40 +4365,113 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
         /* look first (R2, Stuart 13:44 answer 6): a tap on a route that is not the chosen one shows its card; only this button chooses it */
         var chooseC = bs !== S.sel ? '<div class="cbch"><button class="btn primary" id="tipChoose" type="button"' + (S.running ? ' disabled' : '') + '>Choose this route</button><span>The chosen route is still ' + (S.sel ? (S.sel.combined ? 'Combined' : S.sel.name || short(S.sel.id)) : 'none') + '.</span></div>' : '';
         var stepsC = '<div class="xrow tipstep"><button class="btn" id="tipBack" type="button">◀ 1 h</button><button class="btn" id="tipFwd" type="button">1 h ▶</button><button class="btn" id="tipNext" type="button">Next mark</button><button class="btn primary" id="tipAllBtn" type="button">' + (S.tipAll ? 'Fewer' : 'All figures') + '</button></div>';
-        rows = [headC, tilesC, chooseC, stepsC, '<div class="cball" id="tipAll"' + (S.tipAll ? '' : ' hidden') + '>' + toRowC + rows.slice(rStart + 1).join('')];   /* the last one is closed below, after the action buttons join it */
+        cardTop = [headC + DOTS, tilesC, chooseC, stepsC]; cardAll = toRowC + rows.slice(rStart + 1).join('');
       } else rows = rows.splice(rStart).concat(rows);
+    }
+    var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value))), canHere = !!(tapped && S.sel && wetHere && inData({ lat: la, lon: lo }));
+    if (tapped && !onR) {   /* 28 Nov: open water has a card too. The wind names its model, the tide and the sea their source; range and bearing from the boat are new */
+      cbCss(); cardNew = true;
+      var tlW = function (k, v, u, cls, at) { return '<div' + (cls ? ' class="' + cls + '"' : '') + (at || '') + '><i>' + k + '</i><b>' + v + '</b><u>' + (u || '&nbsp;') + '</u></div>'; };
+      var selTxt = function (id) { var e = $(id), o2 = e && e.selectedOptions && e.selectedOptions[0]; return o2 ? o2.textContent.replace(/\s+/g, ' ').trim() : ''; };
+      var tideSrc = tf ? selTxt('tideSel') : '', seaSrc = wv ? selTxt('waveSel') : '', wnames = Object.keys(P.wind);
+      var fb = LIVE.on && LIVE.fix && LIVE.fix.la != null ? { la: LIVE.fix.la, lo: LIVE.fix.lo, how: 'GPS' } : null;
+      if (!fb && S.sel) { var pb = posAt(tsOf(S.sel.r.path), S.sel.r.path, S.t); if (pb && pb.la != null) fb = { la: pb.la, lo: pb.lo, how: 'route' }; }
+      var rngW = fb ? FSRouter.dist(fb.la, fb.lo, la, lo) : null, haveW = tws === tws && (wmix || wf);
+      var headW = '<div class="cbh"><span class="cbd" style="background:var(--brand,#3574BA)"></span><b>Open water</b><span class="cbs">' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + ' · time bar ' + clockH(t) + ' ' + tzS1() + '</span></div>'
+        + '<button class="cbdots" id="tipDots" type="button" aria-label="Actions" title="Actions"' + (S.tipAct ? ' aria-expanded="true"' : '') + '>⋯</button>';
+      var tilesW = '<div class="cbt cbw">' + tlW('Wind ' + (wnames.length > 1 ? '▾ ' : '· ') + (wmix ? 'Combined' : wm ? short(wm) : 'none'), haveW ? tws.toFixed(1) + ' kn' : '-', haveW ? 'from ' + pad(twd) + '°' : 'no forecast here', 'tap' + (S.tipWl ? ' on' : ''), wnames.length > 1 ? ' id="tipWlBtn" role="button" tabindex="0" title="Every model here"' : '')
+        + tlW('Tide', tf && cu === cu ? (Math.hypot(cu, cv2) / KN).toFixed(1) + ' kn' : '-', tf && cu === cu ? 'to ' + pad(Math.atan2(cu, cv2) / R) + '°' : 'none here')
+        + tlW('Depth', depthTxt.replace('outside forecast band', '-'), z === z ? '' : 'outside the band')
+        + tlW('From boat', rngW != null ? rngW.toFixed(rngW < 10 ? 1 : 0) + ' nm' : '-', rngW != null ? pad(FSRouter.brg(fb.la, fb.lo, la, lo)) + '° · ' + fb.how : 'no boat yet', 'new') + '</div>';
+      var srcW = '<div class="cbsrc">Wind: ' + (wmix ? xEsc(wlab) : wm ? xEsc(lnameOf(wm)) + (wlab !== short(wm) ? ' (' + xEsc(wlab.replace(short(wm), '').replace(/[()]/g, '').trim()) + ')' : '') : 'none') + (S.tipWm ? ', shown in this box only' : '') + '. Tide: ' + (tideSrc ? xEsc(tideSrc) : 'none') + '. Sea: ' + (seaSrc ? xEsc(seaSrc) : 'none') + '.</div>';
+      var wlW = '';
+      if (S.tipWl && wnames.length > 1) { wlW = '<div class="cbwl" id="tipWl"><p>Each model here at the time bar. Tap one to show it in this box only.</p>' + wnames.map(function (m) { var q = P.wind[m], uu = q.sample('u', la, lo, t), vv = q.sample('v', la, lo, t), ok = uu === uu && vv === vv;
+          return '<div class="wlr' + (m === wm && !wmix ? ' on' : '') + '" data-wm="' + xEsc(m) + '" role="button" tabindex="0"><span>' + xEsc(lnameOf(m)) + '</span><span>' + (ok ? (Math.hypot(uu, vv) / KN).toFixed(1) + ' kn from ' + pad((Math.atan2(-uu, -vv) / R + 360) % 360) + '°' : 'no forecast here then') + '</span></div>'; }).join('')
+          + (S.tipWm ? '<div class="wlr" data-wm="" role="button" tabindex="0"><span>Back to the wind set under Wind shown from</span><span></span></div>' : '') + '</div>'; }
+      var stepsW = '<div class="xrow tipstep">' + (canHere ? '<button class="btn" id="tipRoute" type="button" title="Route to here (what if)">Route to here</button><button class="btn" id="tipBoatHere" type="button" title="The boat is here: route the rest of the race">The boat is here</button>' : '') + '<button class="btn primary" id="tipAllBtn" type="button">' + (S.tipAll ? 'Fewer' : 'All figures') + '</button></div>';
+      cardTop = [headW, tilesW, srcW, wlW, stepsW]; cardAll = rows.slice(1).join('') + r2('Position', dmFine(la, 'NS') + ' ' + dmFine(lo, 'EW'));
     }
     cv.style.cursor = best ? 'default' : '';
     var near = null, nd = docked ? 16 : 10;
     ((S.show.ghosts && S.ghostXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ' if on your route (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
     ((S.show.real && S.realXY) || []).forEach(function (g) { var d = Math.hypot(g[0] - x, g[1] - y); if (d < nd) { nd = d; near = g[2].name + ', real position (TCC ' + g[2].tcc.toFixed(3) + ')'; } });
-    if (near) { if (cardNew) rows[4] += '<b>' + near + '</b>'; else rows.push('<b>' + near + '</b>'); }
-    var wetHere = !(P.depth && !(P.depth.nearest('z', la, lo) <= -(+$('depth').value)));
-    var hereC = tapped && S.sel && wetHere && inData({ lat: la, lon: lo }) ? '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>' : '';
-    if (cardNew) rows[4] += hereC + '</div>'; else if (hereC) rows.splice(rows.length ? 1 : 0, 0, hereC);
-    $('tipBody').innerHTML = rows.join(''); if (tapped && tip.hidden) tip.dataset.at = Date.now(); tip.hidden = false; tip.classList.toggle('docked', !!docked); tip.classList.toggle('cb', cardNew); if (cardNew) cbFit();
-    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra(cardNew ? $('tipAll') : $('tipBody'), la, lo); } catch (e) {}   /* waypoints.js: Save as waypoint, Measure from here */
-    if (tapped && window.__fsTipGate) try { window.__fsTipGate(cardNew ? $('tipAll') : $('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */
+    if (near) { if (cardNew) cardAll += '<b>' + near + '</b>'; else rows.push('<b>' + near + '</b>'); }
+    var hereC = canHere ? '<div class="xrow" style="margin:6px 0"><button class="btn primary" id="tipBoatHere">The boat is here: route the rest of the race</button><button class="btn" id="tipRoute">Route to here (what if)</button></div>' : '';
+    if (cardNew) {   /* the card: what is always seen, then All figures, then the actions list (three dots, press and hold, right-click) */
+      if (onR && canHere) cardAct += '<button class="btn" id="tipRoute" type="button">Route to here (what if)</button><button class="btn" id="tipBoatHere" type="button">The boat is here: route the rest of the race</button>';
+      rows = cardTop.concat(['<div class="cball" id="tipAll"' + (S.tipAll ? '' : ' hidden') + '>' + cardAll + '</div>', '<div class="cbact" id="tipAct"' + (S.tipAct ? '' : ' hidden') + '>' + cardAct + '</div>']);
+    } else if (hereC) rows.splice(rows.length ? 1 : 0, 0, hereC);
+    var chipOn = !docked && !tapped;
+    if (chipOn) { cbCss(); var gl = [], sp2 = ' <span>·</span> ', hmG = function (h) { var mm = Math.round(Math.max(0, h) * 60); return Math.floor(mm / 60) + ' h ' + ('0' + mm % 60).slice(-2); };
+      if (onR) { gl.push('<b style="color:' + col(bs) + '">' + (bs.combined ? 'Combined' : bs.name || short(bs.id)) + '</b> <span>' + clockH(best.t).slice(4) + ' ' + tzS1() + ' · ' + hmG(best.t - bs.r.path[0].t) + ' in</span>');
+        gl.push('HDG ' + pad(best.hdg) + '°' + sp2 + 'TWA ' + Math.abs(Math.round(best.twa)) + '° ' + (best.twa < 0 ? 'stbd' : 'port') + sp2 + best.bsp.toFixed(1) + ' kn');
+        gl.push('Wind ' + best.tws.toFixed(1) + ' kn from ' + pad(best.twd) + '°' + (best.cu != null ? sp2 + 'tide ' + Math.hypot(best.cu, best.cv).toFixed(1) + ' kn to ' + pad((Math.atan2(best.cu, best.cv) / R + 360) % 360) + '°' : '')); }
+      else { gl.push('<b>Open water</b> <span>' + dm(la, 'NS') + ' ' + dm(lo, 'EW') + ' · at the time bar</span>');
+        gl.push('Wind ' + xEsc(wmix ? 'Combined' : wm ? short(wm) : '') + ' ' + (tws === tws && (wmix || wf) ? tws.toFixed(1) + ' kn from ' + pad(twd) + '°' : 'no forecast here') + (tf && cu === cu ? sp2 + 'tide ' + (Math.hypot(cu, cv2) / KN).toFixed(1) + ' kn to ' + pad(Math.atan2(cu, cv2) / R) + '°' : ''));
+        var fbG = LIVE.on && LIVE.fix && LIVE.fix.la != null ? [LIVE.fix.la, LIVE.fix.lo] : null; if (!fbG && S.sel) { var pbG = posAt(tsOf(S.sel.r.path), S.sel.r.path, S.t); if (pbG && pbG.la != null) fbG = [pbG.la, pbG.lo]; }
+        gl.push((fbG ? 'From the boat ' + FSRouter.dist(fbG[0], fbG[1], la, lo).toFixed(1) + ' nm, ' + pad(FSRouter.brg(fbG[0], fbG[1], la, lo)) + '°' + sp2 : '') + 'depth ' + depthTxt); }
+      if (near) gl.push(near); rows = gl.map(function (l) { return '<div class="cl">' + l + '</div>'; }); }
+    $('tipBody').innerHTML = rows.join(''); if (tapped && tip.hidden) tip.dataset.at = Date.now(); tip.hidden = false; tip.classList.toggle('docked', !!docked); tip.classList.toggle('cb', cardNew); tip.classList.toggle('cbchip', chipOn); if (cardNew) cbFit();
+    if (tapped && window.__fsTipExtra) try { window.__fsTipExtra(cardNew ? $('tipAct') : $('tipBody'), la, lo); } catch (e) {}   /* waypoints.js: Save as waypoint, Measure from here */
+    if (tapped && window.__fsTipGate) try { window.__fsTipGate(cardNew ? $('tipAct') : $('tipBody'), la, lo, { z: z, nogo: +$('depth').value }); } catch (e) {}   /* tidegate.js: Tide gate here (Stuart 24 Nov 14:40) */
     if ($('tipRoute')) $('tipRoute').onclick = function (e) { e.stopPropagation(); routeHere(la, lo); };
+    if (cardNew) {
+      var again = function () { if (onR) hover(X(best.lo), Y(best.la), true, true, { s: bs, p: best }); else hover(X(lo), Y(la), true, true); };
+      var actB = function (id, txt, fn, off) { var b0 = document.createElement('button'); b0.type = 'button'; b0.className = 'btn'; b0.id = id; b0.textContent = txt; if (off) { b0.disabled = true; b0.title = off; } b0.onclick = function (e) { e.stopPropagation(); fn(b0); }; $('tipAct').appendChild(b0); };
+      if (onR) actB('tipPlanRow', bs === S.sel ? 'Show this hour in the Plan table' : 'Show this hour in the Plan table (the chosen route only)', function () { planShow(best.t); }, bs === S.sel ? '' : 'The Plan table is for the chosen route. Choose this route first.');
+      actB('tipCopy', 'Copy position', function (b0) { var txt = dmFine(la, 'NS') + ' ' + dmFine(lo, 'EW'), done = function (okc) { b0.textContent = okc ? 'Copied: ' + txt : txt + ' (could not copy: press and hold to select)'; }; try { navigator.clipboard.writeText(txt).then(function () { done(true); }, function () { done(false); }); } catch (e2) { done(false); } });
+      $('tipAllBtn').onclick = function (e) { e.stopPropagation(); S.tipAll = !S.tipAll; $('tipAll').hidden = !S.tipAll; this.textContent = S.tipAll ? 'Fewer' : 'All figures'; cbPlace(); };
+      $('tipDots').onclick = function (e) { e.stopPropagation(); S.tipAct = !S.tipAct; $('tipAct').hidden = !S.tipAct; this.setAttribute('aria-expanded', S.tipAct ? 'true' : 'false'); cbPlace(); };
+      if ($('tipWlBtn')) $('tipWlBtn').onclick = function (e) { e.stopPropagation(); S.tipWl = !S.tipWl; again(); };
+      [].forEach.call($('tipBody').querySelectorAll('.wlr'), function (r0) { r0.onclick = function (e) { e.stopPropagation(); var m = r0.getAttribute('data-wm'); S.tipWm = m && m !== S.tipWm ? m : null; again(); }; });
+      S.pin = onR ? { la: best.la, lo: best.lo, id: bs.id, t: best.t, col: col(bs) } : { la: la, lo: lo };   /* the ring is drawn with the chart (drawNow), so it stays through a redraw */
+    }
     if (tapped && onR) {
       var pth = bs.r.path, ix = pth.indexOf(best), go = function (k) { var q = pth[Math.max(0, Math.min(pth.length - 1, k))]; while (q && q.bsp == null && k < pth.length - 1) q = pth[++k]; if (q) hover(X(q.lo), Y(q.la), true, true, { s: bs, p: q }); };
       var at = function (tt) { var k = 0, bd = 1e9; pth.forEach(function (q, j) { var d = Math.abs(q.t - tt); if (q.bsp != null && d < bd) { bd = d; k = j; } }); return k; };
       if ($('tipBack')) $('tipBack').onclick = function (e) { e.stopPropagation(); go(at(best.t - 1)); };
       if ($('tipFwd')) $('tipFwd').onclick = function (e) { e.stopPropagation(); go(at(best.t + 1)); };
       if ($('tipNext')) $('tipNext').onclick = function (e) { e.stopPropagation(); var k = ix; while (k < pth.length - 1 && (pth[k].leg || 0) === (best.leg || 0)) k++; go(k); };
-      S.pin = { id: bs.id, t: best.t };
-      if ($('tipAllBtn')) $('tipAllBtn').onclick = function (e) { e.stopPropagation(); S.tipAll = !S.tipAll; $('tipAll').hidden = !S.tipAll; this.textContent = S.tipAll ? 'Fewer' : 'All figures'; if (window.__fsTipPlace) window.__fsTipPlace(); };
       if ($('tipChoose')) $('tipChoose').onclick = function (e) { e.stopPropagation(); if (S.running) return; S.sel = bs; ghosts().then(function () { matrix(); plan(); fleetTable(); setTime(best.t); go(ix); }); };   /* the only way a tap changes the chosen route (R2) */
       setTime(best.t);   /* the boat goes there: the slider moves to the point's time, so the chart's arrows are for then */
     }
     if ($('tipBoatHere')) $('tipBoatHere').onclick = function (e) { e.stopPropagation(); var tn = (Date.now() / 1000 - T0) / 3600, tt = LIVE.on || (tn > 0 && tn < HMAX() - 1 && Math.abs(S.t - tn) < 0.25) ? tn : S.t; S.from = { lat: la, lon: lo, t: tt }; S.to = null; $('tip').hidden = true; busy('Routing the rest of the race from here…'); run(); };   /* the boat is now here; route the rest of the race from it */
     if (!docked) { var tw = tip.offsetWidth, th = tip.offsetHeight; tip.style.left = Math.min(W - tw - 6, x + 14) + 'px'; tip.style.top = Math.max(64, Math.min(H - th - 6, y + 14)) + 'px'; }
-    else { tip.style.left = ''; tip.style.top = ''; if (window.__fsTipPlace) window.__fsTipPlace(); dot(la, lo, 5, 'transparent', css['--ink']); }
+    else { var keepT = cardNew && force ? tip.style.translate : null; tip.style.left = ''; tip.style.top = ''; if (window.__fsTipPlace) window.__fsTipPlace(); if (cardNew) { if (keepT != null && !cbMoved()) tip.style.translate = keepT; else cbPlace(); draw(); } else dot(la, lo, 5, 'transparent', css['--ink']); }   /* stepping with the card's own buttons never moves the card from under the finger */
   }
   function r2(k, v) { return '<div class="r"><span>' + k + '</span><span>' + v + '</span></div>'; }
   /* the card's styles (28 Nov): small text 9 px, figures 13 px, phone buttons 44 px high (Stuart 13:15 and 13:31; CHART-BOX-TEXT-SIZE-RESEARCH-2026-11-28) */
+  function dmFine(v, h) { var a = Math.abs(v), d = Math.floor(a + 1e-9), m = (a - d) * 60; if (m >= 59.9995) { d++; m = 0; } return d + '°' + (m < 10 ? '0' : '') + m.toFixed(3) + '′' + (v < 0 ? h[1] : h[0]); }   /* a position to copy: decimal minutes to three places */
+  function lnameOf(m) { try { var F = window.__navFc && window.__navFc(); return (F && F.lname && F.lname(m)) || short(m); } catch (e) { return short(m); } }
+  /* is the card where the user dragged it? (a remembered place for this screen size: fs-tippos) */
+  function cbMoved() { try { var a = JSON.parse(store('fs-tippos') || '{}') || {}, o2 = a[(innerWidth > innerHeight ? 'L' : 'P') + Math.round(innerWidth / 100)]; return !!(o2 && (o2[0] || o2[1])); } catch (e) { return false; } }
+  /* the lowest part of the chart still in sight (panels, strips and round buttons lie over its foot) */
+  function cbFootY() { var r = cv.getBoundingClientRect(), tp = $('tip'), best = r.bottom; [0.3, 0.5, 0.7].forEach(function (f) { var xx = r.left + r.width * f, yy = r.bottom - 2; for (; yy > r.top + 80; yy -= 6) { var e = document.elementFromPoint(xx, yy); if (e === cv || (e && tp.contains(e))) break; } best = Math.min(best, yy + 2); }); return best; }
+  /* the card's place (Stuart 28 Nov 13:44, answers 2 and 3). Phone: under the top bar; at the foot of the chart only when the point would be under it.
+     Wide screens: beside the point, with a lead line drawn with the chart. A card the user has dragged stays where it was put. */
+  function cbPlace() { var tp = $('tip'), pn = S.pin; if (!tp.classList.contains('cb') || tp.hidden || !pn || cbMoved()) return; tp.style.translate = '';
+    var r = tp.getBoundingClientRect(), c = cv.getBoundingClientRect(), sp = toScreen(X(pn.lo), Y(pn.la)), qx = c.left + sp[0], qy = c.top + sp[1];
+    if (wide()) { var m = 30, right = qx + m + r.width < c.right - 8, nx = right ? qx + m : qx - m - r.width, ny = Math.max(c.top + 8, Math.min(qy - r.height / 2, c.bottom - r.height - 8)); nx = Math.max(c.left + 8, Math.min(nx, c.right - r.width - 8)); tp.style.translate = Math.round(nx - r.left) + 'px ' + Math.round(ny - r.top) + 'px'; return; }
+    var foot = store('fs-cbplace') === 'foot', under = qy > r.top - 20 && qy < r.bottom + 20; if (!foot && !under) return;
+    var fy = cbFootY() - 6, dy = Math.round(fy - r.bottom); if (dy > 0 && (qy < r.top + dy - 20 || (foot && !under))) tp.style.translate = '0px ' + dy + 'px'; }
+  function toScreen(x, y) { if (!ORI.ang) return [x, y]; var a = -ORI.ang * R, dx = x - ORI.cx, dy = y - ORI.cy; return [ORI.cx + dx * Math.cos(a) - dy * Math.sin(a), ORI.cy + dx * Math.sin(a) + dy * Math.cos(a)]; }   /* a chart point on a turned chart, as the screen has it */
+  /* the ring at the card's point, and on wide screens the lead line to the card: drawn with the chart so they last through a redraw */
+  function cbRing() { var tp = $('tip'), pn = S.pin; if (!pn || !tp || tp.hidden || !tp.classList.contains('cb')) return; var x = X(pn.lo), y = Y(pn.la);
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.lineWidth = 6.5; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.stroke(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore(); }
+  function cbLead() { var tp = $('tip'), pn = S.pin; if (!pn || !tp || tp.hidden || !tp.classList.contains('cb') || !wide()) return; var c = cv.getBoundingClientRect(), r = tp.getBoundingClientRect(), sp = toScreen(X(pn.lo), Y(pn.la)), px = sp[0], py = sp[1], l = r.left - c.left, t2 = r.top - c.top;
+    if (px > l - 4 && px < l + r.width + 4 && py > t2 - 4 && py < t2 + r.height + 4) return; var ex = Math.max(l, Math.min(px, l + r.width)), ey = Math.max(t2 + 12, Math.min(py, t2 + r.height - 12)), d = Math.hypot(ex - px, ey - py); if (d < 14) return;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(px + (ex - px) * 13 / d, py + (ey - py) * 13 / d); ctx.lineTo(ex, ey); ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore(); }
+  /* "Show this hour in the Plan table": open Plan and light the row that holds this time */
+  function planShow(t) { try { openTab('plan'); if ($('panel').hidden || $('panel').classList.contains('collapsed')) { $('panel').hidden = false; $('panel').classList.remove('collapsed'); $('panelBtn').setAttribute('aria-expanded', 'true'); setTimeout(resizeDraw, 0); } } catch (e) {}
+    setTimeout(function () { var hit = null; [].forEach.call($('plan').querySelectorAll('tr[data-t0]'), function (tr) { tr.classList.remove('cbnow'); if (t >= +tr.getAttribute('data-t0') - 1e-6 && t <= +tr.getAttribute('data-t1') + 1e-6 && !hit) hit = tr; }); if (hit) { hit.classList.add('cbnow'); try { hit.scrollIntoView({ block: 'center' }); } catch (e) {} } }, 120); }
   function cbFit() { [].forEach.call($('tipBody').querySelectorAll('.cbt b'), function (e) { var f = 13; while (e.scrollWidth > e.clientWidth + 0.5 && f > 9) { f -= 1; e.style.fontSize = f + 'px'; } if (e.scrollWidth > e.clientWidth + 0.5) e.title = e.textContent; }); }
-  function cbCss() { if ($('cbCss')) return; var c = document.createElement('style'); c.id = 'cbCss'; c.textContent = '.tip.cb{padding-top:12px}.tip.cb.docked .tipgrip{position:absolute;left:0;right:44px;top:0;height:32px;margin:0;align-items:flex-start;padding-top:3px;z-index:1}.tip.cb .tipgrip span{height:4px}.tip.cb .x{z-index:2;top:2px;min-width:36px;min-height:32px}.tip .cbh{display:flex;align-items:center;gap:7px;margin:0 30px 5px 0;min-width:0}.tip .cbd{width:10px;height:10px;border-radius:50%;flex:none}.tip .cbh b{font:600 12px var(--f-body);white-space:nowrap}.tip .cbs{flex:1;min-width:0;font:9px var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+  function cbCss() { if ($('cbCss')) return; var c = document.createElement('style'); c.id = 'cbCss'; c.textContent = '.tip.cb .cbdots{position:absolute;right:40px;top:1px;width:34px;height:32px;border:0;padding:0;background:none;color:var(--muted);font:700 20px/1 var(--f-body);cursor:pointer;z-index:2}.tip.cb .cbdots[aria-expanded=true]{color:var(--ink)}.tip.cb .cbdots::after,.tip.cb .x::after{content:"";position:absolute;left:50%;top:50%;width:40px;height:44px;transform:translate(-50%,-50%)}'
+    + '.tip .cbsrc{font:9px/1.35 var(--f-body);color:var(--muted);margin:4px 0 0}.tip .cbt.cbw{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr)}.tip .cbt .tap i{letter-spacing:.02em}.tip .cbt .tap{cursor:pointer;background:color-mix(in srgb,var(--brand,#3574BA) 16%,var(--panel))}.tip .cbt .tap.on{background:color-mix(in srgb,var(--brand,#3574BA) 30%,var(--panel))}'
+    + '.tip .cbwl{margin:5px -10px 0;border-top:1px solid var(--line);max-height:32vh;overflow:auto;overscroll-behavior:contain}.tip .cbwl p{margin:0;padding:4px 10px;font:9px/1.3 var(--f-body);color:var(--muted)}.tip .cbwl .wlr{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:0 10px;border-top:1px solid var(--line);font:9px var(--f-data);cursor:pointer}.tip .cbwl .wlr span:first-child{font-family:var(--f-body)}.tip .cbwl .wlr.on{font-weight:700;background:color-mix(in srgb,var(--brand,#3574BA) 16%,var(--panel))}'
+    + '.tip .cbact{margin:6px -10px -8px;border-top:1px solid var(--line);max-height:46vh;overflow:auto;overscroll-behavior:contain}.tip .cbact .xrow{display:block;margin:0}.tip .cbact .btn{display:flex;align-items:center;width:100%;min-height:44px;margin:0;padding:0 12px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;color:var(--ink);font:10px var(--f-body);text-align:left;white-space:normal;box-shadow:none}.tip .cbact .btn:disabled{color:var(--muted)}.tip .cbact .tgtap{margin:0;padding:6px 12px;border:0;border-bottom:1px solid var(--line);border-radius:0;font-size:10px}#plan tr.cbnow td{background:color-mix(in srgb,var(--warn,#E8A33D) 28%,transparent)}'
+    + '@media (hover:hover) and (pointer:fine){.tip .cbwl .wlr,.tip .cbact .btn{min-height:26px}}'
+    + '.tip.cbchip{min-width:0;max-width:340px;padding:5px 9px 6px;font:9px/1.5 var(--f-data)}.tip.cbchip .cl{white-space:nowrap}.tip.cbchip .cl b{font:600 11px var(--f-body)}.tip.cbchip .cl span{color:var(--muted)}'
+    + '.tip.cb{padding-top:12px}.tip.cb.docked .tipgrip{position:absolute;left:0;right:80px;top:0;height:32px;margin:0;align-items:flex-start;padding-top:3px;z-index:1}.tip.cb .tipgrip span{height:4px}.tip.cb .x{z-index:2;top:2px;min-width:36px;min-height:32px}.tip .cbh{display:flex;align-items:center;gap:7px;margin:0 66px 5px 0;min-width:0}.tip .cbd{width:10px;height:10px;border-radius:50%;flex:none}.tip .cbh b{font:600 12px var(--f-body);white-space:nowrap}.tip .cbs{flex:1;min-width:0;font:9px var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
     + '.tip .cbt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -10px}.tip .cbt div{background:var(--panel);padding:2px 4px 3px 7px;min-width:0}.tip .cbt i{display:block;font:700 9px/11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip .cbt b{display:block;font:600 13px/15px var(--f-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip .cbt u{display:block;text-decoration:none;font:9px/11px var(--f-data);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip .cbt .new i{color:var(--warn)}'
     + '.tip .tipstep{flex-wrap:nowrap;gap:5px;margin:6px 0 0}.tip .tipstep .btn{flex:1 1 auto;min-width:0;min-height:44px;padding:4px 6px;font-size:11.5px;white-space:nowrap}.tip .cbch{display:flex;align-items:center;gap:8px;margin:6px 0 0}.tip .cbch .btn{flex:none;min-height:44px}.tip .cbch span{font:9px/1.3 var(--f-body);color:var(--muted)}'
     + '.tip .cball{margin-top:6px;padding-top:4px;border-top:1px solid var(--line);font-size:9px;line-height:1.5;max-height:38vh;overflow:auto;overscroll-behavior:contain}.tip .cball .tipsec{font-size:9px}.tip .cball .btn{font-size:11.5px}@media (hover:hover) and (pointer:fine){.tip .tipstep .btn,.tip .cbch .btn{min-height:28px}}'; document.head.appendChild(c); }
