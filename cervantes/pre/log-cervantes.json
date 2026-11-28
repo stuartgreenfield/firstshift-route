@@ -1,41 +1,41 @@
 {
- "at": "2026-11-27T17:42:29.957Z",
+ "at": "2026-11-28T05:54:51.803Z",
  "log": [
   {
    "race": "cervantes",
    "h": 0,
-   "s": 65,
-   "note": "Finer routes in 46.7 s. Times: first routes 3.1 s, standard 15.8 s, finer 62.5 s. The faint line is the standard route. "
+   "s": 45,
+   "note": "Finer routes in 31.8 s. Also worth knowing: in AIFS wind, the Combined (6 models) route is 6.4 min faster than AIFS’s ow"
   },
   {
    "race": "cervantes",
    "h": 1,
-   "s": 126,
-   "note": "Finer routes in 47.6 s. Times: first routes 2.3 s, standard 12.8 s, finer 60.5 s. The faint line is the standard route. "
+   "s": 86,
+   "note": "Finer routes in 31.5 s. Times: first routes 1.4 s, standard 9.2 s, finer 40.7 s. The faint line is the standard route. F"
   },
   {
    "race": "cervantes",
    "h": 2,
-   "s": 185,
-   "note": "Finer routes in 47.0 s. Times: first routes 2.2 s, standard 12.5 s, finer 59.6 s. The faint line is the standard route. "
+   "s": 126,
+   "note": "Finer routes in 30.7 s. Also worth knowing: in AROME HD wind, the ICON-EU route is 1.7 min faster than AROME HD’s own ro"
   },
   {
    "race": "cervantes",
    "h": 3,
-   "s": 244,
-   "note": "Finer routes in 46.7 s. Times: first routes 2.2 s, standard 12.0 s, finer 58.7 s. The faint line is the standard route. "
+   "s": 165,
+   "note": "Finer routes in 30.2 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 0.6 min faster than UKV’s own "
   },
   {
    "race": "cervantes",
    "h": 4,
-   "s": 302,
-   "note": "Finer routes in 44.7 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 0.9 min faster than GFS’s own "
+   "s": 204,
+   "note": "Finer routes in 30.7 s. Also worth knowing: in GFS wind, the AIFS route is 9.1 min faster than GFS’s own route; in ICON-"
   },
   {
    "race": "cervantes",
    "h": 5,
-   "s": 357,
-   "note": "Finer routes in 42.7 s. Also worth knowing: in GFS wind, the ICON-EU route is 14 min faster than GFS’s own route; in AIF"
+   "s": 241,
+   "note": "Finer routes in 28.6 s. Also worth knowing: in GFS wind, the Combined (6 models) route is 2.0 min faster than GFS’s own "
   }
  ]
 }

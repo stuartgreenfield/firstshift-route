@@ -1,23 +1,23 @@
 {
- "at": "2026-11-27T17:37:30.087Z",
+ "at": "2026-11-28T05:52:43.264Z",
  "log": [
   {
    "race": "northsea",
    "h": 0,
-   "s": 34,
-   "note": "Finer routes in 20.9 s. Also worth knowing: in ICON-EU wind, the UKV route is 1.7 min faster than ICON-EU’s own route. G"
+   "s": 26,
+   "note": "Finer routes in 15.4 s. Also worth knowing: in UKV wind, the ECMWF route is 0.6 min faster than UKV’s own route; in ICON"
   },
   {
    "race": "northsea",
    "h": 1,
-   "s": 61,
-   "note": "Finer routes in 21.2 s. Also worth knowing: in UKV wind, the Combined (6 models) route is 0.6 min faster than UKV’s own "
+   "s": 44,
+   "note": "Finer routes in 14.4 s. Times: first routes 1.2 s, standard 4.0 s, finer 18.4 s. The faint line is the standard route. F"
   },
   {
    "race": "northsea",
    "h": 2,
-   "s": 87,
-   "note": "Finer routes in 20.2 s. Also worth knowing: in GFS wind, the AIFS route is 1.9 min faster than GFS’s own route. Gaps thi"
+   "s": 63,
+   "note": "Finer routes in 14.1 s. Also worth knowing: in AIFS wind, the UKV route is 4.2 min faster than AIFS’s own route; in ICON"
   }
  ]
 }
