@@ -57,12 +57,27 @@
       if (!st) { S.note = 'Route first: ' + NAME + ' needs the race and the forecast plan.'; return; }
       if (st.offline) { S.note = 'No signal now. What is already on the device is used; try again when there is signal.'; return; }
       if (!st.miss.length) { S.note = 'Already ready: everything for this race is on the device.'; return; }
-      return get(st.miss, function (d, n) { S.note = 'Downloading ' + d + ' of ' + n + '…'; paint(); }).then(function (bad) {
-        S.note = bad.length ? 'Not downloaded: ' + bad.join(', ') + '. Try again with a better signal.' : 'Ready for offline: ' + mb(st.tot) + ' on this device.';
-        try { localStorage.setItem(PLUS ? 'nav-offline-at' : 'fs-offline-at', String(Date.now())); } catch (e) {}
-      });
-    }).then(function () { S.busy = false; return status(); }).then(function (st) { paint(st); try { if (window.__fsOffCheck) window.__fsOffCheck(); } catch (e) {} }, function () { S.busy = false; paint(); });
+      return get(st.miss, function (d, n) { S.note = 'Downloading ' + d + ' of ' + n + '…'; paint(); }).then(function (bad) { S.dl = { bad: bad }; S.note = 'Checking what was kept…'; paint(); });
+    }).then(function () { return S.dl ? kept(0) : status(); }).then(function (st) {
+      /* 27 Nov 2026 (Stuart's iPhone, build 10): this used to say "Ready for offline" as soon as every download answered, without
+         asking whether anything had been kept, and the phone had kept nothing. Now the store is asked again first, and the words
+         say what it holds. */
+      if (S.dl && st && !st.offline && st.miss) {
+        var bad = S.dl.bad, n = st.list.length, have = n - st.miss.length;
+        if (!st.miss.length) { S.note = 'Ready for offline: ' + mb(st.tot) + ' on this device.'; try { localStorage.setItem(PLUS ? 'nav-offline-at' : 'fs-offline-at', String(Date.now())); } catch (e) {} }
+        else if (bad.length) S.note = 'Not downloaded: ' + bad.join(', ') + '. Try again with a better signal.';
+        else S.note = 'Downloaded, but ' + (have ? 'only ' + have + ' of the ' + n : 'none of the ' + n) + ' files were kept on this device. ' + NAME + ' still needs a signal. ' + why();
+      }
+      S.dl = null; S.busy = false; paint(st); try { if (window.__fsOffCheck) window.__fsOffCheck(); } catch (e) {} }, function () { S.dl = null; S.busy = false; paint(); });
   }
+  /* the copies are put away just after each download answers, so the store is asked up to four times, a second and a half apart */
+  function kept(n) { return status().then(function (st) { if (!st || st.offline || !st.miss || !st.miss.length || n >= 3) return st; return new Promise(function (ok) { setTimeout(ok, 1500); }).then(function () { return kept(n + 1); }); }); }
+  function info() { try { return window.__navOffline && window.__navOffline.info ? window.__navOffline.info() : null; } catch (e) { return null; } }
+  var KNAME = { cache: 'the browser’s store', idb: 'the device’s database' };
+  function why() { var i = info(); if (!i) return ''; if (i.kind === 'none') return 'This device offers nowhere that keeps files.'; if (i.err) return 'The store said: ' + i.err + '.'; return ''; }
+  /* one plain line on what the device holds and how (Settings, Ready for offline) */
+  function holds(st) { var i = info(); if (!i || i.kind === 'checking') return ''; if (i.kind === 'none') return '<p class="note"><b>This device is not keeping files.</b> ' + NAME + ' works only with a signal here. Tried: ' + i.tried.join('; ').replace(/\.+$/, '') + '.</p>';
+    return '<p class="note">Kept by ' + (KNAME[i.kind] || i.kind) + (st && st.list ? ': ' + (st.list.length - st.miss.length) + ' of ' + st.list.length + ' files for this race' : '') + (i.err && Date.now() - i.errAt < 600000 ? '. Last failure: ' + String(i.err).replace(/\.+$/, '') : '') + '.</p>'; }
   function paint() {
     var box = $('navOffBody'); if (!box) return; var st = S.last, h = '';
     if (!st) h += '<p class="note">Route first, then this shows what is on the device.</p>';
@@ -71,6 +86,7 @@
     else h += '<p class="note"><b>Not ready.</b> ' + st.miss.length + ' of ' + st.list.length + ' files to download, ' + mb(st.need) + '.</p>';
     h += '<div class="xrow"><button class="btn primary" id="navOffGo" type="button"' + (S.busy ? ' disabled' : '') + '>' + (st && !st.offline && !st.miss.length ? 'Check again' : 'Make ready for offline') + '</button></div>';
     h += '<p class="note" role="status">' + (S.note || '') + '</p>';
+    h += holds(st);
     h += '<p class="note">Uses the forecast plan in Settings, Forecasts (Full or Lite for each model). Do this in harbour on Wi-Fi. At sea, new forecasts under ' + AUTO_MB + ' MB come in by themselves when there is signal; bigger ones ask first.</p>';
     h += '<label class="navrow navtick"><input type="checkbox" id="navOffAuto"' + (autoOn() ? ' checked' : '') + '> Save for offline by itself after every route (on, Stuart 26 Nov 18:19)</label>';
     box.innerHTML = h; $('navOffGo').onclick = function () { ready(); }; $('navOffAuto').onchange = function () { try { localStorage.setItem('fs-offauto', this.checked ? '1' : '0'); } catch (e) {} };

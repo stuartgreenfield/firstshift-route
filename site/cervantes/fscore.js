@@ -14,23 +14,46 @@
   /* where the files are kept: the browser's Cache store, or (Stuart 13 Nov, iPhone test) IndexedDB when the page is opened from
      the Mac's Wi-Fi address, because a plain http address on the local network is not a "secure context" and Safari and Chrome
      then hide the Cache store. IndexedDB works there, so the iPhone keeps the forecasts for no signal too. */
-  var STORE = (function () {
-    if (window.caches && window.isSecureContext !== false) return {
-      kind: 'cache',
+  /* 27 Nov 2026 (Stuart's iPhone, TestFlight build 10: "Ready for offline: 37 MB on this device", yet opened cold with no signal the
+     chart was empty: nothing had been kept). The store is no longer chosen by what the page says it is. Each kind the device offers is
+     tried with a real entry, written and read back, and the first that keeps it is used: the browser's Cache store on an https page;
+     IndexedDB where the Cache store will not take the page's address (inside the iPhone app the address is fsnav://, and the Cache
+     store only takes http and https). What was tried, what was chosen and the last failure are kept for Settings, Ready for offline,
+     so the device itself says what it holds. Also mended: the IndexedDB kind answered "here" for a file it did not have. */
+  var KINDS = {
+    cache: function () { if (!window.caches) return null; return {
       get: function (k) { return caches.open(OFF.name).then(function (c) { return c.match(k); }); },
       put: function (k, r) { return caches.open(OFF.name).then(function (c) { return c.put(k, r); }); },
-      keys: function () { return caches.open(OFF.name).then(function (c) { return c.keys(); }).then(function (k) { return k.map(function (r) { return r.url; }); }); }
-    };
-    if (!window.indexedDB) return null;
-    var dbp = null; function db() { return dbp || (dbp = new Promise(function (ok, no) { var q = indexedDB.open('fs-offline', 1); q.onupgradeneeded = function () { q.result.createObjectStore('f'); }; q.onsuccess = function () { ok(q.result); }; q.onerror = function () { no(q.error); }; })); }
-    function tx(mode, fn) { return db().then(function (d) { return new Promise(function (ok, no) { var t = d.transaction('f', mode), st = t.objectStore('f'), out = fn(st); t.oncomplete = function () { ok(out && out.result !== undefined ? out.result : out); }; t.onerror = function () { no(t.error); }; }); }); }
-    return {
-      kind: 'idb',
-      get: function (k) { return tx('readonly', function (st) { return st.get(k); }).then(function (v) { return v ? new Response(v.b, { status: 200, headers: { 'Content-Type': v.t || 'application/octet-stream' } }) : undefined; }); },
-      put: function (k, r) { return r.arrayBuffer().then(function (buf) { return tx('readwrite', function (st) { st.put({ b: buf, t: r.headers.get('Content-Type') || '', at: Date.now() }, k); }); }); },
-      keys: function () { return tx('readonly', function (st) { return st.getAllKeys(); }); }
-    };
+      del: function (k) { return caches.open(OFF.name).then(function (c) { return c.delete(k); }); },
+      keys: function () { return caches.open(OFF.name).then(function (c) { return c.keys(); }).then(function (k) { return k.map(function (r) { return r.url; }); }); } }; },
+    idb: function () { if (!window.indexedDB) return null;
+      var dbp = null; function db() { return dbp || (dbp = new Promise(function (ok, no) { var q = indexedDB.open('fs-offline', 1); q.onupgradeneeded = function () { q.result.createObjectStore('f'); }; q.onsuccess = function () { ok(q.result); }; q.onerror = function () { no(q.error); }; q.onblocked = function () { no(new Error('IndexedDB is blocked')); }; })); }
+      function tx(mode, fn) { return db().then(function (d) { return new Promise(function (ok, no) { var t = d.transaction('f', mode), st = t.objectStore('f'), out = fn(st); t.oncomplete = function () { ok(out && typeof out === 'object' && 'result' in out ? out.result : out); }; t.onerror = function () { no(t.error); }; t.onabort = function () { no(t.error || new Error('IndexedDB gave up (out of room?)')); }; }); }); }
+      return {
+        get: function (k) { return tx('readonly', function (st) { return st.get(k); }).then(function (v) { return v && v.b ? new Response(v.b, { status: 200, headers: { 'Content-Type': v.t || 'application/octet-stream' } }) : undefined; }); },
+        put: function (k, r) { return r.arrayBuffer().then(function (buf) { return tx('readwrite', function (st) { st.put({ b: buf, t: r.headers.get('Content-Type') || '', at: Date.now() }, k); }); }); },
+        del: function (k) { return tx('readwrite', function (st) { st.delete(k); }); },
+        keys: function () { return tx('readonly', function (st) { return st.getAllKeys(); }); } }; }
+  };
+  var STINFO = { kind: 'checking', tried: [], err: '', errAt: 0, puts: 0 };
+  function stMsg(e) { return String((e && (e.message || e.name)) || e || 'failed').slice(0, 140); }
+  function stTry(s) {   /* one small entry, written, read back, removed */
+    var k = offKey(new URL('pack/fs-store-test', location.href)), word = 'kept ' + Date.now();
+    var job = s.put(k, new Response(word, { status: 200, headers: { 'Content-Type': 'text/plain' } })).then(function () { return s.get(k); }).then(function (r) { if (!r) throw new Error('wrote an entry but nothing came back'); return r.text(); }).then(function (t) { if (t !== word) throw new Error('the entry came back changed'); return s.del(k).then(function () {}, function () {}); });
+    return Promise.race([job, new Promise(function (_, no) { setTimeout(function () { no(new Error('no answer in 5 s')); }, 5000); })]);
+  }
+  var stPick = (function () {
+    var order = /^https?:$/.test(location.protocol) ? ['cache', 'idb'] : ['idb', 'cache'], i = 0;
+    function next() { if (i >= order.length) { STINFO.kind = 'none'; return null; } var name = order[i++], s = null; try { s = KINDS[name](); } catch (e) { s = null; }
+      if (!s) { STINFO.tried.push(name + ': not offered here'); return next(); }
+      return stTry(s).then(function () { STINFO.tried.push(name + ': kept and read back'); STINFO.kind = name; return s; }, function (e) { STINFO.tried.push(name + ': ' + stMsg(e)); return next(); }); }
+    return Promise.resolve().then(next).catch(function (e) { STINFO.kind = 'none'; STINFO.tried.push('check failed: ' + stMsg(e)); return null; });
   })();
+  var STORE = {
+    get: function (k) { return stPick.then(function (s) { return s ? s.get(k) : undefined; }); },
+    put: function (k, r) { return stPick.then(function (s) { if (!s) throw new Error('this device offers no store that keeps files'); return s.put(k, r); }).then(function (v) { STINFO.puts++; return v; }, function (e) { STINFO.err = stMsg(e); STINFO.errAt = Date.now(); throw e; }); },
+    keys: function () { return stPick.then(function (s) { return s ? s.keys() : []; }); }
+  };
   if (window.fetch && STORE) (function () {
     var real = window.fetch.bind(window);
     window.fetch = function (input, init) {
@@ -39,11 +62,11 @@
       var key = offKey(url), big = /\/pack\/(?!pack\.json)/.test(url.pathname);
       var fromStore = function (why) { if (!(why && why.message === 'slow')) OFF.failed = true;   /* A (Stuart 20 Nov 16:18): slow is not lost: the request carries on, the newer copy is kept when it lands, and the New forecast bar offers it; only a real failure waits for the signal and reloads */
       return STORE.get(key).then(function (r) { if (!r) throw why || new Error('offline and not downloaded yet'); OFF.used[url.pathname] = true; offNote(); return r; }); };
-      if (navigator.onLine === false) return fromStore();
+      if (navigator.onLine === false) return fromStore().catch(function (e) { try { if (/\/pack\/pack\.json$/.test(url.pathname) && window.__fsNoStore) window.__fsNoStore(); } catch (x) {} throw e; });
       var net = real(input, init).then(function (r) { if (!r.ok && r.status >= 400 && r.status < 500) return r; if (!r.ok) throw new Error('server ' + r.status);   /* a missing file is an answer, not lost signal: before, a 404 counted as offline and the page reloaded every 30 s (14 Nov 2026) */ var cp = r.clone(); STORE.put(key, cp).catch(function () {}); if (/pack\/pack\.json$/.test(url.pathname)) { try { localStorage.setItem('fs-offline-at', String(Date.now())); } catch (e) {} } return r; });
       if (big) return net.catch(function (e) { return fromStore(e); });
       var timer = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('slow')); }, 8000); });   /* a weak signal at sea: do not wait forever for the small files */
-      return Promise.race([net, timer]).catch(function (e) { return fromStore(e).catch(function () { return net; }); });
+      return Promise.race([net, timer]).catch(function (e) { return fromStore(e).catch(function () { try { if (/\/pack\/pack\.json$/.test(url.pathname) && window.__fsNoStore) window.__fsNoStore(); } catch (x) {} return net; }); });
     };
   })();
   /* signal back after an offline or failed start (Stuart 13 Nov: it would not route until reloaded): check the server every 30 s,
@@ -69,7 +92,8 @@
       var t = 'No signal: using the forecasts and chart data kept on this device' + (d ? ', downloaded ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' on ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] : '') + '. Everything else works as normal.';
       try { clearToast(t); } catch (e) { console.log(t); } }, 1500);
   }
-  window.__navOffline = { used: function () { return Object.keys(OFF.used); }, kind: STORE ? STORE.kind : 'none', keys: function () { return STORE ? STORE.keys() : Promise.resolve([]); }, has: function (k) { return STORE ? STORE.get(k).then(function (r) { return !!r; }) : Promise.resolve(false); } };
+  window.__navOffline = { used: function () { return Object.keys(OFF.used); }, keys: function () { return STORE.keys(); }, has: function (k) { try { k = offKey(new URL(k, location.href)); } catch (e) {} return STORE.get(k).then(function (r) { return !!r; }, function () { return false; }); }, info: function () { return { kind: STINFO.kind, tried: STINFO.tried.slice(), err: STINFO.err, errAt: STINFO.errAt, puts: STINFO.puts }; }, ready: function () { return stPick.then(function () { return STINFO.kind; }); } };
+  Object.defineProperty(window.__navOffline, 'kind', { get: function () { return STINFO.kind; } });
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   /* ---- clear screen (Stuart 13 Nov): only the chart, MOB and one MENU button.
      Long press on the chart, or × on a folded phone panel, clears it; MENU brings everything back, and it clears itself

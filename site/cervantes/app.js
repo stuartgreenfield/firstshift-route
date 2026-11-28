@@ -5,7 +5,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
 (function () { try { var st = document.createElement('style'); st.textContent = '.fshide{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.02em}.fshide svg{width:14px;height:14px;flex:none}'; (document.head || document.documentElement).appendChild(st); } catch (e) {} })();
 (function () {
   'use strict';
-  var VERSION = 'FirstShift Route v0.12.122';
+  var VERSION = 'FirstShift Route v0.12.123';
   var R = Math.PI / 180, KN = 1852 / 3600, $ = function (id) { return document.getElementById(id); };
   var meta, P = FSRouter.emptyPack(), T0, workers = [], wq = 0, jobs = {}, jid = 0;
   var STYLE = { ukv: ['--m1', []], ecmwf: ['--m2', [9, 4]], gfs: ['--m3', [2, 4]], aifs: ['--m4', [12, 4, 2, 4]], mog: ['--m5', [1, 5]], icon: ['--m6', [6, 3, 1, 3]], arome: ['--m7', [3, 2]], arpege: ['--m8', [10, 3, 3, 3, 3, 3]], om: ['--brand', [4, 2, 1, 2]], chain: ['--ink', [14, 4, 2, 4, 2, 4]], fixed: ['--warn', [2, 3]] };   /* fixed: the Fixed wind route, amber dotted */
@@ -140,6 +140,10 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     });
   })();
   function errShow(msg) { var b = $('errBox'); if (!b) return; $('errMsg').textContent = msg; b.hidden = false; }
+  /* 27 Nov 2026 (Stuart's iPhone, photo IMG_0149): opened with no signal and nothing kept on the phone, the chart was empty and nothing
+     said why. The offline store calls this the moment the forecast list can be had neither from the network nor from the device. */
+  var NOSTORE = false;
+  window.__fsNoStore = function () { if (NOSTORE) return; NOSTORE = true; var n = 'Route'; try { n = window.FSTool(); } catch (e) {} errShow('No signal, and the forecasts and charts for this race are not saved on this device yet. ' + n + ' needs a signal once to fetch them, and carries on by itself when the signal returns.'); };
   function errHide() { var b = $('errBox'); if (b) b.hidden = true; if ($('errDepth')) $('errDepth').hidden = true; }
   /* F6 (Stuart 15 Nov 15:29, 17:10 "Plain message + depth button"): a route that cannot leave its start (no way through after 0 h) usually
      starts in water shallower than the safety depth. Say so plainly, with the charted depth there, and offer to route with a safety depth
@@ -207,7 +211,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     fetch((window.FS_PACK || 'pack/') + '' + m.coast.file).then(function (r) { return r.arrayBuffer(); }).then(function (b) { coastBits = new Uint8Array(b); buildDepth(); draw(); });
     var saved = store('fs-plan'); applyPlan(saved && PLANS[saved] ? saved : 'full');
     return loadPre().then(function () { earlyPre(); return download(); });
-  }).then(function () { return omFallback(); }).then(function () { run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; errShow('Could not load the forecasts: ' + e.message); });
+  }).then(function () { return omFallback(); }).then(function () { if (NOSTORE) { NOSTORE = false; try { $('errBox').hidden = true; } catch (e) {} } run(); watchForNew(); }).catch(function (e) { $('dataChip').textContent = 'Could not load forecasts: ' + e.message; if (!NOSTORE) errShow('Could not load the forecasts: ' + e.message); });
 
   /* ---------- new forecasts: check every 5 minutes; a button downloads them and routes again ---------- */
   var nextMeta = null;
@@ -403,7 +407,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     var bytes = S.ov && meta.overview ? meta.overview.gz : 0, w = 0; meta.layers.forEach(function (L) { var c = S.loaded[L.id]; if (c) { bytes += L[c].gz; if (L.kind === 'wind') w++; } });
     var hi = S.loaded.ukv === 'full' ? 'UKV 1.5 km' : S.loaded.ukv ? 'UKV lite 3 km' : 'global only';
     var age = (Date.now() / 1000 - meta.t0) / 3600;
-    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.122 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
+    $('dataChip').textContent = (window.FS_MARK ? 'Mark' : 'Route') + ' v0.12.123 · ' + (!navigator.onLine ? 'Offline: saved forecast · ' : meta.live ? 'Live · ' : '') + 'Run ' + clockAbs(meta.t0 - tzSh()).replace(/ (\d\d):00$/, ' $1Z') + (meta.live ? ' (' + ageTxt(age) + ' old)' : '') + ' · ' + w + ' wind models (' + hi + ') · ' + mb(bytes) + (P.wind.om ? ' · plus Open-Meteo fetched on this device' : '');
     $('dataChip').style.color = meta.live && age > 18 ? 'var(--shoaledge)' : meta.live && age > 12 ? 'var(--warn)' : '';
   }
 
@@ -1890,6 +1894,15 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if ($('rmOffshore')) $('rmOffshore').onclick = function () { $('raceMenu').hidden = true; window.__fsInshore(false); };
     FSBeat.set(function () { var b = $('rmOffshore'); if (b) { b.hidden = !S.offPrev; if (S.offPrev) b.textContent = '⚓ Back to ' + (S.offPrev.short || S.offPrev.name); } }, 500);   /* J3 (Stuart 15 Nov 17:32): Solent races below RORC and JOG */
     $('rmEdit').onclick = function () { $('raceMenu').hidden = true; startEdit(courseCopy()); };
+    /* C6 (Stuart 26 Nov 21:27: "It goes into the drop down box on the drop down next to the logo below edit course"; 27 Nov 23:15, Route+ on
+       his iPhone 32 minutes into a race, no End race in the list; 23:19 "yes"): End race on Route and Route+, directly below Edit this course.
+       Two taps, as everywhere else, so a knock never ends a race. Shown when a race is set or under way: a gun time chosen, or RACE with the
+       GPS on; gone once the race is ended (the chart is clear). It does what End race does everywhere: files the track with the result,
+       keeps the race in Saved routes, clears the chart, stops the GPS. Mark and Mark+ have it on their Race under way card. */
+    if ($('rmEnd')) { (function () { var b = $('rmEnd'), WORD = '\u25a0 End race';
+      b.onclick = function (e) { if (e) e.stopPropagation(); if (b.dataset.arm && Date.now() - +b.dataset.arm < 4000) { delete b.dataset.arm; b.textContent = WORD; $('raceMenu').hidden = true; endRace(); return; }
+        b.dataset.arm = String(Date.now()); b.textContent = 'Tap again to end'; setTimeout(function () { if (b.dataset.arm && Date.now() - +b.dataset.arm >= 3900) { delete b.dataset.arm; b.textContent = WORD; } }, 4000); };
+      FSBeat.set(function () { var on = false; try { on = !window.FS_MARK && !S.inshore && !S.cleared && (!!(window.__fsGunAt && window.__fsGunAt()) || !!(LIVE.on && document.body.classList.contains('fsrace'))); } catch (x) {} if (b.hidden === on) b.hidden = !on; if (!on && b.dataset.arm) { delete b.dataset.arm; b.textContent = WORD; } }, 500); })(); }
     $('dataChip').addEventListener('click', function (e) { e.stopPropagation(); });
     $('racesX').onclick = function () { $('races').hidden = true; if (S.edit) { $('editBar').hidden = false; editPrompt(); draw(); } };   /* closing the course list mid-edit goes back to the edit on the chart, never to a hidden edit that stops routing (Stuart 12 Nov) */
     $('races').onclick = function (e) { if (e.target === $('races')) $('races').hidden = true; };
@@ -3876,7 +3889,7 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
   }
   function dm(v, h) { var a = Math.abs(v), d = Math.floor(a + 1e-9), m = Math.round((a - d) * 60); if (m === 60) { d++; m = 0; } return d + '°' + String(m).padStart(2, '0') + '′' + (v < 0 ? h[1] : h[0]); }
   function scale() {
-    var nm = view.s / 60, len = [1, 2, 5, 10, 20].find(function (n) { return n * nm > 60; }) || 20, x = W - 16 - len * nm, y = H - 22;
+    var nm = view.s / 60, len = [1, 2, 5, 10, 20].find(function (n) { return n * nm > 60; }) || 20, x = W - 16 - len * nm, y = H - 22 - (window.__fsFabFoot || 0);   /* above the row of round buttons when they lie along the foot */
     ctx.strokeStyle = css['--ink']; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len * nm, y); ctx.stroke();
     ctx.fillStyle = css['--ink']; ctx.font = '11px "JetBrains Mono", monospace'; ctx.fillText(len + ' nm', x, y - 5);
   }
@@ -4451,18 +4464,31 @@ window.FS_HIDE = '<span class="fshide"><svg viewBox="0 0 24 24" aria-hidden="tru
     if (!host) return;   /* F77: no button showing (a window over them all): keep the last decision, so the hold below is not restarted */
     var room = host ? host.clientHeight - Math.max(0, underTop() - host.getBoundingClientRect().top) : 999;
     if (!ROWM && host) { var hb0 = host.getBoundingClientRect().bottom, mt = 1e9; vf.forEach(function (f) { if (f.dataset.fr) return; var r0 = f.getBoundingClientRect(); if (r0.height) mt = Math.min(mt, r0.top); }); if (mt < 1e9) { FROW.need = Math.round(hb0 - mt + 8); FROW.over = mt < underTop() + 4; } }   /* Stuart 20 Nov 16:22: with the plotter bar open the column ran up under it and its buttons were hidden: the column must start below everything under the top bar */   /* F77: the height the column needs (Route+ has more buttons than Route) */
-    var low0 = !!host && (room < Math.max(ROWM ? 340 : 300, (FROW.need || 0) + (ROWM ? 40 : 0)) || (!ROWM && !!FROW.over) || colCovered(host));   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
+    /* AP, second part (28 Nov, the same check on Route): with the button row cleared, three of Route's round buttons are hidden and the three
+       left stood in an L in the middle of the right-hand edge, in neither a line up the edge nor a row along the foot. In the Clear state the
+       round buttons that remain always go in the row on the bottom of the map, on every tool, and they go there (and come back) at once,
+       with the tap that clears the screen, not a second and a half later by themselves. */
+    var clr = document.body.classList.contains('navclear');
+    var low0 = !!host && (clr || room < Math.max(ROWM ? 340 : 300, (FROW.need || 0) + (ROWM ? 40 : 0)) || (!ROWM && !!FROW.over) || colCovered(host));   /* a short chart (small phone, iPhone SE): the column of buttons would reach the top bar, so they go in a row */
     /* Stuart 17 Nov 12:31 (iPhone, Fastnet, panel open): "The gps orange pill is jumping around". The chart's height changes as the panel
        and the strips under the top bar come and go, and the pill flipped between the foot and the top each time. Now the change needs a
        margin (in below 300 px, out above 340) and has to hold for a second and a half before anything moves */
-    var now0 = Date.now(); if (low0 !== FROW.want) { FROW.want = low0; FROW.since = now0; } var low = (now0 - FROW.since >= 1500 || FROW.since === 0) ? low0 : FROW.low; FROW.low = low; if (FROW.since === 0) FROW.since = 1;
-    ROWM = !!(short.matches || low); if (!short.matches && !low) { fabs.forEach(function (f) { if (f.dataset.fr === '1') { f.style.removeProperty('bottom'); f.style.removeProperty('right'); delete f.dataset.fr; } }); return; }
+    var now0 = Date.now(); if (low0 !== FROW.want) { FROW.want = low0; FROW.since = now0; } var low = (clr !== !!FROW.clr || now0 - FROW.since >= 1500 || FROW.since === 0) ? low0 : FROW.low; FROW.clr = clr; FROW.low = low; if (FROW.since === 0) FROW.since = 1;
+    ROWM = !!(short.matches || low); if (!short.matches && !low) { fabFoot(0); fabs.forEach(function (f) { if (f.dataset.fr === '1') { f.style.removeProperty('bottom'); f.style.removeProperty('right'); delete f.dataset.fr; } }); return; }
     if (!host) return; var W = host.clientWidth, n = 0;
     var perRow = Math.max(1, Math.floor((W - 60 - 12) / 52));   /* clear of man overboard on the left */
-    var bar = document.getElementById('bar'), base = document.body.classList.contains('navclear') && bar && bar.getClientRects().length ? Math.round(bar.getBoundingClientRect().height) : 0;
+    /* AP (Stuart 27 Nov 23:00, photo IMG_0144: the round buttons in a row half way up the chart once the button row had cleared itself; "These
+       icons must line up vertically along the edge of the screen or horizontally across the bottom of map"). The row was lifted by the foot
+       bar's whole height, as if the bar always floated over the chart. It is lifted now only by as much of the chart's foot as the bar really
+       covers, so the row sits on the bottom of the map in every state. */
+    var bar = document.getElementById('bar'), base = document.body.classList.contains('navclear') && bar && bar.getClientRects().length && host ? Math.max(0, Math.round(host.getBoundingClientRect().bottom - bar.getBoundingClientRect().top)) : 0;
     if (!base && host) { var hb = innerHeight - host.getBoundingClientRect().bottom; base = Math.max(0, Math.round(insets().b - hb)); }   /* a chart that runs to the foot of the screen (Mark held sideways): keep clear of the home bar */   /* Clear screen: the play bar floats at the foot, so the row sits above it */
     fabs.forEach(function (f) { if (getComputedStyle(f).display === 'none') return; var row = Math.floor(n / perRow), col = n % perRow; n++;
-      f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); }); }
+      f.dataset.fr = '1'; f.style.setProperty('bottom', (8 + base + row * 52) + 'px', 'important'); f.style.setProperty('right', (12 + col * 52) + 'px', 'important'); });
+    fabFoot(n ? 8 + base + Math.ceil(n / perRow) * 52 : 0); }
+  /* the row of round buttons lies over the chart's bottom right corner, where the scale bar is drawn: the chart is told how high the row
+     reaches and draws the scale bar just above it (28 Nov, seen in the AP pictures: "20 nm" hidden behind N UP) */
+  function fabFoot(px) { if (window.__fsFabFoot === px) return; window.__fsFabFoot = px; try { window.__fsRedraw(); } catch (e) {} }
   /* Stuart 20 Nov 16:22: after the start the GPS window opened over the column of round buttons and they all vanished. A window over the column
      now sends the buttons to the row along the foot of the chart, where they stay usable; only if the row is covered too do they hide */
   function colCovered(host) { if (!host) return false; var hr = host.getBoundingClientRect(), x0 = hr.right - 72; return winRects().some(function (w) { return w.right > x0 && w.left < hr.right && w.bottom > hr.top && w.top < hr.bottom - 120; }); }
