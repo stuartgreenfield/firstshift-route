@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-28T17:36:32.734Z",
+ "log": [
+  {
+   "race": "irishsea-area",
+   "h": 0,
+   "s": 12,
+   "note": "Finer routes in 7.9 s. Times: first routes 0.9 s, standard 2.7 s, finer 10.7 s. The faint line is the standard route. Fi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 1,
+   "s": 21,
+   "note": "Finer routes in 6.4 s. Times: first routes 0.5 s, standard 1.8 s, finer 8.2 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 2,
+   "s": 29,
+   "note": "Finer routes in 6.7 s. Times: first routes 0.4 s, standard 1.7 s, finer 8.4 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 3,
+   "s": 38,
+   "note": "Finer routes in 6.5 s. Also worth knowing: in GFS wind, the ECMWF route is 0.5 min faster than GFS’s own route. Gaps thi"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 4,
+   "s": 46,
+   "note": "Finer routes in 6.2 s. Times: first routes 0.4 s, standard 1.6 s, finer 7.8 s. The faint line is the standard route. Fir"
+  },
+  {
+   "race": "irishsea-area",
+   "h": 5,
+   "s": 53,
+   "note": "Finer routes in 6.2 s. Times: first routes 0.4 s, standard 1.6 s, finer 7.8 s. The faint line is the standard route. Fir"
+  }
+ ]
+}

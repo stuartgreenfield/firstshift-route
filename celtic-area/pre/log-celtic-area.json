@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-28T17:49:35.174Z",
+ "log": [
+  {
+   "race": "celtic-area",
+   "h": 0,
+   "s": 142,
+   "note": "Finer routes in 70.0 s. Also worth knowing: in GFS wind, the ECMWF route is 2.6 min faster than GFS’s own route; in ICON"
+  },
+  {
+   "race": "celtic-area",
+   "h": 1,
+   "s": 278,
+   "note": "Finer routes in 70.3 s. Also worth knowing: in AROME HD wind, the Finest first route is 4.0 min faster than AROME HD’s o"
+  },
+  {
+   "race": "celtic-area",
+   "h": 2,
+   "s": 414,
+   "note": "Finer routes in 69.7 s. Times: first routes 9.8 s, standard 65.3 s, finer 135.1 s. The faint line is the standard route."
+  },
+  {
+   "race": "celtic-area",
+   "h": 3,
+   "s": 549,
+   "note": "Finer routes in 71.3 s. Also worth knowing: in AIFS wind, the Finest first route is 6.5 min faster than AIFS’s own route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 4,
+   "s": 685,
+   "note": "Finer routes in 71.3 s. Also worth knowing: in AIFS wind, the Finest first route is 3.2 min faster than AIFS’s own route"
+  },
+  {
+   "race": "celtic-area",
+   "h": 5,
+   "s": 821,
+   "note": "Finer routes in 74.6 s. Times: first routes 7.8 s, standard 60.4 s, finer 135.1 s. The faint line is the standard route."
+  }
+ ]
+}

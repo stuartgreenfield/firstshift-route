@@ -1,0 +1,41 @@
+{
+ "at": "2026-11-28T17:46:48.711Z",
+ "log": [
+  {
+   "race": "biscay-area",
+   "h": 0,
+   "s": 111,
+   "note": "Finer routes in 83.3 s. Times: first routes 5.4 s, standard 24.2 s, finer 107.5 s. The faint line is the standard route."
+  },
+  {
+   "race": "biscay-area",
+   "h": 1,
+   "s": 220,
+   "note": "Finer routes in 87.7 s. Times: first routes 3.4 s, standard 20.5 s, finer 108.3 s. The faint line is the standard route."
+  },
+  {
+   "race": "biscay-area",
+   "h": 2,
+   "s": 326,
+   "note": "Finer routes in 83.7 s. Times: first routes 3.4 s, standard 20.9 s, finer 104.7 s. The faint line is the standard route."
+  },
+  {
+   "race": "biscay-area",
+   "h": 3,
+   "s": 434,
+   "note": "Finer routes in 86.7 s. Times: first routes 3.7 s, standard 20.4 s, finer 107.2 s. The faint line is the standard route."
+  },
+  {
+   "race": "biscay-area",
+   "h": 4,
+   "s": 543,
+   "note": "Finer routes in 87.9 s. Times: first routes 3.4 s, standard 20.4 s, finer 108.3 s. The faint line is the standard route."
+  },
+  {
+   "race": "biscay-area",
+   "h": 5,
+   "s": 648,
+   "note": "Finer routes in 84.3 s. Times: first routes 3.3 s, standard 20.0 s, finer 104.3 s. The faint line is the standard route."
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "at": "2026-11-28T17:40:22.180Z",
+ "log": [
+  {
+   "race": "myth",
+   "h": 0,
+   "s": 89,
+   "note": "Finer routes in 59.0 s. Times: first routes 3.2 s, standard 28.0 s, finer 87.1 s. The faint line is the standard route. "
+  },
+  {
+   "race": "myth",
+   "h": 1,
+   "s": 178,
+   "note": "Finer routes in 67.8 s. Times: first routes 2.5 s, standard 20.7 s, finer 88.5 s. The faint line is the standard route. "
+  },
+  {
+   "race": "myth",
+   "h": 2,
+   "s": 270,
+   "note": "Finer routes in 64.7 s. Times: first routes 2.5 s, standard 26.9 s, finer 91.6 s. The faint line is the standard route. "
+  }
+ ]
+}
